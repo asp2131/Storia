@@ -74,6 +74,7 @@ model Book {
   pdfUrl           String            @map("pdf_url")
   totalPages       Int               @map("total_pages")
   status           String            @default("processing") // processing, ready, failed
+  processingErrors Json?             @map("processing_errors") // Array of error details for debugging
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)

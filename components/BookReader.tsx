@@ -52,14 +52,54 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
     Math.floor((initialPage - 1) / 2)
   );
   const [currentScene, setCurrentScene] = useState<Scene | null>(null);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
   const flipBookRef = useRef<any>(null);
+  const saveProgressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate page spread index (0-based, each spread = 2 pages)
   const getPageSpreadIndex = (pageNumber: number): number => {
     return Math.floor((pageNumber - 1) / 2);
   };
 
-  // Detect scene change when page changes
+  // Save reading progress to database (debounced)
+  const saveProgress = useCallback(async (page: number) => {
+    try {
+      setIsSavingProgress(true);
+      const response = await fetch("/api/progress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookId: book.id,
+          currentPage: page,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to save progress:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error saving progress:", error);
+    } finally {
+      setIsSavingProgress(false);
+    }
+  }, [book.id]);
+
+  // Debounced progress save (2 seconds after page change)
+  const debouncedSaveProgress = useCallback((page: number) => {
+    // Clear existing timer
+    if (saveProgressTimerRef.current) {
+      clearTimeout(saveProgressTimerRef.current);
+    }
+
+    // Set new timer
+    saveProgressTimerRef.current = setTimeout(() => {
+      saveProgress(page);
+    }, 2000);
+  }, [saveProgress]);
+
+  // Detect scene change and save progress when page changes
   useEffect(() => {
     const spreadIndex = getPageSpreadIndex(currentPage);
     setCurrentSpreadIndex(spreadIndex);
@@ -81,7 +121,19 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
       setCurrentScene(scene);
       // TODO: Trigger audio crossfade here in future tasks
     }
-  }, [currentPage, book.scenes, currentScene]);
+
+    // Save reading progress (debounced)
+    debouncedSaveProgress(currentPage);
+  }, [currentPage, book.scenes, currentScene, debouncedSaveProgress]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveProgressTimerRef.current) {
+        clearTimeout(saveProgressTimerRef.current);
+      }
+    };
+  }, []);
 
   const handlePreviousPage = () => {
     if (flipBookRef.current) {
@@ -141,8 +193,34 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
               )}
             </div>
           </div>
-          <div className="text-sm text-gray-400">
-            Page {currentPage} of {book.totalPages}
+          <div className="flex items-center gap-3">
+            {isSavingProgress && (
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <svg
+                  className="animate-spin h-3 w-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Saving...
+              </div>
+            )}
+            <div className="text-sm text-gray-400">
+              Page {currentPage} of {book.totalPages}
+            </div>
           </div>
         </div>
       </header>
