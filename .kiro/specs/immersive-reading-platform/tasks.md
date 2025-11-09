@@ -154,7 +154,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Mark book as "ready" when complete
   - _Requirements: 3.3, 4.1, 4.4_
 
-- [ ] 17. Add job progress tracking and error handling
+- [-] 17. Add job progress tracking and error handling
   - Update book status during processing (processing → ready/failed)
   - Log errors for failed soundscape generations
   - Continue processing remaining scenes on individual failures
