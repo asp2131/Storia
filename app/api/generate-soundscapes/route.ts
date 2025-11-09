@@ -406,13 +406,15 @@ async function updateBookStatus(
   errors: ProcessingError[]
 ): Promise<void> {
   try {
+    const updateData: any = {
+      status,
+      processingErrors: errors.length > 0 ? errors : null,
+      updatedAt: new Date(),
+    };
+    
     await db.book.update({
       where: { id: bookId },
-      data: {
-        status,
-        processingErrors: errors.length > 0 ? errors : null,
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
 
     // Log errors to console for debugging
