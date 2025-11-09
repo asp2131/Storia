@@ -203,7 +203,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
 
 ## Phase 8: Audio Playback System
 
-- [ ] 22. Create Web Audio API wrapper
+- [x] 22. Create Web Audio API wrapper
   - Create `lib/audioPlayer.ts`
   - Initialize AudioContext and GainNode
   - Implement audio buffer loading and decoding
@@ -212,7 +212,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Handle audio context state (suspended/running)
   - _Requirements: 6.1, 6.3_
 
-- [ ] 23. Implement audio crossfading
+- [x] 23. Implement audio crossfading
   - Add `crossfadeToNewSource()` method in audio player
   - Create dual GainNode setup for crossfading
   - Implement 3-second linear ramp for smooth transitions
@@ -249,7 +249,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
 
 ## Phase 9: User Library and Book Management
 
-- [ ] 27. Create book library page
+- [x] 27. Create book library page
   - Build `/app/library/page.tsx` with book grid
   - Display book covers (generated or placeholder)
   - Show book title, author, page count
