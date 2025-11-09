@@ -117,14 +117,14 @@ This implementation plan breaks down the Immersive Reading Platform into discret
 
 ## Phase 5: Soundscape Generation with Replicate
 
-- [ ] 13. Set up Replicate API client
+- [x] 13. Set up Replicate API client
   - Install `replicate` npm package
   - Create `lib/replicate.ts` with client configuration
   - Define audio model constants (ElevenLabs Music, MusicGen, etc.)
   - Add model configurations for each audio model
   - _Requirements: 4.2_
 
-- [ ] 14. Implement soundscape generation module
+- [x] 14. Implement soundscape generation module
   - Create `lib/generateSoundscape.ts`
   - Implement `generateSoundscape()` using `replicate.run()`
   - Implement `generateSoundscapeWithPolling()` for better control
@@ -166,7 +166,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
 
 ## Phase 7: Reading Interface
 
-- [ ] 18. Create book reader page component
+- [x] 18. Create book reader page component
   - Create `/app/read/[bookId]/page.tsx`
   - Fetch book, pages, and scenes from database
   - Implement server-side data loading
