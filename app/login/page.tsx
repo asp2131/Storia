@@ -55,14 +55,22 @@ function LoginForm() {
         redirect: false,
       });
 
+      console.log("Sign in result:", result);
+
       if (result?.error) {
+        console.error("Sign in error:", result.error);
         setErrors({ general: "Invalid email or password" });
         setIsLoading(false);
-      } else {
-        // Successful login
+      } else if (result?.ok) {
+        // Successful login - use window.location for full page reload to ensure session is loaded
+        console.log("Sign in successful, redirecting...");
         const callbackUrl = searchParams.get("callbackUrl") || "/library";
-        router.push(callbackUrl);
-        router.refresh();
+        window.location.href = callbackUrl;
+      } else {
+        // Unexpected result
+        console.error("Unexpected sign in result:", result);
+        setErrors({ general: "An unexpected error occurred. Please try again." });
+        setIsLoading(false);
       }
     } catch (error) {
       console.error("Login error:", error);

@@ -8,6 +8,9 @@ import { verifyPassword, getUserByEmail } from "@/lib/auth";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     Credentials({
       credentials: {
@@ -55,6 +58,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isOnLibrary = nextUrl.pathname.startsWith("/library");
+      const isOnLogin = nextUrl.pathname.startsWith("/login");
+      const isOnRegister = nextUrl.pathname.startsWith("/register");
+
+      if (isOnLibrary) {
+        if (isLoggedIn) return true;
+        return false; // Redirect unauthenticated users to login page
+      } else if (isLoggedIn && (isOnLogin || isOnRegister)) {
+        return Response.redirect(new URL("/library", nextUrl));
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
