@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import PageNavigation from "./PageNavigation";
 
 interface Page {
   id: string;
@@ -59,6 +60,12 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
     }
   };
 
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= book.totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   const currentPageData = book.pages.find((p) => p.pageNumber === currentPage);
 
   return (
@@ -113,54 +120,14 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
         </div>
 
         {/* Navigation Controls */}
-        <div className="flex items-center justify-between mt-8">
-          <button
-            onClick={handlePreviousPage}
-            disabled={currentPage === 1}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Previous
-          </button>
-
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-400">
-              Page {currentPage} of {book.totalPages}
-            </span>
-          </div>
-
-          <button
-            onClick={handleNextPage}
-            disabled={currentPage === book.totalPages}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            Next
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+        <div className="mt-8">
+          <PageNavigation
+            currentPage={currentPage}
+            totalPages={book.totalPages}
+            onPreviousPage={handlePreviousPage}
+            onNextPage={handleNextPage}
+            onPageChange={handlePageChange}
+          />
         </div>
       </main>
 
