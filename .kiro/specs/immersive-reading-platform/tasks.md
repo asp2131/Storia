@@ -15,7 +15,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Configure environment variables structure in `.env.example`
   - _Requirements: Foundation for all subsequent tasks_
 
-- [ ] 2. Set up PostgreSQL database with Prisma ORM
+- [x] 2. Set up PostgreSQL database with Prisma ORM
   - Install Prisma and PostgreSQL client
   - Create Prisma schema with all tables: users, books, pages, scenes, soundscapes, reading_progress
   - Add indexes for performance optimization
@@ -23,7 +23,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Create database migration scripts
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 3. Configure Cloudflare R2 storage client
+- [x] 3. Configure Cloudflare R2 storage client
   - Install AWS SDK v3 for S3-compatible storage
   - Create `lib/storage.ts` with R2 client configuration
   - Implement `uploadPDFToR2()` function

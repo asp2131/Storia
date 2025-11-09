@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  passwordHash     String?           @map("password_hash")
+  name             String?
+  subscriptionTier String            @default("free") @map("subscription_tier")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  books            Book[]
+  readingProgress  ReadingProgress[]
+
+  @@map("users")
+}
+
+model Book {
+  id               String            @id @default(uuid())
+  userId           String            @map("user_id")
+  title            String
+  author           String?
+  pdfUrl           String            @map("pdf_url")
+  totalPages       Int               @map("total_pages")
+  status           String            @default("processing") // processing, ready, failed
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages            Page[]
+  scenes           Scene[]
+  readingProgress  ReadingProgress[]
+
+  @@index([userId])
+  @@map("books")
+}
+
+model Page {
+  id          String   @id @default(uuid())
+  bookId      String   @map("book_id")
+  pageNumber  Int      @map("page_number")
+  textContent String   @map("text_content")
+  sceneId     String?  @map("scene_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  scene       Scene?   @relation(fields: [sceneId], references: [id])
+
+  @@unique([bookId, pageNumber])
+  @@index([bookId])
+  @@map("pages")
+}
+
+model Scene {
+  id              String       @id @default(uuid())
+  bookId          String       @map("book_id")
+  startPage       Int          @map("start_page")
+  endPage         Int          @map("end_page")
+  pageSpreadIndex Int          @map("page_spread_index")
+  setting         String?
+  mood            String?
+  descriptors     Json? // Full SceneAnalysis object
+  createdAt       DateTime     @default(now()) @map("created_at")
+  book            Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  pages           Page[]
+  soundscapes     Soundscape[]
+
+  @@index([bookId])
+  @@index([bookId, pageSpreadIndex])
+  @@map("scenes")
+}
+
+model Soundscape {
+  id                     String   @id @default(uuid())
+  sceneId                String   @map("scene_id")
+  audioUrl               String   @map("audio_url")
+  duration               Int      @default(30)
+  generationPrompt       String?  @map("generation_prompt")
+  replicatePredictionId  String?  @map("replicate_prediction_id")
+  createdAt              DateTime @default(now()) @map("created_at")
+  scene                  Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@map("soundscapes")
+}
+
+model ReadingProgress {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  bookId      String   @map("book_id")
+  currentPage Int      @map("current_page")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId, bookId])
+  @@map("reading_progress")
+}

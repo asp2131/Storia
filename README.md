@@ -31,7 +31,7 @@ Experience books with AI-generated soundscapes that adapt to the narrative conte
 - API keys for:
   - Google Gemini API
   - Replicate API
-  - Cloudflare R2
+  - Cloudflare R2 (see `lib/storage.README.md` for setup instructions)
 
 ### Installation
 
