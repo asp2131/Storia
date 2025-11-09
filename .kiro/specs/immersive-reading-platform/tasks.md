@@ -62,7 +62,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
 
 ## Phase 3: PDF Upload and Processing
 
-- [ ] 7. Create PDF upload API endpoint
+- [x] 7. Create PDF upload API endpoint
   - Create `/app/api/books/upload/route.ts`
   - Implement multipart form data handling
   - Add file validation (type, size limits)
@@ -71,7 +71,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Return book ID and processing status
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 8. Implement PDF text extraction with pdf.js
+- [x] 8. Implement PDF text extraction with pdf.js
   - Install `pdfjs-dist` library
   - Create `lib/pdfProcessor.ts` module
   - Implement `extractPDFText()` function to extract text per page
@@ -79,7 +79,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Handle extraction errors gracefully
   - _Requirements: 2.2_
 
-- [ ] 9. Build PDF upload UI component
+- [x] 9. Build PDF upload UI component
   - Create `/app/library/page.tsx` for book library
   - Build file upload component with drag-and-drop
   - Show upload progress indicator
@@ -91,7 +91,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
 
 ## Phase 4: Content Analysis with Gemini
 
-- [ ] 10. Set up Google Gemini API client
+- [x] 10. Set up Google Gemini API client
   - Install `@google/generative-ai` package
   - Create `lib/gemini.ts` with client configuration
   - Add API key to environment variables
