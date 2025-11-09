@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import HTMLFlipBook from "react-pageflip";
 import PageNavigation from "./PageNavigation";
+import AudioPlayer from "./AudioPlayer";
+import { useToast } from "./ui/ToastContainer";
 
 interface Page {
   id: string;
@@ -55,6 +57,19 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const flipBookRef = useRef<any>(null);
   const saveProgressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const toast = useToast();
+
+  // Audio preloading state
+  const [preloadedAudio, setPreloadedAudio] = useState<Map<string, AudioBuffer>>(new Map());
+  const [isPreloading, setIsPreloading] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const MAX_CACHED_AUDIO = 10; // Maximum number of audio buffers to keep in memory
+
+  // Audio error handler
+  const handleAudioError = useCallback((error: Error) => {
+    console.error("Audio playback error:", error);
+    toast.error(`Audio error: ${error.message}`);
+  }, [toast]);
 
   // Calculate page spread index (0-based, each spread = 2 pages)
   const getPageSpreadIndex = (pageNumber: number): number => {
@@ -99,6 +114,91 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
     }, 2000);
   }, [saveProgress]);
 
+  // Initialize AudioContext
+  const getAudioContext = useCallback(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioContextRef.current;
+  }, []);
+
+  // Preload a single audio file
+  const preloadAudio = useCallback(async (url: string): Promise<AudioBuffer | null> => {
+    try {
+      // Check if already cached
+      if (preloadedAudio.has(url)) {
+        return preloadedAudio.get(url)!;
+      }
+
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioContext = getAudioContext();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+      // Cache the audio buffer
+      setPreloadedAudio((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(url, audioBuffer);
+        return newMap;
+      });
+
+      return audioBuffer;
+    } catch (error) {
+      console.error("Error preloading audio:", url, error);
+      return null;
+    }
+  }, [preloadedAudio, getAudioContext]);
+
+  // Get scenes for the next N page spreads
+  const getUpcomingSpreads = useCallback((fromSpreadIndex: number, count: number): Scene[] => {
+    const upcomingScenes: Scene[] = [];
+    const seenSceneIds = new Set<string>();
+
+    for (let i = 0; i < count; i++) {
+      const spreadIndex = fromSpreadIndex + i;
+      const scene = book.scenes.find((s) => s.pageSpreadIndex === spreadIndex);
+      
+      if (scene && !seenSceneIds.has(scene.id)) {
+        upcomingScenes.push(scene);
+        seenSceneIds.add(scene.id);
+      }
+    }
+
+    return upcomingScenes;
+  }, [book.scenes]);
+
+  // Preload soundscapes for upcoming spreads
+  const preloadUpcomingSoundscapes = useCallback(async (fromSpreadIndex: number) => {
+    setIsPreloading(true);
+    
+    try {
+      // Get next 3 spreads (6 pages)
+      const upcomingScenes = getUpcomingSpreads(fromSpreadIndex, 3);
+      
+      // Preload audio for each scene
+      const preloadPromises = upcomingScenes.flatMap((scene) =>
+        scene.soundscapes.map((soundscape) => preloadAudio(soundscape.audioUrl))
+      );
+
+      await Promise.all(preloadPromises);
+      console.log(`Preloaded ${preloadPromises.length} soundscapes`);
+    } catch (error) {
+      console.error("Error preloading soundscapes:", error);
+    } finally {
+      setIsPreloading(false);
+    }
+  }, [getUpcomingSpreads, preloadAudio]);
+
+  // Evict old audio buffers to manage memory
+  const evictOldAudio = useCallback(() => {
+    if (preloadedAudio.size > MAX_CACHED_AUDIO) {
+      const entries = Array.from(preloadedAudio.entries());
+      const toKeep = entries.slice(-MAX_CACHED_AUDIO);
+      setPreloadedAudio(new Map(toKeep));
+      console.log(`Evicted ${entries.length - toKeep.length} audio buffers from cache`);
+    }
+  }, [preloadedAudio]);
+
   // Detect scene change and save progress when page changes
   useEffect(() => {
     const spreadIndex = getPageSpreadIndex(currentPage);
@@ -119,18 +219,35 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
         mood: scene.mood,
       });
       setCurrentScene(scene);
-      // TODO: Trigger audio crossfade here in future tasks
+      // AudioPlayer will automatically crossfade when currentScene changes
+    } else if (scene && scene.id === currentScene?.id) {
+      // Same scene - AudioPlayer will continue current soundscape
+      console.log("Same scene, continuing soundscape");
     }
 
     // Save reading progress (debounced)
     debouncedSaveProgress(currentPage);
   }, [currentPage, book.scenes, currentScene, debouncedSaveProgress]);
 
-  // Cleanup timer on unmount
+  // Preload on mount
+  useEffect(() => {
+    preloadUpcomingSoundscapes(currentSpreadIndex);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preload on page navigation
+  useEffect(() => {
+    preloadUpcomingSoundscapes(currentSpreadIndex);
+    evictOldAudio();
+  }, [currentSpreadIndex, preloadUpcomingSoundscapes, evictOldAudio]);
+
+  // Cleanup timer and audio context on unmount
   useEffect(() => {
     return () => {
       if (saveProgressTimerRef.current) {
         clearTimeout(saveProgressTimerRef.current);
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
     };
   }, []);
@@ -280,6 +397,14 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
             onPageChange={handlePageChange}
           />
         </div>
+
+        {/* Audio Player */}
+        <div className="mt-6">
+          <AudioPlayer
+            currentScene={currentScene}
+            onAudioError={handleAudioError}
+          />
+        </div>
       </main>
 
       {/* Scene Info (for debugging) */}
@@ -303,6 +428,16 @@ export default function BookReader({ book, initialPage, userId }: BookReaderProp
               ✓ Soundscape available
             </p>
           )}
+          <div className="mt-2 pt-2 border-t border-gray-700">
+            <p className="text-xs text-gray-400">
+              Cached Audio: {preloadedAudio.size}/{MAX_CACHED_AUDIO}
+            </p>
+            {isPreloading && (
+              <p className="text-xs text-blue-400 mt-1">
+                ⏳ Preloading...
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

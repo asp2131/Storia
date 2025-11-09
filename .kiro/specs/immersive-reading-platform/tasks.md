@@ -220,7 +220,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Handle edge cases (no previous audio, same scene)
   - _Requirements: 6.2_
 
-- [-] 24. Build AudioPlayer React component
+- [x] 24. Build AudioPlayer React component
   - Create `components/AudioPlayer.tsx`
   - Integrate Web Audio API wrapper
   - Add play/pause button
@@ -229,7 +229,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Handle component lifecycle (cleanup on unmount)
   - _Requirements: 6.1, 6.3, 6.4, 6.5_
 
-- [ ] 25. Implement soundscape preloading
+- [x] 25. Implement soundscape preloading
   - Create preloading logic in reader component
   - Preload next 3 page spreads (6 pages) on mount
   - Preload on page navigation
@@ -237,7 +237,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Implement cache eviction for memory management
   - _Requirements: 6.6, 10.5_
 
-- [ ] 26. Connect audio player to page navigation
+- [x] 26. Connect audio player to page navigation
   - Detect scene changes on page flip
   - Trigger crossfade when scene changes
   - Continue current soundscape when scene stays same

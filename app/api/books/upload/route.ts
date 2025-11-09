@@ -90,12 +90,14 @@ export async function POST(request: NextRequest) {
     }
 
     // 8. Convert file to buffer
+    console.log(`📄 Processing file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     // 9. Create book record in database (with temporary values)
     let book;
     try {
+      console.log(`💾 Creating book record for: ${title.trim()}`);
       book = await db.book.create({
         data: {
           userId: user.id,
@@ -106,8 +108,9 @@ export async function POST(request: NextRequest) {
           status: "processing",
         },
       });
+      console.log(`✅ Book record created with ID: ${book.id}`);
     } catch (error) {
-      console.error("Database error creating book:", error);
+      console.error("❌ Database error creating book:", error);
       return NextResponse.json(
         {
           error: "Failed to create book record",
@@ -120,12 +123,15 @@ export async function POST(request: NextRequest) {
     // 10. Upload PDF to Cloudflare R2
     let pdfUrl: string;
     try {
+      console.log(`☁️  Uploading PDF to R2 for book: ${book.id}`);
       pdfUrl = await uploadPDFToR2(buffer, book.id);
+      console.log(`✅ PDF uploaded to: ${pdfUrl}`);
     } catch (error) {
       // Rollback: Delete the book record if upload fails
+      console.log(`🔄 Rolling back book record: ${book.id}`);
       await db.book.delete({ where: { id: book.id } }).catch(console.error);
 
-      console.error("Storage error uploading PDF:", error);
+      console.error("❌ Storage error uploading PDF:", error);
       return NextResponse.json(
         {
           error: "Failed to upload PDF",
@@ -141,13 +147,41 @@ export async function POST(request: NextRequest) {
         where: { id: book.id },
         data: { pdfUrl },
       });
+      
+      console.log(`✅ Book created successfully: ${book.id}`);
+      
+      // 12. Trigger background processing (fire and forget)
+      // We don't await this to avoid blocking the response
+      fetch(`${process.env.NEXTAUTH_URL}/api/books/${book.id}/process`, {
+        method: "POST",
+        headers: {
+          cookie: request.headers.get("cookie") || "",
+        },
+      }).catch((error) => {
+        console.error("❌ Failed to trigger book processing:", error);
+      });
+      
+      console.log(`🚀 Processing triggered for book: ${book.id}`);
     } catch (error) {
-      console.error("Database error updating book:", error);
-      // Note: PDF is uploaded but book record is incomplete
-      // This is acceptable as the book status is "processing"
+      console.error("❌ Database error updating book with PDF URL:", error);
+      
+      // PDF is uploaded but book record is incomplete
+      // Mark as failed and return error
+      await db.book.update({
+        where: { id: book.id },
+        data: { status: "failed" },
+      }).catch(console.error);
+      
+      return NextResponse.json(
+        {
+          error: "Failed to complete book upload",
+          message: "PDF uploaded but database update failed. Please try again.",
+        },
+        { status: 500 }
+      );
     }
 
-    // 12. Return success response
+    // 13. Return success response
     return NextResponse.json(
       {
         success: true,
