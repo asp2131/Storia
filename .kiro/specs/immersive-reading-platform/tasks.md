@@ -220,7 +220,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
   - Handle edge cases (no previous audio, same scene)
   - _Requirements: 6.2_
 
-- [ ] 24. Build AudioPlayer React component
+- [-] 24. Build AudioPlayer React component
   - Create `components/AudioPlayer.tsx`
   - Integrate Web Audio API wrapper
   - Add play/pause button
@@ -270,7 +270,7 @@ This implementation plan breaks down the Immersive Reading Platform into discret
 
 ## Phase 10: Polish and Optimization
 
-- [ ] 29. Add loading states and error boundaries
+- [x] 29. Add loading states and error boundaries
   - Create loading skeletons for book library
   - Add loading spinner for book processing
   - Implement React Error Boundaries
