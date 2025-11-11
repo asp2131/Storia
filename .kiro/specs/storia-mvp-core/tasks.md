@@ -8,28 +8,28 @@
   - Configure environment variables for API keys
   - _Requirements: All (foundation)_
 
-- [ ] 2. Implement authentication system
-  - [ ] 2.1 Create users table migration and schema
+- [x] 2. Implement authentication system
+  - [x] 2.1 Create users table migration and schema
     - Define users schema with email, password_hash, subscription_tier, stripe_customer_id
     - Add unique index on email
     - Create migration file
     - _Requirements: 1.1, 1.2, 1.3_
   
-  - [ ] 2.2 Build Accounts context with core auth functions
+  - [x] 2.2 Build Accounts context with core auth functions
     - Implement register_user/1 with password hashing
     - Implement authenticate_user/2 with credential validation
     - Implement generate_reset_token/1 and reset_password/2
     - Add password complexity validation
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
   
-  - [ ] 2.3 Create authentication LiveView pages
+  - [x] 2.3 Create authentication LiveView pages
     - Build registration page with form validation
     - Build login page with session management
     - Build password reset request and confirmation pages
     - Add CSRF protection and rate limiting plug
     - _Requirements: 1.1, 1.2, 1.3_
   
-  - [ ] 2.4 Write authentication tests
+  - [x] 2.4 Write authentication tests
     - Unit tests for Accounts context functions
     - Integration tests for registration and login flows
     - Test password reset flow end-to-end
