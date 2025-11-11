@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Initialize Phoenix project and configure dependencies
+- [x] 1. Initialize Phoenix project and configure dependencies
   - Create new Phoenix 1.7 project with LiveView
   - Configure PostgreSQL database connection
   - Add dependencies: Oban, ExAws, Bcrypt, Stripe, HTTPoison
@@ -29,7 +29,7 @@
     - Add CSRF protection and rate limiting plug
     - _Requirements: 1.1, 1.2, 1.3_
   
-  - [ ]* 2.4 Write authentication tests
+  - [ ] 2.4 Write authentication tests
     - Unit tests for Accounts context functions
     - Integration tests for registration and login flows
     - Test password reset flow end-to-end
@@ -71,7 +71,7 @@
     - Implement delete_file/1 for cleanup
     - _Requirements: 2.1, 10.2_
   
-  - [ ]* 4.3 Test R2 integration
+  - [ ] 4.3 Test R2 integration
     - Test file upload and retrieval
     - Test signed URL generation and expiration
     - Test error handling for network failures
@@ -99,7 +99,7 @@
     - Enqueue SceneAnalyzer job on completion
     - _Requirements: 2.2, 2.3, 2.4, 2.5_
   
-  - [ ]* 5.4 Test PDF processing pipeline
+  - [ ] 5.4 Test PDF processing pipeline
     - Test extraction with various PDF formats
     - Test error handling for corrupted files
     - Test batch page insertion performance
@@ -128,7 +128,7 @@
     - Enqueue SoundscapeMapper job on completion
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   
-  - [ ]* 6.4 Test scene classification
+  - [ ] 6.4 Test scene classification
     - Mock Replicate API responses
     - Test scene boundary detection algorithm
     - Test error handling for API failures
@@ -156,7 +156,7 @@
     - Update book processing_status to "ready_for_review"
     - _Requirements: 3.3, 3.4_
   
-  - [ ]* 7.4 Test soundscape mapping
+  - [ ] 7.4 Test soundscape mapping
     - Test matching algorithm with various descriptors
     - Test confidence score calculation
     - Test flagging logic for low confidence
@@ -232,7 +232,7 @@
     - Persist preferences across sessions
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
   
-  - [ ]* 9.5 Test reader interface
+  - [ ] 9.5 Test reader interface
     - Test page navigation and progress saving
     - Test audio crossfading on scene transitions
     - Test subscription tier restrictions
@@ -269,7 +269,7 @@
     - Track monthly book access for Reader tier
     - _Requirements: 5.3, 5.4, 5.5_
   
-  - [ ]* 10.5 Test subscription flows
+  - [ ] 10.5 Test subscription flows
     - Test checkout session creation
     - Test webhook processing with Stripe CLI
     - Test tier enforcement logic
@@ -291,7 +291,7 @@
     - Display progress indicator in library
     - _Requirements: 8.2, 8.3, 8.4_
   
-  - [ ]* 11.3 Test progress tracking
+  - [ ] 11.3 Test progress tracking
     - Test progress saving on page navigation
     - Test progress loading on book reopen
     - Test cross-device synchronization
@@ -361,7 +361,7 @@
     - _Requirements: 1.1, 5.1, 5.2, 5.3, 5.4, 5.5_
 
 - [ ] 15. Final testing and launch preparation
-  - [ ]* 15.1 Run comprehensive test suite
+  - [ ] 15.1 Run comprehensive test suite
     - Execute all unit tests
     - Run integration tests
     - Perform end-to-end tests with Wallaby
