@@ -11,6 +11,8 @@ defmodule Storia.Accounts.User do
     field :subscription_status, :string
     field :role, Ecto.Enum, values: [:user, :admin], default: :user
 
+    has_many :reading_progress, Storia.Content.ReadingProgress
+
     timestamps()
   end
 

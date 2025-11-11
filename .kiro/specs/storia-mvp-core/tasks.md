@@ -35,8 +35,8 @@
     - Test password reset flow end-to-end
     - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 3. Set up database schema for books and content
-  - [ ] 3.1 Create books, pages, scenes, and soundscapes tables
+- [x] 3. Set up database schema for books and content
+  - [x] 3.1 Create books, pages, scenes, and soundscapes tables
     - Create books migration with all fields and enums
     - Create pages migration with book_id foreign key
     - Create scenes migration with book_id foreign key and descriptors JSONB field
@@ -44,14 +44,14 @@
     - Add all necessary indexes for performance
     - _Requirements: 2.1, 2.2, 3.1, 3.2, 3.3_
   
-  - [ ] 3.2 Create Ecto schemas and changesets
+  - [x] 3.2 Create Ecto schemas and changesets
     - Define Book schema with associations
     - Define Page schema with validations
     - Define Scene schema with embedded descriptors
     - Define Soundscape schema with tags
     - _Requirements: 2.1, 2.2, 3.1, 3.2, 3.3_
   
-  - [ ] 3.3 Create reading_progress table
+  - [x] 3.3 Create reading_progress table
     - Create migration with user_id, book_id, current_page
     - Add unique index on user_id and book_id
     - Define ReadingProgress schema
