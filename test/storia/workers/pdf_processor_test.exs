@@ -4,9 +4,7 @@ defmodule Storia.Workers.PDFProcessorTest do
 
   alias Storia.Workers.PDFProcessor
   alias Storia.{Content, Repo}
-  alias Storia.Content.{Book, Page}
-
-  import Storia.AccountsFixtures
+  alias Storia.Content.Book
 
   describe "perform/1" do
     setup do

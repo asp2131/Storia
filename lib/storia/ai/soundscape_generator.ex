@@ -17,6 +17,8 @@ defmodule Storia.AI.SoundscapeGenerator do
 
   @default_duration 10
   @max_duration 30
+  @max_audio_size 50 * 1024 * 1024
+  @download_timeout 30_000
 
   @doc """
   Generate a soundscape for a scene.
@@ -151,28 +153,97 @@ defmodule Storia.AI.SoundscapeGenerator do
   defp upload_to_storage(audio_url, scene) do
     Logger.info("Downloading and uploading audio to R2 for scene #{scene.id}")
 
-    # Download the audio file from Replicate
-    case HTTPoison.get(audio_url, [], follow_redirect: true) do
+    with {:ok, :valid_url} <- validate_audio_url(audio_url),
+         {:ok, audio_data} <- download_audio_with_limits(audio_url),
+         :ok <- validate_audio_content(audio_data),
+         {:ok, r2_url} <- upload_audio_to_r2(audio_data, scene) do
+      {:ok, r2_url}
+    end
+  end
+
+  defp validate_audio_url(url) do
+    uri = URI.parse(url)
+
+    cond do
+      uri.scheme != "https" ->
+        {:error, :insecure_url}
+
+      not valid_replicate_domain?(uri.host) ->
+        {:error, :untrusted_domain}
+
+      true ->
+        {:ok, :valid_url}
+    end
+  end
+
+  defp valid_replicate_domain?(nil), do: false
+
+  defp valid_replicate_domain?(host) do
+    String.contains?(host, ["replicate.com", "replicate.delivery"])
+  end
+
+  defp download_audio_with_limits(url) do
+    Logger.info("Downloading audio from #{url}")
+
+    options = [
+      follow_redirect: true,
+      max_redirect: 3,
+      recv_timeout: @download_timeout,
+      timeout: @download_timeout
+    ]
+
+    case HTTPoison.get(url, [], options) do
       {:ok, %HTTPoison.Response{status_code: 200, body: audio_data}} ->
-        # Generate a unique key for R2
-        key = "soundscapes/scene_#{scene.id}_#{:os.system_time(:millisecond)}.mp3"
-
-        # Upload to R2
-        case Storage.upload_audio(audio_data, key, "audio/mpeg") do
-          {:ok, r2_url} ->
-            Logger.info("Successfully uploaded audio to R2: #{r2_url}")
-            {:ok, r2_url}
-
-          {:error, reason} ->
-            Logger.error("Failed to upload audio to R2: #{inspect(reason)}")
-            {:error, {:upload_failed, reason}}
+        if byte_size(audio_data) > @max_audio_size do
+          Logger.error("Downloaded audio too large: #{byte_size(audio_data)} bytes")
+          {:error, {:file_too_large, byte_size(audio_data)}}
+        else
+          {:ok, audio_data}
         end
 
       {:ok, %HTTPoison.Response{status_code: status}} ->
         {:error, {:download_failed, status}}
 
+      {:error, %HTTPoison.Error{reason: :timeout}} ->
+        {:error, :download_timeout}
+
       {:error, %HTTPoison.Error{reason: reason}} ->
         {:error, {:download_error, reason}}
+    end
+  end
+
+  defp validate_audio_content(data) when byte_size(data) < 4 do
+    {:error, :invalid_audio_format}
+  end
+
+  defp validate_audio_content(data) do
+    # Check for MP3 or WAV magic numbers
+    case data do
+      # MP3 formats
+      <<0xFF, 0xFB, _::binary>> -> :ok
+      <<0xFF, 0xF3, _::binary>> -> :ok
+      <<0xFF, 0xF2, _::binary>> -> :ok
+      # WAV/RIFF format
+      <<"RIFF", _::binary>> -> :ok
+      # ID3 tag (common in MP3)
+      <<"ID3", _::binary>> -> :ok
+      _ -> {:error, :invalid_audio_format}
+    end
+  end
+
+  defp upload_audio_to_r2(audio_data, scene) do
+    # Generate truly unique key using crypto
+    unique_id = :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+    key = "soundscapes/scene_#{scene.id}_#{unique_id}.mp3"
+
+    case Storage.upload_audio_data(audio_data, key, "audio/mpeg") do
+      {:ok, r2_url} ->
+        Logger.info("Successfully uploaded audio to R2: #{r2_url}")
+        {:ok, r2_url}
+
+      {:error, reason} ->
+        Logger.error("Failed to upload audio to R2: #{inspect(reason)}")
+        {:error, {:upload_failed, reason}}
     end
   end
 

@@ -71,6 +71,12 @@ config :storia, Oban,
     default: 10
   ]
 
+# Configure AI Workers
+config :storia,
+  max_classification_concurrency: 5,
+  classification_failure_threshold: 0.3,
+  scene_boundary_threshold: 0.6
+
 # Configure ExAws for Cloudflare R2
 config :ex_aws,
   json_codec: Jason,

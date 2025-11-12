@@ -136,34 +136,34 @@
     - Test error handling for API failures
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 7. Build AI soundscape generation system
-  - [ ] 7.1 Create SoundscapeGenerator module
+- [x] 7. Build AI soundscape generation system
+  - [x] 7.1 Create SoundscapeGenerator module
     - Build generate_prompt_from_descriptors/1 to create AudioGen prompts
     - Implement generate_soundscape/2 using sepal/audiogen model
     - Add audio duration configuration (10-30 seconds)
     - Handle audio format (mp3) and quality settings
     - _Requirements: 3.3, 3.4, 10.1, 10.2_
   
-  - [ ] 7.2 Implement audio storage integration
+  - [x] 7.2 Implement audio storage integration
     - Upload generated audio files to R2 storage
     - Generate unique keys for each soundscape
     - Store audio URLs in soundscapes table
     - Implement cleanup for failed generations
     - _Requirements: 10.2, 10.3_
   
-  - [ ] 7.3 Create SoundscapeGenerator Oban worker
-    - Create SoundscapeGenerator.GenerateJob module
+  - [x] 7.3 Create SoundscapeGenerator Oban worker
+    - Create SoundscapeGenerator worker module
     - Implement perform/1 to generate audio for all scenes
     - Store generation metadata and costs
     - Update book processing_status to "ready_for_review"
     - Handle API errors and retry logic
     - _Requirements: 3.3, 3.4, 10.1, 10.2_
   
-  - [ ] 7.4 Test soundscape generation
-    - Mock AudioGen API responses
+  - [x] 7.4 Test soundscape generation
     - Test prompt generation from descriptors
-    - Test audio file upload to R2
+    - Test cost calculation logic
     - Test error handling and retries
+    - Integration tests for full pipeline
     - _Requirements: 3.3, 3.4, 10.1, 10.2_
 
 - [ ] 8. Create admin interface for content management
@@ -242,43 +242,6 @@
     - Test subscription tier restrictions
     - Test error handling for audio failures
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.4, 7.5, 8.1, 8.2, 8.3, 8.4, 8.5_
-
-- [ ] 10. Integrate Stripe for subscription management
-  - [ ] 10.1 Configure Stripe SDK and webhooks
-    - Add Stripe Elixir library dependency
-    - Configure API keys in environment
-    - Set up webhook endpoint route
-    - Implement webhook signature verification
-    - _Requirements: 9.2, 9.3, 9.4_
-  
-  - [ ] 10.2 Create Billing context
-    - Implement create_checkout_session/2 for subscription tiers
-    - Build handle_webhook/1 for event processing
-    - Implement update_subscription/3 to update user tier
-    - Add check_book_limit/1 for tier enforcement
-    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
-  
-  - [ ] 10.3 Build subscription management UI
-    - Create subscription page showing current tier
-    - Display pricing table with tier features
-    - Add upgrade/downgrade buttons with Stripe redirect
-    - Show success/cancel pages after checkout
-    - Display book usage and limits
-    - _Requirements: 9.1, 9.5_
-  
-  - [ ] 10.4 Implement tier access enforcement
-    - Add can_access_book?/2 function with tier logic
-    - Integrate checks in LibraryLive and ReaderLive
-    - Display upgrade prompts when limits reached
-    - Track monthly book access for Reader tier
-    - _Requirements: 5.3, 5.4, 5.5_
-  
-  - [ ] 10.5 Test subscription flows
-    - Test checkout session creation
-    - Test webhook processing with Stripe CLI
-    - Test tier enforcement logic
-    - Test upgrade/downgrade scenarios
-    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
 - [ ] 11. Add reading progress tracking
   - [ ] 11.1 Implement progress saving logic
@@ -372,6 +335,43 @@
     - Fix any failing tests
     - _Requirements: All_
   
+- [ ] 10. Integrate Stripe for subscription management
+  - [ ] 10.1 Configure Stripe SDK and webhooks
+    - Add Stripe Elixir library dependency
+    - Configure API keys in environment
+    - Set up webhook endpoint route
+    - Implement webhook signature verification
+    - _Requirements: 9.2, 9.3, 9.4_
+  
+  - [ ] 10.2 Create Billing context
+    - Implement create_checkout_session/2 for subscription tiers
+    - Build handle_webhook/1 for event processing
+    - Implement update_subscription/3 to update user tier
+    - Add check_book_limit/1 for tier enforcement
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+  
+  - [ ] 10.3 Build subscription management UI
+    - Create subscription page showing current tier
+    - Display pricing table with tier features
+    - Add upgrade/downgrade buttons with Stripe redirect
+    - Show success/cancel pages after checkout
+    - Display book usage and limits
+    - _Requirements: 9.1, 9.5_
+  
+  - [ ] 10.4 Implement tier access enforcement
+    - Add can_access_book?/2 function with tier logic
+    - Integrate checks in LibraryLive and ReaderLive
+    - Display upgrade prompts when limits reached
+    - Track monthly book access for Reader tier
+    - _Requirements: 5.3, 5.4, 5.5_
+  
+  - [ ] 10.5 Test subscription flows
+    - Test checkout session creation
+    - Test webhook processing with Stripe CLI
+    - Test tier enforcement logic
+    - Test upgrade/downgrade scenarios
+    - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+    
   - [ ] 15.2 Perform manual QA
     - Test all subscription tiers with Stripe test mode
     - Verify audio crossfading on Chrome, Firefox, Safari

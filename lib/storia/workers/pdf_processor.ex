@@ -42,6 +42,10 @@ defmodule Storia.Workers.PDFProcessor do
       Logger.info("Successfully processed PDF for book_id: #{book_id}")
       :ok
     else
+      {:error, :book_not_found} = error ->
+        Logger.error("Failed to process PDF for book_id: #{book_id}, reason: :book_not_found")
+        error
+
       {:error, reason} = error ->
         Logger.error("Failed to process PDF for book_id: #{book_id}, reason: #{inspect(reason)}")
         Content.update_book_status(book_id, "failed", format_error(reason))

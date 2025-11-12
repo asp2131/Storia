@@ -54,6 +54,28 @@ defmodule Storia.Storage do
   end
 
   @doc """
+  Uploads audio data (binary) directly to R2 storage.
+
+  ## Parameters
+    - audio_data: Binary audio data
+    - key: The full R2 key path
+    - content_type: MIME type of the audio file
+
+  ## Returns
+    - {:ok, url} on success
+    - {:error, reason} on failure
+  """
+  def upload_audio_data(audio_data, key, content_type) when is_binary(audio_data) do
+    audio_data
+    |> S3.put_object(@bucket, key, content_type: content_type)
+    |> ExAws.request()
+    |> case do
+      {:ok, _} -> {:ok, build_public_url(key)}
+      {:error, reason} -> {:error, "Upload failed: #{inspect(reason)}"}
+    end
+  end
+
+  @doc """
   Generates a signed URL for secure streaming of files from R2.
   
   ## Parameters
