@@ -77,29 +77,29 @@
     - Test error handling for network failures
     - _Requirements: 2.1, 10.2_
 
-- [ ] 5. Build PDF processing pipeline
-  - [ ] 5.1 Set up Oban for background jobs
+- [x] 5. Build PDF processing pipeline
+  - [x] 5.1 Set up Oban for background jobs
     - Add Oban dependency and configure queues
     - Create migration for Oban tables
     - Configure pdf_processing queue with concurrency 2
     - _Requirements: 2.2, 2.3_
   
-  - [ ] 5.2 Create Node.js PDF extraction script
-    - Install pdf.js-extract npm package
+  - [x] 5.2 Create Node.js PDF extraction script
+    - Install pdf-parse npm package
     - Write extraction script that outputs JSON
     - Add error handling for corrupted PDFs
     - Test with sample public domain PDFs
     - _Requirements: 2.2, 2.3_
   
-  - [ ] 5.3 Implement PDFProcessor Oban worker
-    - Create PDFProcessor.ExtractJob module
+  - [x] 5.3 Implement PDFProcessor Oban worker
+    - Create PDFProcessor worker module
     - Implement perform/1 to call Node.js script via System.cmd
     - Parse JSON output and batch insert pages
     - Update book processing_status on success/failure
     - Enqueue SceneAnalyzer job on completion
     - _Requirements: 2.2, 2.3, 2.4, 2.5_
   
-  - [ ] 5.4 Test PDF processing pipeline
+  - [x] 5.4 Test PDF processing pipeline
     - Test extraction with various PDF formats
     - Test error handling for corrupted files
     - Test batch page insertion performance

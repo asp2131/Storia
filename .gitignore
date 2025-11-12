@@ -34,6 +34,8 @@ storia-*.tar
 # In case you use Node.js/npm, you want to ignore these.
 npm-debug.log
 /assets/node_modules/
+/scripts/pdf_processor/node_modules/
+package-lock.json
 
 # Environment variables
 .env
