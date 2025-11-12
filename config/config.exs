@@ -71,11 +71,16 @@ config :storia, Oban,
     default: 10
   ]
 
-# Configure ExAws
+# Configure ExAws for Cloudflare R2
 config :ex_aws,
   json_codec: Jason,
   access_key_id: [{:system, "R2_ACCESS_KEY_ID"}],
   secret_access_key: [{:system, "R2_SECRET_ACCESS_KEY"}],
+  region: "auto"
+
+config :ex_aws, :s3,
+  scheme: "https://",
+  host: System.get_env("R2_ENDPOINT", ""),
   region: "auto"
 
 # Import environment specific config. This must remain at the bottom

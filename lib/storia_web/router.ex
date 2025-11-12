@@ -43,7 +43,9 @@ defmodule StoriaWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [{StoriaWeb.UserAuth, :ensure_authenticated}] do
-      # Add authenticated routes here
+      # TODO: Implement UserSettingsLive
+      # live "/users/settings", UserSettingsLive, :edit
+      # live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
     end
   end
 
@@ -51,6 +53,9 @@ defmodule StoriaWeb.Router do
     pipe_through [:browser]
 
     delete "/users/log_out", UserSessionController, :delete
+    # TODO: Implement UserConfirmationController
+    # get "/users/confirm/:token", UserConfirmationController, :edit
+    # post "/users/confirm/:token", UserConfirmationController, :update
   end
 
   # Other scopes may use custom stacks.

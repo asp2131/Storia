@@ -57,21 +57,21 @@
     - Define ReadingProgress schema
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 4. Implement Cloudflare R2 storage integration
-  - [ ] 4.1 Configure ExAws for R2 connectivity
+- [x] 4. Implement Cloudflare R2 storage integration
+  - [x] 4.1 Configure ExAws for R2 connectivity
     - Add ExAws and ExAws.S3 dependencies
     - Configure R2 endpoint and credentials in config files
     - Create Storia.Storage module with upload/download functions
     - _Requirements: 2.1, 10.2_
   
-  - [ ] 4.2 Build file upload utilities
+  - [x] 4.2 Build file upload utilities
     - Implement upload_pdf/2 function with unique key generation
     - Implement upload_audio/3 function with type-based paths
     - Implement generate_signed_url/2 for secure streaming
     - Implement delete_file/1 for cleanup
     - _Requirements: 2.1, 10.2_
   
-  - [ ] 4.3 Test R2 integration
+  - [x] 4.3 Test R2 integration
     - Test file upload and retrieval
     - Test signed URL generation and expiration
     - Test error handling for network failures
