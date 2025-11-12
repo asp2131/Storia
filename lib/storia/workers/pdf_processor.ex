@@ -181,15 +181,11 @@ defmodule Storia.Workers.PDFProcessor do
 
   # Enqueue the SceneAnalyzer job
   defp enqueue_scene_analyzer(book_id) do
-    # This will be implemented when we create the SceneAnalyzer worker
-    # For now, just return ok
-    Logger.info("Would enqueue SceneAnalyzer for book_id: #{book_id}")
-    {:ok, nil}
+    Logger.info("Enqueueing SceneAnalyzer for book_id: #{book_id}")
 
-    # When SceneAnalyzer is implemented:
-    # %{book_id: book_id}
-    # |> Storia.Workers.SceneAnalyzer.new()
-    # |> Oban.insert()
+    %{book_id: book_id}
+    |> Storia.Workers.SceneAnalyzer.new()
+    |> Oban.insert()
   end
 
   # Format error for storage

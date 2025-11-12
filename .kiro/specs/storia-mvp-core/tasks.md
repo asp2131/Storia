@@ -105,8 +105,8 @@
     - Test batch page insertion performance
     - _Requirements: 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 6. Implement AI scene classification and soundscape generation
-  - [ ] 6.1 Create Replicate API client
+- [x] 6. Implement AI scene classification and soundscape generation
+  - [x] 6.1 Create Replicate API client
     - Build Storia.AI.ReplicateClient module
     - Implement create_prediction/2 for Gemini Flash and AudioGen
     - Implement get_prediction/1 for polling results
@@ -114,24 +114,25 @@
     - Support both text and audio generation models
     - _Requirements: 3.1, 3.2_
   
-  - [ ] 6.2 Build SceneClassifier module
+  - [x] 6.2 Build SceneClassifier module
     - Implement classify_page/1 with AI prompt
     - Parse JSON response into descriptor map
     - Implement detect_scene_boundaries/1 with similarity algorithm
     - Implement create_scenes/3 to group pages
     - _Requirements: 3.1, 3.2, 3.3_
   
-  - [ ] 6.3 Create SceneAnalyzer Oban worker
-    - Create SceneAnalyzer.AnalyzeJob module
+  - [x] 6.3 Create SceneAnalyzer Oban worker
+    - Create SceneAnalyzer worker module
     - Implement perform/1 to process all pages
     - Calculate and store processing cost
-    - Handle API errors and flag for manual review
+    - Handle API errors with retry logic
     - Enqueue SoundscapeGenerator job on completion
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   
-  - [ ] 6.4 Test scene classification
-    - Mock Replicate API responses
+  - [x] 6.4 Test scene classification
     - Test scene boundary detection algorithm
+    - Test scene creation from pages
+    - Test prompt generation for soundscapes
     - Test error handling for API failures
     - _Requirements: 3.1, 3.2, 3.3_
 
