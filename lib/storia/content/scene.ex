@@ -3,6 +3,7 @@ defmodule Storia.Content.Scene do
   import Ecto.Changeset
 
   schema "scenes" do
+    field :scene_number, :integer
     field :start_page, :integer
     field :end_page, :integer
     field :descriptors, :map, default: %{}
@@ -17,8 +18,9 @@ defmodule Storia.Content.Scene do
   @doc false
   def changeset(scene, attrs) do
     scene
-    |> cast(attrs, [:start_page, :end_page, :descriptors, :book_id])
+    |> cast(attrs, [:scene_number, :start_page, :end_page, :descriptors, :book_id])
     |> validate_required([:start_page, :end_page, :book_id])
+    |> validate_number(:scene_number, greater_than: 0)
     |> validate_number(:start_page, greater_than: 0)
     |> validate_number(:end_page, greater_than: 0)
     |> validate_page_range()
@@ -41,7 +43,7 @@ defmodule Storia.Content.Scene do
     descriptors = get_field(changeset, :descriptors)
 
     if descriptors && is_map(descriptors) do
-      valid_keys = ["setting", "mood", "weather", "time_of_day", "intensity", "confidence"]
+      valid_keys = ["setting", "mood", "weather", "time_of_day", "activity_level", "atmosphere"]
       descriptor_keys = Map.keys(descriptors)
 
       if Enum.all?(descriptor_keys, &(&1 in valid_keys)) do

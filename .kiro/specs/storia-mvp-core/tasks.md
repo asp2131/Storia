@@ -105,12 +105,13 @@
     - Test batch page insertion performance
     - _Requirements: 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 6. Implement AI scene classification
+- [ ] 6. Implement AI scene classification and soundscape generation
   - [ ] 6.1 Create Replicate API client
     - Build Storia.AI.ReplicateClient module
-    - Implement create_prediction/2 for Gemini Flash
+    - Implement create_prediction/2 for Gemini Flash and AudioGen
     - Implement get_prediction/1 for polling results
     - Add retry logic with exponential backoff
+    - Support both text and audio generation models
     - _Requirements: 3.1, 3.2_
   
   - [ ] 6.2 Build SceneClassifier module
@@ -125,7 +126,7 @@
     - Implement perform/1 to process all pages
     - Calculate and store processing cost
     - Handle API errors and flag for manual review
-    - Enqueue SoundscapeMapper job on completion
+    - Enqueue SoundscapeGenerator job on completion
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   
   - [ ] 6.4 Test scene classification
@@ -134,33 +135,35 @@
     - Test error handling for API failures
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 7. Build soundscape mapping system
-  - [ ] 7.1 Create curated soundscape library seeder
-    - Define 25-30 soundscape entries with tags
-    - Create seed script to populate soundscapes table
-    - Upload audio files to R2 curated folder
-    - Store audio URLs and tag metadata
-    - _Requirements: 10.1, 10.2, 10.3_
+- [ ] 7. Build AI soundscape generation system
+  - [ ] 7.1 Create SoundscapeGenerator module
+    - Build generate_prompt_from_descriptors/1 to create AudioGen prompts
+    - Implement generate_soundscape/2 using sepal/audiogen model
+    - Add audio duration configuration (10-30 seconds)
+    - Handle audio format (mp3) and quality settings
+    - _Requirements: 3.3, 3.4, 10.1, 10.2_
   
-  - [ ] 7.2 Implement Mapper module with matching algorithm
-    - Build calculate_match_score/2 with weighted similarity
-    - Implement find_best_match/1 to select soundscape
-    - Add confidence threshold logic (0.7)
-    - Implement flag_for_review/2 for low confidence
-    - _Requirements: 3.3, 3.4_
+  - [ ] 7.2 Implement audio storage integration
+    - Upload generated audio files to R2 storage
+    - Generate unique keys for each soundscape
+    - Store audio URLs in soundscapes table
+    - Implement cleanup for failed generations
+    - _Requirements: 10.2, 10.3_
   
-  - [ ] 7.3 Create SoundscapeMapper Oban worker
-    - Create SoundscapeMapper.MapJob module
-    - Implement perform/1 to map all scenes
-    - Store mappings with confidence scores
+  - [ ] 7.3 Create SoundscapeGenerator Oban worker
+    - Create SoundscapeGenerator.GenerateJob module
+    - Implement perform/1 to generate audio for all scenes
+    - Store generation metadata and costs
     - Update book processing_status to "ready_for_review"
-    - _Requirements: 3.3, 3.4_
+    - Handle API errors and retry logic
+    - _Requirements: 3.3, 3.4, 10.1, 10.2_
   
-  - [ ] 7.4 Test soundscape mapping
-    - Test matching algorithm with various descriptors
-    - Test confidence score calculation
-    - Test flagging logic for low confidence
-    - _Requirements: 3.3, 3.4_
+  - [ ] 7.4 Test soundscape generation
+    - Mock AudioGen API responses
+    - Test prompt generation from descriptors
+    - Test audio file upload to R2
+    - Test error handling and retries
+    - _Requirements: 3.3, 3.4, 10.1, 10.2_
 
 - [ ] 8. Create admin interface for content management
   - [ ] 8.1 Build admin authentication and authorization
