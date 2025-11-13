@@ -286,4 +286,19 @@ defmodule Storia.Accounts do
   """
   def admin?(%User{role: :admin}), do: true
   def admin?(_), do: false
+
+  @doc """
+  Updates a user's role.
+
+  ## Examples
+
+      iex> update_user_role(user, :admin)
+      {:ok, %User{}}
+
+  """
+  def update_user_role(%User{} = user, role) when role in [:user, :admin] do
+    user
+    |> Ecto.Changeset.change(%{role: role})
+    |> Repo.update()
+  end
 end
