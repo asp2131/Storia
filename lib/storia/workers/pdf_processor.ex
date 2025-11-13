@@ -17,7 +17,7 @@ defmodule Storia.Workers.PDFProcessor do
 
   require Logger
 
-  alias Storia.{Content, Repo}
+  alias Storia.{Content, Repo, Storage}
   alias Storia.Content.Book
 
   @doc """
@@ -71,13 +71,18 @@ defmodule Storia.Workers.PDFProcessor do
   end
 
   defp get_pdf_path(%Book{pdf_url: pdf_url}, _args) when is_binary(pdf_url) do
-    # For now, assume pdf_url is a local path or R2 key
-    # In production, you'd download from R2 using Storia.Storage
-    # For MVP, we'll support local paths
-    if File.exists?(pdf_url) do
-      {:ok, pdf_url}
-    else
-      {:error, :pdf_url_invalid}
+    cond do
+      # Check if it's a local file path (for testing)
+      File.exists?(pdf_url) ->
+        {:ok, pdf_url}
+
+      # Check if it's an R2 URL
+      String.starts_with?(pdf_url, "https://") ->
+        download_from_r2(pdf_url)
+
+      # Invalid path
+      true ->
+        {:error, :pdf_url_invalid}
     end
   end
 
@@ -192,6 +197,41 @@ defmodule Storia.Workers.PDFProcessor do
     |> Oban.insert()
   end
 
+  # Download PDF from R2 to local temp file
+  defp download_from_r2(r2_url) do
+    Logger.info("Downloading PDF from R2: #{r2_url}")
+
+    # Extract the key from the URL
+    key = Storage.extract_key_from_url(r2_url)
+
+    if key do
+      # Create temp file path
+      temp_path = Path.join(System.tmp_dir!(), "#{Ecto.UUID.generate()}.pdf")
+
+      # Generate signed URL for download
+      case Storage.generate_signed_url(key) do
+        {:ok, signed_url} ->
+          # Download using HTTPoison
+          case HTTPoison.get(signed_url) do
+            {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+              File.write!(temp_path, body)
+              {:ok, temp_path}
+
+            {:ok, %HTTPoison.Response{status_code: status}} ->
+              {:error, {:download_failed, "HTTP #{status}"}}
+
+            {:error, %HTTPoison.Error{reason: reason}} ->
+              {:error, {:download_failed, reason}}
+          end
+
+        {:error, reason} ->
+          {:error, {:signed_url_failed, reason}}
+      end
+    else
+      {:error, :invalid_r2_url}
+    end
+  end
+
   # Format error for storage
   defp format_error({:extraction_failed, output}), do: "Extraction failed: #{output}"
   defp format_error({:extraction_error, error}), do: "Extraction error: #{error}"
@@ -203,6 +243,9 @@ defmodule Storia.Workers.PDFProcessor do
   defp format_error(:no_pages_inserted), do: "No pages were inserted"
   defp format_error(:invalid_pages_data), do: "Invalid pages data"
   defp format_error(:invalid_metadata), do: "Invalid metadata"
+  defp format_error(:invalid_r2_url), do: "Invalid R2 URL"
+  defp format_error({:download_failed, reason}), do: "Download failed: #{inspect(reason)}"
+  defp format_error({:signed_url_failed, reason}), do: "Signed URL generation failed: #{inspect(reason)}"
   defp format_error({:update_failed, changeset}), do: "Update failed: #{inspect(changeset.errors)}"
   defp format_error(reason), do: inspect(reason)
 end

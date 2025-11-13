@@ -1,0 +1,63 @@
+<div class="relative flex min-h-screen w-full bg-background-light dark:bg-background-dark">
+  <!-- Sidebar -->
+  <aside class="flex flex-col w-64 bg-[#111422] p-4 text-white shrink-0">
+    <div class="flex flex-col gap-4">
+      <!-- User Profile -->
+      <div class="flex items-center gap-3">
+        <div class="bg-primary bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold">
+          <%= String.first(@current_user.email) |> String.upcase() %>
+        </div>
+        <div class="flex flex-col">
+          <h1 class="text-white text-base font-medium leading-normal">
+            <%= @current_user.email |> String.split("@") |> List.first() %>
+          </h1>
+          <p class="text-[#929bc9] text-sm font-normal leading-normal">Administrator</p>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex flex-col gap-2 mt-4">
+        <.link
+          navigate={~p"/admin/books"}
+          class={"flex items-center gap-3 px-3 py-2 rounded-lg transition-colors #{if @active_tab == :books, do: "bg-[#232948]", else: "hover:bg-[#232948]"}"}
+        >
+          <.icon name="hero-book-open" class="w-5 h-5" />
+          <p class="text-white text-sm font-medium leading-normal">Books</p>
+        </.link>
+
+        <.link
+          navigate={~p"/admin/soundscapes"}
+          class={"flex items-center gap-3 px-3 py-2 rounded-lg transition-colors #{if @active_tab == :soundscapes, do: "bg-[#232948]", else: "hover:bg-[#232948]"}"}
+        >
+          <.icon name="hero-musical-note" class="w-5 h-5" />
+          <p class="text-white text-sm font-medium leading-normal">Soundscapes</p>
+        </.link>
+
+        <.link
+          navigate={~p"/"}
+          class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#232948] transition-colors"
+        >
+          <.icon name="hero-home" class="w-5 h-5" />
+          <p class="text-white text-sm font-medium leading-normal">User View</p>
+        </.link>
+      </div>
+    </div>
+
+    <!-- Bottom Actions -->
+    <div class="mt-auto flex flex-col gap-4">
+      <.link
+        href={~p"/users/log_out"}
+        method="delete"
+        class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors"
+      >
+        <span class="truncate">Log Out</span>
+      </.link>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-8 overflow-auto">
+    <.flash_group flash={@flash} />
+    <%= @inner_content %>
+  </main>
+</div>

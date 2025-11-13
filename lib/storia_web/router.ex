@@ -17,6 +17,10 @@ defmodule StoriaWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :admin do
+    plug StoriaWeb.Plugs.RequireAdmin
+  end
+
   scope "/", StoriaWeb do
     pipe_through :browser
 
@@ -56,6 +60,19 @@ defmodule StoriaWeb.Router do
     # TODO: Implement UserConfirmationController
     # get "/users/confirm/:token", UserConfirmationController, :edit
     # post "/users/confirm/:token", UserConfirmationController, :update
+  end
+
+  # Admin routes
+  scope "/admin", StoriaWeb.AdminLive do
+    pipe_through [:browser, :require_authenticated_user, :admin]
+
+    live_session :admin,
+      on_mount: [{StoriaWeb.UserAuth, :ensure_authenticated}],
+      layout: {StoriaWeb.Layouts, :admin} do
+      live "/books", BookList, :index
+      live "/books/:id/scenes", SceneReview, :show
+      live "/soundscapes", LibraryManager, :index
+    end
   end
 
   # Other scopes may use custom stacks.

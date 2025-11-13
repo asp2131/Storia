@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Book &amp; Soundscape Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1337ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101322",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "Noto Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full">
+<aside class="flex flex-col w-64 bg-[#111422] p-4 text-white shrink-0">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDznVVe_2O_VT5nthZsCFZj0scWZg-lEm-M9X40D7KRe6N5zzKE7yLwfn41FZGhYY0Q_nBXJ0RtB6NZarpXGta4HDEvIRjux3uLIvanOv_ZXJgj4FFI-3yryeLBuErkRQR0Khsp_uFl2985u_GygJJR0EQrPa8V4bNQnXHYjGbDu7DBFO3sVr5MxFQfeokDX6NMVsIvrxy-oBZ43Mi5W2pD3E3C2cZsOZE2HeFLrHyYiNtPVkJoQccMgn5rzkJwSGQSObrQb1HnCdg");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-medium leading-normal">Alex Doe</h1>
+<p class="text-[#929bc9] text-sm font-normal leading-normal">Administrator</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 mt-4">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#232948] transition-colors" href="#">
+<span class="material-symbols-outlined text-white">dashboard</span>
+<p class="text-white text-sm font-medium leading-normal">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#232948]" href="#">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<p class="text-white text-sm font-medium leading-normal">Books</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#232948] transition-colors" href="#">
+<span class="material-symbols-outlined text-white">music_note</span>
+<p class="text-white text-sm font-medium leading-normal">Soundscapes</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#232948] transition-colors" href="#">
+<span class="material-symbols-outlined text-white">group</span>
+<p class="text-white text-sm font-medium leading-normal">Users</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#232948] transition-colors" href="#">
+<span class="material-symbols-outlined text-white">settings</span>
+<p class="text-white text-sm font-medium leading-normal">Settings</p>
+</a>
+</div>
+</div>
+<div class="mt-auto flex flex-col gap-4">
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+<span class="truncate">Log Out</span>
+</button>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#232948] transition-colors" href="#">
+<span class="material-symbols-outlined text-white">support_agent</span>
+<p class="text-white text-sm font-medium leading-normal">Help &amp; Support</p>
+</a>
+</div>
+</div>
+</aside>
+<main class="flex-1 p-8">
+<div class="w-full max-w-7xl mx-auto">
+<div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+<div class="flex flex-col gap-2">
+<p class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Book &amp; Soundscape Management</p>
+<p class="text-gray-500 dark:text-[#929bc9] text-base font-normal leading-normal">Review, edit, and manage AI-generated soundscapes for all processed books.</p>
+</div>
+<button class="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-base">add</span>
+<span class="truncate">Add New Book</span>
+</button>
+</div>
+<div class="mb-6">
+<label class="flex flex-col min-w-40 h-12 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-gray-400 dark:text-[#929bc9] flex bg-white dark:bg-[#232948] items-center justify-center pl-4 rounded-l-lg border border-gray-200 dark:border-[#323b67] border-r-0">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-gray-200 dark:border-[#323b67] bg-white dark:bg-[#232948] h-full placeholder:text-gray-400 dark:placeholder:text-[#929bc9] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal" placeholder="Search by book title or author..." value=""/>
+</div>
+</label>
+</div>
+<div class="mb-8 @container">
+<div class="flex overflow-hidden rounded-lg border border-gray-200 dark:border-[#323b67] bg-white dark:bg-[#111422]">
+<table class="w-full">
+<thead class="bg-gray-50 dark:bg-[#191e33]">
+<tr>
+<th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-2/5">Book Title</th>
+<th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-1/5">Author</th>
+<th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-1/5">Processing Status</th>
+<th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-1/5">Last Updated</th>
+<th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-200 dark:divide-[#323b67]">
+<tr class="hover:bg-gray-50 dark:hover:bg-[#191e33]">
+<td class="h-[72px] px-4 py-2 text-gray-900 dark:text-white text-sm font-normal leading-normal">The Midnight Library</td>
+<td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">Matt Haig</td>
+<td class="h-[72px] px-4 py-2">
+<div class="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-400">
+<span class="size-1.5 rounded-full bg-yellow-500"></span> Needs Review
+                                        </div>
+</td>
+<td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">2023-10-26</td>
+<td class="h-[72px] px-4 py-2 text-primary dark:text-blue-400 text-sm font-bold leading-normal tracking-[0.015em]"><a class="hover:underline" href="#">View Scenes</a></td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-[#191e33]">
+<td class="h-[72px] px-4 py-2 text-gray-900 dark:text-white text-sm font-normal leading-normal">Project Hail Mary</td>
+<td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">Andy Weir</td>
+<td class="h-[72px] px-4 py-2">
+<div class="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-400">
+<span class="size-1.5 rounded-full bg-green-500"></span> Processed
+                                        </div>
+</td>
+<td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">2023-10-25</td>
+<td class="h-[72px] px-4 py-2 text-primary dark:text-blue-400 text-sm font-bold leading-normal tracking-[0.015em]"><a class="hover:underline" href="#">View Scenes</a></td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-[#191e33]">
+<td class="h-[72px] px-4 py-2 text-gray-900 dark:text-white text-sm font-normal leading-normal">Dune</td>
+<td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">Frank Herbert</td>
+<td class="h-[72px] px-4 py-2">
+<div class="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400">
+<span class="size-1.5 rounded-full bg-red-500"></span> Error
+                                        </div>
+</td>
+<td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">2023-10-24</td>
+<td class="h-[72px] px-4 py-2 text-primary dark:text-blue-400 text-sm font-bold leading-normal tracking-[0.015em]"><a class="hover:underline" href="#">View Scenes</a></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+<div class="relative w-full max-w-sm">
+<label class="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]" for="book-select">Scenes for:</label>
+<select class="mt-1 appearance-none w-full bg-white dark:bg-[#111422] border border-gray-200 dark:border-[#323b67] text-gray-900 dark:text-white text-lg font-semibold py-2 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" id="book-select">
+<option selected="">The Midnight Library</option>
+<option>Project Hail Mary</option>
+<option>Dune</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 top-7 flex items-center px-2 text-gray-700 dark:text-gray-400">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+<button class="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-green-600 text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-green-700 transition-colors">
+<span class="material-symbols-outlined text-base">check_circle</span>
+<span class="truncate">Approve All</span>
+</button>
+</div>
+<div class="bg-white dark:bg-[#111422] rounded-lg border border-gray-200 dark:border-[#323b67] p-6 mb-6">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Soundscape Coverage</h3>
+<p class="text-sm text-gray-500 dark:text-[#929bc9] mb-4">Visual representation of soundscape assignment per chapter.</p>
+<div class="space-y-4">
+<div class="grid grid-cols-1 md:grid-cols-[150px_1fr_80px] items-center gap-4">
+<div class="text-sm font-medium text-gray-700 dark:text-gray-300">Chapter 1-5</div>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+<div class="bg-primary h-2.5 rounded-full" style="width: 95%"></div>
+</div>
+<div class="text-sm font-semibold text-gray-900 dark:text-white text-right">95% (23/24 pgs)</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-[150px_1fr_80px] items-center gap-4">
+<div class="text-sm font-medium text-gray-700 dark:text-gray-300">Chapter 6-10</div>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+<div class="bg-primary h-2.5 rounded-full" style="width: 100%"></div>
+</div>
+<div class="text-sm font-semibold text-gray-900 dark:text-white text-right">100% (22/22 pgs)</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-[150px_1fr_80px] items-center gap-4">
+<div class="text-sm font-medium text-gray-700 dark:text-gray-300">Chapter 11-15</div>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+<div class="bg-primary h-2.5 rounded-full" style="width: 60%"></div>
+</div>
+<div class="text-sm font-semibold text-gray-900 dark:text-white text-right">60% (15/25 pgs)</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-[150px_1fr_80px] items-center gap-4">
+<div class="text-sm font-medium text-gray-700 dark:text-gray-300">Chapter 16-20</div>
+<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+<div class="bg-gray-300 dark:bg-gray-600 h-2.5 rounded-full" style="width: 0%"></div>
+</div>
+<div class="text-sm font-semibold text-gray-900 dark:text-white text-right">0% (0/23 pgs)</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-[#111422] rounded-lg border border-gray-200 dark:border-[#323b67]">
+<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#191e33] rounded-t-lg">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white">Chapter 1: The End is the Beginning</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">Total Pages: 24</p>
+</div>
+<div class="p-6 space-y-6">
+<div>
+<h4 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Page Coverage</h4>
+<div class="relative w-full h-8 bg-gray-200 dark:bg-gray-700 rounded">
+<div class="absolute h-full bg-blue-500 rounded-l" style="left: 0%; width: 20.83%;"></div>
+<div class="absolute h-full bg-green-500" style="left: 20.83%; width: 25%;"></div>
+<div class="absolute h-full bg-purple-500" style="left: 62.5%; width: 12.5%;"></div>
+<div class="absolute top-full w-full flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+<span>1</span>
+<span>6</span>
+<span>12</span>
+<span>18</span>
+<span>24</span>
+</div>
+</div>
+</div>
+<div class="divide-y divide-gray-200 dark:divide-[#323b67]">
+<div class="grid grid-cols-12 gap-4 items-start py-4">
+<div class="col-span-2 flex items-center gap-2">
+<input class="form-input w-16 bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-md text-sm text-center" type="number" value="1"/>
+<span class="text-gray-500 dark:text-gray-400">-</span>
+<input class="form-input w-16 bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-md text-sm text-center" type="number" value="5"/>
+</div>
+<div class="col-span-9 space-y-3">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-blue-500 shrink-0"></div>
+<select class="form-select w-full bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-lg text-sm focus:ring-primary focus:border-primary text-gray-900 dark:text-white">
+<option selected="">Gentle Night Rain</option>
+<option>Distant Thunder</option>
+</select>
+<button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#232948] text-gray-500 dark:text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-base">play_circle</span>
+</button>
+</div>
+</div>
+<div class="col-span-1 flex items-center justify-end">
+<button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#232948] text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined text-base">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-4 items-start py-4">
+<div class="col-span-2 flex items-center gap-2">
+<input class="form-input w-16 bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-md text-sm text-center" type="number" value="6"/>
+<span class="text-gray-500 dark:text-gray-400">-</span>
+<input class="form-input w-16 bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-md text-sm text-center" type="number" value="11"/>
+</div>
+<div class="col-span-9 space-y-3">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-green-500 shrink-0"></div>
+<select class="form-select w-full bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-lg text-sm focus:ring-primary focus:border-primary text-gray-900 dark:text-white">
+<option selected="">Quiet Library Ambiance</option>
+<option>Distant Thunder</option>
+</select>
+<button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#232948] text-gray-500 dark:text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-base">play_circle</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-opacity-50 bg-green-500 shrink-0"></div>
+<select class="form-select w-full bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-lg text-sm focus:ring-primary focus:border-primary text-gray-900 dark:text-white">
+<option>Gentle Night Rain</option>
+<option selected="">Distant Thunder</option>
+</select>
+<button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#232948] text-gray-500 dark:text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-base">play_circle</span>
+</button>
+</div>
+</div>
+<div class="col-span-1 flex items-center justify-end">
+<button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#232948] text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined text-base">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-4 items-start py-4">
+<div class="col-span-2 flex items-center gap-2">
+<input class="form-input w-16 bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-md text-sm text-center" type="number" value="16"/>
+<span class="text-gray-500 dark:text-gray-400">-</span>
+<input class="form-input w-16 bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-md text-sm text-center" type="number" value="18"/>
+</div>
+<div class="col-span-9 space-y-3">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-purple-500 shrink-0"></div>
+<select class="form-select w-full bg-white dark:bg-[#232948] border-gray-300 dark:border-[#323b67] rounded-lg text-sm focus:ring-primary focus:border-primary text-gray-900 dark:text-white">
+<option selected="">Crackling Fireplace</option>
+<option>Distant Thunder</option>
+</select>
+<button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#232948] text-gray-500 dark:text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-base">play_circle</span>
+</button>
+</div>
+</div>
+<div class="col-span-1 flex items-center justify-end">
+<button class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#232948] text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined text-base">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="pt-4">
+<button class="flex items-center justify-center gap-2 w-full cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-gray-100 dark:bg-[#232948] text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal border border-dashed border-gray-300 dark:border-[#323b67] hover:bg-gray-200 dark:hover:bg-[#323b67] transition-colors">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span class="truncate">Add Soundscape Segment</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#191e33]">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white">Chapter 2: The Librarian</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">Total Pages: 22</p>
+</div>
+<div class="flex items-center justify-center p-6 text-center">
+<div class="flex flex-col items-center">
+<div class="flex items-center justify-center size-12 bg-gray-100 dark:bg-gray-700 rounded-full mb-3">
+<span class="material-symbols-outlined text-gray-500 dark:text-gray-400">music_off</span>
+</div>
+<h4 class="text-base font-semibold text-gray-800 dark:text-gray-200">No Soundscapes Assigned</h4>
+<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">This chapter has no soundscape segments yet.</p>
+<button class="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-lg h-9 px-3 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-base">add</span>
+<span class="truncate">Add Segment</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

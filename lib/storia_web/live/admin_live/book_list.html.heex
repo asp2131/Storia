@@ -1,0 +1,223 @@
+<div class="w-full max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+    <div class="flex flex-col gap-2">
+      <h1 class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+        Book & Soundscape Management
+      </h1>
+      <p class="text-gray-500 dark:text-[#929bc9] text-base font-normal leading-normal">
+        Review, edit, and manage AI-generated soundscapes for all processed books.
+      </p>
+    </div>
+    <button
+      type="button"
+      phx-click={JS.show(to: "#upload-modal")}
+      class="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors"
+    >
+      <.icon name="hero-plus" class="w-4 h-4" />
+      <span class="truncate">Add New Book</span>
+    </button>
+  </div>
+
+  <!-- Search -->
+  <div class="mb-6">
+    <.form for={%{}} phx-change="search" phx-submit="search" as={:search}>
+      <label class="flex flex-col min-w-40 h-12 w-full">
+        <div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+          <div class="text-gray-400 dark:text-[#929bc9] flex bg-white dark:bg-[#232948] items-center justify-center pl-4 rounded-l-lg border border-gray-200 dark:border-[#323b67] border-r-0">
+            <.icon name="hero-magnifying-glass" class="w-5 h-5" />
+          </div>
+          <input
+            type="text"
+            name="search[query]"
+            value={@search_query}
+            class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-gray-200 dark:border-[#323b67] bg-white dark:bg-[#232948] h-full placeholder:text-gray-400 dark:placeholder:text-[#929bc9] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+            placeholder="Search by book title or author..."
+          />
+        </div>
+      </label>
+    </.form>
+  </div>
+
+  <!-- Books Table -->
+  <div class="mb-8">
+    <div class="flex overflow-hidden rounded-lg border border-gray-200 dark:border-[#323b67] bg-white dark:bg-[#111422]">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-[#191e33]">
+          <tr>
+            <th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-2/5">
+              Book Title
+            </th>
+            <th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-1/5">
+              Author
+            </th>
+            <th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-1/5">
+              Processing Status
+            </th>
+            <th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal w-1/5">
+              Last Updated
+            </th>
+            <th class="px-4 py-3 text-left text-gray-600 dark:text-white text-sm font-medium leading-normal">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-[#323b67]">
+          <%= for book <- @books do %>
+            <tr class="hover:bg-gray-50 dark:hover:bg-[#191e33]">
+              <td class="h-[72px] px-4 py-2 text-gray-900 dark:text-white text-sm font-normal leading-normal">
+                <%= book.title %>
+              </td>
+              <td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">
+                <%= book.author %>
+              </td>
+              <td class="h-[72px] px-4 py-2">
+                <div class={"inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium #{status_badge_class(book.processing_status)}"}>
+                  <span class={"size-1.5 rounded-full #{status_dot_class(book.processing_status)}"}></span>
+                  <%= format_status(book.processing_status) %>
+                </div>
+              </td>
+              <td class="h-[72px] px-4 py-2 text-gray-500 dark:text-[#929bc9] text-sm font-normal leading-normal">
+                <%= format_date(book.updated_at) %>
+              </td>
+              <td class="h-[72px] px-4 py-2">
+                <div class="flex items-center gap-2">
+                  <%= if book.processing_status in ["ready_for_review", "published"] do %>
+                    <.link
+                      navigate={~p"/admin/books/#{book.id}/scenes"}
+                      class="text-primary dark:text-blue-400 text-sm font-bold leading-normal tracking-[0.015em] hover:underline"
+                    >
+                      View Scenes
+                    </.link>
+                  <% else %>
+                    <span class="text-gray-400 dark:text-gray-600 text-sm">
+                      <%= if book.processing_status == "failed" do %>
+                        <span class="text-red-500 dark:text-red-400" title={book.processing_error}>
+                          Error
+                        </span>
+                      <% else %>
+                        Processing...
+                      <% end %>
+                    </span>
+                  <% end %>
+                  <button
+                    type="button"
+                    phx-click="delete_book"
+                    phx-value-id={book.id}
+                    data-confirm="Are you sure you want to delete this book?"
+                    class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                  >
+                    <.icon name="hero-trash" class="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+          <%= if @books == [] do %>
+            <tr>
+              <td colspan="5" class="h-32 text-center text-gray-500 dark:text-gray-400">
+                <%= if @search_query != "" do %>
+                  No books found matching "<%= @search_query %>"
+                <% else %>
+                  No books yet. Upload your first book to get started!
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="upload-modal" class="hidden fixed inset-0 bg-black/50 z-50" phx-click={JS.hide(to: "#upload-modal")}>
+  <div
+    class="fixed inset-0 flex items-center justify-center p-4"
+    phx-click={JS.hide(to: "#upload-modal")}
+  >
+    <div
+      class="bg-white dark:bg-[#111422] rounded-lg shadow-xl max-w-md w-full p-6"
+      phx-click="noop"
+    >
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Upload New Book</h2>
+        <button
+          type="button"
+          phx-click={JS.hide(to: "#upload-modal")}
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <.icon name="hero-x-mark" class="w-6 h-6" />
+        </button>
+      </div>
+
+      <.form for={%{}} phx-submit="upload_book" phx-change="validate_upload">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              PDF File
+            </label>
+            <div
+              class="border-2 border-dashed border-gray-300 dark:border-[#323b67] rounded-lg p-6 text-center hover:border-primary dark:hover:border-primary transition-colors"
+              phx-drop-target={@uploads.pdf.ref}
+            >
+              <.live_file_input upload={@uploads.pdf} class="hidden" />
+              <div class="flex flex-col items-center">
+                <.icon name="hero-document-arrow-up" class="w-12 h-12 text-gray-400 mb-2" />
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  Drag and drop your PDF here, or
+                  <label
+                    for={@uploads.pdf.ref}
+                    class="text-primary dark:text-blue-400 hover:underline cursor-pointer"
+                  >
+                    browse
+                  </label>
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-500">
+                  Maximum file size: 50MB
+                </p>
+              </div>
+            </div>
+
+            <%= for entry <- @uploads.pdf.entries do %>
+              <div class="mt-2 flex items-center justify-between p-2 bg-gray-50 dark:bg-[#232948] rounded">
+                <div class="flex items-center gap-2">
+                  <.icon name="hero-document" class="w-5 h-5 text-gray-400" />
+                  <span class="text-sm text-gray-700 dark:text-gray-300"><%= entry.client_name %></span>
+                </div>
+                <button
+                  type="button"
+                  phx-click="cancel_upload"
+                  phx-value-ref={entry.ref}
+                  class="text-gray-400 hover:text-red-500"
+                >
+                  <.icon name="hero-x-mark" class="w-5 h-5" />
+                </button>
+              </div>
+              <%= for err <- upload_errors(@uploads.pdf, entry) do %>
+                <p class="mt-1 text-sm text-red-500"><%= error_to_string(err) %></p>
+              <% end %>
+            <% end %>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              phx-click={JS.hide(to: "#upload-modal")}
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#232948] rounded-lg hover:bg-gray-200 dark:hover:bg-[#323b67] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={@uploads.pdf.entries == []}
+              class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Upload & Process
+            </button>
+          </div>
+        </div>
+      </.form>
+    </div>
+  </div>
+</div>

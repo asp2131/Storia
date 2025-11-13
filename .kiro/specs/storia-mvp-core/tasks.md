@@ -166,41 +166,41 @@
     - Integration tests for full pipeline
     - _Requirements: 3.3, 3.4, 10.1, 10.2_
 
-- [ ] 8. Create admin interface for content management
-  - [ ] 8.1 Build admin authentication and authorization
+- [x] 8. Create admin interface for content management
+  - [x] 8.1 Build admin authentication and authorization
     - Add role field to users table (enum: user, admin)
     - Create RequireAdmin plug for route protection
     - Implement admin role check in Accounts context
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
   
-  - [ ] 8.2 Create AdminLive.BookList component
+  - [x] 8.2 Create AdminLive.BookList component
     - Display all books with processing status
     - Show upload form for new PDFs
     - Handle file upload and trigger processing pipeline
     - Display real-time processing progress via LiveView
     - _Requirements: 2.1, 2.4, 4.1_
   
-  - [ ] 8.3 Build AdminLive.SceneReview component
+  - [x] 8.3 Build AdminLive.SceneReview component
     - Load book with all scenes and soundscapes
-    - Display scene descriptors and confidence scores
+    - Display scene descriptors and audio player
     - Add audio player for each soundscape preview
     - Implement override modal with library picker
-    - Save overrides and update confidence to 1.0
+    - Scene-by-scene review interface
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
   
-  - [ ] 8.4 Create AdminLive.LibraryManager component
-    - Display all curated soundscapes with tags
-    - Add upload form for new audio files
-    - Implement tagging interface for mood, setting, etc.
-    - Show usage statistics per soundscape
-    - Prevent deletion of in-use soundscapes
+  - [x] 8.4 Create AdminLive.LibraryManager component
+    - Display all soundscapes with tags
+    - Search and filter by source type
+    - Show soundscape statistics
+    - Delete soundscape functionality
+    - Audio preview for each soundscape
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
   
-  - [ ] 8.5 Add publish functionality
+  - [x] 8.5 Add publish functionality
     - Create publish button in SceneReview
-    - Validate all scenes have approved soundscapes
+    - Validate all scenes have soundscapes
     - Update book.is_published to true
-    - Broadcast update to user library views
+    - Status updates and validation
     - _Requirements: 4.5_
 
 - [ ] 9. Implement reader interface

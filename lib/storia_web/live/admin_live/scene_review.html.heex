@@ -1,0 +1,237 @@
+<div class="w-full max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="flex items-center gap-4 mb-6">
+    <.link navigate={~p"/admin/books"} class="text-gray-400 hover:text-gray-600">
+      <.icon name="hero-arrow-left" class="w-6 h-6" />
+    </.link>
+    <div class="flex-1">
+      <h1 class="text-gray-900 dark:text-white text-3xl font-black">
+        <%= @book.title %>
+      </h1>
+      <p class="text-gray-500 dark:text-[#929bc9] text-sm">
+        by <%= @book.author %> • <%= @book.total_pages %> pages • <%= length(@book.scenes) %> scenes
+      </p>
+    </div>
+    <%= if @book.processing_status == "ready_for_review" do %>
+      <button
+        type="button"
+        phx-click="publish_book"
+        data-confirm="Are you sure you want to publish this book?"
+        class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold"
+      >
+        <.icon name="hero-check-circle" class="w-5 h-5" />
+        Publish Book
+      </button>
+    <% end %>
+  </div>
+
+  <!-- Coverage Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="bg-white dark:bg-[#111422] rounded-lg border border-gray-200 dark:border-[#323b67] p-4">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Scene Coverage</h3>
+      <div class="flex items-center gap-3">
+        <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div class="bg-primary h-2 rounded-full" style={"width: #{scene_coverage_percent(@book)}%"}></div>
+        </div>
+        <span class="text-lg font-bold text-gray-900 dark:text-white"><%= scene_coverage_percent(@book) %>%</span>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-[#111422] rounded-lg border border-gray-200 dark:border-[#323b67] p-4">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Soundscape Coverage</h3>
+      <div class="flex items-center gap-3">
+        <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div class="bg-green-500 h-2 rounded-full" style={"width: #{soundscape_coverage_percent(@book)}%"}></div>
+        </div>
+        <span class="text-lg font-bold text-gray-900 dark:text-white"><%= soundscape_coverage_percent(@book) %>%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenes List -->
+  <div class="space-y-4">
+    <%= for {scene, index} <- Enum.with_index(@book.scenes) do %>
+      <div class="bg-white dark:bg-[#111422] rounded-lg border border-gray-200 dark:border-[#323b67] overflow-hidden">
+        <!-- Scene Header -->
+        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#191e33]">
+          <div class="flex items-center gap-3">
+            <div class={"w-3 h-3 rounded-full #{scene_color(index)}"}></div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+              Scene <%= scene.scene_number %>
+            </h3>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              Pages <%= scene.start_page %>-<%= scene.end_page %>
+            </span>
+          </div>
+          <button
+            type="button"
+            phx-click="show_override_modal"
+            phx-value-scene_id={scene.id}
+            class="text-sm text-primary dark:text-blue-400 hover:underline font-medium"
+          >
+            Override Soundscape
+          </button>
+        </div>
+
+        <!-- Scene Content -->
+        <div class="p-6 space-y-4">
+          <!-- Descriptors -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Scene Descriptors</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <%= format_descriptors(scene.descriptors) %>
+            </p>
+          </div>
+
+          <!-- Soundscapes -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Assigned Soundscapes</h4>
+            <%= if Enum.empty?(scene.soundscapes) do %>
+              <div class="flex items-center justify-center p-6 text-center border-2 border-dashed border-gray-300 dark:border-[#323b67] rounded-lg">
+                <div class="flex flex-col items-center">
+                  <.icon name="hero-musical-note" class="w-8 h-8 text-gray-400 mb-2" />
+                  <p class="text-sm text-gray-500 dark:text-gray-400">No soundscape assigned</p>
+                  <button
+                    type="button"
+                    phx-click="show_override_modal"
+                    phx-value-scene_id={scene.id}
+                    class="mt-2 text-sm text-primary dark:text-blue-400 hover:underline"
+                  >
+                    Assign Soundscape
+                  </button>
+                </div>
+              </div>
+            <% else %>
+              <div class="space-y-3">
+                <%= for soundscape <- scene.soundscapes do %>
+                  <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-[#232948] rounded-lg">
+                    <div class={"w-10 h-10 rounded-full #{scene_color(index)} flex items-center justify-center"}>
+                      <.icon name="hero-musical-note" class="w-5 h-5 text-white" />
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">
+                        <%= if soundscape.generation_prompt do %>
+                          AI Generated: <%= String.slice(soundscape.generation_prompt, 0, 60) %><%= if String.length(soundscape.generation_prompt) > 60, do: "..." %>
+                        <% else %>
+                          Soundscape #<%= soundscape.id %>
+                        <% end %>
+                      </p>
+                      <%= if soundscape.tags && length(soundscape.tags) > 0 do %>
+                        <div class="flex gap-1 mt-1">
+                          <%= for tag <- Enum.take(soundscape.tags, 3) do %>
+                            <span class="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                              <%= tag %>
+                            </span>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                    <%= if soundscape.audio_url do %>
+                      <audio controls class="h-8">
+                        <source src={soundscape.audio_url} type="audio/mpeg" />
+                      </audio>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%= if Enum.empty?(@book.scenes) do %>
+      <div class="bg-white dark:bg-[#111422] rounded-lg border border-gray-200 dark:border-[#323b67] p-12 text-center">
+        <.icon name="hero-book-open" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Scenes Found</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          This book hasn't been processed yet or scene analysis failed.
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Override Modal -->
+<%= if @show_override_modal && @selected_scene do %>
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" phx-click="hide_override_modal">
+    <div class="bg-white dark:bg-[#111422] rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden" phx-click="noop">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-[#323b67]">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+          Override Soundscape for Scene <%= @selected_scene.scene_number %>
+        </h2>
+        <button
+          type="button"
+          phx-click="hide_override_modal"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <.icon name="hero-x-mark" class="w-6 h-6" />
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto max-h-[60vh]">
+        <div class="mb-4">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Current Descriptors</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            <%= format_descriptors(@selected_scene.descriptors) %>
+          </p>
+        </div>
+
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Available Soundscapes</h3>
+        <div class="space-y-2">
+          <%= if assigns[:available_soundscapes] do %>
+            <%= for soundscape <- @available_soundscapes do %>
+              <button
+                type="button"
+                phx-click="override_soundscape"
+                phx-value-soundscape_id={soundscape.id}
+                class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-[#232948] rounded-lg hover:bg-gray-100 dark:hover:bg-[#323b67] transition-colors text-left"
+              >
+                <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                  <.icon name="hero-musical-note" class="w-5 h-5 text-white" />
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    <%= if soundscape.generation_prompt do %>
+                      <%= soundscape.generation_prompt %>
+                    <% else %>
+                      Soundscape #<%= soundscape.id %>
+                    <% end %>
+                  </p>
+                  <%= if soundscape.tags && length(soundscape.tags) > 0 do %>
+                    <div class="flex gap-1 mt-1">
+                      <%= for tag <- Enum.take(soundscape.tags, 5) do %>
+                        <span class="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                          <%= tag %>
+                        </span>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+                <%= if soundscape.audio_url do %>
+                  <.icon name="hero-play" class="w-5 h-5 text-gray-400" />
+                <% end %>
+              </button>
+            <% end %>
+          <% else %>
+            <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+              No soundscapes available. Generate soundscapes first.
+            </p>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-[#323b67]">
+        <button
+          type="button"
+          phx-click="hide_override_modal"
+          class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#232948] rounded-lg hover:bg-gray-200 dark:hover:bg-[#323b67] transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+<% end %>

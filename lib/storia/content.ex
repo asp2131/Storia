@@ -18,7 +18,27 @@ defmodule Storia.Content do
 
   """
   def list_books do
-    Repo.all(Book)
+    Book
+    |> order_by([b], desc: b.updated_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Searches books by title or author.
+
+  ## Examples
+
+      iex> search_books("midnight")
+      [%Book{title: "The Midnight Library"}, ...]
+
+  """
+  def search_books(query) when is_binary(query) do
+    search_term = "%#{query}%"
+
+    Book
+    |> where([b], ilike(b.title, ^search_term) or ilike(b.author, ^search_term))
+    |> order_by([b], desc: b.updated_at)
+    |> Repo.all()
   end
 
   @doc """
@@ -38,12 +58,46 @@ defmodule Storia.Content do
   def get_book!(id), do: Repo.get!(Book, id)
 
   @doc """
+  Gets a single book. Returns nil if not found.
+
+  ## Examples
+
+      iex> get_book(123)
+      %Book{}
+
+      iex> get_book(456)
+      nil
+
+  """
+  def get_book(id), do: Repo.get(Book, id)
+
+  @doc """
   Gets a single book with preloaded associations.
   """
   def get_book_with_pages!(id) do
     Book
     |> Repo.get!(id)
     |> Repo.preload([:pages, :scenes])
+  end
+
+  @doc """
+  Gets a single book with scenes and their soundscapes preloaded.
+  """
+  def get_book_with_scenes_and_soundscapes!(id) do
+    Book
+    |> Repo.get!(id)
+    |> Repo.preload(scenes: [soundscapes: :scene])
+  end
+
+  @doc """
+  Gets a single book with scenes and their soundscapes preloaded.
+  Returns nil if not found.
+  """
+  def get_book_with_scenes_and_soundscapes(id) do
+    case Repo.get(Book, id) do
+      nil -> nil
+      book -> Repo.preload(book, scenes: [soundscapes: :scene])
+    end
   end
 
   @doc """
