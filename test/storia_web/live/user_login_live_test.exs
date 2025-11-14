@@ -21,6 +21,17 @@ defmodule StoriaWeb.UserLoginLiveTest do
       assert {:redirect, %{to: path}} = redirect
       assert path == ~p"/"
     end
+
+    test "redirects admin to admin dashboard if already logged in", %{conn: conn} do
+      user = user_fixture()
+      {:ok, admin_user} = Storia.Accounts.update_user_role(user, :admin)
+      conn = log_in_user(conn, admin_user)
+
+      {:error, redirect} = live(conn, ~p"/users/log_in")
+
+      assert {:redirect, %{to: path}} = redirect
+      assert path == ~p"/admin/books"
+    end
   end
 
   describe "user login" do
@@ -36,6 +47,21 @@ defmodule StoriaWeb.UserLoginLiveTest do
       conn = submit_form(form, conn)
 
       assert redirected_to(conn) == ~p"/"
+    end
+
+    test "redirects admin to admin dashboard on login with valid credentials", %{conn: conn} do
+      password = "Password123"
+      user = user_fixture(%{password: password})
+      {:ok, _admin_user} = Storia.Accounts.update_user_role(user, :admin)
+
+      {:ok, lv, _html} = live(conn, ~p"/users/log_in")
+
+      form =
+        form(lv, "#login_form", user: %{email: user.email, password: password, remember_me: true})
+
+      conn = submit_form(form, conn)
+
+      assert redirected_to(conn) == ~p"/admin/books"
     end
 
     test "redirects to login page with a flash error if there are no valid credentials", %{

@@ -33,7 +33,7 @@ defmodule StoriaWeb.UserAuth do
     |> renew_session()
     |> put_token_in_session(token)
     |> maybe_write_remember_me_cookie(token, params)
-    |> redirect(to: user_return_to || signed_in_path(conn))
+    |> redirect(to: user_return_to || signed_in_path_for_user(user))
   end
 
   defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}) do
@@ -237,5 +237,19 @@ defmodule StoriaWeb.UserAuth do
 
   defp maybe_store_return_to(conn), do: conn
 
-  defp signed_in_path(_conn), do: ~p"/"
+  defp signed_in_path(conn_or_socket) do
+    if conn_or_socket.assigns[:current_user] && Accounts.admin?(conn_or_socket.assigns.current_user) do
+      ~p"/admin/books"
+    else
+      ~p"/"
+    end
+  end
+
+  defp signed_in_path_for_user(user) do
+    if Accounts.admin?(user) do
+      ~p"/admin/books"
+    else
+      ~p"/"
+    end
+  end
 end
