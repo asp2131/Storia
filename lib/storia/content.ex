@@ -6,7 +6,7 @@ defmodule Storia.Content do
   import Ecto.Query, warn: false
   alias Storia.Repo
 
-  alias Storia.Content.{Book, Page}
+  alias Storia.Content.{Book, Page, ReadingProgress, Scene}
 
   @doc """
   Returns the list of books.
@@ -204,5 +204,128 @@ defmodule Storia.Content do
     attrs = if error, do: Map.put(attrs, :processing_error, error), else: attrs
 
     update_book(book, attrs)
+  end
+
+  @doc """
+  Lists all published books.
+  """
+  def list_published_books do
+    Book
+    |> where([b], b.is_published == true)
+    |> order_by([b], desc: b.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists published books with optional filters.
+  """
+  def list_published_books(filters) do
+    query = from b in Book, where: b.is_published == true
+
+    query =
+      if genre = filters[:genre] do
+        where(query, [b], fragment("? @> ?", b.metadata, ^%{genre: genre}))
+      else
+        query
+      end
+
+    query =
+      if author = filters[:author] do
+        where(query, [b], ilike(b.author, ^"%#{author}%"))
+      else
+        query
+      end
+
+    query
+    |> order_by([b], desc: b.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets or creates reading progress for a user and book.
+  """
+  def get_or_create_reading_progress(user_id, book_id) do
+    case Repo.get_by(ReadingProgress, user_id: user_id, book_id: book_id) do
+      nil ->
+        %ReadingProgress{}
+        |> ReadingProgress.changeset(%{user_id: user_id, book_id: book_id, current_page: 1})
+        |> Repo.insert()
+
+      progress ->
+        {:ok, progress}
+    end
+  end
+
+  @doc """
+  Updates reading progress for a user.
+  """
+  def update_reading_progress(user_id, book_id, page_number) do
+    case Repo.get_by(ReadingProgress, user_id: user_id, book_id: book_id) do
+      nil ->
+        %ReadingProgress{}
+        |> ReadingProgress.changeset(%{
+          user_id: user_id,
+          book_id: book_id,
+          current_page: page_number,
+          last_read_at: DateTime.utc_now()
+        })
+        |> Repo.insert()
+
+      progress ->
+        progress
+        |> ReadingProgress.changeset(%{
+          current_page: page_number,
+          last_read_at: DateTime.utc_now()
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Gets a page with its scene preloaded.
+  """
+  def get_page_with_scene(book_id, page_number) do
+    Page
+    |> where([p], p.book_id == ^book_id and p.page_number == ^page_number)
+    |> preload([p], scene: [soundscapes: :scene])
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets the scene for a specific page.
+  """
+  def get_scene_for_page(book_id, page_number) do
+    query =
+      from s in Scene,
+        where: s.book_id == ^book_id,
+        where: s.start_page <= ^page_number,
+        where: s.end_page >= ^page_number,
+        preload: [soundscapes: :scene]
+
+    Repo.one(query)
+  end
+
+  @doc """
+  Counts the number of books a user has accessed.
+  """
+  def count_accessed_books(user_id) do
+    ReadingProgress
+    |> where([rp], rp.user_id == ^user_id)
+    |> select([rp], count(rp.id))
+    |> Repo.one()
+  end
+
+  @doc """
+  Counts the number of books a user has accessed in the current month.
+  """
+  def count_monthly_books(user_id) do
+    now = DateTime.utc_now()
+    start_of_month = DateTime.new!(Date.new!(now.year, now.month, 1), ~T[00:00:00])
+
+    ReadingProgress
+    |> where([rp], rp.user_id == ^user_id)
+    |> where([rp], rp.last_read_at >= ^start_of_month)
+    |> select([rp], count(rp.id))
+    |> Repo.one()
   end
 end

@@ -50,6 +50,10 @@ defmodule StoriaWeb.Router do
       # TODO: Implement UserSettingsLive
       # live "/users/settings", UserSettingsLive, :edit
       # live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+      
+      # Reader routes - accessible to all authenticated users including admins
+      live "/library", LibraryLive, :index
+      live "/read/:id", ReaderLive, :show
     end
   end
 
