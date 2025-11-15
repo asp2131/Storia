@@ -31,7 +31,7 @@ if config_env() == :prod do
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
   config :storia, Storia.Repo,
-    # ssl: true,
+    ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6
@@ -134,4 +134,21 @@ if config_env() == :prod do
   # Configure Replicate API
   config :storia,
     replicate_api_key: System.get_env("REPLICATE_API_KEY")
+
+  # Configure Oban for production
+  config :storia, Oban,
+    repo: Storia.Repo,
+    plugins: [
+      # Prune completed jobs after 60 seconds
+      {Oban.Plugins.Pruner, max_age: 60},
+      # Rescue orphaned jobs after 60 minutes
+      {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(60)},
+      # Track stats for monitoring
+      Oban.Plugins.Stager
+    ],
+    queues: [
+      pdf_processing: 2,
+      ai_analysis: 5,
+      default: 10
+    ]
 end
