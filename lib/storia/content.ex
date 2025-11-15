@@ -282,6 +282,14 @@ defmodule Storia.Content do
   end
 
   @doc """
+  Gets reading progress for a user and book.
+  Returns nil if no progress exists.
+  """
+  def get_reading_progress(user_id, book_id) do
+    Repo.get_by(ReadingProgress, user_id: user_id, book_id: book_id)
+  end
+
+  @doc """
   Gets a page with its scene preloaded.
   """
   def get_page_with_scene(book_id, page_number) do
@@ -303,6 +311,20 @@ defmodule Storia.Content do
         preload: [soundscapes: :scene]
 
     Repo.one(query)
+  end
+
+  @doc """
+  Gets the next scene that begins after the provided page number.
+  Returns nil when there are no more scenes.
+  """
+  def get_next_scene_after_page(book_id, page_number) do
+    Scene
+    |> where([s], s.book_id == ^book_id)
+    |> where([s], s.start_page > ^page_number)
+    |> order_by([s], asc: s.start_page)
+    |> preload([s], soundscapes: :scene)
+    |> limit(1)
+    |> Repo.one()
   end
 
   @doc """

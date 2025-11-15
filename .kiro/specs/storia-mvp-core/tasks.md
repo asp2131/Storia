@@ -203,40 +203,40 @@
     - Status updates and validation
     - _Requirements: 4.5_
 
-- [ ] 9. Implement reader interface
-  - [ ] 9.1 Create LibraryLive for book browsing
+- [x] 9. Implement reader interface
+  - [x] 9.1 Create LibraryLive for book browsing
     - Display published books with metadata
     - Implement genre and author filters
     - Add subscription tier access validation
     - Show book limits and upgrade prompts
     - Handle book selection and navigation to reader
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
-  
-  - [ ] 9.2 Build ReaderLive core reading interface
+
+  - [x] 9.2 Build ReaderLive core reading interface
     - Load book with current page from reading_progress
     - Display page text with readable typography
     - Implement next/previous page navigation
     - Detect scene changes and update audio URL
     - Save reading progress asynchronously
     - _Requirements: 6.1, 6.2, 6.3, 6.5, 8.1, 8.2, 8.3_
-  
-  - [ ] 9.3 Implement Web Audio API integration
+
+  - [x] 9.3 Implement Web Audio API integration
     - Create Alpine.js component for audio playback
     - Load audio from signed R2 URLs
     - Implement crossfade logic (2 second duration)
     - Add preloading for next scene audio
     - Handle audio loading errors gracefully
     - _Requirements: 6.2, 6.3, 6.4, 7.5_
-  
-  - [ ] 9.4 Add audio controls and preferences
+
+  - [x] 9.4 Add audio controls and preferences
     - Create volume slider with real-time updates
     - Add mute/unmute toggle button
     - Implement audio on/off toggle
     - Store preferences in browser localStorage
     - Persist preferences across sessions
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
-  
-  - [ ] 9.5 Test reader interface
+
+  - [x] 9.5 Test reader interface
     - Test page navigation and progress saving
     - Test audio crossfading on scene transitions
     - Test subscription tier restrictions

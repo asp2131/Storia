@@ -28,7 +28,8 @@ defmodule StoriaWeb.ReaderLive do
            |> assign(:total_pages, data.book.total_pages)
            |> assign(:page_title, data.book.title)
            |> assign(:audio_enabled, true)
-           |> assign(:volume, 0.7)}
+           |> assign(:volume, 0.7)
+           |> assign(:navigating, false)}
 
         {:error, :book_not_found} ->
           {:ok,
@@ -47,23 +48,37 @@ defmodule StoriaWeb.ReaderLive do
 
   @impl true
   def handle_event("next_page", _params, socket) do
-    current_page = socket.assigns.current_page
-    total_pages = socket.assigns.total_pages
-
-    if current_page < total_pages do
-      navigate_to_page(socket, current_page + 1)
-    else
+    # Prevent race conditions from rapid clicking
+    if socket.assigns[:navigating] do
       {:noreply, socket}
+    else
+      current_page = socket.assigns.current_page
+      total_pages = socket.assigns.total_pages
+
+      if current_page < total_pages do
+        socket
+        |> assign(:navigating, true)
+        |> navigate_to_page(current_page + 1)
+      else
+        {:noreply, socket}
+      end
     end
   end
 
   def handle_event("previous_page", _params, socket) do
-    current_page = socket.assigns.current_page
-
-    if current_page > 1 do
-      navigate_to_page(socket, current_page - 1)
-    else
+    # Prevent race conditions from rapid clicking
+    if socket.assigns[:navigating] do
       {:noreply, socket}
+    else
+      current_page = socket.assigns.current_page
+
+      if current_page > 1 do
+        socket
+        |> assign(:navigating, true)
+        |> navigate_to_page(current_page - 1)
+      else
+        {:noreply, socket}
+      end
     end
   end
 
@@ -99,7 +114,17 @@ defmodule StoriaWeb.ReaderLive do
 
         # Save progress asynchronously
         Task.start(fn ->
-          Content.update_reading_progress(user_id, book_id, page)
+          case Content.update_reading_progress(user_id, book_id, page) do
+            {:ok, _progress} ->
+              :ok
+
+            {:error, changeset} ->
+              require Logger
+
+              Logger.error(
+                "Failed to update reading progress for user=#{user_id} book=#{book_id} page=#{page}: #{inspect(changeset.errors)}"
+              )
+          end
         end)
 
         {:noreply, socket}
@@ -256,7 +281,7 @@ defmodule StoriaWeb.ReaderLive do
             style="font-family: 'Georgia', serif; line-height: 1.8; font-size: 1.125rem;"
           >
             <%= if @page_content do %>
-              <%= raw(format_page_content(@page_content)) %>
+              <%= raw(HtmlSanitizeEx.basic_html(format_page_content(@page_content))) %>
             <% else %>
               <p class="text-[#929bc9] italic">Loading page content...</p>
             <% end %>
@@ -313,6 +338,9 @@ defmodule StoriaWeb.ReaderLive do
                   if (step >= fadeSteps) {
                     clearInterval(fadeTimer);
                     oldPlayer.pause();
+                    oldPlayer.src = '';
+                    oldPlayer.load();
+                    oldPlayer = null;
                     audioPlayer = newPlayer;
                   }
                 }, fadeInterval);
@@ -377,31 +405,52 @@ defmodule StoriaWeb.ReaderLive do
 
     # Load new page content
     page = Content.get_page_with_scene(book_id, new_page)
-    scene = Content.get_scene_for_page(book_id, new_page)
-    audio_url = get_audio_url(scene)
 
-    # Update progress asynchronously
-    Task.start(fn ->
-      Content.update_reading_progress(user_id, book_id, new_page)
-    end)
+    # Check if page exists
+    if is_nil(page) do
+      {:noreply,
+       socket
+       |> put_flash(:error, "Page #{new_page} not found")
+       |> assign(:navigating, false)}
+    else
+      scene = Content.get_scene_for_page(book_id, new_page)
+      audio_url = get_audio_url(scene)
 
-    # Check if scene changed
-    scene_changed = socket.assigns.current_scene && scene && socket.assigns.current_scene.id != scene.id
+      # Update progress asynchronously
+      Task.start(fn ->
+        case Content.update_reading_progress(user_id, book_id, new_page) do
+          {:ok, _progress} ->
+            :ok
 
-    socket =
-      socket
-      |> assign(:current_page, new_page)
-      |> assign(:page_content, page && page.text_content)
-      |> assign(:current_scene, scene)
+          {:error, changeset} ->
+            require Logger
 
-    socket =
-      if scene_changed do
-        assign(socket, :audio_url, audio_url)
-      else
+            Logger.error(
+              "Failed to update reading progress for user=#{user_id} book=#{book_id} page=#{new_page}: #{inspect(changeset.errors)}"
+            )
+        end
+      end)
+
+      # Check if scene changed
+      scene_changed =
+        socket.assigns.current_scene && scene && socket.assigns.current_scene.id != scene.id
+
+      socket =
         socket
-      end
+        |> assign(:current_page, new_page)
+        |> assign(:page_content, page.text_content)
+        |> assign(:current_scene, scene)
+        |> assign(:navigating, false)
 
-    {:noreply, socket}
+      socket =
+        if scene_changed do
+          assign(socket, :audio_url, audio_url)
+        else
+          socket
+        end
+
+      {:noreply, socket}
+    end
   end
 
   defp can_access_book?(user, book_id) do
@@ -410,7 +459,7 @@ defmodule StoriaWeb.ReaderLive do
       true
     else
       # Check if user already has progress on this book
-      existing_progress = Storia.Repo.get_by(Content.ReadingProgress, user_id: user.id, book_id: book_id)
+      existing_progress = Content.get_reading_progress(user.id, book_id)
 
       if existing_progress do
         true

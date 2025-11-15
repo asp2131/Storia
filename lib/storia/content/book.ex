@@ -6,6 +6,9 @@ defmodule Storia.Content.Book do
     field :title, :string
     field :author, :string
     field :pdf_url, :string
+    field :cover_url, :string
+    field :description, :string
+    field :metadata, :map, default: %{}
     field :total_pages, :integer, default: 0
     field :source_type, :string, default: "public_domain"
     field :is_published, :boolean, default: false
@@ -27,6 +30,9 @@ defmodule Storia.Content.Book do
       :title,
       :author,
       :pdf_url,
+      :cover_url,
+      :description,
+      :metadata,
       :total_pages,
       :source_type,
       :is_published,

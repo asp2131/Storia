@@ -1,6 +1,8 @@
 defmodule StoriaWeb.LibraryLive do
   use StoriaWeb, :live_view
 
+  import Ecto.Query
+
   alias Storia.{Content, Accounts}
 
   @per_page 10
@@ -473,8 +475,7 @@ defmodule StoriaWeb.LibraryLive do
       true
     else
       # Check if user already has progress on this book
-      existing_progress =
-        Storia.Repo.get_by(Content.ReadingProgress, user_id: user.id, book_id: book_id)
+      existing_progress = Content.get_reading_progress(user.id, book_id)
 
       if existing_progress do
         true
@@ -571,13 +572,21 @@ defmodule StoriaWeb.LibraryLive do
   defp format_limit(limit), do: to_string(limit)
 
   defp has_soundscape?(book) do
-    # Check if book has scenes with soundscapes
-    # For now, we'll assume published books have soundscapes
-    # This can be enhanced to check actual soundscape data
-    book.is_published
+    # Check if book actually has soundscapes
+    # Query the database to see if any soundscapes exist for this book's scenes
+    soundscape_count =
+      from(s in Storia.Content.Scene,
+        join: ss in Storia.Content.Soundscape,
+        on: ss.scene_id == s.id,
+        where: s.book_id == ^book.id,
+        select: count(ss.id)
+      )
+      |> Storia.Repo.one()
+
+    soundscape_count > 0
   end
 
   defp has_reading_progress?(book, user_id) do
-    Storia.Repo.get_by(Content.ReadingProgress, user_id: user_id, book_id: book.id) != nil
+    Content.get_reading_progress(user_id, book.id) != nil
   end
 end

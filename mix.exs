@@ -66,7 +66,8 @@ defmodule Storia.MixProject do
       {:bcrypt_elixir, "~> 3.0"},
       {:stripity_stripe, "~> 3.2"},
       {:httpoison, "~> 2.2"},
-      {:hackney, "~> 1.20"}
+      {:hackney, "~> 1.20"},
+      {:html_sanitize_ex, "~> 1.4"}
     ]
   end
 
