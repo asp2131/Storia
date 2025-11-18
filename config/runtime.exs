@@ -33,6 +33,8 @@ if config_env() == :prod do
   config :storia, Storia.Repo,
     ssl: true,
     url: database_url,
+    # Disable prepared statements for Supabase transaction mode pooler
+    prepare: :unnamed,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6
 
@@ -62,6 +64,11 @@ if config_env() == :prod do
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
+    ],
+    # Increase timeouts for large file uploads (5 minutes)
+    http_options: [
+      idle_timeout: :infinity,
+      request_timeout: 300_000
     ],
     secret_key_base: secret_key_base
 
@@ -115,16 +122,12 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
-  # Configure ExAws for Cloudflare R2
-  config :ex_aws,
-    access_key_id: System.get_env("R2_ACCESS_KEY_ID"),
-    secret_access_key: System.get_env("R2_SECRET_ACCESS_KEY"),
-    region: "auto"
-
-  config :ex_aws, :s3,
-    scheme: "https://",
-    host: "#{System.get_env("R2_ACCOUNT_ID")}.r2.cloudflarestorage.com",
-    region: "auto"
+  # Configure Supabase
+  config :storia, :supabase,
+    url: System.get_env("SUPABASE_URL"),
+    anon_key: System.get_env("SUPABASE_ANON_KEY"),
+    service_role_key: System.get_env("SUPABASE_SERVICE_ROLE_KEY"),
+    storage_bucket: System.get_env("SUPABASE_STORAGE_BUCKET", "storia-storage")
 
   # Configure Stripe
   config :stripity_stripe,

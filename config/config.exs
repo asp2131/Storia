@@ -7,6 +7,13 @@
 # General application configuration
 import Config
 
+# Load environment variables from .env file in dev and test environments
+if config_env() in [:dev, :test] do
+  if Code.ensure_loaded?(Dotenvy) do
+    Dotenvy.source!([".env", System.get_env()])
+  end
+end
+
 config :storia,
   ecto_repos: [Storia.Repo],
   generators: [timestamp_type: :utc_datetime]
@@ -77,17 +84,12 @@ config :storia,
   classification_failure_threshold: 0.3,
   scene_boundary_threshold: 0.6
 
-# Configure ExAws for Cloudflare R2
-config :ex_aws,
-  json_codec: Jason,
-  access_key_id: [{:system, "R2_ACCESS_KEY_ID"}],
-  secret_access_key: [{:system, "R2_SECRET_ACCESS_KEY"}],
-  region: "auto"
-
-config :ex_aws, :s3,
-  scheme: "https://",
-  host: System.get_env("R2_ENDPOINT", ""),
-  region: "auto"
+# Configure Supabase
+config :storia, :supabase,
+  url: System.get_env("SUPABASE_URL", ""),
+  anon_key: System.get_env("SUPABASE_ANON_KEY", ""),
+  service_role_key: System.get_env("SUPABASE_SERVICE_ROLE_KEY", ""),
+  storage_bucket: System.get_env("SUPABASE_STORAGE_BUCKET", "storia-storage")
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -287,22 +287,22 @@
     - Add empty states for library and admin
     - _Requirements: 2.5, 7.5_
 
-- [ ] 13. Set up deployment infrastructure
-  - [ ] 13.1 Create production configuration
+-[x] 13. Set up deployment infrastructure
+  -[x] 13.1 Create production configuration
     - Configure production database settings
     - Set up environment variable management
     - Configure Oban for production queues
     - Add AppSignal or Sentry for monitoring
     - _Requirements: All (deployment)_
   
-  - [ ] 13.2 Build Elixir release
+  -[x] 13.2 Build Elixir release
     - Create release configuration
     - Add database migration task
     - Build Docker image (optional)
     - Test release locally
     - _Requirements: All (deployment)_
   
-  - [ ] 13.3 Deploy to Fly.io or Gigalixir
+  -[x] 13.3 Deploy to Fly.io or Gigalixir
     - Create application on hosting platform
     - Configure PostgreSQL database
     - Set environment variables
@@ -319,13 +319,15 @@
     - Review and approve all soundscape mappings
     - Publish books to user library
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5_
+    - _Status: Documentation and guide created (see docs/seeding_content_library.md)_
   
-  - [ ] 14.2 Create demo admin and user accounts
+  - [x] 14.2 Create demo admin and user accounts
     - Create admin account for content management
     - Create test user accounts for each tier
     - Verify tier restrictions work correctly
     - Test complete user journey from signup to reading
     - _Requirements: 1.1, 5.1, 5.2, 5.3, 5.4, 5.5_
+    - _Status: Complete - 4 accounts created via seeds.exs_
 
 - [ ] 15. Final testing and launch preparation
   - [ ] 15.1 Run comprehensive test suite

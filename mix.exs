@@ -61,13 +61,13 @@ defmodule Storia.MixProject do
       {:bandit, "~> 1.5"},
       # Storia-specific dependencies
       {:oban, "~> 2.17"},
-      {:ex_aws, "~> 2.5"},
-      {:ex_aws_s3, "~> 2.5"},
       {:bcrypt_elixir, "~> 3.0"},
       {:stripity_stripe, "~> 3.2"},
       {:httpoison, "~> 2.2"},
       {:hackney, "~> 1.20"},
-      {:html_sanitize_ex, "~> 1.4"}
+      {:html_sanitize_ex, "~> 1.4"},
+      # Load environment variables from .env files
+      {:dotenvy, "~> 0.8.0", only: [:dev, :test]}
     ]
   end
 

@@ -29,9 +29,26 @@ window.Alpine = Alpine
 Alpine.start()
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+// Define hooks for LiveView
+let Hooks = {}
+
+// Hook to close modal on successful upload
+Hooks.CloseModal = {
+  mounted() {
+    this.handleEvent("close-modal", () => {
+      const modal = document.getElementById("upload-modal")
+      if (modal) {
+        modal.classList.add("hidden")
+      }
+    })
+  }
+}
+
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
+  hooks: Hooks,
   dom: {
     onBeforeElUpdated(from, to) {
       if (from._x_dataStack) {

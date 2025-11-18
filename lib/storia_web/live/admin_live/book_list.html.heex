@@ -1,4 +1,4 @@
-<div class="w-full max-w-7xl mx-auto">
+<div class="w-full max-w-7xl mx-auto" phx-hook="CloseModal" id="book-list-container">
   <!-- Header -->
   <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
     <div class="flex flex-col gap-2">
@@ -151,7 +151,7 @@
         </button>
       </div>
 
-      <.form for={%{}} phx-submit="upload_book" phx-change="validate_upload">
+      <.form for={%{}} phx-submit="upload_book" phx-change="validate_upload" as={:book}>
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -180,19 +180,33 @@
             </div>
 
             <%= for entry <- @uploads.pdf.entries do %>
-              <div class="mt-2 flex items-center justify-between p-2 bg-gray-50 dark:bg-[#232948] rounded">
-                <div class="flex items-center gap-2">
-                  <.icon name="hero-document" class="w-5 h-5 text-gray-400" />
-                  <span class="text-sm text-gray-700 dark:text-gray-300"><%= entry.client_name %></span>
+              <div class="mt-2 p-3 bg-gray-50 dark:bg-[#232948] rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <.icon name="hero-document" class="w-5 h-5 text-gray-400" />
+                    <span class="text-sm text-gray-700 dark:text-gray-300"><%= entry.client_name %></span>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel_upload"
+                    phx-value-ref={entry.ref}
+                    class="text-gray-400 hover:text-red-500"
+                  >
+                    <.icon name="hero-x-mark" class="w-5 h-5" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  phx-click="cancel_upload"
-                  phx-value-ref={entry.ref}
-                  class="text-gray-400 hover:text-red-500"
-                >
-                  <.icon name="hero-x-mark" class="w-5 h-5" />
-                </button>
+
+                <!-- Upload Progress Bar -->
+                <div class="w-full bg-gray-200 dark:bg-[#323b67] rounded-full h-2">
+                  <div
+                    class="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={"width: #{entry.progress}%"}
+                  >
+                  </div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <%= entry.progress %>% uploaded
+                </p>
               </div>
               <%= for err <- upload_errors(@uploads.pdf, entry) do %>
                 <p class="mt-1 text-sm text-red-500"><%= error_to_string(err) %></p>
@@ -205,15 +219,24 @@
               type="button"
               phx-click={JS.hide(to: "#upload-modal")}
               class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#232948] rounded-lg hover:bg-gray-200 dark:hover:bg-[#323b67] transition-colors"
+              disabled={@uploading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={@uploads.pdf.entries == []}
-              class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={@uploads.pdf.entries == [] || @uploading}
+              class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Upload & Process
+              <%= if @uploading do %>
+                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Uploading...
+              <% else %>
+                Upload & Process
+              <% end %>
             </button>
           </div>
         </div>

@@ -27,7 +27,10 @@ defmodule StoriaWeb.AdminLive.BookList do
      |> allow_upload(:pdf,
        accept: ~w(.pdf),
        max_entries: 1,
-       max_file_size: 50_000_000
+       max_file_size: 50_000_000,
+       # Use external for large file uploads to avoid timeout
+       auto_upload: true,
+       progress: &handle_progress/3
      )}
   end
 
@@ -56,6 +59,9 @@ defmodule StoriaWeb.AdminLive.BookList do
 
   @impl true
   def handle_event("upload_book", _params, socket) do
+    # Set uploading state
+    socket = assign(socket, :uploading, true)
+
     uploaded_files =
       consume_uploaded_entries(socket, :pdf, fn %{path: path}, entry ->
         # Generate unique book ID
@@ -91,15 +97,23 @@ defmodule StoriaWeb.AdminLive.BookList do
 
             {:noreply,
              socket
-             |> put_flash(:info, "Book uploaded to R2 successfully. Processing started.")
+             |> assign(:uploading, false)
+             |> put_flash(:info, "Book uploaded successfully. Processing started.")
+             |> push_event("close-modal", %{})
              |> load_books()}
 
           {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to create book record")}
+            {:noreply,
+             socket
+             |> assign(:uploading, false)
+             |> put_flash(:error, "Failed to create book record")}
         end
 
       [] ->
-        {:noreply, put_flash(socket, :error, "No file was uploaded")}
+        {:noreply,
+         socket
+         |> assign(:uploading, false)
+         |> put_flash(:error, "No file was uploaded")}
     end
   end
 
@@ -135,6 +149,17 @@ defmodule StoriaWeb.AdminLive.BookList do
     if Enum.any?(socket.assigns.books, &(&1.id == book_id)) do
       {:noreply, load_books(socket)}
     else
+      {:noreply, socket}
+    end
+  end
+
+  # Handle upload progress
+  defp handle_progress(:pdf, entry, socket) do
+    if entry.done? do
+      # Upload is complete
+      {:noreply, socket}
+    else
+      # Progress update - LiveView automatically updates the entry.progress
       {:noreply, socket}
     end
   end

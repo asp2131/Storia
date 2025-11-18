@@ -1,6 +1,6 @@
 # Storia Storage Module
 
-The `Storia.Storage` module provides a clean interface for managing file storage with Cloudflare R2 (S3-compatible storage).
+The `Storia.Storage` module provides a clean interface for managing file storage with Supabase Storage.
 
 ## Configuration
 
@@ -9,20 +9,23 @@ The `Storia.Storage` module provides a clean interface for managing file storage
 Add the following to your `.env` file:
 
 ```bash
-R2_ACCESS_KEY_ID=your_r2_access_key_id
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
-R2_ACCOUNT_ID=your_r2_account_id
-R2_BUCKET_NAME=storia-production
-R2_ENDPOINT=your_account_id.r2.cloudflarestorage.com
+SUPABASE_URL=https://[PROJECT_ID].supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_STORAGE_BUCKET=storia-storage
 ```
 
-### Getting R2 Credentials
+### Getting Supabase Credentials
 
-1. Log in to your Cloudflare dashboard
-2. Navigate to R2 Object Storage
-3. Create a new bucket (e.g., `storia-production`)
-4. Generate API tokens with read/write permissions
-5. Note your account ID from the R2 dashboard URL
+1. Log in to your Supabase dashboard (https://supabase.com/dashboard)
+2. Select your project or create a new one
+3. Navigate to Project Settings > API
+4. Copy the following values:
+   - **Project URL** → `SUPABASE_URL`
+   - **Anon public key** → `SUPABASE_ANON_KEY`
+   - **Service role key** → `SUPABASE_SERVICE_ROLE_KEY` (keep this secret!)
+5. Navigate to Storage and create a bucket named `storia-storage`
+6. Set the bucket to public for PDFs, or use signed URLs for private access
 
 ## Usage
 
@@ -31,7 +34,7 @@ R2_ENDPOINT=your_account_id.r2.cloudflarestorage.com
 ```elixir
 # Upload a PDF file for a book
 {:ok, url} = Storia.Storage.upload_pdf("/path/to/book.pdf", book_id)
-# Returns: {:ok, "https://account.r2.cloudflarestorage.com/storia-dev/pdfs/book-123.pdf"}
+# Returns: {:ok, "https://[project].supabase.co/storage/v1/object/public/storia-storage/pdfs/book-123.pdf"}
 ```
 
 ### Uploading Audio Files
@@ -39,11 +42,11 @@ R2_ENDPOINT=your_account_id.r2.cloudflarestorage.com
 ```elixir
 # Upload curated soundscape
 {:ok, url} = Storia.Storage.upload_audio("/path/to/ambient.mp3", scene_id, :curated)
-# Returns: {:ok, "https://account.r2.cloudflarestorage.com/storia-dev/audio/curated/scene-123.mp3"}
+# Returns: {:ok, "https://[project].supabase.co/storage/v1/object/public/storia-storage/audio/curated/scene-123.mp3"}
 
 # Upload AI-generated soundscape
 {:ok, url} = Storia.Storage.upload_audio("/path/to/generated.mp3", scene_id, :generated)
-# Returns: {:ok, "https://account.r2.cloudflarestorage.com/storia-dev/audio/generated/scene-456.mp3"}
+# Returns: {:ok, "https://[project].supabase.co/storage/v1/object/public/storia-storage/audio/generated/scene-456.mp3"}
 ```
 
 ### Generating Signed URLs
@@ -61,24 +64,24 @@ For secure streaming of audio files:
 ### Deleting Files
 
 ```elixir
-# Delete a file from R2
+# Delete a file from Supabase Storage
 :ok = Storia.Storage.delete_file("pdfs/book-123.pdf")
 ```
 
 ### Extracting Keys from URLs
 
 ```elixir
-url = "https://account.r2.cloudflarestorage.com/storia-dev/pdfs/book-123.pdf"
+url = "https://[project].supabase.co/storage/v1/object/public/storia-storage/pdfs/book-123.pdf"
 key = Storia.Storage.extract_key_from_url(url)
 # Returns: "pdfs/book-123.pdf"
 ```
 
 ## File Organization
 
-Files are organized in R2 with the following structure:
+Files are organized in Supabase Storage with the following structure:
 
 ```
-storia-bucket/
+storia-storage/ (bucket)
 ├── pdfs/
 │   └── {book_id}.pdf
 └── audio/
@@ -108,7 +111,7 @@ end
 
 ### Unit Tests
 
-Run unit tests (no R2 credentials required):
+Run unit tests (no Supabase credentials required):
 
 ```bash
 mix test test/storia/storage_test.exs --exclude integration
@@ -116,7 +119,7 @@ mix test test/storia/storage_test.exs --exclude integration
 
 ### Integration Tests
 
-Integration tests require valid R2 credentials. Set up your environment variables, then run:
+Integration tests require valid Supabase credentials. Set up your environment variables, then run:
 
 ```bash
 # Remove the :skip tag from integration tests in storage_test.exs
@@ -125,45 +128,46 @@ mix test test/storia/storage_test.exs --only integration
 
 ## Cost Considerations
 
-### Cloudflare R2 Pricing
+### Supabase Storage Pricing
 
-- **Storage**: ~$0.015/GB per month
-- **Class A Operations** (writes): $4.50 per million requests
-- **Class B Operations** (reads): $0.36 per million requests
-- **Egress**: **$0** (This is R2's key advantage over S3)
+- **Storage**: Included in free tier (1GB), then $0.021/GB per month
+- **Bandwidth**: 2GB/month on free tier, then $0.09/GB
+- **API Requests**: Unlimited on all plans
 
 ### Estimated Costs for MVP
 
 With 20 books × 10MB PDFs + 30 audio files × 5MB:
 
-- Storage: ~0.35GB × $0.015 = **$0.005/month**
-- Operations: Negligible for MVP scale
-- **Total: < $0.01/month**
+- Storage: ~0.35GB = **Free** (within 1GB free tier)
+- Bandwidth: Depends on usage, likely within free tier for MVP
+- **Total: $0/month** (on free tier)
 
 ## Security Best Practices
 
 1. **Never commit credentials** - Use environment variables
 2. **Use signed URLs** for audio streaming to prevent hotlinking
 3. **Rotate API keys** periodically
-4. **Set appropriate CORS policies** in R2 dashboard
+4. **Set appropriate CORS policies** in Supabase Storage settings
 5. **Use different buckets** for dev/staging/production
+6. **Use service role key server-side only** - Never expose it to the client
 
 ## Troubleshooting
 
-### "Required key: :secret_access_key is nil in config!"
+### "Upload failed: HTTP 401" or "Authorization error"
 
 - Ensure environment variables are loaded
 - Check that `.env` file exists and is properly formatted
-- Verify `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` are set
+- Verify `SUPABASE_SERVICE_ROLE_KEY` is set correctly
+- Make sure you're using the service role key, not the anon key, for uploads
 
-### "Upload failed: connection refused"
+### "Upload failed: HTTP 404" or "Bucket not found"
 
-- Verify `R2_ENDPOINT` is correct
-- Check internet connectivity
-- Ensure R2 bucket exists and API token has write permissions
+- Verify `SUPABASE_STORAGE_BUCKET` matches your bucket name in Supabase
+- Check that the bucket exists in your Supabase project
+- Ensure the bucket is properly configured (public/private settings)
 
 ### "Failed to generate signed URL"
 
-- Verify the file exists in R2
+- Verify the file exists in Supabase Storage
 - Check that the key path is correct
-- Ensure API token has read permissions
+- Ensure you're using the service role key for generating signed URLs
