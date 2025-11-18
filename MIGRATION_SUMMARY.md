@@ -9,6 +9,7 @@ Your application has been successfully migrated from Cloudflare R2 and local Pos
 ### 1. Dependencies (`mix.exs`)
 - **Removed**: `ex_aws` and `ex_aws_s3` (R2/S3 client libraries)
 - **Kept**: `httpoison` (used for Supabase Storage API calls)
+- **Added**: `dotenvy` for automatic `.env` file loading in dev/test environments
 
 ### 2. Configuration Files
 
@@ -19,9 +20,15 @@ Your application has been successfully migrated from Cloudflare R2 and local Pos
 #### `config/dev.exs`
 - Updated to support both local PostgreSQL and Supabase PostgreSQL via `DATABASE_URL` environment variable
 - Falls back to local PostgreSQL if `DATABASE_URL` is not set
+- **Added `prepare: :unnamed`** to disable prepared statements (required for Supabase transaction mode pooler)
 
 #### `config/runtime.exs`
 - Replaced R2 configuration with Supabase configuration for production
+- **Added `prepare: :unnamed`** to disable prepared statements (required for Supabase transaction mode pooler)
+
+#### `config/config.exs`
+- **Added dotenvy integration** to automatically load `.env` files in development and test environments
+- No more need to manually export environment variables
 
 #### `.env.example`
 - Updated with Supabase environment variables
@@ -84,7 +91,11 @@ Create or update your `.env` file with the credentials from Supabase:
 
 ```bash
 # Database Configuration (Supabase PostgreSQL)
-DATABASE_URL=postgresql://postgres.[PROJECT_ID]:[PASSWORD]@[HOST]/postgres
+# Transaction mode pooler - use for general queries (port 6543)
+DATABASE_URL=postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws-1-ca-central-1.pooler.supabase.com:6543/postgres
+
+# Session mode pooler - use for migrations and complex transactions (port 5432)
+DIRECT_URL=postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws-1-ca-central-1.pooler.supabase.com:5432/postgres
 
 # Supabase Configuration
 SUPABASE_URL=https://[PROJECT_ID].supabase.co
@@ -99,6 +110,14 @@ STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 PHX_SERVER=true
 ```
 
+**Important Notes:**
+- Replace `[PROJECT_ID]` with your Supabase project ID
+- Replace `[PASSWORD]` with your database password
+- The hostname (`aws-1-ca-central-1`) may vary based on your region - check your Supabase dashboard
+- **Transaction mode** (port 6543) is used for general application queries
+- **Session mode** (port 5432) is used for migrations
+- With dotenvy installed, your `.env` file is automatically loaded - no need to manually export variables!
+
 **Remove these old R2 variables if present:**
 ```bash
 # DELETE THESE:
@@ -107,6 +126,10 @@ PHX_SERVER=true
 # R2_ACCOUNT_ID=...
 # R2_BUCKET_NAME=...
 # R2_ENDPOINT=...
+# CLOUDFLARE_ACCOUNT_ID=...
+# CLOUDFLARE_R2_ACCESS_KEY=...
+# CLOUDFLARE_R2_SECRET_KEY=...
+# CLOUDFLARE_R2_BUCKET=...
 ```
 
 ### 3. Install Dependencies

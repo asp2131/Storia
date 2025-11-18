@@ -102,7 +102,7 @@ user |> Ecto.Changeset.change(role: :admin) |> Storia.Repo.update!()
 
 - **Start Small**: Test with 1-2 books first
 - **Watch Processing**: Monitor the admin interface for errors
-- **Check R2**: Ensure Cloudflare R2 is configured
+- **Check Supabase**: Ensure Supabase Storage and database are configured
 - **API Limits**: Replicate API may have rate limits
 - **Concurrent Processing**: Oban processes 2 books at a time
 
@@ -130,8 +130,10 @@ Task 14 will be complete when:
 - Retry from admin interface
 
 **Upload fails?**
-- Verify R2 credentials in `.env`
-- Check bucket exists and has correct permissions
+- Verify Supabase credentials in `.env`
+- Check that `storia-storage` bucket exists in Supabase
+- Ensure `SUPABASE_SERVICE_ROLE_KEY` is set correctly
+- Verify bucket is configured as public (or use signed URLs)
 
 **AI generation fails?**
 - Verify `REPLICATE_API_TOKEN` in `.env`
