@@ -5,12 +5,22 @@ defmodule StoriaWeb.AdminLive.LibraryManager do
 
   @impl true
   def mount(_params, _session, socket) do
+    # Load curated soundscapes from bucket
+    curated_soundscapes =
+      case Soundscapes.list_curated_soundscapes_from_bucket() do
+        {:ok, soundscapes} -> soundscapes
+        {:error, _} -> %{}
+      end
+
     {:ok,
      socket
      |> assign(:page_title, "Soundscape Library")
      |> assign(:active_tab, :soundscapes)
      |> assign(:search_query, "")
      |> assign(:filter_source, "all")
+     |> assign(:curated_soundscapes, curated_soundscapes)
+     |> assign(:selected_category, nil)
+     |> assign(:show_curated_section, true)
      |> load_soundscapes()}
   end
 
@@ -33,6 +43,22 @@ defmodule StoriaWeb.AdminLive.LibraryManager do
      socket
      |> assign(:filter_source, source)
      |> load_soundscapes()}
+  end
+
+  @impl true
+  def handle_event("toggle_curated_section", _params, socket) do
+    {:noreply, assign(socket, :show_curated_section, !socket.assigns.show_curated_section)}
+  end
+
+  @impl true
+  def handle_event("select_curated_category", %{"category" => category}, socket) do
+    {:noreply, assign(socket, :selected_category, category)}
+  end
+
+  @impl true
+  def handle_event("play_preview", %{"url" => _url}, socket) do
+    # This is handled by the browser's audio element
+    {:noreply, socket}
   end
 
   @impl true

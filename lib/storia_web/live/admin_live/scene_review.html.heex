@@ -178,9 +178,82 @@
           </p>
         </div>
 
-        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Available Soundscapes</h3>
+        <!-- Curated Soundscapes Section -->
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-300">
+              <.icon name="hero-musical-note" class="w-4 h-4 inline mr-1" />
+              Curated Soundscapes Library
+            </h3>
+            <button
+              type="button"
+              phx-click="toggle_curated_browser"
+              class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            >
+              <%= if @show_curated_browser, do: "Hide", else: "Browse" %>
+            </button>
+          </div>
+
+          <%= if @show_curated_browser do %>
+            <!-- Category Selector -->
+            <div class="mb-3">
+              <label class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 block">Select Category</label>
+              <div class="flex flex-wrap gap-2">
+                <%= for {category, _files} <- @curated_soundscapes do %>
+                  <button
+                    type="button"
+                    phx-click="select_category"
+                    phx-value-category={category}
+                    class={"px-3 py-1.5 text-sm rounded-lg transition-colors " <> if @selected_category == category do "bg-blue-600 text-white" else "bg-white dark:bg-[#232948] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#323b67]" end}
+                  >
+                    <%= String.capitalize(category) %>
+                  </button>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Sound Files List -->
+            <%= if @selected_category do %>
+              <div class="space-y-2 max-h-60 overflow-y-auto">
+                <%= for file <- Map.get(@curated_soundscapes, @selected_category, []) do %>
+                  <div class="flex items-center gap-3 p-3 bg-white dark:bg-[#232948] rounded-lg">
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <%= Path.rootname(file.name) |> String.replace("_", " ") %>
+                      </p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <%= @selected_category %>
+                      </p>
+                    </div>
+                    <audio controls class="h-8 w-48">
+                      <source src={file.url} type="audio/mpeg" />
+                    </audio>
+                    <button
+                      type="button"
+                      phx-click="import_curated_soundscape"
+                      phx-value-path={file.path}
+                      class="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
+                    >
+                      Use This
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-xs text-gray-500 dark:text-gray-400 text-center py-4">
+                Select a category to browse soundscapes
+              </p>
+            <% end %>
+          <% else %>
+            <p class="text-xs text-gray-600 dark:text-gray-400">
+              Browse professionally curated soundscapes organized by mood and category.
+            </p>
+          <% end %>
+        </div>
+
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">AI-Generated Soundscapes</h3>
         <div class="space-y-2">
-          <%= if assigns[:available_soundscapes] do %>
+          <%= if assigns[:available_soundscapes] && length(@available_soundscapes) > 0 do %>
             <%= for soundscape <- @available_soundscapes do %>
               <button
                 type="button"

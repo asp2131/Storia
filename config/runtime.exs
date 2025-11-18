@@ -7,6 +7,13 @@ import Config
 # any compile-time configuration in here, as it won't be applied.
 # The block below contains prod specific runtime configuration.
 
+# Configure Supabase for all environments (dev, test, prod)
+config :storia, :supabase,
+  url: System.get_env("SUPABASE_URL"),
+  anon_key: System.get_env("SUPABASE_ANON_KEY"),
+  service_role_key: System.get_env("SUPABASE_SERVICE_ROLE_KEY"),
+  storage_bucket: System.get_env("SUPABASE_STORAGE_BUCKET", "storia-storage")
+
 # ## Using releases
 #
 # If you use `mix release`, you need to explicitly enable the server
@@ -122,12 +129,6 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
-  # Configure Supabase
-  config :storia, :supabase,
-    url: System.get_env("SUPABASE_URL"),
-    anon_key: System.get_env("SUPABASE_ANON_KEY"),
-    service_role_key: System.get_env("SUPABASE_SERVICE_ROLE_KEY"),
-    storage_bucket: System.get_env("SUPABASE_STORAGE_BUCKET", "storia-storage")
 
   # Configure Stripe
   config :stripity_stripe,

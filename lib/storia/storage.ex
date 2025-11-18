@@ -143,6 +143,184 @@ defmodule Storia.Storage do
   end
 
   @doc """
+  Lists files in a specific folder/path in the Supabase storage bucket.
+
+  ## Parameters
+    - path: The folder path to list (e.g., "magic", "magic/nature")
+    - opts: Optional parameters
+      - :recursive - List files recursively (default: false)
+
+  ## Returns
+    - {:ok, files} on success, where files is a list of maps with :name, :path, :url
+    - {:error, reason} on failure
+
+  ## Examples
+      iex> Storia.Storage.list_bucket_files("magic/nature")
+      {:ok, [%{name: "Forest_Ambience.mp3", path: "magic/nature/Forest_Ambience.mp3", url: "..."}]}
+  """
+  def list_bucket_files(path, opts \\ []) do
+    _recursive = Keyword.get(opts, :recursive, false)
+
+    # Ensure path doesn't start or end with /
+    clean_path =
+      path
+      |> String.trim_leading("/")
+      |> String.trim_trailing("/")
+
+    url = "#{supabase_url()}/storage/v1/object/list/#{bucket()}"
+    headers = [
+      {"Authorization", "Bearer #{service_role_key()}"},
+      {"Content-Type", "application/json"}
+    ]
+
+    body = Jason.encode!(%{
+      prefix: clean_path,
+      search: "",
+      limit: 1000,
+      offset: 0,
+      sortBy: %{column: "name", order: "asc"}
+    })
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, files} when is_list(files) ->
+            # Filter out folders (they have id: null) and map to friendly format
+            file_list =
+              files
+              |> Enum.filter(fn file ->
+                Map.get(file, "id") != nil &&
+                String.ends_with?(Map.get(file, "name", ""), [".mp3", ".wav", ".ogg", ".m4a"])
+              end)
+              |> Enum.map(fn file ->
+                file_name = Map.get(file, "name")
+                file_path = if clean_path == "", do: file_name, else: "#{clean_path}/#{file_name}"
+
+                %{
+                  name: file_name,
+                  path: file_path,
+                  url: build_public_url(file_path),
+                  size: Map.get(file, "metadata", %{}) |> Map.get("size"),
+                  updated_at: Map.get(file, "updated_at")
+                }
+              end)
+
+            {:ok, file_list}
+
+          {:ok, _} ->
+            {:error, "Unexpected response format"}
+
+          {:error, reason} ->
+            {:error, "Failed to decode response: #{inspect(reason)}"}
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+        Logger.error("List files failed: HTTP #{status} - #{body}")
+        {:error, "Failed to list files: HTTP #{status}"}
+
+      {:error, reason} ->
+        Logger.error("List files request failed: #{inspect(reason)}")
+        {:error, "Request failed: #{inspect(reason)}"}
+    end
+  end
+
+  @doc """
+  Lists all folders in the audio/curated directory with their file counts.
+
+  ## Returns
+    - {:ok, folders} where folders is a list of maps with :name, :path, :file_count
+    - {:error, reason} on failure
+
+  ## Examples
+      iex> Storia.Storage.list_curated_folders()
+      {:ok, [%{name: "magic", path: "audio/curated/magic", file_count: 10}, ...]}
+  """
+  def list_curated_folders do
+    base_path = "audio/curated"
+
+    # First, list folders (not files) in audio/curated
+    with {:ok, folder_items} <- list_folders_in_path(base_path) do
+      folders =
+        folder_items
+        |> Enum.map(fn folder_name ->
+          folder_path = "#{base_path}/#{folder_name}"
+
+          case list_bucket_files(folder_path) do
+            {:ok, files} ->
+              %{
+                name: folder_name,
+                path: folder_path,
+                file_count: length(files)
+              }
+            {:error, _} ->
+              %{
+                name: folder_name,
+                path: folder_path,
+                file_count: 0
+              }
+          end
+        end)
+        |> Enum.sort_by(& &1.name)
+
+      {:ok, folders}
+    end
+  end
+
+  @doc """
+  Lists folders (directories) at a specific path in the bucket.
+
+  Returns folder names only, not files.
+  """
+  def list_folders_in_path(path) do
+    clean_path =
+      path
+      |> String.trim_leading("/")
+      |> String.trim_trailing("/")
+
+    url = "#{supabase_url()}/storage/v1/object/list/#{bucket()}"
+    headers = [
+      {"Authorization", "Bearer #{service_role_key()}"},
+      {"Content-Type", "application/json"}
+    ]
+
+    body = Jason.encode!(%{
+      prefix: clean_path,
+      search: "",
+      limit: 1000,
+      offset: 0
+    })
+
+    case HTTPoison.post(url, body, headers) do
+      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+        case Jason.decode(response_body) do
+          {:ok, items} when is_list(items) ->
+            # Filter for folders only (id == nil)
+            folder_names =
+              items
+              |> Enum.filter(fn item -> Map.get(item, "id") == nil end)
+              |> Enum.map(fn item -> Map.get(item, "name") end)
+              |> Enum.reject(&is_nil/1)
+
+            {:ok, folder_names}
+
+          {:ok, _} ->
+            {:error, "Unexpected response format"}
+
+          {:error, reason} ->
+            {:error, "Failed to decode response: #{inspect(reason)}"}
+        end
+
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+        Logger.error("List folders failed: HTTP #{status} - #{body}")
+        {:error, "Failed to list folders: HTTP #{status}"}
+
+      {:error, reason} ->
+        Logger.error("List folders request failed: #{inspect(reason)}")
+        {:error, "Request failed: #{inspect(reason)}"}
+    end
+  end
+
+  @doc """
   Extracts the storage key from a full URL.
 
   ## Examples
@@ -215,7 +393,20 @@ defmodule Storia.Storage do
     end
   end
 
-  defp build_public_url(key) do
+  @doc """
+  Builds a public URL for a storage key.
+
+  ## Parameters
+    - key: The storage key (e.g., "magic/Dark_Magic_Rumble.mp3")
+
+  ## Returns
+    - Public URL string
+
+  ## Examples
+      iex> Storia.Storage.build_public_url("magic/Dark_Magic_Rumble.mp3")
+      "https://[project].supabase.co/storage/v1/object/public/storia-storage/magic/Dark_Magic_Rumble.mp3"
+  """
+  def build_public_url(key) do
     "#{supabase_url()}/storage/v1/object/public/#{bucket()}/#{key}"
   end
 end

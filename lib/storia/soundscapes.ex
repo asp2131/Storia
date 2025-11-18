@@ -176,6 +176,108 @@ defmodule Storia.Soundscapes do
     {:ok, count}
   end
 
+  @doc """
+  Lists all available curated soundscapes from the storage bucket.
+
+  Returns soundscapes organized by category folder.
+
+  ## Examples
+
+      iex> list_curated_soundscapes_from_bucket()
+      {:ok, %{
+        "magic" => [
+          %{name: "Fairy_Chimes.mp3", path: "audio/curated/magic/Fairy_Chimes.mp3", ...},
+          ...
+        ],
+        "movement" => [...],
+        ...
+      }}
+  """
+  def list_curated_soundscapes_from_bucket do
+    with {:ok, folders} <- Storia.Storage.list_curated_folders() do
+      soundscapes_by_category =
+        folders
+        |> Enum.reduce(%{}, fn folder, acc ->
+          case Storia.Storage.list_bucket_files(folder.path) do
+            {:ok, files} ->
+              Map.put(acc, folder.name, files)
+
+            {:error, _} ->
+              acc
+          end
+        end)
+
+      {:ok, soundscapes_by_category}
+    end
+  end
+
+  @doc """
+  Creates a soundscape record from a bucket file and assigns it to a scene.
+
+  ## Parameters
+    - scene_id: The scene to assign the soundscape to
+    - file_info: Map with :name, :path, :url from bucket listing
+    - category: The category/folder name (e.g., "magic", "movement")
+
+  ## Examples
+
+      iex> create_soundscape_from_bucket(scene_id, %{name: "...", path: "...", url: "..."}, "magic")
+      {:ok, %Soundscape{}}
+  """
+  def create_soundscape_from_bucket(scene_id, file_info, category) do
+    # Extract a friendly name and tags from the filename
+    file_name = file_info.name
+    friendly_name =
+      file_name
+      |> Path.rootname()
+      |> String.replace("_", " ")
+
+    tags = [category, friendly_name]
+
+    %Soundscape{}
+    |> Soundscape.changeset(%{
+      audio_url: file_info.url,
+      source_type: "curated",
+      confidence_score: 1.0,  # Curated soundscapes are fully confident
+      admin_approved: true,
+      tags: tags,
+      generation_prompt: "Curated soundscape: #{friendly_name} (#{category})",
+      scene_id: scene_id
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Imports a curated soundscape from the bucket to a scene.
+
+  This is a convenience function that combines listing and creating.
+
+  ## Parameters
+    - scene_id: The scene to assign the soundscape to
+    - bucket_path: Full path to the file in the bucket (e.g., "audio/curated/magic/Fairy_Chimes.mp3")
+
+  ## Examples
+
+      iex> import_soundscape_from_bucket(scene_id, "audio/curated/magic/Fairy_Chimes.mp3")
+      {:ok, %Soundscape{}}
+  """
+  def import_soundscape_from_bucket(scene_id, bucket_path) do
+    # Parse the path to get category and filename
+    case String.split(bucket_path, "/") do
+      ["audio", "curated", category, file_name] ->
+        file_info = %{
+          name: file_name,
+          path: bucket_path,
+          url: Storia.Storage.build_public_url(bucket_path)
+        }
+
+        create_soundscape_from_bucket(scene_id, file_info, category)
+
+      _ ->
+        {:error, "Invalid bucket path format. Expected: audio/curated/{category}/{filename}"}
+    end
+  end
+
   # Private helpers
 
   defp get_soundscape_safe(soundscape_id) do

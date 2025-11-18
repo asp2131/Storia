@@ -20,7 +20,10 @@ defmodule StoriaWeb.AdminLive.SceneReview do
          |> assign(:book, book)
          |> assign(:selected_scene, nil)
          |> assign(:show_override_modal, false)
-         |> assign(:available_soundscapes, [])}
+         |> assign(:available_soundscapes, [])
+         |> assign(:curated_soundscapes, %{})
+         |> assign(:selected_category, nil)
+         |> assign(:show_curated_browser, false)}
     end
   end
 
@@ -42,14 +45,24 @@ defmodule StoriaWeb.AdminLive.SceneReview do
     scene_id = String.to_integer(scene_id)
     scene = Enum.find(socket.assigns.book.scenes, &(&1.id == scene_id))
 
-    # Load available soundscapes for override
+    # Load available soundscapes for override (existing AI-generated ones)
     soundscapes = Soundscapes.list_soundscapes()
+
+    # Load curated soundscapes from bucket (with error handling)
+    curated_soundscapes =
+      case Soundscapes.list_curated_soundscapes_from_bucket() do
+        {:ok, soundscapes} -> soundscapes
+        {:error, _} -> %{}
+      end
 
     {:noreply,
      socket
      |> assign(:selected_scene, scene)
      |> assign(:show_override_modal, true)
-     |> assign(:available_soundscapes, soundscapes)}
+     |> assign(:available_soundscapes, soundscapes)
+     |> assign(:curated_soundscapes, curated_soundscapes)
+     |> assign(:selected_category, nil)
+     |> assign(:show_curated_browser, false)}
   end
 
   @impl true
@@ -58,6 +71,43 @@ defmodule StoriaWeb.AdminLive.SceneReview do
      socket
      |> assign(:show_override_modal, false)
      |> assign(:selected_scene, nil)}
+  end
+
+  @impl true
+  def handle_event("toggle_curated_browser", _params, socket) do
+    {:noreply, assign(socket, :show_curated_browser, !socket.assigns.show_curated_browser)}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category" => category}, socket) do
+    {:noreply, assign(socket, :selected_category, category)}
+  end
+
+  @impl true
+  def handle_event("import_curated_soundscape", %{"path" => bucket_path}, socket) do
+    scene = socket.assigns.selected_scene
+
+    # Clear existing soundscapes from scene
+    Soundscapes.clear_scene_soundscapes(scene.id)
+
+    # Import the curated soundscape
+    case Soundscapes.import_soundscape_from_bucket(scene.id, bucket_path) do
+      {:ok, _soundscape} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Curated soundscape successfully assigned to scene #{scene.scene_number}")
+         |> assign(:show_override_modal, false)
+         |> assign(:show_curated_browser, false)
+         |> assign(:selected_scene, nil)
+         |> assign(:selected_category, nil)
+         |> reload_book()}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to import soundscape: #{inspect(reason)}")
+         |> assign(:show_override_modal, false)}
+    end
   end
 
   @impl true

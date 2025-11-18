@@ -84,13 +84,6 @@ config :storia,
   classification_failure_threshold: 0.3,
   scene_boundary_threshold: 0.6
 
-# Configure Supabase
-config :storia, :supabase,
-  url: System.get_env("SUPABASE_URL", ""),
-  anon_key: System.get_env("SUPABASE_ANON_KEY", ""),
-  service_role_key: System.get_env("SUPABASE_SERVICE_ROLE_KEY", ""),
-  storage_bucket: System.get_env("SUPABASE_STORAGE_BUCKET", "storia-storage")
-
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

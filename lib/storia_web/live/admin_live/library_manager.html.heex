@@ -88,7 +88,91 @@
     </div>
   </div>
 
-  <!-- Soundscapes Grid -->
+  <!-- Curated Soundscapes From Bucket -->
+  <div class="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800 overflow-hidden">
+    <div class="p-4">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+            <.icon name="hero-musical-note" class="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+              Curated Soundscape Library
+            </h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Browse <%= map_size(@curated_soundscapes) %> categories with <%= @curated_soundscapes |> Map.values() |> List.flatten() |> length() %> professional soundscapes
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          phx-click="toggle_curated_section"
+          class="px-4 py-2 text-sm font-medium bg-white dark:bg-[#232948] text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-[#323b67] transition-colors"
+        >
+          <%= if @show_curated_section, do: "Hide", else: "Show" %>
+        </button>
+      </div>
+
+      <%= if @show_curated_section do %>
+        <!-- Category Selector -->
+        <div class="mb-4">
+          <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Select Category</label>
+          <div class="flex flex-wrap gap-2">
+            <%= for {category, files} <- @curated_soundscapes do %>
+              <button
+                type="button"
+                phx-click="select_curated_category"
+                phx-value-category={category}
+                class={"px-4 py-2 rounded-lg transition-colors " <> if @selected_category == category do "bg-blue-600 text-white" else "bg-white dark:bg-[#232948] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#323b67]" end}
+              >
+                <%= String.capitalize(category) %> (<%= length(files) %>)
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Sound Files Grid -->
+        <%= if @selected_category do %>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+            <%= for file <- Map.get(@curated_soundscapes, @selected_category, []) do %>
+              <div class="bg-white dark:bg-[#232948] rounded-lg border border-gray-200 dark:border-[#323b67] p-3">
+                <div class="flex items-start gap-2 mb-2">
+                  <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                    <.icon name="hero-musical-note" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <%= Path.rootname(file.name) |> String.replace("_", " ") %>
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      <%= @selected_category %>
+                    </p>
+                  </div>
+                </div>
+                <audio controls class="w-full h-8 mb-2">
+                  <source src={file.url} type="audio/mpeg" />
+                </audio>
+                <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+                  Available in storage bucket
+                </p>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8 bg-white dark:bg-[#232948] rounded-lg border border-dashed border-gray-300 dark:border-[#323b67]">
+            <.icon name="hero-folder-open" class="w-12 h-12 text-gray-400 mx-auto mb-2" />
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Select a category above to browse soundscapes
+            </p>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Imported Soundscapes Grid -->
+  <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Imported & Assigned Soundscapes</h2>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <%= for soundscape <- @soundscapes do %>
       <div class="bg-white dark:bg-[#111422] rounded-lg border border-gray-200 dark:border-[#323b67] overflow-hidden hover:shadow-lg transition-shadow">
