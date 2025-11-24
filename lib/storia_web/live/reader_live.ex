@@ -393,9 +393,10 @@ defmodule StoriaWeb.ReaderLive do
   defp get_audio_url(nil), do: nil
 
   defp get_audio_url(scene) do
-    case scene.soundscapes do
-      [soundscape | _] -> soundscape.audio_url
-      [] -> nil
+    if scene.soundscape do
+      scene.soundscape.audio_url
+    else
+      nil
     end
   end
 

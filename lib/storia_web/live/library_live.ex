@@ -576,7 +576,7 @@ defmodule StoriaWeb.LibraryLive do
     # Query the database to see if any soundscapes exist for this book's scenes
     soundscape_count =
       from(s in Storia.Content.Scene,
-        join: ss in Storia.Content.Soundscape,
+        join: ss in Storia.Soundscapes.Soundscape,
         on: ss.scene_id == s.id,
         where: s.book_id == ^book.id,
         select: count(ss.id)

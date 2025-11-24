@@ -86,7 +86,7 @@ defmodule Storia.Content do
   def get_book_with_scenes_and_soundscapes!(id) do
     Book
     |> Repo.get!(id)
-    |> Repo.preload(scenes: [soundscapes: :scene])
+    |> Repo.preload(scenes: [:soundscape])
   end
 
   @doc """
@@ -96,7 +96,7 @@ defmodule Storia.Content do
   def get_book_with_scenes_and_soundscapes(id) do
     case Repo.get(Book, id) do
       nil -> nil
-      book -> Repo.preload(book, scenes: [soundscapes: :scene])
+      book -> Repo.preload(book, scenes: [:soundscape])
     end
   end
 
@@ -295,7 +295,7 @@ defmodule Storia.Content do
   def get_page_with_scene(book_id, page_number) do
     Page
     |> where([p], p.book_id == ^book_id and p.page_number == ^page_number)
-    |> preload([p], scene: [soundscapes: :scene])
+    |> preload([p], scene: [:soundscape])
     |> Repo.one()
   end
 
@@ -308,7 +308,7 @@ defmodule Storia.Content do
         where: s.book_id == ^book_id,
         where: s.start_page <= ^page_number,
         where: s.end_page >= ^page_number,
-        preload: [soundscapes: :scene]
+        preload: [:soundscape]
 
     Repo.one(query)
   end
@@ -322,7 +322,7 @@ defmodule Storia.Content do
     |> where([s], s.book_id == ^book_id)
     |> where([s], s.start_page > ^page_number)
     |> order_by([s], asc: s.start_page)
-    |> preload([s], soundscapes: :scene)
+    |> preload([:soundscape])
     |> limit(1)
     |> Repo.one()
   end
