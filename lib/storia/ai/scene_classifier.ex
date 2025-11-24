@@ -268,14 +268,52 @@ defmodule Storia.AI.SceneClassifier do
   end
 
   defp calculate_similarity(descriptors1, descriptors2) do
-    keys = Map.keys(descriptors1)
+    # Weights determine how much each attribute contributes to continuity.
+    # Structural changes (Setting, Time) break scenes more than emotional ones.
+    weights = %{
+      "setting" => 0.30,
+      "time_of_day" => 0.20,
+      "scene_type" => 0.15,
+      "dominant_elements" => 0.15,
+      "weather" => 0.10,
+      "atmosphere" => 0.05,
+      "mood" => 0.05,
+      "activity_level" => 0.00 # Activity often fluctuates within a scene
+    }
 
-    matching_count =
-      Enum.count(keys, fn key ->
-        Map.get(descriptors1, key) == Map.get(descriptors2, key)
-      end)
+    # Calculate weighted score
+    Enum.reduce(weights, 0.0, fn {key, weight}, acc ->
+      v1 = Map.get(descriptors1, key)
+      v2 = Map.get(descriptors2, key)
+      similarity = compare_attribute(key, v1, v2)
+      acc + (similarity * weight)
+    end)
+  end
 
-    matching_count / length(keys)
+  defp compare_attribute("dominant_elements", v1, v2) do
+    set1 = split_elements(v1)
+    set2 = split_elements(v2)
+
+    intersection = MapSet.intersection(set1, set2) |> MapSet.size()
+    union = MapSet.union(set1, set2) |> MapSet.size()
+
+    if union == 0, do: 1.0, else: intersection / union
+  end
+
+  defp compare_attribute(_key, v1, v2) when is_binary(v1) and is_binary(v2) do
+    if String.downcase(v1) == String.downcase(v2), do: 1.0, else: 0.0
+  end
+
+  defp compare_attribute(_key, _v1, _v2), do: 0.0
+
+  defp split_elements(nil), do: MapSet.new()
+  defp split_elements(""), do: MapSet.new()
+  defp split_elements(str) do
+    str
+    |> String.downcase()
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> MapSet.new()
   end
 
   defp aggregate_descriptors([]), do: default_descriptors()

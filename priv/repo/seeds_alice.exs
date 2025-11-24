@@ -42,9 +42,9 @@ scenes_data = [
     start_page: 1,
     end_page: 1,
     descriptors: %{
-      "activity_level" => "calm",
+      "activity_level" => "moderate",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, mystery, comfort",
+      "dominant_elements" => "wonder, mystery, silence",
       "mood" => "curious",
       "scene_type" => "description",
       "setting" => "library",
@@ -58,16 +58,16 @@ scenes_data = [
     start_page: 2,
     end_page: 2,
     descriptors: %{
-      "activity_level" => "peaceful",
+      "activity_level" => "calm",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "water, wind, voices",
+      "dominant_elements" => "water, voices, wonder",
       "mood" => "playful",
       "scene_type" => "journey",
       "setting" => "riverside",
       "time_of_day" => "afternoon",
       "weather" => "sunny"
     },
-    soundscape: nil  # No match found in analysis
+    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
   },
   %{
     scene_number: 3,
@@ -75,15 +75,15 @@ scenes_data = [
     end_page: 3,
     descriptors: %{
       "activity_level" => "moderate",
-      "atmosphere" => "whimsical",
+      "atmosphere" => "magical",
       "dominant_elements" => "voices, wonder, silence",
-      "mood" => "whimsical",
+      "mood" => "playful",
       "scene_type" => "description",
       "setting" => "dreamscape",
       "time_of_day" => "dusk",
-      "weather" => "clear"
+      "weather" => "unknown"
     },
-    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
+    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.63}
   },
   %{
     scene_number: 4,
@@ -92,54 +92,22 @@ scenes_data = [
     descriptors: %{
       "activity_level" => "intense",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, mystery, wind",
+      "dominant_elements" => "wind, mystery, echoes",
       "mood" => "curious",
       "scene_type" => "journey",
       "setting" => "underground",
-      "time_of_day" => "afternoon",
+      "time_of_day" => "midday",
       "weather" => "clear"
     },
-    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
+    soundscape: %{file: "Footsteps_in_Snow.mp3", category: "movement", confidence: 0.28}
   },
   %{
     scene_number: 5,
     start_page: 5,
-    end_page: 6,
-    descriptors: %{
-      "activity_level" => "active",
-      "atmosphere" => "magical",
-      "dominant_elements" => "wonder, isolation, silence",
-      "mood" => "whimsical",
-      "scene_type" => "discovery",
-      "setting" => "magical_realm",
-      "time_of_day" => "unknown",
-      "weather" => "unknown"
-    },
-    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.76}
-  },
-  %{
-    scene_number: 6,
-    start_page: 7,
-    end_page: 7,
-    descriptors: %{
-      "activity_level" => "moderate",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "silence, footsteps, mystery",
-      "mood" => "curious",
-      "scene_type" => "journey",
-      "setting" => "underground",
-      "time_of_day" => "unknown",
-      "weather" => "unknown"
-    },
-    soundscape: %{file: "Giant's_Footsteps.mp3", category: "magic", confidence: 0.4}
-  },
-  %{
-    scene_number: 7,
-    start_page: 8,
     end_page: 8,
     descriptors: %{
       "activity_level" => "moderate",
-      "atmosphere" => "magical",
+      "atmosphere" => "whimsical",
       "dominant_elements" => "echoes, rustling, wonder",
       "mood" => "whimsical",
       "scene_type" => "introspection",
@@ -147,35 +115,35 @@ scenes_data = [
       "time_of_day" => "unknown",
       "weather" => "unknown"
     },
-    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.63}
+    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
   },
   %{
-    scene_number: 8,
+    scene_number: 6,
     start_page: 9,
     end_page: 9,
     descriptors: %{
       "activity_level" => "moderate",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, mystery, echoes",
+      "dominant_elements" => "wonder, mystery, magic",
       "mood" => "curious",
       "scene_type" => "discovery",
       "setting" => "hall",
       "time_of_day" => "unknown",
       "weather" => "unknown"
     },
-    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
+    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.4}
   },
   %{
-    scene_number: 9,
+    scene_number: 7,
     start_page: 10,
     end_page: 10,
     descriptors: %{
       "activity_level" => "still",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, magic, tension",
+      "dominant_elements" => "wonder, magic, isolation",
       "mood" => "curious",
       "scene_type" => "transformation",
-      "setting" => "underground",
+      "setting" => "chamber",
       "time_of_day" => "unknown",
       "weather" => "unknown"
     },
@@ -314,14 +282,12 @@ BOOK DETAILS:
 
 SOUNDSCAPE MAPPING:
   • Scene 1: Awe & Wonder (sentiment) - Library setting
-  • Scene 2: No soundscape - Riverside journey
-  • Scene 3: Awe & Wonder (sentiment) - Dreamscape
-  • Scene 4: Awe & Wonder (sentiment) - Underground journey
-  • Scene 5: Dark Magic Rumble (magic) - Magical realm ⭐ 76% confidence
-  • Scene 6: Giant's Footsteps (magic) - Underground with footsteps
-  • Scene 7: Dark Magic Rumble (magic) - Underground introspection
-  • Scene 8: Awe & Wonder (sentiment) - Hall discovery
-  • Scene 9: Dark Magic Rumble (magic) - Transformation scene
+  • Scene 2: Awe & Wonder (sentiment) - Riverside journey
+  • Scene 3: Dark Magic Rumble (magic) - Dreamscape
+  • Scene 4: Footsteps in Snow (movement) - Underground journey
+  • Scene 5: Awe & Wonder (sentiment) - Underground introspection
+  • Scene 6: Dark Magic Rumble (magic) - Hall discovery
+  • Scene 7: Dark Magic Rumble (magic) - Transformation scene
 
 ═══════════════════════════════════════════════════════════
 
@@ -346,9 +312,9 @@ Start the server and enjoy the full experience:
 
 ═══════════════════════════════════════════════════════════
 
-💡 TIP: The improved descriptors now capture the whimsical and
-magical nature of Alice's journey, resulting in better soundscape
-matches (note the 76% confidence for the magical realm scene!)
+💡 TIP: The improved scene detection now better groups the long
+underground sequence (Scene 5, pages 5-8) while still capturing
+distinct moments like the dreamscape and hall discovery.
 
 """)
 
