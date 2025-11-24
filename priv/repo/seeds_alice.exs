@@ -39,8 +39,8 @@ end
 scenes_data = [
   %{
     scene_number: 1,
-    start_page: 1,
-    end_page: 1,
+    start_page: 8,
+    end_page: 8,
     descriptors: %{
       "activity_level" => "moderate",
       "atmosphere" => "whimsical",
@@ -55,8 +55,8 @@ scenes_data = [
   },
   %{
     scene_number: 2,
-    start_page: 2,
-    end_page: 2,
+    start_page: 9,
+    end_page: 9,
     descriptors: %{
       "activity_level" => "calm",
       "atmosphere" => "whimsical",
@@ -71,8 +71,8 @@ scenes_data = [
   },
   %{
     scene_number: 3,
-    start_page: 3,
-    end_page: 3,
+    start_page: 10,
+    end_page: 10,
     descriptors: %{
       "activity_level" => "moderate",
       "atmosphere" => "magical",
@@ -87,8 +87,8 @@ scenes_data = [
   },
   %{
     scene_number: 4,
-    start_page: 4,
-    end_page: 4,
+    start_page: 11,
+    end_page: 11,
     descriptors: %{
       "activity_level" => "intense",
       "atmosphere" => "whimsical",
@@ -103,8 +103,8 @@ scenes_data = [
   },
   %{
     scene_number: 5,
-    start_page: 5,
-    end_page: 8,
+    start_page: 12,
+    end_page: 13,
     descriptors: %{
       "activity_level" => "moderate",
       "atmosphere" => "whimsical",
@@ -119,8 +119,8 @@ scenes_data = [
   },
   %{
     scene_number: 6,
-    start_page: 9,
-    end_page: 9,
+    start_page: 14,
+    end_page: 14,
     descriptors: %{
       "activity_level" => "moderate",
       "atmosphere" => "whimsical",
@@ -135,8 +135,8 @@ scenes_data = [
   },
   %{
     scene_number: 7,
-    start_page: 10,
-    end_page: 10,
+    start_page: 15,
+    end_page: 15,
     descriptors: %{
       "activity_level" => "still",
       "atmosphere" => "whimsical",
@@ -171,7 +171,7 @@ end
 
 script_path = Path.join([File.cwd!(), "scripts", "pdf_processor", "extract.js"])
 
-case System.cmd("node", [script_path, pdf_path, "10"], stderr_to_stdout: true) do
+case System.cmd("node", [script_path, pdf_path, "15", "8"], stderr_to_stdout: true) do
   {output, 0} ->
     case Jason.decode(output) do
       {:ok, %{"success" => true, "pages" => pages_data}} ->
@@ -313,7 +313,7 @@ Start the server and enjoy the full experience:
 ═══════════════════════════════════════════════════════════
 
 💡 TIP: The improved scene detection now better groups the long
-underground sequence (Scene 5, pages 5-8) while still capturing
+underground sequence (Scene 5, pages 12-13) while still capturing
 distinct moments like the dreamscape and hall discovery.
 
 """)

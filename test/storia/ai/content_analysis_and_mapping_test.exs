@@ -6,7 +6,7 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
   alias Storia.Soundscapes
 
   @pdf_path Path.join(File.cwd!(), "Alice_in_Wonderland.pdf")
-  @first_chapter_pages 10
+  @first_chapter_pages 15
 
   describe "content analysis and soundscape mapping for Alice in Wonderland first chapter" do
     @tag :integration
@@ -151,7 +151,7 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
       |> Path.join()
       |> Path.expand(File.cwd!())
 
-    case System.cmd("node", [script_path, pdf_path, to_string(max_pages)], stderr_to_stdout: true) do
+    case System.cmd("node", [script_path, pdf_path, to_string(max_pages), "8"], stderr_to_stdout: true) do
       {output, 0} ->
         case Jason.decode(output) do
           {:ok, %{"success" => true, "pages" => all_pages}} ->
@@ -206,17 +206,12 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
   end
 
   defp calculate_match_score(descriptors, file_info, category) do
-    # Enhanced matching algorithm that leverages rich descriptors:
-    # - Category name matching scene attributes
-    # - Filename keywords matching descriptors
-    # - Dominant elements matching
-    # - Scene type and atmosphere alignment
-    # - Partial string matching for better coverage
+    # Enhanced matching algorithm that leverages rich descriptors and synonyms
 
     file_name = String.downcase(file_info.name || "")
     category_lower = String.downcase(category)
 
-    # Extract keywords from filename (remove common audio extensions)
+    # Extract keywords from filename
     keywords =
       file_name
       |> String.replace(~r/\.(mp3|wav|ogg|m4a)$/, "")
@@ -225,109 +220,90 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
       |> Enum.map(&String.downcase/1)
       |> Enum.reject(&(&1 in ["sound", "audio", "ambience", "ambient"]))
 
+    # Get synonyms for key descriptors
+    setting_synonyms = get_synonyms(descriptors["setting"])
+    mood_synonyms = get_synonyms(descriptors["mood"])
+    atmosphere_synonyms = get_synonyms(descriptors["atmosphere"])
+
+    # Combine all semantic terms to search for
+    search_terms =
+      keywords ++
+      (keywords |> Enum.flat_map(&get_synonyms/1))
+
     score = 0.0
 
-    # 1. Match category to scene attributes (weighted by importance)
-    score =
-      score +
-      cond do
-        matches_category(category_lower, descriptors["setting"]) -> 0.35
-        matches_category(category_lower, descriptors["atmosphere"]) -> 0.3
-        matches_category(category_lower, descriptors["mood"]) -> 0.25
-        matches_category(category_lower, descriptors["scene_type"]) -> 0.2
-        true -> 0.0
-      end
+    # 1. Setting Match (Highest Priority)
+    # Check if file keywords or their synonyms match the scene setting
+    setting_matches =
+      Enum.any?(search_terms, fn term ->
+        term == String.downcase(descriptors["setting"] || "") or
+        term in setting_synonyms
+      end)
 
-    # 2. Match dominant elements to filename/category
-    score =
+    score = if setting_matches, do: score + 0.4, else: score
+
+    # 2. Dominant Elements Match
+    element_score =
       if descriptors["dominant_elements"] do
         elements =
           descriptors["dominant_elements"]
           |> String.downcase()
           |> String.split(",")
           |> Enum.map(&String.trim/1)
+          |> Enum.flat_map(fn e -> [e | get_synonyms(e)] end)
 
-        element_matches =
-          Enum.count(elements, fn element ->
-            Enum.any?(keywords, &String.contains?(&1, element)) or
-              String.contains?(category_lower, element) or
-              String.contains?(element, category_lower)
-          end)
+        matches = Enum.count(elements, fn element ->
+          Enum.any?(search_terms, &String.contains?(&1, element))
+        end)
 
-        score + element_matches * 0.15
+        matches * 0.15
       else
-        score
+        0.0
       end
+    score = score + element_score
 
-    # 3. Match keywords to all descriptors (partial matching)
-    score =
-      score +
-      Enum.reduce(descriptors, 0.0, fn {key, value}, acc ->
-        # Skip dominant_elements as we handled it separately
-        if key == "dominant_elements" do
-          acc
-        else
-          value_lower = String.downcase(to_string(value))
-          value_words = String.split(value_lower, " ")
-
-          # Check for partial matches
-          keyword_matches =
-            Enum.count(keywords, fn kw ->
-              String.contains?(value_lower, kw) or
-                Enum.any?(value_words, &String.contains?(&1, kw)) or
-                String.contains?(kw, value_lower)
-            end)
-
-          acc + keyword_matches * 0.08
-        end
+    # 3. Mood/Atmosphere Match
+    mood_matches =
+      Enum.any?(search_terms, fn term ->
+        term == String.downcase(descriptors["mood"] || "") or
+        term in mood_synonyms or
+        term == String.downcase(descriptors["atmosphere"] || "") or
+        term in atmosphere_synonyms
       end)
 
-    # 4. Weather/time matching with partial matching
-    score =
-      if descriptors["weather"] != "unknown" do
-        weather = String.downcase(descriptors["weather"])
+    score = if mood_matches, do: score + 0.25, else: score
 
-        if Enum.any?(keywords, &(String.contains?(&1, weather) or String.contains?(weather, &1))) do
-          score + 0.15
-        else
-          score
-        end
-      else
-        score
-      end
-
-    # 5. Activity level matching (for movement/action categories)
+    # 4. Category Match
     score =
-      if descriptors["activity_level"] in ["active", "energetic", "intense", "chaotic"] and
-           (category_lower in ["movement", "action", "adventure"] or
-              Enum.any?(keywords, &(&1 in ["action", "movement", "running", "chase"]))) do
+      if matches_category(category_lower, descriptors["setting"]) or
+         matches_category(category_lower, descriptors["scene_type"]) do
         score + 0.2
-      else
-        score
-      end
-
-    # 6. Calm/peaceful matching for nature sounds
-    score =
-      if descriptors["activity_level"] in ["still", "calm", "peaceful"] and
-           descriptors["atmosphere"] in ["peaceful", "tranquil", "serene"] and
-           (category_lower in ["nature", "ambient", "calm"] or
-              Enum.any?(keywords, &(&1 in ["nature", "forest", "birds", "water", "wind"]))) do
-        score + 0.2
-      else
-        score
-      end
-
-    # 7. Magical/whimsical matching
-    score =
-      if descriptors["atmosphere"] in ["magical", "whimsical", "ethereal"] and
-           (category_lower in ["magic", "fantasy", "mystical"] or
-              Enum.any?(keywords, &(&1 in ["magic", "fairy", "mystical", "enchanted", "wonder"]))) do
-        score + 0.25
       else
         score
       end
 
     min(score, 1.0)
+  end
+
+  defp get_synonyms(nil), do: []
+  defp get_synonyms(term) do
+    term = String.downcase(term)
+    case term do
+      "riverside" -> ["river", "stream", "brook", "creek", "water", "flow", "meadow"]
+      "underground" -> ["cave", "cavern", "echo", "deep", "earth", "subterranean"]
+      "hall" -> ["castle", "interior", "corridor", "chamber", "room", "palace"]
+      "chamber" -> ["room", "hall", "interior", "house"]
+      "forest" -> ["wood", "grove", "trees", "nature", "glade"]
+      "garden" -> ["nature", "flowers", "park", "meadow"]
+      "magic" -> ["fantasy", "ethereal", "spell", "enchanted", "wizard", "mystical"]
+      "whimsical" -> ["playful", "magic", "wonder", "curious", "fun"]
+      "tense" -> ["suspense", "danger", "ominous", "scary", "fear"]
+      "water" -> ["ocean", "sea", "river", "lake", "rain", "brook"]
+      "wind" -> ["breeze", "storm", "air", "blow"]
+      "footsteps" -> ["walk", "run", "step", "movement"]
+      "silence" -> ["quiet", "calm", "still", "serene"]
+      _ -> []
+    end
   end
 
   defp matches_category(category, value) when is_binary(value) do

@@ -66,15 +66,18 @@ defmodule Storia.AI.SceneClassifier do
   Compares consecutive pages using descriptor similarity.
   A new scene is detected when similarity falls below threshold.
   """
+  def detect_scene_boundaries([], _), do: []
+
   def detect_scene_boundaries(pages_with_descriptors, threshold \\ @similarity_threshold) do
+    first_page = List.first(pages_with_descriptors)
+
     pages_with_descriptors
     |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.with_index(1)
-    |> Enum.reduce([1], fn {[prev, curr], idx}, acc ->
+    |> Enum.reduce([first_page.page_number], fn [prev, curr], acc ->
       similarity = calculate_similarity(prev.descriptors, curr.descriptors)
 
       if similarity < threshold do
-        [idx + 1 | acc]
+        [curr.page_number | acc]
       else
         acc
       end
@@ -95,6 +98,9 @@ defmodule Storia.AI.SceneClassifier do
   - `{:error, reason}` on failure
   """
   def create_scenes(book_id, pages_with_descriptors, boundaries) do
+    last_page = List.last(pages_with_descriptors)
+    last_page_num = last_page.page_number
+
     scenes =
       boundaries
       |> Enum.chunk_every(2, 1)
@@ -103,7 +109,7 @@ defmodule Storia.AI.SceneClassifier do
         {start_page, end_page} =
           case boundary_chunk do
             [start_page, next_start] -> {start_page, next_start - 1}
-            [start_page] -> {start_page, length(pages_with_descriptors)}
+            [start_page] -> {start_page, last_page_num}
           end
 
         pages_in_scene =
