@@ -69,7 +69,9 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
                     "time_of_day" => "unknown",
                     "weather" => "unknown",
                     "activity_level" => "moderate",
-                    "atmosphere" => "neutral"
+                    "atmosphere" => "neutral",
+                    "scene_type" => "description",
+                    "dominant_elements" => "silence"
                   }
                 }
             end
@@ -194,7 +196,7 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
         |> Enum.sort_by(fn {_file, _category, score} -> score end, :desc)
 
       case List.first(scores) do
-        {file, category, score} when score > 0.3 ->
+        {file, category, score} when score > 0.25 ->
           {:ok, file, category, score}
 
         _ ->
@@ -204,57 +206,123 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
   end
 
   defp calculate_match_score(descriptors, file_info, category) do
-    # Simple matching algorithm based on:
+    # Enhanced matching algorithm that leverages rich descriptors:
     # - Category name matching scene attributes
     # - Filename keywords matching descriptors
-    # - Mood and setting alignment
+    # - Dominant elements matching
+    # - Scene type and atmosphere alignment
+    # - Partial string matching for better coverage
 
     file_name = String.downcase(file_info.name || "")
     category_lower = String.downcase(category)
 
-    # Extract keywords from filename
+    # Extract keywords from filename (remove common audio extensions)
     keywords =
       file_name
+      |> String.replace(~r/\.(mp3|wav|ogg|m4a)$/, "")
       |> String.replace(~r/[._-]/, " ")
       |> String.split()
       |> Enum.map(&String.downcase/1)
+      |> Enum.reject(&(&1 in ["sound", "audio", "ambience", "ambient"]))
 
     score = 0.0
 
-    # Match category to scene attributes
+    # 1. Match category to scene attributes (weighted by importance)
     score =
       score +
       cond do
-        matches_category(category_lower, descriptors["setting"]) -> 0.3
+        matches_category(category_lower, descriptors["setting"]) -> 0.35
+        matches_category(category_lower, descriptors["atmosphere"]) -> 0.3
         matches_category(category_lower, descriptors["mood"]) -> 0.25
-        matches_category(category_lower, descriptors["atmosphere"]) -> 0.2
+        matches_category(category_lower, descriptors["scene_type"]) -> 0.2
         true -> 0.0
       end
 
-    # Match keywords to descriptors
+    # 2. Match dominant elements to filename/category
     score =
-      score +
-      Enum.reduce(descriptors, 0.0, fn {_key, value}, acc ->
-        value_lower = String.downcase(to_string(value))
-        keyword_matches = Enum.count(keywords, &String.contains?(value_lower, &1))
+      if descriptors["dominant_elements"] do
+        elements =
+          descriptors["dominant_elements"]
+          |> String.downcase()
+          |> String.split(",")
+          |> Enum.map(&String.trim/1)
 
-        acc + keyword_matches * 0.1
-      end)
+        element_matches =
+          Enum.count(elements, fn element ->
+            Enum.any?(keywords, &String.contains?(&1, element)) or
+              String.contains?(category_lower, element) or
+              String.contains?(element, category_lower)
+          end)
 
-    # Weather/time matching
-    score =
-      if descriptors["weather"] != "unknown" and
-           String.contains?(file_name, String.downcase(descriptors["weather"])) do
-        score + 0.15
+        score + element_matches * 0.15
       else
         score
       end
 
-    # Activity level matching (for movement/action categories)
+    # 3. Match keywords to all descriptors (partial matching)
     score =
-      if descriptors["activity_level"] in ["high", "intense"] and
-           category_lower in ["movement", "action", "adventure"] do
+      score +
+      Enum.reduce(descriptors, 0.0, fn {key, value}, acc ->
+        # Skip dominant_elements as we handled it separately
+        if key == "dominant_elements" do
+          acc
+        else
+          value_lower = String.downcase(to_string(value))
+          value_words = String.split(value_lower, " ")
+
+          # Check for partial matches
+          keyword_matches =
+            Enum.count(keywords, fn kw ->
+              String.contains?(value_lower, kw) or
+                Enum.any?(value_words, &String.contains?(&1, kw)) or
+                String.contains?(kw, value_lower)
+            end)
+
+          acc + keyword_matches * 0.08
+        end
+      end)
+
+    # 4. Weather/time matching with partial matching
+    score =
+      if descriptors["weather"] != "unknown" do
+        weather = String.downcase(descriptors["weather"])
+
+        if Enum.any?(keywords, &(String.contains?(&1, weather) or String.contains?(weather, &1))) do
+          score + 0.15
+        else
+          score
+        end
+      else
+        score
+      end
+
+    # 5. Activity level matching (for movement/action categories)
+    score =
+      if descriptors["activity_level"] in ["active", "energetic", "intense", "chaotic"] and
+           (category_lower in ["movement", "action", "adventure"] or
+              Enum.any?(keywords, &(&1 in ["action", "movement", "running", "chase"]))) do
         score + 0.2
+      else
+        score
+      end
+
+    # 6. Calm/peaceful matching for nature sounds
+    score =
+      if descriptors["activity_level"] in ["still", "calm", "peaceful"] and
+           descriptors["atmosphere"] in ["peaceful", "tranquil", "serene"] and
+           (category_lower in ["nature", "ambient", "calm"] or
+              Enum.any?(keywords, &(&1 in ["nature", "forest", "birds", "water", "wind"]))) do
+        score + 0.2
+      else
+        score
+      end
+
+    # 7. Magical/whimsical matching
+    score =
+      if descriptors["atmosphere"] in ["magical", "whimsical", "ethereal"] and
+           (category_lower in ["magic", "fantasy", "mystical"] or
+              Enum.any?(keywords, &(&1 in ["magic", "fairy", "mystical", "enchanted", "wonder"]))) do
+        score + 0.25
       else
         score
       end

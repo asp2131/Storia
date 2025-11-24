@@ -28,12 +28,14 @@ defmodule Storia.AI.SceneClassifier do
 
   ## Example descriptors
       %{
-        "mood" => "tense",
-        "setting" => "indoor",
-        "time_of_day" => "night",
-        "weather" => "stormy",
-        "activity_level" => "high",
-        "atmosphere" => "suspenseful"
+        "mood" => "curious",
+        "setting" => "garden",
+        "time_of_day" => "afternoon",
+        "weather" => "sunny",
+        "activity_level" => "moderate",
+        "atmosphere" => "whimsical",
+        "scene_type" => "discovery",
+        "dominant_elements" => "birds, wind, wonder"
       }
   """
   def classify_page(nil), do: {:error, :empty_page_text}
@@ -150,18 +152,45 @@ defmodule Storia.AI.SceneClassifier do
 
   defp build_classification_prompt(page_text) do
     """
-    Analyze the following text excerpt from a book and classify the scene with descriptive attributes.
+    Analyze the following text excerpt from a book and classify the scene with rich, descriptive attributes that will be used to select ambient soundscapes.
 
     Text:
     #{String.slice(page_text, 0, 2000)}
 
-    Provide a JSON response with the following attributes:
-    - mood: The emotional tone (e.g., "joyful", "tense", "melancholic", "peaceful", "mysterious")
-    - setting: The location type (e.g., "indoor", "outdoor", "urban", "rural", "nature")
-    - time_of_day: When the scene takes place (e.g., "morning", "afternoon", "evening", "night", "unknown")
-    - weather: Weather conditions if mentioned (e.g., "sunny", "rainy", "stormy", "cloudy", "snowy", "clear", "unknown")
-    - activity_level: The pace of action (e.g., "calm", "moderate", "high", "intense")
-    - atmosphere: Overall feeling (e.g., "suspenseful", "romantic", "adventurous", "contemplative", "dramatic")
+    Provide a JSON response with the following attributes. Be specific and descriptive:
+
+    - mood: The emotional tone. Choose the MOST SPECIFIC option:
+      * Positive: "joyful", "playful", "whimsical", "serene", "hopeful", "content", "excited", "curious"
+      * Negative: "tense", "anxious", "melancholic", "fearful", "ominous", "sorrowful", "angry", "desperate"
+      * Neutral/Complex: "mysterious", "contemplative", "nostalgic", "bittersweet", "uncertain", "neutral"
+
+    - setting: The location type. Be as specific as possible:
+      * Nature: "forest", "meadow", "garden", "riverside", "lakeside", "mountain", "countryside", "wilderness"
+      * Indoor: "home", "palace", "cottage", "library", "chamber", "hall", "underground", "cave"
+      * Urban: "city", "town", "street", "marketplace", "village"
+      * Special: "magical_realm", "dreamscape", "unknown"
+
+    - time_of_day: When the scene takes place:
+      * "dawn", "morning", "midday", "afternoon", "dusk", "evening", "night", "midnight", "unknown"
+
+    - weather: Weather conditions if mentioned or implied:
+      * "sunny", "clear", "cloudy", "overcast", "rainy", "drizzling", "stormy", "windy", "snowy", "foggy", "misty", "unknown"
+
+    - activity_level: The pace and energy of the scene:
+      * "still", "calm", "peaceful", "moderate", "active", "energetic", "intense", "chaotic"
+
+    - atmosphere: Overall feeling and ambiance:
+      * "peaceful", "tranquil", "suspenseful", "eerie", "magical", "romantic", "adventurous", "dramatic", "contemplative", "whimsical", "dark", "light", "ethereal"
+
+    - scene_type: The nature of what's happening:
+      * "dialogue", "action", "description", "introspection", "discovery", "conflict", "journey", "rest", "transformation", "revelation"
+
+    - dominant_elements: Key environmental or sensory elements present (choose up to 3, comma-separated):
+      * Natural: "birds", "wind", "water", "rain", "thunder", "fire", "leaves", "crickets", "ocean", "stream"
+      * Ambient: "silence", "echoes", "footsteps", "voices", "music", "bells", "clock", "rustling"
+      * Mood: "tension", "wonder", "mystery", "magic", "danger", "comfort", "isolation"
+
+    IMPORTANT: Choose the most specific and evocative options that capture the scene's essence. These descriptors will be used to match ambient soundscapes, so be descriptive!
 
     Respond ONLY with valid JSON in this exact format:
     {
@@ -170,7 +199,9 @@ defmodule Storia.AI.SceneClassifier do
       "time_of_day": "value",
       "weather": "value",
       "activity_level": "value",
-      "atmosphere": "value"
+      "atmosphere": "value",
+      "scene_type": "value",
+      "dominant_elements": "element1, element2, element3"
     }
     """
   end
@@ -221,7 +252,7 @@ defmodule Storia.AI.SceneClassifier do
   end
 
   defp validate_descriptors(descriptors) do
-    required_keys = ["mood", "setting", "time_of_day", "weather", "activity_level", "atmosphere"]
+    required_keys = ["mood", "setting", "time_of_day", "weather", "activity_level", "atmosphere", "scene_type", "dominant_elements"]
 
     if Enum.all?(required_keys, &Map.has_key?(descriptors, &1)) do
       {:ok, descriptors}
@@ -287,7 +318,9 @@ defmodule Storia.AI.SceneClassifier do
       "time_of_day" => "unknown",
       "weather" => "unknown",
       "activity_level" => "moderate",
-      "atmosphere" => "neutral"
+      "atmosphere" => "neutral",
+      "scene_type" => "description",
+      "dominant_elements" => "silence"
     }
   end
 end
