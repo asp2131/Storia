@@ -139,16 +139,7 @@ defmodule StoriaWeb.ReaderLive do
     ~H"""
     <div
       class="min-h-screen bg-[#0a0e1a]"
-      x-data={"{ audioPlayer: null, currentAudioUrl: '#{@audio_url}', volume: #{@volume}, audioEnabled: #{@audio_enabled} }"}
-      x-init="
-        audioPlayer = new Audio();
-        audioPlayer.loop = true;
-        audioPlayer.volume = volume;
-        if (audioEnabled && currentAudioUrl) {
-          audioPlayer.src = currentAudioUrl;
-          audioPlayer.play().catch(e => console.log('Audio autoplay prevented:', e));
-        }
-      "
+      id="reader-container"
     >
       <!-- Header -->
       <div class="bg-[#101322] border-b border-[#232948] sticky top-0 z-10">
@@ -199,14 +190,6 @@ defmodule StoriaWeb.ReaderLive do
                   phx-click="toggle_audio"
                   class="p-2 text-[#929bc9] hover:text-white rounded-lg hover:bg-[#232948] transition"
                   title={if @audio_enabled, do: "Mute audio", else: "Enable audio"}
-                  x-on:click="
-                    audioEnabled = !audioEnabled;
-                    if (audioEnabled && currentAudioUrl) {
-                      audioPlayer.play();
-                    } else {
-                      audioPlayer.pause();
-                    }
-                  "
                 >
                   <%= if @audio_enabled do %>
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -236,10 +219,6 @@ defmodule StoriaWeb.ReaderLive do
                   phx-change="update_volume"
                   name="volume"
                   class="w-24"
-                  x-on:input="
-                    volume = parseFloat($event.target.value);
-                    audioPlayer.volume = volume;
-                  "
                 />
               </div>
 
@@ -312,45 +291,13 @@ defmodule StoriaWeb.ReaderLive do
         </div>
       </div>
 
-      <!-- Audio Crossfade Handler -->
       <div
-        x-data={"{ audioUrlToWatch: '#{@audio_url}' }"}
-        x-effect="
-          if ($data.currentAudioUrl !== audioUrlToWatch) {
-            const newUrl = audioUrlToWatch;
-            if (newUrl && audioEnabled) {
-              const oldPlayer = audioPlayer;
-              const newPlayer = new Audio(newUrl);
-              newPlayer.volume = 0;
-              newPlayer.loop = true;
-
-              newPlayer.play().then(() => {
-                const fadeInterval = 50;
-                const fadeSteps = 2000 / fadeInterval;
-                const volumeStep = volume / fadeSteps;
-                let step = 0;
-
-                const fadeTimer = setInterval(() => {
-                  step++;
-                  oldPlayer.volume = Math.max(0, volume - (volumeStep * step));
-                  newPlayer.volume = Math.min(volume, volumeStep * step);
-
-                  if (step >= fadeSteps) {
-                    clearInterval(fadeTimer);
-                    oldPlayer.pause();
-                    oldPlayer.src = '';
-                    oldPlayer.load();
-                    oldPlayer = null;
-                    audioPlayer = newPlayer;
-                  }
-                }, fadeInterval);
-              }).catch(e => console.log('Audio playback error:', e));
-            }
-            $data.currentAudioUrl = newUrl;
-          }
-        "
-      >
-      </div>
+        id="audio-crossfade"
+        phx-hook="AudioCrossfade"
+        data-audio-url={@audio_url || ""}
+        data-audio-enabled={"#{@audio_enabled}"}
+        data-volume={@volume}
+      ></div>
     </div>
     """
   end
@@ -432,23 +379,13 @@ defmodule StoriaWeb.ReaderLive do
         end
       end)
 
-      # Check if scene changed
-      scene_changed =
-        socket.assigns.current_scene && scene && socket.assigns.current_scene.id != scene.id
-
       socket =
         socket
         |> assign(:current_page, new_page)
         |> assign(:page_content, page.text_content)
         |> assign(:current_scene, scene)
+        |> assign(:audio_url, audio_url)
         |> assign(:navigating, false)
-
-      socket =
-        if scene_changed do
-          assign(socket, :audio_url, audio_url)
-        else
-          socket
-        end
 
       {:noreply, socket}
     end

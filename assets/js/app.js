@@ -45,6 +45,123 @@ Hooks.CloseModal = {
   }
 }
 
+// Hook to handle reader audio playback with crossfades
+Hooks.AudioCrossfade = {
+  mounted() {
+    console.log("AudioCrossfade mounted")
+    this.currentPlayer = null
+    this.currentUrl = null
+    this.fadeDuration = 2000
+    this.fadeInterval = 50
+    this.updateFromDataset()
+  },
+
+  updated() {
+    console.log("AudioCrossfade updated")
+    this.updateFromDataset()
+  },
+
+  destroyed() {
+    console.log("AudioCrossfade destroyed")
+    this.stopCurrent()
+  },
+
+  updateFromDataset() {
+    const dataset = this.el.dataset
+    this.audioEnabled = dataset.audioEnabled === "true"
+    this.volume = parseFloat(dataset.volume || "0.7") || 0.7
+    const url = dataset.audioUrl || ""
+    
+    console.log("Update audio:", { enabled: this.audioEnabled, volume: this.volume, url: url, currentUrl: this.currentUrl })
+
+    if (!this.audioEnabled || url === "") {
+      console.log("Audio disabled or empty URL, stopping")
+      this.stopCurrent()
+      this.currentUrl = url
+      return
+    }
+
+    if (url === this.currentUrl) {
+      if (this.currentPlayer) {
+        this.currentPlayer.volume = this.volume
+        if (this.audioEnabled) {
+          this.currentPlayer.play().catch(e => console.log("Play catch (same url):", e))
+        }
+      }
+      return
+    }
+
+    console.log("Starting crossfade to:", url)
+    this.crossfadeTo(url)
+  },
+
+  crossfadeTo(url) {
+    const newPlayer = new Audio(url)
+    newPlayer.loop = true
+    newPlayer.volume = 0 // Start silent for fade in
+
+    newPlayer.play().then(() => {
+      console.log("New player started playing")
+      const finalize = () => {
+        this.stopCurrent()
+        newPlayer.volume = this.volume
+        this.currentPlayer = newPlayer
+        this.currentUrl = url
+        window.readerAudioPlayer = this.currentPlayer
+        console.log("Crossfade finalized")
+      }
+
+      if (this.currentPlayer) {
+        console.log("Fading out old player...")
+        const steps = this.fadeDuration / this.fadeInterval
+        const volumeStep = this.volume / steps
+        let step = 0
+
+        const oldPlayer = this.currentPlayer
+        const timer = setInterval(() => {
+          step += 1
+          if (oldPlayer) {
+            oldPlayer.volume = Math.max(0, this.volume - volumeStep * step)
+          }
+          newPlayer.volume = Math.min(this.volume, volumeStep * step)
+
+          if (step >= steps) {
+            clearInterval(timer)
+            if (oldPlayer) {
+              oldPlayer.pause()
+              oldPlayer.src = ''
+              oldPlayer.load()
+            }
+            finalize()
+          }
+        }, this.fadeInterval)
+      } else {
+        console.log("No old player, immediate start (with fade in)")
+        // even if no old player, let's fade in smoothly or just jump? 
+        // logic above said "newPlayer.volume = 0" then play().
+        // If we just finalize, it jumps to full volume. 
+        // Let's fade in the new player anyway for smoothness if it's the first track?
+        // or just jump to volume. The original logic just called finalize.
+        // Let's set volume to target immediately for responsiveness if it's the first track.
+        newPlayer.volume = this.volume
+        finalize()
+      }
+    }).catch((err) => {
+      console.warn("Audio playback error", err)
+    })
+  },
+
+  stopCurrent() {
+    if (this.currentPlayer) {
+      this.currentPlayer.pause()
+      this.currentPlayer.src = ''
+      this.currentPlayer.load()
+      this.currentPlayer = null
+      window.readerAudioPlayer = null
+    }
+  }
+}
+
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
