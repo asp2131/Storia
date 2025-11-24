@@ -10,6 +10,7 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
 
   describe "content analysis and soundscape mapping for Alice in Wonderland first chapter" do
     @tag :integration
+    @tag timeout: 300_000
     test "analyzes first chapter and creates soundscape mappings" do
       pdf_available? = File.exists?(@pdf_path)
       api_key_present? = System.get_env("REPLICATE_API_KEY")

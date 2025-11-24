@@ -17,9 +17,10 @@ const pdfParse = require('pdf-parse');
 /**
  * Extract text from a PDF file
  * @param {string} pdfPath - Path to the PDF file
+ * @param {number} [maxPages=null] - Maximum number of pages to extract
  * @returns {Promise<Object>} - Extracted pages data
  */
-async function extractPdfText(pdfPath) {
+async function extractPdfText(pdfPath, maxPages = null) {
   try {
     // Read the PDF file
     const dataBuffer = fs.readFileSync(pdfPath);
@@ -51,13 +52,14 @@ async function extractPdfText(pdfPath) {
     // Re-parse with page tracking
     const pdfData = await pdfParse(dataBuffer);
     const numPages = pdfData.numpages;
+    const limit = maxPages ? Math.min(maxPages, numPages) : numPages;
     
     // Split text by pages (this is a simplified approach)
     // In production, you might want to use pdf.js directly for better control
     const avgCharsPerPage = pdfData.text.length / numPages;
     let currentPos = 0;
     
-    for (let i = 1; i <= numPages; i++) {
+    for (let i = 1; i <= limit; i++) {
       const startPos = currentPos;
       const endPos = Math.min(currentPos + avgCharsPerPage, pdfData.text.length);
       
@@ -122,6 +124,7 @@ async function main() {
   }
   
   const pdfPath = process.argv[2];
+  const maxPages = process.argv[3] ? parseInt(process.argv[3]) : null;
   
   // Check if file exists
   if (!fs.existsSync(pdfPath)) {
@@ -143,7 +146,7 @@ async function main() {
   }
   
   // Extract text from PDF
-  const result = await extractPdfText(pdfPath);
+  const result = await extractPdfText(pdfPath, maxPages);
   
   // Output JSON result
   console.log(JSON.stringify(result, null, 2));
