@@ -68,25 +68,32 @@ Hooks.AudioCrossfade = {
 
   updateFromDataset() {
     const dataset = this.el.dataset
+    this.playing = dataset.playing === "true"
     this.audioEnabled = dataset.audioEnabled === "true"
-    this.volume = parseFloat(dataset.volume || "0.7") || 0.7
+    const rawVolume = parseFloat(dataset.volume || "0.7") || 0.7
+    
+    // Effective volume is 0 if muted, otherwise the slider value
+    this.volume = this.audioEnabled ? rawVolume : 0
+    
     const url = dataset.audioUrl || ""
     
-    console.log("Update audio:", { enabled: this.audioEnabled, volume: this.volume, url: url, currentUrl: this.currentUrl })
+    console.log("Update audio:", { playing: this.playing, enabled: this.audioEnabled, volume: this.volume, url: url, currentUrl: this.currentUrl })
 
-    if (!this.audioEnabled || url === "") {
-      console.log("Audio disabled or empty URL, stopping")
+    if (!this.playing || url === "") {
+      console.log("Audio paused or empty URL, stopping")
       this.stopCurrent()
-      this.currentUrl = url
+      this.currentUrl = url // Update currentUrl so if we resume, we know what it was
       return
     }
 
     if (url === this.currentUrl) {
       if (this.currentPlayer) {
         this.currentPlayer.volume = this.volume
-        if (this.audioEnabled) {
-          this.currentPlayer.play().catch(e => console.log("Play catch (same url):", e))
-        }
+        // Ensure we are playing (e.g. if we just unpaused)
+        this.currentPlayer.play().catch(e => console.log("Play catch (same url):", e))
+      } else {
+        // If we have the URL but no player (was stopped), start it
+        this.crossfadeTo(url)
       }
       return
     }
