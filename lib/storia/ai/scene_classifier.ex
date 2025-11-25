@@ -44,7 +44,7 @@ defmodule Storia.AI.SceneClassifier do
   def classify_page(page_text) when is_binary(page_text) do
     prompt = build_classification_prompt(page_text)
 
-    with {:ok, prediction_id} <- ReplicateClient.create_prediction(prompt, temperature: 0.3, max_tokens: 500),
+    with {:ok, prediction_id} <- ReplicateClient.create_prediction(prompt, temperature: 0.3, max_tokens: 1024),
          {:ok, output} <- ReplicateClient.poll_prediction(prediction_id) do
       parse_classification_output(output)
     end

@@ -9,13 +9,13 @@ defmodule Storia.AI.ReplicateClient do
   require Logger
 
   @base_url "https://api.replicate.com/v1"
-  @gemini_model "google/gemini-2.5-flash"
+  @claude_model "anthropic/claude-4.5-sonnet"
   @audiogen_version "sepal/audiogen:154b3e5141493cb1b8cec976d9aa90f2b691137e39ad906d2421b74c2a8c52b8"
   @max_retries 3
   @initial_backoff 1000
 
   @doc """
-  Create a prediction using the Gemini Flash model.
+  Create a prediction using the Claude 4.5 Sonnet model.
 
   ## Parameters
   - `prompt`: The text prompt to send to the model
@@ -41,12 +41,12 @@ defmodule Storia.AI.ReplicateClient do
 
     input = if system_prompt, do: Map.put(input, :system_prompt, system_prompt), else: input
 
+    # Use the model-specific endpoint which doesn't require a version hash
+    url = "#{@base_url}/models/#{@claude_model}/predictions"
+
     body = %{
-      version: get_model_version(),
       input: input
     }
-
-    url = "#{@base_url}/predictions"
 
     case make_request(:post, url, body, 0) do
       {:ok, %{"id" => prediction_id}} ->
@@ -239,11 +239,5 @@ defmodule Storia.AI.ReplicateClient do
   defp get_api_key do
     System.get_env("REPLICATE_API_KEY") ||
       raise "REPLICATE_API_KEY environment variable not set"
-  end
-
-  defp get_model_version do
-    # This should be the specific version ID for gemini-2.5-flash
-    # For now, we'll use the model identifier and let Replicate resolve it
-    @gemini_model
   end
 end
