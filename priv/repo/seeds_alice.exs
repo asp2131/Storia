@@ -56,7 +56,7 @@ scenes_data = [
       "atmosphere" => "whimsical",
       "scene_type" => "journey"
     },
-    soundscape: %{file: "River_Flow.mp3", category: "nature", confidence: 0.8}
+    soundscape: %{file: "Babbling_Brook.mp3", category: "nature", confidence: 0.8}
   },
   %{
     scene_number: 2,

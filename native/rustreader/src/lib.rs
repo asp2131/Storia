@@ -14,7 +14,10 @@ fn extract_pdf(path: String) -> NifResult<(Vec<String>, String)> {
     let extractor = Extractor::new();
 
     match extractor.extract_file_to_string(&path) {
-        Ok((content, metadata)) => {
+        Ok((raw_content, metadata)) => {
+            // Clean content of common PDF screen controls and artifacts
+            let content = clean_pdf_controls(&raw_content);
+
             // Split content into pre-chapter and chapter
             // Try to find "CHAPTER I" or "Down the Rabbit-Hole"
             // Note: We use a simple split logic here
@@ -83,6 +86,46 @@ fn extract_pdf(path: String) -> NifResult<(Vec<String>, String)> {
         },
         Err(e) => Err(rustler::Error::Term(Box::new(format!("Extraction failed: {}", e))))
     }
+}
+
+fn clean_pdf_controls(text: &str) -> String {
+    // Remove standard PDF screen controls and UI artifacts
+    // These appear in interactive digital editions (like BookVirtual)
+    let patterns = [
+        r"Fit Page Full Scre[e]?", // Matches Scre or Scree
+        r"Navigate Contr",
+        r"[n/]*Off Close Book",
+        r"[ol]+ Internet",
+        r"en O",
+        r"n O",
+        r"Digital Interface by.*",
+        r"U\.S\. Patent Pending.*",
+        r"© 2000 All Rights Reserved\.",
+        r"BookVirtual™",
+        r"www\.bookvirtual\.com",
+        r"DOWN THE\s*\d+",       // Handle "DOWN THE4" or "DOWN THE 4"
+        r"RABBIT-HOLE\. \d+",
+        r"B \d+"
+    ];
+
+    let mut cleaned = text.to_string();
+    for pattern in patterns.iter() {
+        if let Ok(re) = Regex::new(pattern) {
+            // Replace with a space to prevent merging words if the artifact 
+            // was inserted in the middle of a sentence (e.g. "listen to [ARTIFACT] her")
+            cleaned = re.replace_all(&cleaned, " ").to_string();
+        }
+    }
+    
+    // Collapse multiple spaces
+    let space_re = Regex::new(r" +").unwrap();
+    cleaned = space_re.replace_all(&cleaned, " ").to_string();
+
+    // Collapse multiple newlines
+    let newline_re = Regex::new(r"\n{3,}").unwrap();
+    cleaned = newline_re.replace_all(&cleaned, "\n\n").to_string();
+
+    cleaned
 }
 
 rustler::init!("Elixir.RustReader");

@@ -210,30 +210,32 @@ defmodule StoriaWeb.ReaderLive do
                   <% end %>
                 </button>
 
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={@volume}
-                  phx-change="update_volume"
-                  name="volume"
-                  class="w-24"
-                />
+                <form phx-change="update_volume" class="flex items-center">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={@volume}
+                    name="volume"
+                    class="w-24"
+                  />
+                </form>
               </div>
 
               <!-- Page Navigation -->
               <div class="flex items-center gap-2 text-sm">
                 <span class="text-[#929bc9]">Page</span>
-                <input
-                  type="number"
-                  min="1"
-                  max={@total_pages}
-                  value={@current_page}
-                  phx-change="go_to_page"
-                  name="page"
-                  class="w-16 px-2 py-1 bg-[#232948] border border-[#232948] text-white rounded text-center focus:ring-2 focus:ring-[#1337ec]"
-                />
+                <form phx-submit="go_to_page">
+                  <input
+                    type="number"
+                    min="1"
+                    max={@total_pages}
+                    value={@current_page}
+                    name="page"
+                    class="w-16 px-2 py-1 bg-[#232948] border border-[#232948] text-white rounded text-center focus:ring-2 focus:ring-[#1337ec]"
+                  />
+                </form>
                 <span class="text-[#929bc9]">of <%= @total_pages %></span>
               </div>
             </div>
