@@ -28,6 +28,7 @@ defmodule StoriaWeb.ReaderLive do
            |> assign(:total_pages, data.book.total_pages)
            |> assign(:page_title, data.book.title)
            |> assign(:audio_enabled, true)
+           |> assign(:playing, true)
            |> assign(:volume, 0.7)
            |> assign(:navigating, false)}
 
@@ -94,6 +95,10 @@ defmodule StoriaWeb.ReaderLive do
 
   def handle_event("toggle_audio", _params, socket) do
     {:noreply, assign(socket, :audio_enabled, !socket.assigns.audio_enabled)}
+  end
+
+  def handle_event("toggle_playback", _params, socket) do
+    {:noreply, assign(socket, :playing, !socket.assigns.playing)}
   end
 
   def handle_event("update_volume", %{"volume" => volume_str}, socket) do
@@ -186,10 +191,30 @@ defmodule StoriaWeb.ReaderLive do
             <div class="flex items-center gap-4">
               <!-- Audio Controls -->
               <div class="flex items-center gap-2">
+                <!-- Play/Pause Button -->
+                <button
+                  phx-click="toggle_playback"
+                  class="p-2 text-[#929bc9] hover:text-white rounded-lg hover:bg-[#232948] transition"
+                  title={if @playing, do: "Pause audio", else: "Play audio"}
+                >
+                  <%= if @playing do %>
+                    <!-- Pause Icon -->
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                  <% else %>
+                    <!-- Play Icon -->
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                  <% end %>
+                </button>
+
+                <!-- Mute/Unmute Button -->
                 <button
                   phx-click="toggle_audio"
                   class="p-2 text-[#929bc9] hover:text-white rounded-lg hover:bg-[#232948] transition"
-                  title={if @audio_enabled, do: "Mute audio", else: "Enable audio"}
+                  title={if @audio_enabled, do: "Mute audio", else: "Unmute audio"}
                 >
                   <%= if @audio_enabled do %>
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -298,6 +323,7 @@ defmodule StoriaWeb.ReaderLive do
         phx-hook="AudioCrossfade"
         data-audio-url={@audio_url || ""}
         data-audio-enabled={"#{@audio_enabled}"}
+        data-playing={"#{@playing}"}
         data-volume={@volume}
       ></div>
     </div>
