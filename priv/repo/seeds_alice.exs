@@ -17,13 +17,18 @@ existing_book = Repo.get_by(Book, title: "Alice's Adventures in Wonderland")
 
 book = if existing_book do
   IO.puts("📖 Found existing book, updating...")
-  existing_book
+  {:ok, updated_book} = Content.update_book(existing_book, %{
+    pdf_url: "/books/Alice_in_Wonderland.pdf",
+    total_pages: 10,
+    processing_status: "pending"
+  })
+  updated_book
 else
   IO.puts("📖 Creating new book...")
   {:ok, book} = Content.create_book(%{
     title: "Alice's Adventures in Wonderland",
     author: "Lewis Carroll",
-    pdf_url: "/Users/akinpound/Documents/experiments/storia/Alice_in_Wonderland.pdf",
+    pdf_url: "/books/Alice_in_Wonderland.pdf",
     processing_status: "pending",
     total_pages: 10,
     metadata: %{
@@ -42,112 +47,112 @@ scenes_data = [
     start_page: 8,
     end_page: 8,
     descriptors: %{
-      "activity_level" => "moderate",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, mystery, silence",
+      "activity_level" => "still",
+      "atmosphere" => "peaceful",
+      "dominant_elements" => "water, silence, voices",
       "mood" => "curious",
-      "scene_type" => "description",
-      "setting" => "library",
-      "time_of_day" => "unknown",
-      "weather" => "unknown"
+      "scene_type" => "rest",
+      "setting" => "riverside",
+      "time_of_day" => "afternoon",
+      "weather" => "clear"
     },
-    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
+    soundscape: %{file: "Rain-soaked_Forest_Silence.mp3", category: "nature", confidence: 0.9}
   },
   %{
     scene_number: 2,
     start_page: 9,
     end_page: 9,
     descriptors: %{
-      "activity_level" => "calm",
+      "activity_level" => "moderate",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "water, voices, wonder",
-      "mood" => "playful",
+      "dominant_elements" => "wonder, mystery, clock",
+      "mood" => "curious",
       "scene_type" => "journey",
-      "setting" => "riverside",
-      "time_of_day" => "afternoon",
+      "setting" => "underground",
+      "time_of_day" => "midday",
       "weather" => "sunny"
     },
-    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
+    soundscape: %{file: "Echoing_Cave.mp3", category: "nature", confidence: 0.4}
   },
   %{
     scene_number: 3,
     start_page: 10,
     end_page: 10,
     descriptors: %{
-      "activity_level" => "moderate",
-      "atmosphere" => "magical",
-      "dominant_elements" => "voices, wonder, silence",
-      "mood" => "playful",
-      "scene_type" => "description",
-      "setting" => "dreamscape",
-      "time_of_day" => "dusk",
+      "activity_level" => "intense",
+      "atmosphere" => "whimsical",
+      "dominant_elements" => "echoes, wonder, isolation",
+      "mood" => "whimsical",
+      "scene_type" => "introspection",
+      "setting" => "magical_realm",
+      "time_of_day" => "unknown",
       "weather" => "unknown"
     },
-    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.63}
+    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.45}
   },
   %{
     scene_number: 4,
     start_page: 11,
     end_page: 11,
     descriptors: %{
-      "activity_level" => "intense",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "wind, mystery, echoes",
+      "activity_level" => "active",
+      "atmosphere" => "magical",
+      "dominant_elements" => "voices, footsteps, mystery",
       "mood" => "curious",
       "scene_type" => "journey",
       "setting" => "underground",
-      "time_of_day" => "midday",
-      "weather" => "clear"
+      "time_of_day" => "night",
+      "weather" => "unknown"
     },
-    soundscape: %{file: "Footsteps_in_Snow.mp3", category: "movement", confidence: 0.28}
+    soundscape: %{file: "Giant's_Footsteps.mp3", category: "magic", confidence: 0.75}
   },
   %{
     scene_number: 5,
     start_page: 12,
-    end_page: 13,
+    end_page: 12,
     descriptors: %{
       "activity_level" => "moderate",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "echoes, rustling, wonder",
-      "mood" => "whimsical",
-      "scene_type" => "introspection",
-      "setting" => "underground",
-      "time_of_day" => "unknown",
-      "weather" => "unknown"
-    },
-    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.4}
-  },
-  %{
-    scene_number: 6,
-    start_page: 14,
-    end_page: 14,
-    descriptors: %{
-      "activity_level" => "moderate",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, mystery, magic",
+      "dominant_elements" => "wonder, mystery, isolation",
       "mood" => "curious",
       "scene_type" => "discovery",
       "setting" => "hall",
       "time_of_day" => "unknown",
       "weather" => "unknown"
     },
-    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.4}
+    soundscape: %{file: "Cozy_Cabin_Interior.mp3", category: "nature", confidence: 0.4}
+  },
+  %{
+    scene_number: 6,
+    start_page: 13,
+    end_page: 14,
+    descriptors: %{
+      "activity_level" => "moderate",
+      "atmosphere" => "whimsical",
+      "dominant_elements" => "tension, wonder, isolation",
+      "mood" => "uncertain",
+      "scene_type" => "introspection",
+      "setting" => "chamber",
+      "time_of_day" => "unknown",
+      "weather" => "unknown"
+    },
+    soundscape: %{file: "Cozy_Cabin_Interior.mp3", category: "nature", confidence: 0.4}
   },
   %{
     scene_number: 7,
     start_page: 15,
     end_page: 15,
     descriptors: %{
-      "activity_level" => "still",
+      "activity_level" => "active",
       "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, magic, isolation",
+      "dominant_elements" => "voices, wonder, magic",
       "mood" => "curious",
       "scene_type" => "transformation",
-      "setting" => "chamber",
+      "setting" => "magical_realm",
       "time_of_day" => "unknown",
       "weather" => "unknown"
     },
-    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.4}
+    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 1.0}
   }
 ]
 
@@ -161,12 +166,32 @@ from(p in Content.Page, where: p.book_id == ^book.id)
 
 # Extract pages from PDF
 IO.puts("📄 Extracting pages from PDF...")
-pdf_path = Path.join(File.cwd!(), "Alice_in_Wonderland.pdf")
 
-unless File.exists?(pdf_path) do
-  IO.puts("❌ ERROR: Alice_in_Wonderland.pdf not found in project root!")
-  IO.puts("   Please download it from: https://www.gutenberg.org/ebooks/11")
-  System.halt(1)
+root_pdf_path = Path.join(File.cwd!(), "Alice_in_Wonderland.pdf")
+public_pdf_dir = Path.join([File.cwd!(), "priv", "static", "books"])
+public_pdf_path = Path.join(public_pdf_dir, "Alice_in_Wonderland.pdf")
+
+# Ensure public directory exists
+File.mkdir_p!(public_pdf_dir)
+
+# Determine which PDF to use
+pdf_path = cond do
+  File.exists?(root_pdf_path) ->
+    # Copy to public if not already there
+    unless File.exists?(public_pdf_path) do
+      File.cp!(root_pdf_path, public_pdf_path)
+      IO.puts("  ✓ Copied PDF to #{public_pdf_path}")
+    end
+    root_pdf_path
+
+  File.exists?(public_pdf_path) ->
+    IO.puts("  ✓ PDF already in public directory")
+    public_pdf_path
+
+  true ->
+    IO.puts("❌ ERROR: Alice_in_Wonderland.pdf not found in project root or public directory!")
+    IO.puts("   Please download it from: https://www.gutenberg.org/ebooks/11")
+    System.halt(1)
 end
 
 script_path = Path.join([File.cwd!(), "scripts", "pdf_processor", "extract.js"])
@@ -281,12 +306,12 @@ BOOK DETAILS:
   Status: Published ✓
 
 SOUNDSCAPE MAPPING:
-  • Scene 1: Awe & Wonder (sentiment) - Library setting
-  • Scene 2: Awe & Wonder (sentiment) - Riverside journey
-  • Scene 3: Dark Magic Rumble (magic) - Dreamscape
-  • Scene 4: Footsteps in Snow (movement) - Underground journey
-  • Scene 5: Awe & Wonder (sentiment) - Underground introspection
-  • Scene 6: Dark Magic Rumble (magic) - Hall discovery
+  • Scene 1: Rain-soaked Forest Silence (nature) - Riverside setting
+  • Scene 2: Echoing Cave (nature) - Underground journey
+  • Scene 3: Dark Magic Rumble (magic) - Magical Realm
+  • Scene 4: Giant's Footsteps (magic) - Underground journey
+  • Scene 5: Cozy Cabin Interior (nature) - Hall discovery
+  • Scene 6: Cozy Cabin Interior (nature) - Chamber introspection
   • Scene 7: Dark Magic Rumble (magic) - Transformation scene
 
 ═══════════════════════════════════════════════════════════
