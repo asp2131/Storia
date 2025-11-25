@@ -6,12 +6,13 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
   alias Storia.Soundscapes
 
   @pdf_path Path.join(File.cwd!(), "Alice_in_Wonderland.pdf")
-  @first_chapter_pages 15
+  @chapter_1_start_page 8
+  @chapter_1_end_page 22
 
-  describe "content analysis and soundscape mapping for Alice in Wonderland first chapter" do
+  describe "content analysis and soundscape mapping for Alice in Wonderland" do
     @tag :integration
-    @tag timeout: 300_000
-    test "analyzes first chapter and creates soundscape mappings" do
+    @tag timeout: :infinity
+    test "analyzes entire book but only maps soundscapes for chapter 1" do
       pdf_available? = File.exists?(@pdf_path)
       api_key_present? = System.get_env("REPLICATE_API_KEY")
 
@@ -35,8 +36,10 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
             processing_status: "pending"
           })
 
-        # Step 2: Extract pages from PDF (first chapter)
-        {:ok, pages_data} = extract_first_chapter_pages(@pdf_path, @first_chapter_pages)
+        # Step 2: Extract entire PDF
+        {:ok, pages_data} = extract_all_pages(@pdf_path)
+
+        IO.puts("\n=== Extracted #{length(pages_data)} pages from entire book ===")
 
         # Step 3: Store pages in database
         Content.create_pages_batch(book.id, pages_data)
@@ -88,17 +91,22 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
         # Verify scenes were created
         assert length(scenes) > 0
 
-        # Step 7: Map scenes to curated soundscapes
+        # Step 7: Map scenes to curated soundscapes (Chapter 1 only)
         {:ok, curated_soundscapes} = Soundscapes.list_curated_soundscapes_from_bucket()
 
         unless map_size(curated_soundscapes) > 0 do
           IO.puts("Warning: No curated soundscapes found in bucket")
         end
 
-        IO.puts("\n=== Mapping scenes to curated soundscapes ===")
+        # Filter scenes to only Chapter 1 (pages 8-22)
+        chapter_1_scenes = Enum.filter(scenes, fn scene ->
+          scene.start_page >= @chapter_1_start_page and scene.end_page <= @chapter_1_end_page
+        end)
+
+        IO.puts("\n=== Mapping soundscapes for Chapter 1 only (#{length(chapter_1_scenes)}/#{length(scenes)} scenes) ===")
 
         mapping_results =
-          scenes
+          chapter_1_scenes
           |> Enum.map(fn scene ->
             IO.puts("\nScene #{scene.scene_number} (pages #{scene.start_page}-#{scene.end_page}):")
             IO.puts("  Descriptors: #{inspect(scene.descriptors)}")
@@ -126,9 +134,10 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
 
         # Verify at least some mappings succeeded
         successful_mappings = Enum.count(mapping_results, fn r -> match?({:ok, _, _, _}, r) end)
-        IO.puts("\n=== Summary: #{successful_mappings}/#{length(scenes)} scenes mapped ===")
+        IO.puts("\n=== Summary: #{successful_mappings}/#{length(chapter_1_scenes)} Chapter 1 scenes mapped ===")
+        IO.puts("=== Total scenes in book: #{length(scenes)} ===")
 
-        assert successful_mappings > 0, "At least one scene should be mapped to a soundscape"
+        assert successful_mappings > 0, "At least one Chapter 1 scene should be mapped to a soundscape"
 
         # Verify soundscapes are linked to scenes
         scenes_with_soundscapes =
@@ -145,38 +154,24 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
 
   # Helper functions
 
-  defp extract_first_chapter_pages(pdf_path, max_pages) do
-    script_path =
-      ["scripts", "pdf_processor", "extract.js"]
-      |> Path.join()
-      |> Path.expand(File.cwd!())
+  defp extract_all_pages(pdf_path) do
+    case RustReader.extract_pdf(pdf_path) do
+      {pages_json, _metadata} when is_list(pages_json) ->
+        # Rust now does the chunking and returns JSON strings
+        all_pages =
+          pages_json
+          |> Enum.map(fn json_str ->
+            page_data = Jason.decode!(json_str)
+            %{
+              page_number: page_data["page_number"],
+              text_content: page_data["text_content"]
+            }
+          end)
 
-    case System.cmd("node", [script_path, pdf_path, to_string(max_pages), "8"], stderr_to_stdout: true) do
-      {output, 0} ->
-        case Jason.decode(output) do
-          {:ok, %{"success" => true, "pages" => all_pages}} ->
-            # Take only the first N pages
-            first_chapter_pages =
-              all_pages
-              |> Enum.take(max_pages)
-              |> Enum.map(fn page ->
-                %{
-                  page_number: page["page_number"],
-                  text_content: page["text_content"] || ""
-                }
-              end)
+        {:ok, all_pages}
 
-            {:ok, first_chapter_pages}
-
-          {:ok, result} ->
-            {:error, "Extraction failed: #{inspect(result)}"}
-
-          {:error, reason} ->
-            {:error, "Failed to parse JSON: #{inspect(reason)}"}
-        end
-
-      {output, exit_code} ->
-        {:error, "PDF extraction failed with exit code #{exit_code}: #{output}"}
+      {:error, reason} ->
+        {:error, "PDF extraction failed: #{inspect(reason)}"}
     end
   end
 

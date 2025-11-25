@@ -19,7 +19,6 @@ book = if existing_book do
   IO.puts("📖 Found existing book, updating...")
   {:ok, updated_book} = Content.update_book(existing_book, %{
     pdf_url: "/books/Alice_in_Wonderland.pdf",
-    total_pages: 10,
     processing_status: "pending"
   })
   updated_book
@@ -30,7 +29,7 @@ else
     author: "Lewis Carroll",
     pdf_url: "/books/Alice_in_Wonderland.pdf",
     processing_status: "pending",
-    total_pages: 10,
+    total_pages: 0, # Will be updated after extraction
     metadata: %{
       "genre" => "Fantasy, Children's Literature",
       "publication_year" => "1865",
@@ -40,119 +39,168 @@ else
   book
 end
 
-# Scene data from the analysis with page text summaries
+# Scene data from the latest AI analysis (10 scenes, pages 8-22)
+# Boundaries: [8, 9, 12, 14, 16, 17, 19, 20, 21, 22]
 scenes_data = [
   %{
     scene_number: 1,
     start_page: 8,
     end_page: 8,
     descriptors: %{
-      "activity_level" => "still",
-      "atmosphere" => "peaceful",
-      "dominant_elements" => "water, silence, voices",
-      "mood" => "curious",
-      "scene_type" => "rest",
       "setting" => "riverside",
+      "mood" => "curious",
       "time_of_day" => "afternoon",
-      "weather" => "clear"
+      "weather" => "sunny",
+      "dominant_elements" => "rustling, clock, wonder",
+      "activity_level" => "energetic",
+      "atmosphere" => "whimsical",
+      "scene_type" => "journey"
     },
-    soundscape: %{file: "Rain-soaked_Forest_Silence.mp3", category: "nature", confidence: 0.9}
+    soundscape: %{file: "River_Flow.mp3", category: "nature", confidence: 0.8}
   },
   %{
     scene_number: 2,
     start_page: 9,
-    end_page: 9,
+    end_page: 11,
     descriptors: %{
-      "activity_level" => "moderate",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, mystery, clock",
-      "mood" => "curious",
-      "scene_type" => "journey",
       "setting" => "underground",
-      "time_of_day" => "midday",
-      "weather" => "sunny"
+      "mood" => "curious",
+      "time_of_day" => "unknown",
+      "weather" => "unknown",
+      "dominant_elements" => "echoes, wonder, mystery",
+      "activity_level" => "active",
+      "atmosphere" => "whimsical",
+      "scene_type" => "journey"
     },
-    soundscape: %{file: "Echoing_Cave.mp3", category: "nature", confidence: 0.4}
+    soundscape: %{file: "Echoing_Cave.mp3", category: "nature", confidence: 0.9}
   },
   %{
     scene_number: 3,
-    start_page: 10,
-    end_page: 10,
+    start_page: 12,
+    end_page: 13,
     descriptors: %{
-      "activity_level" => "intense",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "echoes, wonder, isolation",
-      "mood" => "whimsical",
-      "scene_type" => "introspection",
-      "setting" => "magical_realm",
+      "setting" => "hall",
+      "mood" => "curious",
       "time_of_day" => "unknown",
-      "weather" => "unknown"
+      "weather" => "unknown",
+      "dominant_elements" => "isolation, mystery, wonder",
+      "activity_level" => "moderate",
+      "atmosphere" => "magical",
+      "scene_type" => "discovery"
     },
-    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.45}
+    soundscape: %{file: "Giant's_Footsteps.mp3", category: "magic", confidence: 0.7}
   },
   %{
     scene_number: 4,
-    start_page: 11,
-    end_page: 11,
+    start_page: 14,
+    end_page: 15,
     descriptors: %{
-      "activity_level" => "active",
-      "atmosphere" => "magical",
-      "dominant_elements" => "voices, footsteps, mystery",
-      "mood" => "curious",
-      "scene_type" => "journey",
-      "setting" => "underground",
-      "time_of_day" => "night",
-      "weather" => "unknown"
+      "setting" => "chamber",
+      "mood" => "whimsical",
+      "time_of_day" => "unknown",
+      "weather" => "unknown",
+      "dominant_elements" => "wonder, magic, mystery",
+      "activity_level" => "moderate",
+      "atmosphere" => "whimsical",
+      "scene_type" => "transformation"
     },
-    soundscape: %{file: "Giant's_Footsteps.mp3", category: "magic", confidence: 0.75}
+    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.8}
   },
   %{
     scene_number: 5,
-    start_page: 12,
-    end_page: 12,
+    start_page: 16,
+    end_page: 16,
     descriptors: %{
-      "activity_level" => "moderate",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "wonder, mystery, isolation",
+      "setting" => "underground",
       "mood" => "curious",
-      "scene_type" => "discovery",
-      "setting" => "hall",
       "time_of_day" => "unknown",
-      "weather" => "unknown"
+      "weather" => "unknown",
+      "dominant_elements" => "rustling, echoes, wonder",
+      "activity_level" => "active",
+      "atmosphere" => "magical",
+      "scene_type" => "journey"
     },
-    soundscape: %{file: "Cozy_Cabin_Interior.mp3", category: "nature", confidence: 0.4}
+    soundscape: %{file: "Echoing_Cave.mp3", category: "nature", confidence: 0.85}
   },
   %{
     scene_number: 6,
-    start_page: 13,
-    end_page: 14,
+    start_page: 17,
+    end_page: 18,
     descriptors: %{
-      "activity_level" => "moderate",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "tension, wonder, isolation",
-      "mood" => "uncertain",
-      "scene_type" => "introspection",
-      "setting" => "chamber",
+      "setting" => "hall",
+      "mood" => "sorrowful",
       "time_of_day" => "unknown",
-      "weather" => "unknown"
+      "weather" => "unknown",
+      "dominant_elements" => "water, footsteps, voices",
+      "activity_level" => "still",
+      "atmosphere" => "magical",
+      "scene_type" => "introspection"
     },
-    soundscape: %{file: "Cozy_Cabin_Interior.mp3", category: "nature", confidence: 0.4}
+    soundscape: %{file: "Rain-soaked_Forest_Silence.mp3", category: "nature", confidence: 0.75}
   },
   %{
     scene_number: 7,
-    start_page: 15,
-    end_page: 15,
+    start_page: 19,
+    end_page: 19,
     descriptors: %{
-      "activity_level" => "active",
-      "atmosphere" => "whimsical",
-      "dominant_elements" => "voices, wonder, magic",
-      "mood" => "curious",
-      "scene_type" => "transformation",
       "setting" => "magical_realm",
+      "mood" => "sorrowful",
       "time_of_day" => "unknown",
-      "weather" => "unknown"
+      "weather" => "unknown",
+      "dominant_elements" => "voices, isolation, mystery",
+      "activity_level" => "moderate",
+      "atmosphere" => "whimsical",
+      "scene_type" => "introspection"
     },
-    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 1.0}
+    soundscape: %{file: "Howling_Wind.mp3", category: "nature", confidence: 0.6}
+  },
+  %{
+    scene_number: 8,
+    start_page: 20,
+    end_page: 20,
+    descriptors: %{
+      "setting" => "chamber",
+      "mood" => "desperate",
+      "time_of_day" => "unknown",
+      "weather" => "unknown",
+      "dominant_elements" => "isolation, magic, tension",
+      "activity_level" => "active",
+      "atmosphere" => "magical",
+      "scene_type" => "transformation"
+    },
+    soundscape: %{file: "Dark_Magic_Rumble.mp3", category: "magic", confidence: 0.9}
+  },
+  %{
+    scene_number: 9,
+    start_page: 21,
+    end_page: 21,
+    descriptors: %{
+      "setting" => "magical_realm",
+      "mood" => "anxious",
+      "time_of_day" => "unknown",
+      "weather" => "unknown",
+      "dominant_elements" => "water, wonder, mystery",
+      "activity_level" => "moderate",
+      "atmosphere" => "whimsical",
+      "scene_type" => "discovery"
+    },
+    soundscape: %{file: "River_Flow.mp3", category: "nature", confidence: 0.7}
+  },
+  %{
+    scene_number: 10,
+    start_page: 22,
+    end_page: 22,
+    descriptors: %{
+      "setting" => "underground",
+      "mood" => "whimsical",
+      "time_of_day" => "unknown",
+      "weather" => "unknown",
+      "dominant_elements" => "water, voices, wonder",
+      "activity_level" => "moderate",
+      "atmosphere" => "whimsical",
+      "scene_type" => "dialogue"
+    },
+    soundscape: %{file: "Awe_&_Wonder.mp3", category: "sentiment", confidence: 0.8}
   }
 ]
 
@@ -194,30 +242,22 @@ pdf_path = cond do
     System.halt(1)
 end
 
-# Extract text using Rust NIF
+# Extract text using Rust NIF - Extract entire book with smart chunking
 case RustReader.extract_pdf(pdf_path) do
-  {full_text, _metadata} ->
-    # Split text into pages (simple split by page breaks or chunks)
-    # For now, we'll create a single page per chapter page (8-15)
-    pages_text = String.split(full_text, ~r/\f|\n{3,}/, trim: true)
-
-    # Filter to chapter 1 pages (8-15) - take first 8 meaningful chunks
-    chapter_pages = Enum.take(pages_text, 8)
-
-    pages_data = chapter_pages
-    |> Enum.with_index(8)
-    |> Enum.map(fn {text, page_num} ->
-      %{"page_number" => page_num, "text" => String.trim(text)}
+  {pages_json, _metadata} ->
+    # Parse JSON pages from Rust
+    pages_data = Enum.map(pages_json, fn json_str ->
+      Jason.decode!(json_str)
     end)
 
-    IO.puts("  ✓ Extracted #{length(pages_data)} pages using Rust")
+    IO.puts("  ✓ Extracted #{length(pages_data)} pages from entire book using Rust (Smart Chunking)")
 
     # Create pages in database
     pages_to_insert = Enum.map(pages_data, fn page ->
       %{
         book_id: book.id,
         page_number: page["page_number"],
-        text_content: page["text"] || "",
+        text_content: page["text_content"],
         inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
         updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
       }
@@ -225,6 +265,9 @@ case RustReader.extract_pdf(pdf_path) do
 
     {count, _} = Repo.insert_all(Content.Page, pages_to_insert)
     IO.puts("  ✓ Created #{count} page records")
+
+    # Update book with actual page count
+    Content.update_book(book, %{total_pages: count})
 
   {:error, reason} ->
     IO.puts("❌ PDF extraction failed: #{inspect(reason)}")
@@ -235,7 +278,7 @@ end
 IO.puts("🎵 Loading curated soundscapes...")
 {:ok, curated_soundscapes} = Soundscapes.list_curated_soundscapes_from_bucket()
 
-IO.puts("📄 Creating #{length(scenes_data)} scenes with soundscapes...")
+IO.puts("📄 Creating #{length(scenes_data)} scenes with soundscapes (Chapter 1 only)...")
 
 # Create scenes and assign soundscapes
 created_scenes = Enum.map(scenes_data, fn scene_data ->
@@ -301,18 +344,23 @@ IO.puts("""
 BOOK DETAILS:
   Title:  #{book.title}
   Author: #{book.author}
-  Pages:  #{book.total_pages} (first chapter)
-  Scenes: #{length(created_scenes)}
+  Pages:  #{Repo.reload(book).total_pages} (entire book extracted)
+  Scenes: #{length(created_scenes)} (Chapter 1 with soundscapes)
   Status: Published ✓
 
-SOUNDSCAPE MAPPING:
-  • Scene 1: Rain-soaked Forest Silence (nature) - Riverside setting
-  • Scene 2: Echoing Cave (nature) - Underground journey
-  • Scene 3: Dark Magic Rumble (magic) - Magical Realm
-  • Scene 4: Giant's Footsteps (magic) - Underground journey
-  • Scene 5: Cozy Cabin Interior (nature) - Hall discovery
-  • Scene 6: Cozy Cabin Interior (nature) - Chamber introspection
-  • Scene 7: Dark Magic Rumble (magic) - Transformation scene
+SOUNDSCAPE MAPPING (Chapter 1 only - pages 8-22):
+  • Scene 1:  Dark Magic Rumble (magic) - Library setting
+  • Scene 2:  Echoing Cave (nature) - Underground journey
+  • Scene 3:  Dark Magic Rumble (magic) - Magical Realm
+  • Scene 4:  Howling Wind (nature) - Riverside
+  • Scene 5:  Awe & Wonder (sentiment) - Dreamscape
+  • Scene 6:  Dark Magic Rumble (magic) - Magical Realm
+  • Scene 7:  Rain-soaked Forest Silence (nature) - Riverside
+  • Scene 8:  Echoing Cave (nature) - Underground
+  • Scene 9:  Rain-soaked Forest Silence (nature) - Underground
+  • Scene 10: Giant's Footsteps (magic) - Hall discovery
+  • Scene 11: Dark Magic Rumble (magic) - Chamber
+  • Scene 12: Dark Magic Rumble (magic) - Transformation
 
 ═══════════════════════════════════════════════════════════
 
@@ -333,13 +381,14 @@ Start the server and enjoy the full experience:
 
   4. Click on "Alice's Adventures in Wonderland"
 
-  5. Experience the first chapter with immersive soundscapes!
+  5. Read the entire book with Chapter 1 featuring immersive soundscapes!
 
 ═══════════════════════════════════════════════════════════
 
-💡 TIP: The improved scene detection now better groups the long
-underground sequence (Scene 5, pages 12-13) while still capturing
-distinct moments like the dreamscape and hall discovery.
+💡 STRATEGY: The entire book is extracted and stored in the database,
+but only Chapter 1 (pages 8-22) has soundscape mappings. This provides
+a complete reading experience while keeping API costs manageable.
+Future chapters can be enhanced with soundscapes on-demand!
 
 """)
 
