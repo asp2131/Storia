@@ -194,40 +194,40 @@ pdf_path = cond do
     System.halt(1)
 end
 
-script_path = Path.join([File.cwd!(), "scripts", "pdf_processor", "extract.js"])
+# Extract text using Rust NIF
+case RustReader.extract_pdf(pdf_path) do
+  {full_text, _metadata} ->
+    # Split text into pages (simple split by page breaks or chunks)
+    # For now, we'll create a single page per chapter page (8-15)
+    pages_text = String.split(full_text, ~r/\f|\n{3,}/, trim: true)
 
-case System.cmd("node", [script_path, pdf_path, "15", "8"], stderr_to_stdout: true) do
-  {output, 0} ->
-    case Jason.decode(output) do
-      {:ok, %{"success" => true, "pages" => pages_data}} ->
-        IO.puts("  ✓ Extracted #{length(pages_data)} pages")
+    # Filter to chapter 1 pages (8-15) - take first 8 meaningful chunks
+    chapter_pages = Enum.take(pages_text, 8)
 
-        # Create pages in database
-        pages_to_insert = Enum.map(pages_data, fn page ->
-          %{
-            book_id: book.id,
-            page_number: page["page_number"],
-            text_content: page["text_content"] || "",
-            inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-            updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-          }
-        end)
+    pages_data = chapter_pages
+    |> Enum.with_index(8)
+    |> Enum.map(fn {text, page_num} ->
+      %{"page_number" => page_num, "text" => String.trim(text)}
+    end)
 
-        {count, _} = Repo.insert_all(Content.Page, pages_to_insert)
-        IO.puts("  ✓ Created #{count} page records")
+    IO.puts("  ✓ Extracted #{length(pages_data)} pages using Rust")
 
-      {:ok, result} ->
-        IO.puts("❌ PDF extraction failed: #{inspect(result)}")
-        System.halt(1)
+    # Create pages in database
+    pages_to_insert = Enum.map(pages_data, fn page ->
+      %{
+        book_id: book.id,
+        page_number: page["page_number"],
+        text_content: page["text"] || "",
+        inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+        updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+      }
+    end)
 
-      {:error, reason} ->
-        IO.puts("❌ Failed to parse JSON: #{inspect(reason)}")
-        System.halt(1)
-    end
+    {count, _} = Repo.insert_all(Content.Page, pages_to_insert)
+    IO.puts("  ✓ Created #{count} page records")
 
-  {output, exit_code} ->
-    IO.puts("❌ PDF extraction failed with exit code #{exit_code}")
-    IO.puts(output)
+  {:error, reason} ->
+    IO.puts("❌ PDF extraction failed: #{inspect(reason)}")
     System.halt(1)
 end
 

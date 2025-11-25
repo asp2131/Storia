@@ -66,6 +66,7 @@ defmodule Storia.MixProject do
       {:httpoison, "~> 2.2"},
       {:hackney, "~> 1.20"},
       {:html_sanitize_ex, "~> 1.4"},
+      {:rustler, "~> 0.37.1", runtime: false},
       # Load environment variables from .env files
       {:dotenvy, "~> 0.8.0", only: [:dev, :test]}
     ]
