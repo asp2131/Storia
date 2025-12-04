@@ -5,14 +5,28 @@ import Config
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :storia, Storia.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "storia_test#{System.get_env("MIX_TEST_PARTITION")}",
-  pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2,
-  ownership_timeout: 3_600_000
+#
+# Use Supabase DATABASE_URL if available, otherwise fall back to local PostgreSQL
+database_url = System.get_env("DATABASE_URL")
+
+if database_url do
+  config :storia, Storia.Repo,
+    url: database_url,
+    # Disable prepared statements for Supabase transaction mode pooler
+    prepare: :unnamed,
+    pool: Ecto.Adapters.SQL.Sandbox,
+    pool_size: System.schedulers_online() * 2,
+    ownership_timeout: 3_600_000
+else
+  config :storia, Storia.Repo,
+    username: "postgres",
+    password: "postgres",
+    hostname: "localhost",
+    database: "storia_test#{System.get_env("MIX_TEST_PARTITION")}",
+    pool: Ecto.Adapters.SQL.Sandbox,
+    pool_size: System.schedulers_online() * 2,
+    ownership_timeout: 3_600_000
+end
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

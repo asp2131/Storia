@@ -38,5 +38,8 @@ npm-debug.log
 package-lock.json
 
 # Environment variables
-.env
+
 .env.local
+
+# Rust binary artifacts
+/target/
