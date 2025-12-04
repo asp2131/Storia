@@ -5,11 +5,11 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
   alias Storia.AI.SceneClassifier
   alias Storia.Soundscapes
 
-  @pdf_path Path.join(File.cwd!(), "Alice_in_Wonderland.pdf")
-  @chapter_1_start_page 8
-  @chapter_1_end_page 22
+  @pdf_path Path.join(File.cwd!(), "The_Little_Prince.pdf")
+  @chapter_1_start_page 1
+  @chapter_1_end_page 64
 
-  describe "content analysis and soundscape mapping for Alice in Wonderland" do
+  describe "content analysis and soundscape mapping for The Little Prince" do
     @tag :integration
     @tag timeout: :infinity
     test "analyzes entire book but only maps soundscapes for chapter 1" do
@@ -19,7 +19,7 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
       unless pdf_available? and api_key_present? do
         unless pdf_available? do
           flunk(
-            "Missing PDF at #{@pdf_path}. Download Alice_in_Wonderland.pdf and place it in the project root."
+            "Missing PDF at #{@pdf_path}. Download The_Little_Prince.pdf and place it in the project root."
           )
         end
 
@@ -30,8 +30,8 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
         # Step 1: Create a book record
         {:ok, book} =
           Content.create_book(%{
-            title: "Alice's Adventures in Wonderland",
-            author: "Lewis Carroll",
+            title: "The Little Prince",
+            author: "Antoine de Saint-Exupéry",
             pdf_url: @pdf_path,
             processing_status: "pending"
           })

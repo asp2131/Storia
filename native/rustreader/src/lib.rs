@@ -18,55 +18,20 @@ fn extract_pdf(path: String) -> NifResult<(Vec<String>, String)> {
             // Clean content of common PDF screen controls and artifacts
             let content = clean_pdf_controls(&raw_content);
 
-            // Split content into pre-chapter and chapter
-            // Try to find "CHAPTER I" or "Down the Rabbit-Hole"
-            // Note: We use a simple split logic here
-            
-            let re = Regex::new(r"CHAPTER I|Down the Rabbit-Hole").unwrap();
-            let parts: Vec<&str> = re.splitn(&content, 2).collect();
-            
-            let (pre_chapter, chapter_content) = if parts.len() == 2 {
-                (parts[0], format!("CHAPTER I{}", parts[1]))
-            } else {
-                ("", content.clone())
-            };
-
             let chunk_size = 1500;
             let mut pages = Vec::new();
 
-            // Process pre-chapter content (starts at page 1)
-            if !pre_chapter.is_empty() {
-                let pre_chars: Vec<char> = pre_chapter.chars().collect();
-                let pre_chunks = pre_chars.chunks(chunk_size);
-                
-                for (i, chunk) in pre_chunks.enumerate() {
-                    let text: String = chunk.iter().collect();
-                    let page_json = serde_json::json!({
-                        "page_number": i + 1,
-                        "text_content": text.trim()
-                    });
-                    pages.push(page_json.to_string());
-                }
-            }
-
-            // Process chapter content (starts at page 8)
-            if !chapter_content.is_empty() {
-                // If pre-chapter was handled, chapter content usually starts later
-                // But per user requirement, Chapter 1 starts at page 8 visually.
-                // We hardcode the offset to ensure Chapter 1 is page 8.
-                let start_page = 8;
-                
-                let chap_chars: Vec<char> = chapter_content.chars().collect();
-                let chap_chunks = chap_chars.chunks(chunk_size);
-                
-                for (i, chunk) in chap_chunks.enumerate() {
-                    let text: String = chunk.iter().collect();
-                    let page_json = serde_json::json!({
-                        "page_number": start_page + i,
-                        "text_content": text.trim()
-                    });
-                    pages.push(page_json.to_string());
-                }
+            // Process entire content starting from page 1
+            let chars: Vec<char> = content.chars().collect();
+            let chunks = chars.chunks(chunk_size);
+            
+            for (i, chunk) in chunks.enumerate() {
+                let text: String = chunk.iter().collect();
+                let page_json = serde_json::json!({
+                    "page_number": i + 1,
+                    "text_content": text.trim()
+                });
+                pages.push(page_json.to_string());
             }
             
             // Filter out empty pages

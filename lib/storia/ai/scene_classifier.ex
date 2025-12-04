@@ -151,7 +151,7 @@ defmodule Storia.AI.SceneClassifier do
         end
       end)
       |> Enum.reverse()
-    end)
+    end, timeout: :infinity)
   end
 
   # Private functions
