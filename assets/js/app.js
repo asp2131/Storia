@@ -65,13 +65,25 @@ Hooks.Flipbook = {
     const images = JSON.parse(this.el.dataset.images || "[]")
     if (!images.length) return
 
-    const width = Math.min(900, window.innerWidth - 80)
-    const height = Math.round(width * 1.3)
+    // Measure the first image to size the book to its aspect ratio.
+    const measure = new Image()
+    measure.onload = () => {
+      const aspect = measure.height > 0 && measure.width > 0 ? measure.height / measure.width : 1.3
+      this.buildFlip(images, aspect)
+    }
+    measure.onerror = () => this.buildFlip(images, 1.3)
+    measure.src = images[0]
+  },
+  buildFlip(images, aspect) {
+    const containerWidth = this.el.clientWidth || window.innerWidth
+    const width = Math.min(900, Math.max(320, containerWidth - 48))
+    const height = Math.round(width * aspect)
 
     this.el.innerHTML = ""
     const bookEl = document.createElement("div")
     bookEl.style.width = `${width}px`
     bookEl.style.height = `${height}px`
+    bookEl.style.maxWidth = "100%"
     bookEl.classList.add("mx-auto")
     this.el.appendChild(bookEl)
 
@@ -87,8 +99,14 @@ Hooks.Flipbook = {
 
     const pages = images.map((url) => {
       const page = document.createElement("div")
-      page.className = "page bg-slate-900"
-      page.innerHTML = `<img src="${url}" loading="lazy" style="width:100%;height:100%;object-fit:contain;" />`
+      page.className = "page bg-slate-900 w-full h-full"
+      page.style.display = "flex"
+      page.style.alignItems = "center"
+      page.style.justifyContent = "center"
+      page.style.padding = "12px"
+      page.style.boxSizing = "border-box"
+      page.innerHTML =
+        `<img src="${url}" loading="lazy" style="max-width:100%;max-height:100%;object-fit:contain;display:block;" />`
       return page
     })
 
