@@ -23,6 +23,7 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 // Import Alpine.js for client-side interactivity
 import Alpine from "alpinejs"
+import {PageFlip} from "page-flip"
 
 // Initialize Alpine.js
 window.Alpine = Alpine
@@ -41,6 +42,64 @@ Hooks.CloseModal = {
       if (modal) {
         modal.classList.add("hidden")
       }
+    })
+  }
+}
+
+Hooks.Flipbook = {
+  mounted() {
+    this.initFlip()
+  },
+  updated() {
+    if (this.flip) {
+      const currentPage = parseInt(this.el.dataset.currentPage || "1", 10)
+      const active = this.flip.getCurrentPageIndex() + 1 // flip is zero-based
+      if (active !== currentPage) {
+        this.flip.turnToPage(currentPage - 1)
+      }
+    } else {
+      this.initFlip()
+    }
+  },
+  initFlip() {
+    const images = JSON.parse(this.el.dataset.images || "[]")
+    if (!images.length) return
+
+    const width = Math.min(900, window.innerWidth - 80)
+    const height = Math.round(width * 1.3)
+
+    this.el.innerHTML = ""
+    const bookEl = document.createElement("div")
+    bookEl.style.width = `${width}px`
+    bookEl.style.height = `${height}px`
+    bookEl.classList.add("mx-auto")
+    this.el.appendChild(bookEl)
+
+    this.flip = new PageFlip(bookEl, {
+      width,
+      height,
+      maxShadowOpacity: 0.5,
+      showCover: false,
+      autoSize: true,
+      usePortrait: true,
+      mobileScrollSupport: true
+    })
+
+    const pages = images.map((url) => {
+      const page = document.createElement("div")
+      page.className = "page bg-slate-900"
+      page.innerHTML = `<img src="${url}" loading="lazy" style="width:100%;height:100%;object-fit:contain;" />`
+      return page
+    })
+
+    this.flip.loadFromHTML(pages)
+
+    const currentPage = parseInt(this.el.dataset.currentPage || "1", 10)
+    this.flip.turnToPage(currentPage - 1) // page-flip is zero-based
+
+    this.flip.on("flip", (e) => {
+      const page = e.data + 1
+      this.pushEvent("turn_to_page", {page})
     })
   }
 }

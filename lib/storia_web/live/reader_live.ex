@@ -2,6 +2,7 @@ defmodule StoriaWeb.ReaderLive do
   use StoriaWeb, :live_view
 
   alias Storia.{Content, Accounts}
+  require Logger
 
   @impl true
   def mount(%{"id" => book_id}, _session, socket) do
@@ -25,6 +26,7 @@ defmodule StoriaWeb.ReaderLive do
            |> assign(:page_content, data.page_content)
            |> assign(:current_scene, data.current_scene)
            |> assign(:audio_url, data.audio_url)
+           |> assign(:page_image_urls, data.page_image_urls)
            |> assign(:total_pages, data.book.total_pages)
            |> assign(:page_title, data.book.title)
            |> assign(:audio_enabled, true)
@@ -136,6 +138,27 @@ defmodule StoriaWeb.ReaderLive do
 
       _ ->
         {:noreply, socket}
+    end
+  end
+
+  def handle_event("turn_to_page", %{"page" => page}, socket) do
+    parsed =
+      case page do
+        p when is_integer(p) -> p
+        p when is_binary(p) ->
+          case Integer.parse(p) do
+            {int, _} -> int
+            _ -> nil
+          end
+
+        _ ->
+          nil
+      end
+
+    if is_integer(parsed) and parsed >= 1 and parsed <= socket.assigns.total_pages do
+      navigate_to_page(socket, parsed)
+    else
+      {:noreply, socket}
     end
   end
 
@@ -282,16 +305,23 @@ defmodule StoriaWeb.ReaderLive do
           </div>
 
           <!-- Page Content -->
-          <div
-            class="prose prose-lg prose-invert max-w-none text-[#e5e7eb]"
-            style="font-family: 'Georgia', serif; line-height: 1.8; font-size: 1.125rem;"
-          >
-            <%= if @page_content do %>
-              <%= raw(HtmlSanitizeEx.basic_html(format_page_content(@page_content))) %>
-            <% else %>
-              <p class="text-[#929bc9] italic">Loading page content...</p>
-            <% end %>
-          </div>
+          <%= if @page_image_urls do %>
+            <div class="mb-10">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-white">Visual pages</h2>
+              </div>
+              <div
+                id="flipbook-container"
+                phx-hook="Flipbook"
+                phx-update="ignore"
+                data-images={Jason.encode!(@page_image_urls)}
+                data-current-page={@current_page}
+                class="w-full overflow-hidden rounded-lg border border-[#232948] shadow-lg bg-[#0a0e1a]"
+              >
+              </div>
+            </div>
+          <% end %>
+
 
           <!-- Navigation Buttons -->
           <div class="mt-12 flex items-center justify-between border-t border-[#232948] pt-6">
@@ -336,7 +366,8 @@ defmodule StoriaWeb.ReaderLive do
     with {:ok, book} <- get_book(book_id),
          {:ok, progress} <- Content.get_or_create_reading_progress(user_id, book_id),
          page <- Content.get_page_with_scene(book_id, progress.current_page),
-         scene <- Content.get_scene_for_page(book_id, progress.current_page) do
+         scene <- Content.get_scene_for_page(book_id, progress.current_page),
+         page_image_urls <- list_page_images(book_id) do
       audio_url = get_audio_url(scene)
 
       {:ok,
@@ -345,7 +376,8 @@ defmodule StoriaWeb.ReaderLive do
          current_page: progress.current_page,
          page_content: page && page.text_content,
          current_scene: scene,
-         audio_url: audio_url
+         audio_url: audio_url,
+         page_image_urls: page_image_urls
        }}
     else
       {:error, reason} -> {:error, reason}
@@ -373,6 +405,12 @@ defmodule StoriaWeb.ReaderLive do
     else
       nil
     end
+  end
+
+  defp fetch_page_images(book) do
+    # Deprecated; kept for backward compatibility if needed.
+    Logger.warning("fetch_page_images/1 is deprecated")
+    nil
   end
 
   defp navigate_to_page(socket, new_page) do
@@ -445,5 +483,19 @@ defmodule StoriaWeb.ReaderLive do
     content
     |> String.replace("\n\n", "</p><p class='mb-4'>")
     |> then(&("<p class='mb-4'>" <> &1 <> "</p>"))
+  end
+
+  defp list_page_images(book_id) do
+    pages_dir = Path.join([File.cwd!(), "priv", "static", "books", to_string(book_id), "pages"])
+
+    if File.dir?(pages_dir) do
+      pages_dir
+      |> File.ls!()
+      |> Enum.filter(&String.ends_with?(&1, ".png"))
+      |> Enum.sort()
+      |> Enum.map(fn file -> "/static/books/#{book_id}/pages/#{file}" end)
+    else
+      nil
+    end
   end
 end

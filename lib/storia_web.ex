@@ -17,7 +17,8 @@ defmodule StoriaWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  # Serve book page images (priv/static/books/...) alongside other statics.
+  def static_paths, do: ~w(assets fonts images books favicon.ico robots.txt)
 
   def router do
     quote do
