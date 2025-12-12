@@ -212,66 +212,103 @@ from(s in Scene, where: s.book_id == ^book.id)
 from(p in Content.Page, where: p.book_id == ^book.id)
 |> Repo.delete_all()
 
-# Extract pages from PDF
-IO.puts("📄 Extracting pages from PDF...")
+# Extract pages from text-first source (prefer plain text, fallback to PDF)
+IO.puts("📄 Extracting pages for Alice...")
+
+root_txt_path = Path.join(File.cwd!(), "Alice_in_Wonderland.txt")
+public_books_dir = Path.join([File.cwd!(), "priv", "static", "books"])
+public_txt_path = Path.join(public_books_dir, "Alice_in_Wonderland.txt")
 
 root_pdf_path = Path.join(File.cwd!(), "Alice_in_Wonderland.pdf")
-public_pdf_dir = Path.join([File.cwd!(), "priv", "static", "books"])
-public_pdf_path = Path.join(public_pdf_dir, "Alice_in_Wonderland.pdf")
+public_pdf_path = Path.join(public_books_dir, "Alice_in_Wonderland.pdf")
 
 # Ensure public directory exists
-File.mkdir_p!(public_pdf_dir)
+File.mkdir_p!(public_books_dir)
 
-# Determine which PDF to use
-pdf_path = cond do
-  File.exists?(root_pdf_path) ->
-    # Copy to public if not already there
-    unless File.exists?(public_pdf_path) do
-      File.cp!(root_pdf_path, public_pdf_path)
-      IO.puts("  ✓ Copied PDF to #{public_pdf_path}")
+# Choose source: prefer text file if present
+source =
+  cond do
+    File.exists?(root_txt_path) -> {:text, root_txt_path}
+    File.exists?(public_txt_path) -> {:text, public_txt_path}
+    File.exists?(root_pdf_path) ->
+      unless File.exists?(public_pdf_path) do
+        File.cp!(root_pdf_path, public_pdf_path)
+        IO.puts("  ✓ Copied PDF to #{public_pdf_path}")
+      end
+      {:pdf, root_pdf_path}
+    File.exists?(public_pdf_path) -> {:pdf, public_pdf_path}
+    true ->
+      IO.puts("❌ ERROR: Neither Alice_in_Wonderland.txt nor Alice_in_Wonderland.pdf found!")
+      IO.puts("   Please download text or PDF from: https://www.gutenberg.org/ebooks/11")
+      System.halt(1)
+  end
+
+pages_data =
+  case source do
+    {:text, txt_path} ->
+      IO.puts("  ✓ Using plain text source: #{txt_path}")
+      txt_path
+      |> File.read!()
+      |> chunk_text_to_pages(900)
+      |> Enum.with_index(1)
+      |> Enum.map(fn {text, idx} ->
+        %{"page_number" => idx, "text_content" => text}
+      end)
+
+    {:pdf, pdf_path} ->
+      IO.puts("  ✓ Using PDF source: #{pdf_path}")
+
+      case RustReader.extract_pdf(pdf_path) do
+        {pages_json, _metadata} ->
+          Enum.map(pages_json, fn json_str -> Jason.decode!(json_str) end)
+
+        {:error, reason} ->
+          IO.puts("❌ PDF extraction failed: #{inspect(reason)}")
+          System.halt(1)
+      end
+  end
+
+IO.puts("  ✓ Prepared #{length(pages_data)} pages")
+
+# Create pages in database
+pages_to_insert =
+  Enum.map(pages_data, fn page ->
+    %{
+      book_id: book.id,
+      page_number: page["page_number"],
+      text_content: page["text_content"],
+      inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
+      updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    }
+  end)
+
+{count, _} = Repo.insert_all(Content.Page, pages_to_insert)
+IO.puts("  ✓ Created #{count} page records")
+
+# Update book with actual page count
+Content.update_book(book, %{total_pages: count})
+
+# Helpers -------------------------------------------------------------------
+
+defp chunk_text_to_pages(text, max_chars) do
+  text
+  |> String.split(~r/\n\s*\n/, trim: true) # split on blank-line paragraphs
+  |> Enum.flat_map(&String.split(&1, "\n"))
+  |> Enum.map(&String.trim/1)
+  |> Enum.reject(&(&1 == ""))
+  |> Enum.reduce({[], ""}, fn line, {pages, current} ->
+    add = if current == "", do: line, else: current <> "\n" <> line
+
+    if String.length(add) >= max_chars do
+      {pages ++ [add], ""}
+    else
+      {pages, add}
     end
-    root_pdf_path
-
-  File.exists?(public_pdf_path) ->
-    IO.puts("  ✓ PDF already in public directory")
-    public_pdf_path
-
-  true ->
-    IO.puts("❌ ERROR: Alice_in_Wonderland.pdf not found in project root or public directory!")
-    IO.puts("   Please download it from: https://www.gutenberg.org/ebooks/11")
-    System.halt(1)
-end
-
-# Extract text using Rust NIF - Extract entire book with smart chunking
-case RustReader.extract_pdf(pdf_path) do
-  {pages_json, _metadata} ->
-    # Parse JSON pages from Rust
-    pages_data = Enum.map(pages_json, fn json_str ->
-      Jason.decode!(json_str)
-    end)
-
-    IO.puts("  ✓ Extracted #{length(pages_data)} pages from entire book using Rust (Smart Chunking)")
-
-    # Create pages in database
-    pages_to_insert = Enum.map(pages_data, fn page ->
-      %{
-        book_id: book.id,
-        page_number: page["page_number"],
-        text_content: page["text_content"],
-        inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second),
-        updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
-      }
-    end)
-
-    {count, _} = Repo.insert_all(Content.Page, pages_to_insert)
-    IO.puts("  ✓ Created #{count} page records")
-
-    # Update book with actual page count
-    Content.update_book(book, %{total_pages: count})
-
-  {:error, reason} ->
-    IO.puts("❌ PDF extraction failed: #{inspect(reason)}")
-    System.halt(1)
+  end)
+  |> then(fn {pages, leftover} ->
+    pages = if leftover != "", do: pages ++ [leftover], else: pages
+    pages
+  end)
 end
 
 # Load curated soundscapes from bucket

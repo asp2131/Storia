@@ -59,61 +59,11 @@ defmodule StoriaWeb.AdminLive.BookList do
 
   @impl true
   def handle_event("upload_book", _params, socket) do
-    # Set uploading state
-    socket = assign(socket, :uploading, true)
-
-    uploaded_files =
-      consume_uploaded_entries(socket, :pdf, fn %{path: path}, entry ->
-        # Generate unique book ID
-        book_id = Ecto.UUID.generate()
-
-        # Upload to R2 storage
-        case Storage.upload_pdf(path, book_id) do
-          {:ok, r2_url} ->
-            # Extract metadata from PDF (title, author)
-            metadata = extract_pdf_metadata(path)
-
-            {:ok, {book_id, r2_url, metadata}}
-
-          {:error, reason} ->
-            {:postpone, {:error, "Failed to upload PDF to R2: #{inspect(reason)}"}}
-        end
-      end)
-
-    case uploaded_files do
-      [{book_id, r2_url, metadata} | _] ->
-        # Create book record with R2 URL
-        case Content.create_book(%{
-          title: metadata.title || "Untitled Book",
-          author: metadata.author || "Unknown Author",
-          pdf_url: r2_url,
-          processing_status: "pending"
-        }) do
-          {:ok, book} ->
-            # Enqueue PDF processing job with R2 URL
-            %{book_id: book.id, pdf_url: r2_url}
-            |> PDFProcessor.new()
-            |> Oban.insert()
-
-            {:noreply,
-             socket
-             |> assign(:uploading, false)
-             |> put_flash(:info, "Book uploaded successfully. Processing started.")
-             |> push_event("close-modal", %{})
-             |> load_books()}
-
-          {:error, _changeset} ->
-            {:noreply,
-             socket
-             |> assign(:uploading, false)
-             |> put_flash(:error, "Failed to create book record")}
-        end
-
-      [] ->
-        {:noreply,
-         socket
-         |> assign(:uploading, false)
-         |> put_flash(:error, "No file was uploaded")}
+    # If auto-submit already kicked off, ignore manual clicks
+    if socket.assigns.uploading do
+      {:noreply, socket}
+    else
+      process_upload(socket)
     end
   end
 
@@ -155,10 +105,15 @@ defmodule StoriaWeb.AdminLive.BookList do
 
   # Handle upload progress
   defp handle_progress(:pdf, entry, socket) do
-    if entry.done? do
-      # Upload is complete
-      {:noreply, socket}
-    else
+    cond do
+      # Auto-submit once the (single) upload entry finishes
+      entry.done? and not socket.assigns.uploading ->
+        case process_upload(socket) do
+          {:noreply, new_socket} -> {:noreply, new_socket}
+          other -> other
+        end
+
+      true ->
       # Progress update - LiveView automatically updates the entry.progress
       {:noreply, socket}
     end
@@ -214,6 +169,76 @@ defmodule StoriaWeb.AdminLive.BookList do
   defp error_to_string(:not_accepted), do: "Only PDF files are accepted"
   defp error_to_string(:too_many_files), do: "Only one file can be uploaded at a time"
   defp error_to_string(error), do: "Upload error: #{inspect(error)}"
+
+  # Shared upload processing -------------------------------------------------
+
+  defp process_upload(socket) do
+    socket = assign(socket, :uploading, true)
+
+    uploaded_files =
+      consume_uploaded_entries(socket, :pdf, fn %{path: path}, _entry ->
+        book_id = Ecto.UUID.generate()
+
+        case Storage.upload_pdf(path, book_id) do
+          {:ok, r2_url} ->
+            metadata = extract_pdf_metadata(path)
+            {:ok, {book_id, r2_url, metadata}}
+
+          {:error, reason} ->
+            {:postpone, {:error, "Failed to upload PDF to R2: #{inspect(reason)}"}}
+        end
+      end)
+
+    case uploaded_files do
+      [{_book_id, r2_url, metadata} | _] ->
+        case Content.create_book(%{
+               title: metadata.title || "Untitled Book",
+               author: metadata.author || "Unknown Author",
+               pdf_url: r2_url,
+               processing_status: "pending"
+             }) do
+          {:ok, book} ->
+            %{book_id: book.id, pdf_url: r2_url}
+            |> PDFProcessor.new()
+            |> Oban.insert()
+
+            {:noreply,
+             socket
+             |> assign(:uploading, false)
+             |> put_flash(:info, "Book uploaded successfully. Processing started.")
+             |> push_event("close-modal", %{})
+             |> load_books()}
+
+          {:error, _changeset} ->
+            {:noreply,
+             socket
+             |> assign(:uploading, false)
+             |> put_flash(:error, "Failed to create book record")}
+        end
+
+      other when is_list(other) ->
+        reason =
+          cond do
+            match?([{:postpone, {:error, _}} | _], other) ->
+              {:postpone, {:error, r}} = hd(other)
+              r
+
+            match?([error: _], other) ->
+              other[:error]
+
+            other == [] ->
+              "No file was uploaded"
+
+            true ->
+              "Unexpected upload result: #{inspect(other)}"
+          end
+
+        {:noreply,
+         socket
+         |> assign(:uploading, false)
+         |> put_flash(:error, "Upload failed: #{reason}")}
+    end
+  end
 
   defp extract_pdf_metadata(pdf_path) do
     # Basic metadata extraction using pdfinfo or similar

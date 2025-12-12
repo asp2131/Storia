@@ -66,9 +66,10 @@ defmodule Storia.AI.SceneClassifier do
   Compares consecutive pages using descriptor similarity.
   A new scene is detected when similarity falls below threshold.
   """
-  def detect_scene_boundaries([], _), do: []
+  def detect_scene_boundaries(pages_with_descriptors, threshold \\ @similarity_threshold)
+  def detect_scene_boundaries([], _threshold), do: []
 
-  def detect_scene_boundaries(pages_with_descriptors, threshold \\ @similarity_threshold) do
+  def detect_scene_boundaries(pages_with_descriptors, threshold) do
     first_page = List.first(pages_with_descriptors)
 
     pages_with_descriptors
