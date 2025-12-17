@@ -65,14 +65,63 @@ Hooks.Flipbook = {
     const images = JSON.parse(this.el.dataset.images || "[]")
     if (!images.length) return
 
-    // Measure the first image to size the book to its aspect ratio.
-    const measure = new Image()
-    measure.onload = () => {
-      const aspect = measure.height > 0 && measure.width > 0 ? measure.height / measure.width : 1.3
-      this.buildFlip(images, aspect)
+    // Split each two-page spread image into individual pages
+    this.splitImagesIntoPages(images).then(singlePageImages => {
+      // Measure the first split page to get aspect ratio
+      const measure = new Image()
+      measure.onload = () => {
+        const aspect = measure.height > 0 && measure.width > 0 ? measure.height / measure.width : 1.3
+        this.buildFlip(singlePageImages, aspect)
+      }
+      measure.onerror = () => this.buildFlip(singlePageImages, 1.3)
+      measure.src = singlePageImages[0]
+    })
+  },
+
+  async splitImagesIntoPages(images) {
+    const singlePages = []
+
+    for (const imageUrl of images) {
+      const splitPages = await this.splitImageInHalf(imageUrl)
+      singlePages.push(...splitPages)
     }
-    measure.onerror = () => this.buildFlip(images, 1.3)
-    measure.src = images[0]
+
+    return singlePages
+  },
+
+  splitImageInHalf(imageUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = "anonymous"
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+
+        const halfWidth = img.width / 2
+        const height = img.height
+
+        // Create left page
+        canvas.width = halfWidth
+        canvas.height = height
+        ctx.drawImage(img, 0, 0, halfWidth, height, 0, 0, halfWidth, height)
+        const leftPage = canvas.toDataURL('image/jpeg', 0.95)
+
+        // Create right page
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, halfWidth, 0, halfWidth, height, 0, 0, halfWidth, height)
+        const rightPage = canvas.toDataURL('image/jpeg', 0.95)
+
+        resolve([leftPage, rightPage])
+      }
+
+      img.onerror = () => {
+        // If splitting fails, just use the original image
+        resolve([imageUrl])
+      }
+
+      img.src = imageUrl
+    })
   },
   buildFlip(images, aspect) {
     const containerWidth = this.el.clientWidth || window.innerWidth
