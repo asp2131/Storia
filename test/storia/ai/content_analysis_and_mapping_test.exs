@@ -4,22 +4,21 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
   alias Storia.{Content, Repo}
   alias Storia.AI.SceneClassifier
   alias Storia.Soundscapes
+  alias Storia.HybridPdfExtractor
 
-  @pdf_path Path.join(File.cwd!(), "The_Little_Prince.pdf")
-  @chapter_1_start_page 1
-  @chapter_1_end_page 64
+  @pdf_path Path.join(File.cwd!(), "Alice_in_Wonderland.pdf")
 
-  describe "content analysis and soundscape mapping for The Little Prince" do
+  describe "content analysis and soundscape mapping for Alice in Wonderland" do
     @tag :integration
     @tag timeout: :infinity
-    test "analyzes entire book but only maps soundscapes for chapter 1" do
+    test "analyzes and maps soundscapes for entire book" do
       pdf_available? = File.exists?(@pdf_path)
       api_key_present? = System.get_env("REPLICATE_API_KEY")
 
       unless pdf_available? and api_key_present? do
         unless pdf_available? do
           flunk(
-            "Missing PDF at #{@pdf_path}. Download The_Little_Prince.pdf and place it in the project root."
+            "Missing PDF at #{@pdf_path}. Download Alice_in_Wonderland.pdf and place it in the project root."
           )
         end
 
@@ -30,14 +29,15 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
         # Step 1: Create a book record
         {:ok, book} =
           Content.create_book(%{
-            title: "The Little Prince",
-            author: "Antoine de Saint-Exupéry",
+            title: "Alice's Adventures in Wonderland",
+            author: "Lewis Carroll",
             pdf_url: @pdf_path,
             processing_status: "pending"
           })
 
-        # Step 2: Extract entire PDF
-        {:ok, pages_data} = extract_all_pages(@pdf_path)
+        # Step 2: Extract entire PDF (with OCR fallback for image-based pages)
+        IO.puts("\n=== Starting hybrid PDF extraction from #{@pdf_path} ===")
+        {:ok, pages_data} = HybridPdfExtractor.extract_all_pages(@pdf_path)
 
         IO.puts("\n=== Extracted #{length(pages_data)} pages from entire book ===")
 
@@ -49,12 +49,23 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
         pages = Content.list_pages_for_book(book.id)
         assert length(pages) > 0
 
-        IO.puts("\n=== Classifying #{length(pages)} pages ===")
+        # Filter out pages with minimal text (image-based pages)
+        pages_to_classify = Enum.filter(pages, fn page ->
+          String.length(page.text_content || "") >= 50
+        end)
+
+        IO.puts("\n=== Classifying #{length(pages_to_classify)}/#{length(pages)} pages (skipping #{length(pages) - length(pages_to_classify)} image-based pages) ===")
 
         pages_with_descriptors =
-          pages
-          |> Enum.map(fn page ->
-            IO.puts("Classifying page #{page.page_number}...")
+          pages_to_classify
+          |> Enum.with_index(1)
+          |> Enum.map(fn {page, index} ->
+            # Keep DB connection alive every 10 pages during long AI operations
+            if rem(index, 10) == 0 do
+              Repo.query!("SELECT 1")
+            end
+
+            IO.puts("[#{index}/#{length(pages_to_classify)}] Classifying page #{page.page_number}... (#{String.length(page.text_content)} chars)")
 
             case SceneClassifier.classify_page(page.text_content) do
               {:ok, descriptors} ->
@@ -91,23 +102,24 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
         # Verify scenes were created
         assert length(scenes) > 0
 
-        # Step 7: Map scenes to curated soundscapes (Chapter 1 only)
+        # Step 7: Map scenes to curated soundscapes (entire book)
         {:ok, curated_soundscapes} = Soundscapes.list_curated_soundscapes_from_bucket()
 
         unless map_size(curated_soundscapes) > 0 do
           IO.puts("Warning: No curated soundscapes found in bucket")
         end
 
-        # Filter scenes to only Chapter 1 (pages 8-22)
-        chapter_1_scenes = Enum.filter(scenes, fn scene ->
-          scene.start_page >= @chapter_1_start_page and scene.end_page <= @chapter_1_end_page
-        end)
-
-        IO.puts("\n=== Mapping soundscapes for Chapter 1 only (#{length(chapter_1_scenes)}/#{length(scenes)} scenes) ===")
+        IO.puts("\n=== Mapping soundscapes for entire book (#{length(scenes)} scenes) ===")
 
         mapping_results =
-          chapter_1_scenes
-          |> Enum.map(fn scene ->
+          scenes
+          |> Enum.with_index(1)
+          |> Enum.map(fn {scene, index} ->
+            # Keep DB connection alive every 10 scenes
+            if rem(index, 10) == 0 do
+              Repo.query!("SELECT 1")
+            end
+
             IO.puts("\nScene #{scene.scene_number} (pages #{scene.start_page}-#{scene.end_page}):")
             IO.puts("  Descriptors: #{inspect(scene.descriptors)}")
 
@@ -134,10 +146,9 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
 
         # Verify at least some mappings succeeded
         successful_mappings = Enum.count(mapping_results, fn r -> match?({:ok, _, _, _}, r) end)
-        IO.puts("\n=== Summary: #{successful_mappings}/#{length(chapter_1_scenes)} Chapter 1 scenes mapped ===")
-        IO.puts("=== Total scenes in book: #{length(scenes)} ===")
+        IO.puts("\n=== Summary: #{successful_mappings}/#{length(scenes)} scenes mapped to soundscapes ===")
 
-        assert successful_mappings > 0, "At least one Chapter 1 scene should be mapped to a soundscape"
+        assert successful_mappings > 0, "At least one scene should be mapped to a soundscape"
 
         # Verify soundscapes are linked to scenes
         scenes_with_soundscapes =
@@ -153,27 +164,6 @@ defmodule Storia.AI.ContentAnalysisAndMappingTest do
   end
 
   # Helper functions
-
-  defp extract_all_pages(pdf_path) do
-    case RustReader.extract_pdf(pdf_path) do
-      {pages_json, _metadata} when is_list(pages_json) ->
-        # Rust now does the chunking and returns JSON strings
-        all_pages =
-          pages_json
-          |> Enum.map(fn json_str ->
-            page_data = Jason.decode!(json_str)
-            %{
-              page_number: page_data["page_number"],
-              text_content: page_data["text_content"]
-            }
-          end)
-
-        {:ok, all_pages}
-
-      {:error, reason} ->
-        {:error, "PDF extraction failed: #{inspect(reason)}"}
-    end
-  end
 
   defp find_best_soundscape_match(descriptors, curated_soundscapes) do
     if map_size(curated_soundscapes) == 0 do

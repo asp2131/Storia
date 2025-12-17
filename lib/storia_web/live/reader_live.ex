@@ -213,7 +213,7 @@ defmodule StoriaWeb.ReaderLive do
       </div>
 
       <!-- Main Book Area -->
-      <div class="flex-1 w-full flex flex-col items-center justify-center px-2 sm:px-4 pb-24 pt-4">
+      <div class="flex-1 w-full flex flex-col items-center justify-center px-0 sm:px-4 pb-20 sm:pb-24 pt-2 sm:pt-4">
         <%= if @page_image_urls do %>
           <div
             id="flipbook-container"
@@ -221,13 +221,26 @@ defmodule StoriaWeb.ReaderLive do
             phx-update="ignore"
             data-images={Jason.encode!(@page_image_urls)}
             data-current-page={@current_page}
-            class="flex items-center justify-center w-full"
-            style="width: 90vw; max-width: 1100px; height: calc(90vh - 140px);"
+            class="flex items-center justify-center w-full h-full"
+            style="width: 100vw; max-width: 100vw; height: calc(100vh - 180px);"
           >
           </div>
         <% else %>
-          <div class="text-center p-4 text-[#929bc9]">
-            Visuals unavailable for this book.
+          <!-- Text-based reading mode -->
+          <div class="w-full max-w-3xl mx-auto px-4 py-8">
+            <div class="bg-[#0f1322] rounded-lg shadow-xl border border-[#232948] p-8 sm:p-12">
+              <%= if @page_content do %>
+                <div class="prose prose-invert prose-lg max-w-none">
+                  <div class="text-[#e8eaf6] leading-relaxed font-serif text-base sm:text-lg whitespace-pre-wrap">
+                    <%= @page_content %>
+                  </div>
+                </div>
+              <% else %>
+                <div class="text-center text-[#929bc9]">
+                  No content available for this page.
+                </div>
+              <% end %>
+            </div>
           </div>
         <% end %>
       </div>
@@ -304,12 +317,6 @@ defmodule StoriaWeb.ReaderLive do
     end
   end
 
-  defp fetch_page_images(book) do
-    # Deprecated; kept for backward compatibility if needed.
-    Logger.warning("fetch_page_images/1 is deprecated")
-    nil
-  end
-
   defp navigate_to_page(socket, new_page) do
     book_id = socket.assigns.book.id
     user_id = socket.assigns.current_user.id
@@ -376,19 +383,13 @@ defmodule StoriaWeb.ReaderLive do
     end
   end
 
-  defp format_page_content(content) do
-    content
-    |> String.replace("\n\n", "</p><p class='mb-4'>")
-    |> then(&("<p class='mb-4'>" <> &1 <> "</p>"))
-  end
-
   defp list_page_images(book_id) do
     pages_dir = Path.join([File.cwd!(), "priv", "static", "books", to_string(book_id), "pages"])
 
     if File.dir?(pages_dir) do
       pages_dir
       |> File.ls!()
-      |> Enum.filter(&String.ends_with?(&1, ".png"))
+      |> Enum.filter(&(String.ends_with?(&1, ".png") || String.ends_with?(&1, ".webp") || String.ends_with?(&1, ".jpg")))
       |> Enum.sort()
       |> Enum.map(fn file -> "/static/books/#{book_id}/pages/#{file}" end)
     else

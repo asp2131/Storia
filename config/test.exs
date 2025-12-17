@@ -16,7 +16,15 @@ if database_url do
     prepare: :unnamed,
     pool: Ecto.Adapters.SQL.Sandbox,
     pool_size: System.schedulers_online() * 2,
-    ownership_timeout: 3_600_000
+    ownership_timeout: 3_600_000,
+    # Connection settings for long-running tests with PgBouncer
+    timeout: 300_000,
+    queue_target: 5000,
+    queue_interval: 1000,
+    connect_timeout: 60_000,
+    handshake_timeout: 60_000,
+    # Keep connections alive during long AI operations
+    parameters: [tcp_keepalives_idle: "600"]
 else
   config :storia, Storia.Repo,
     username: "postgres",

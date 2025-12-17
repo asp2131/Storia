@@ -76,8 +76,21 @@ Hooks.Flipbook = {
   },
   buildFlip(images, aspect) {
     const containerWidth = this.el.clientWidth || window.innerWidth
-    const width = Math.min(900, Math.max(320, containerWidth - 48))
-    const height = Math.round(width * aspect)
+    const containerHeight = this.el.clientHeight || window.innerHeight
+
+    // On mobile (portrait), use nearly full width; on desktop, cap at 900px
+    const isMobile = window.innerWidth < 768
+    const padding = isMobile ? 0 : 48
+    const maxWidth = isMobile ? containerWidth : 900
+
+    let width = Math.min(maxWidth, Math.max(320, containerWidth - padding))
+    let height = Math.round(width * aspect)
+
+    // If height exceeds available space, scale down to fit
+    if (height > containerHeight) {
+      height = containerHeight
+      width = Math.round(height / aspect)
+    }
 
     this.el.innerHTML = ""
     const bookEl = document.createElement("div")
