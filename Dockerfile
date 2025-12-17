@@ -20,9 +20,15 @@ ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
 FROM ${BUILDER_IMAGE} as builder
 
-# install build dependencies
-RUN apt-get update -y && apt-get install -y build-essential git \
+# install build dependencies (including Rust for Rustler and Node.js for assets)
+RUN apt-get update -y && apt-get install -y build-essential git curl pkg-config libssl-dev zlib1g-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # prepare build dir
 WORKDIR /app
@@ -47,9 +53,15 @@ RUN mix deps.compile
 
 COPY priv priv
 
+# Copy native code for Rustler
+COPY native native
+
 COPY lib lib
 
 COPY assets assets
+
+# Install npm dependencies
+RUN cd assets && npm ci --progress=false --no-audit --loglevel=error
 
 # compile assets
 RUN mix assets.deploy
@@ -68,7 +80,7 @@ RUN mix release
 FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
-  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
+  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates zlib1g \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
