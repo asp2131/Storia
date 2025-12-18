@@ -6,6 +6,19 @@ defmodule RustReader do
 
   require Logger
 
+  @on_load :load_nif
+
+  def load_nif do
+    case :erlang.load_nif(nif_path(), 0) do
+      :ok -> :ok
+      {:error, {:reload, _}} -> :ok
+      {:error, {:upgrade, _}} -> :ok
+      {:error, reason} ->
+        Logger.warning("RustReader NIF not loaded: #{inspect(reason)}")
+        :ok
+    end
+  end
+
   @doc """
   Extracts text content and metadata from a PDF file.
 
@@ -13,39 +26,7 @@ defmodule RustReader do
   Returns `{:error, :nif_not_available}` if the native library cannot be loaded.
   Each string in `pages_json_list` is a JSON object with `page_number` and `text_content`.
   """
-  def extract_pdf(path) do
-    case ensure_loaded() do
-      :ok ->
-        do_extract_pdf(path)
-
-      {:error, reason} ->
-        Logger.warning("RustReader NIF not available: #{inspect(reason)}")
-        {:error, :nif_not_available}
-    end
-  rescue
-    e ->
-      Logger.warning("RustReader NIF extraction failed: #{inspect(e)}")
-      {:error, :nif_not_available}
-  end
-
-  # Attempts to load the NIF, returns :ok or {:error, reason}
-  defp ensure_loaded do
-    case :erlang.load_nif(nif_path(), 0) do
-      :ok ->
-        :ok
-
-      {:error, {:reload, _}} ->
-        # Already loaded
-        :ok
-
-      {:error, {:upgrade, _}} ->
-        # Already loaded, different version
-        :ok
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
+  def extract_pdf(_path), do: :erlang.nif_error(:nif_not_loaded)
 
   # Returns the path to the compiled NIF library
   defp nif_path do
@@ -60,7 +41,4 @@ defmodule RustReader do
         |> String.to_charlist()
     end
   end
-
-  # NIF stub - will be replaced by native implementation when loaded
-  defp do_extract_pdf(_path), do: :erlang.nif_error(:nif_not_loaded)
 end
