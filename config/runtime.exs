@@ -39,9 +39,12 @@ if config_env() == :prod do
 
   config :storia, Storia.Repo,
     url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "20"),
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5"),
     socket_options: maybe_ipv6,
     queue_target: 5000,
+    # Increase timeouts for Fly.io networking
+    connect_timeout: 30000,
+    handshake_timeout: 30000,
     queue_interval: 1000
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
@@ -58,6 +61,12 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
+  check_origin =
+    System.get_env("CHECK_ORIGIN")
+    |> case do
+      nil -> ["https://#{host}", "//#{host}"]
+      value -> String.split(value, ",", trim: true)
+    end
 
   config :storia, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
@@ -73,7 +82,8 @@ if config_env() == :prod do
       idle_timeout: :infinity,
       request_timeout: 300_000
     ],
-    secret_key_base: secret_key_base
+    secret_key_base: secret_key_base,
+    check_origin: check_origin
 
   # ## SSL Support
   #
