@@ -1,11 +1,13 @@
-# fly.toml app configuration file generated for storia on 2025-12-17T09:26:34-06:00
+# fly.toml app configuration file generated for storia on 2025-12-18T08:40:30-06:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = 'storia'
-primary_region = 'iad'
+primary_region = 'dfw'
 kill_signal = 'SIGTERM'
+
+[build]
 
 [deploy]
   release_command = '/app/bin/migrate'
@@ -13,7 +15,6 @@ kill_signal = 'SIGTERM'
 [env]
   PHX_HOST = 'storia.fly.dev'
   PORT = '8080'
-  PHX_SERVER = 'true'
 
 [http_service]
   internal_port = 8080

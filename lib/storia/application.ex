@@ -15,8 +15,7 @@ defmodule Storia.Application do
       # Start the Finch HTTP client for sending emails
       {Finch, name: Storia.Finch},
       # Start Oban for background job processing
-      # TODO: Debug Oban startup issues with fly.io Postgres
-      # {Oban, Application.fetch_env!(:storia, Oban)},
+      {Oban, Application.fetch_env!(:storia, Oban)},
       # Start a worker by calling: Storia.Worker.start_link(arg)
       # {Storia.Worker, arg},
       # Start to serve requests, typically the last entry

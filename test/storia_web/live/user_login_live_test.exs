@@ -19,7 +19,7 @@ defmodule StoriaWeb.UserLoginLiveTest do
       {:error, redirect} = live(conn, ~p"/users/log_in")
 
       assert {:redirect, %{to: path}} = redirect
-      assert path == ~p"/"
+      assert path == ~p"/library"
     end
 
     test "redirects admin to admin dashboard if already logged in", %{conn: conn} do
@@ -46,7 +46,7 @@ defmodule StoriaWeb.UserLoginLiveTest do
 
       conn = submit_form(form, conn)
 
-      assert redirected_to(conn) == ~p"/"
+      assert redirected_to(conn) == ~p"/library"
     end
 
     test "redirects admin to admin dashboard on login with valid credentials", %{conn: conn} do

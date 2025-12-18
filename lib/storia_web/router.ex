@@ -47,10 +47,9 @@ defmodule StoriaWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [{StoriaWeb.UserAuth, :ensure_authenticated}] do
-      # TODO: Implement UserSettingsLive
-      # live "/users/settings", UserSettingsLive, :edit
-      # live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
-      
+      live "/users/settings", UserSettingsLive, :edit
+      live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+
       # Reader routes - accessible to all authenticated users including admins
       live "/library", LibraryLive, :index
       live "/read/:id", ReaderLive, :show
