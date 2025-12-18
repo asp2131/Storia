@@ -27,6 +27,8 @@ defmodule StoriaWeb.AdminLive.BookList do
      |> assign(:page_title, "Book Management")
      |> assign(:active_tab, :books)
      |> assign(:search_query, "")
+     |> assign(:editing_book, nil)
+     |> assign(:book_changeset, nil)
      |> assign(:uploading, false)
      |> load_books()
      |> allow_upload(:pdf,
@@ -95,6 +97,50 @@ defmodule StoriaWeb.AdminLive.BookList do
           {:error, _changeset} ->
             {:noreply, put_flash(socket, :error, "Failed to delete book. It may have associated content.")}
         end
+    end
+  end
+
+  @impl true
+  def handle_event("edit_book", %{"id" => id}, socket) do
+    case Content.get_book(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Book not found")}
+
+      book ->
+        changeset = Content.change_book(book)
+        {:noreply, assign(socket, editing_book: book, book_changeset: changeset)}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply, assign(socket, editing_book: nil, book_changeset: nil)}
+  end
+
+  @impl true
+  def handle_event("validate_book", %{"book" => params}, socket) do
+    changeset =
+      socket.assigns.editing_book
+      |> Content.change_book(params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, book_changeset: changeset)}
+  end
+
+  @impl true
+  def handle_event("save_book", %{"book" => params}, socket) do
+    book = socket.assigns.editing_book
+
+    case Content.update_book(book, params) do
+      {:ok, _updated} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Book updated")
+         |> assign(editing_book: nil, book_changeset: nil)
+         |> load_books()}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, book_changeset: changeset)}
     end
   end
 
@@ -703,4 +749,9 @@ defmodule StoriaWeb.AdminLive.BookList do
   end
 
   defp matches_category_for_scene(_category, _value), do: false
+
+  # Helper for form inputs
+  defp input_value(%Ecto.Changeset{} = changeset, field) do
+    Ecto.Changeset.get_field(changeset, field) || ""
+  end
 end
