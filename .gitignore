@@ -1,3 +1,7 @@
+env.local
+.env
+
+
 # The directory Mix will write compiled artifacts to.
 /_build/
 
@@ -38,5 +42,8 @@ npm-debug.log
 package-lock.json
 
 # Environment variables
-.env
+
 .env.local
+
+# Rust binary artifacts
+/target/

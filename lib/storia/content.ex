@@ -86,7 +86,7 @@ defmodule Storia.Content do
   def get_book_with_scenes_and_soundscapes!(id) do
     Book
     |> Repo.get!(id)
-    |> Repo.preload(scenes: [soundscapes: :scene])
+    |> Repo.preload(scenes: [:soundscape])
   end
 
   @doc """
@@ -96,7 +96,7 @@ defmodule Storia.Content do
   def get_book_with_scenes_and_soundscapes(id) do
     case Repo.get(Book, id) do
       nil -> nil
-      book -> Repo.preload(book, scenes: [soundscapes: :scene])
+      book -> Repo.preload(book, scenes: [:soundscape])
     end
   end
 
@@ -295,7 +295,7 @@ defmodule Storia.Content do
   def get_page_with_scene(book_id, page_number) do
     Page
     |> where([p], p.book_id == ^book_id and p.page_number == ^page_number)
-    |> preload([p], scene: [soundscapes: :scene])
+    |> preload([p], scene: [:soundscape])
     |> Repo.one()
   end
 
@@ -308,7 +308,7 @@ defmodule Storia.Content do
         where: s.book_id == ^book_id,
         where: s.start_page <= ^page_number,
         where: s.end_page >= ^page_number,
-        preload: [soundscapes: :scene]
+        preload: [:soundscape]
 
     Repo.one(query)
   end
@@ -322,7 +322,7 @@ defmodule Storia.Content do
     |> where([s], s.book_id == ^book_id)
     |> where([s], s.start_page > ^page_number)
     |> order_by([s], asc: s.start_page)
-    |> preload([s], soundscapes: :scene)
+    |> preload([:soundscape])
     |> limit(1)
     |> Repo.one()
   end
@@ -349,5 +349,70 @@ defmodule Storia.Content do
     |> where([rp], rp.last_read_at >= ^start_of_month)
     |> select([rp], count(rp.id))
     |> Repo.one()
+  end
+
+  @doc """
+  Counts the number of completed books for a user.
+  A book is considered completed if the user has read the last page.
+  """
+  def count_completed_books(user_id) do
+    ReadingProgress
+    |> where([rp], rp.user_id == ^user_id)
+    |> join(:inner, [rp], b in Book, on: rp.book_id == b.id)
+    |> where([rp, b], rp.current_page >= b.total_pages)
+    |> select([rp], count(rp.id))
+    |> Repo.one()
+  end
+
+  @doc """
+  Counts the number of books a user is currently reading.
+  A book is currently reading if the user has progress but hasn't completed it.
+  """
+  def count_currently_reading_books(user_id) do
+    ReadingProgress
+    |> where([rp], rp.user_id == ^user_id)
+    |> join(:inner, [rp], b in Book, on: rp.book_id == b.id)
+    |> where([rp, b], rp.current_page < b.total_pages)
+    |> select([rp], count(rp.id))
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets the book a user is currently reading, if any.
+  Returns the most recently read book that isn't completed.
+  """
+  def get_currently_reading_book(user_id) do
+    ReadingProgress
+    |> where([rp], rp.user_id == ^user_id)
+    |> join(:inner, [rp], b in Book, on: rp.book_id == b.id)
+    |> where([rp, b], rp.current_page < b.total_pages)
+    |> order_by([rp], desc: rp.last_read_at)
+    |> preload([rp, b], book: b)
+    |> select([rp, b], rp)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  @doc """
+  Lists recent reading progress for a user.
+  """
+  def list_recent_reading_progress(user_id, limit \\ 10) do
+    ReadingProgress
+    |> where([rp], rp.user_id == ^user_id)
+    |> join(:inner, [rp], b in Book, on: rp.book_id == b.id)
+    |> order_by([rp], desc: rp.last_read_at)
+    |> preload([rp, b], book: b)
+    |> select([rp, b], rp)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @doc """
+  Counts total listening minutes for a user.
+  This is a placeholder - actual implementation would need audio tracking.
+  """
+  def count_total_listening_minutes(_user_id) do
+    # Placeholder - would need to track actual listening time
+    0
   end
 end

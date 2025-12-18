@@ -245,7 +245,7 @@ defmodule StoriaWeb.UserAuth do
     if conn_or_socket.assigns[:current_user] && Accounts.admin?(conn_or_socket.assigns.current_user) do
       ~p"/admin/books"
     else
-      ~p"/"
+      ~p"/library"
     end
   end
 
@@ -253,7 +253,7 @@ defmodule StoriaWeb.UserAuth do
     if Accounts.admin?(user) do
       ~p"/admin/books"
     else
-      ~p"/"
+      ~p"/library"
     end
   end
 end

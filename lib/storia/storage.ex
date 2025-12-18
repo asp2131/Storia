@@ -159,68 +159,72 @@ defmodule Storia.Storage do
       {:ok, [%{name: "Forest_Ambience.mp3", path: "magic/nature/Forest_Ambience.mp3", url: "..."}]}
   """
   def list_bucket_files(path, opts \\ []) do
-    _recursive = Keyword.get(opts, :recursive, false)
+    with :ok <- validate_storage_config() do
+      _recursive = Keyword.get(opts, :recursive, false)
 
-    # Ensure path doesn't start or end with /
-    clean_path =
-      path
-      |> String.trim_leading("/")
-      |> String.trim_trailing("/")
+      # Ensure path doesn't start or end with /
+      clean_path =
+        path
+        |> String.trim_leading("/")
+        |> String.trim_trailing("/")
 
-    url = "#{supabase_url()}/storage/v1/object/list/#{bucket()}"
-    headers = [
-      {"Authorization", "Bearer #{service_role_key()}"},
-      {"Content-Type", "application/json"}
-    ]
+      url = "#{supabase_url()}/storage/v1/object/list/#{bucket()}"
+      headers = [
+        {"Authorization", "Bearer #{service_role_key()}"},
+        {"Content-Type", "application/json"}
+      ]
 
-    body = Jason.encode!(%{
-      prefix: clean_path,
-      search: "",
-      limit: 1000,
-      offset: 0,
-      sortBy: %{column: "name", order: "asc"}
-    })
+      body = Jason.encode!(%{
+        prefix: clean_path,
+        search: "",
+        limit: 1000,
+        offset: 0,
+        sortBy: %{column: "name", order: "asc"}
+      })
 
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, files} when is_list(files) ->
-            # Filter out folders (they have id: null) and map to friendly format
-            file_list =
-              files
-              |> Enum.filter(fn file ->
-                Map.get(file, "id") != nil &&
-                String.ends_with?(Map.get(file, "name", ""), [".mp3", ".wav", ".ogg", ".m4a"])
-              end)
-              |> Enum.map(fn file ->
-                file_name = Map.get(file, "name")
-                file_path = if clean_path == "", do: file_name, else: "#{clean_path}/#{file_name}"
+      case HTTPoison.post(url, body, headers) do
+        {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+          case Jason.decode(response_body) do
+            {:ok, files} when is_list(files) ->
+              # Filter out folders (they have id: null) and map to friendly format
+              file_list =
+                files
+                |> Enum.filter(fn file ->
+                  Map.get(file, "id") != nil &&
+                    String.ends_with?(Map.get(file, "name", ""), [".mp3", ".wav", ".ogg", ".m4a"])
+                end)
+                |> Enum.map(fn file ->
+                  file_name = Map.get(file, "name")
+                  file_path = if clean_path == "", do: file_name, else: "#{clean_path}/#{file_name}"
 
-                %{
-                  name: file_name,
-                  path: file_path,
-                  url: build_public_url(file_path),
-                  size: Map.get(file, "metadata", %{}) |> Map.get("size"),
-                  updated_at: Map.get(file, "updated_at")
-                }
-              end)
+                  %{
+                    name: file_name,
+                    path: file_path,
+                    url: build_public_url(file_path),
+                    size: Map.get(file, "metadata", %{}) |> Map.get("size"),
+                    updated_at: Map.get(file, "updated_at")
+                  }
+                end)
 
-            {:ok, file_list}
+              {:ok, file_list}
 
-          {:ok, _} ->
-            {:error, "Unexpected response format"}
+            {:ok, _} ->
+              {:error, "Unexpected response format"}
 
-          {:error, reason} ->
-            {:error, "Failed to decode response: #{inspect(reason)}"}
-        end
+            {:error, reason} ->
+              {:error, "Failed to decode response: #{inspect(reason)}"}
+          end
 
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-        Logger.error("List files failed: HTTP #{status} - #{body}")
-        {:error, "Failed to list files: HTTP #{status}"}
+        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+          Logger.error("List files failed: HTTP #{status} - #{body}")
+          {:error, "Failed to list files: HTTP #{status}"}
 
-      {:error, reason} ->
-        Logger.error("List files request failed: #{inspect(reason)}")
-        {:error, "Request failed: #{inspect(reason)}"}
+        {:error, reason} ->
+          Logger.error("List files request failed: #{inspect(reason)}")
+          {:error, "Request failed: #{inspect(reason)}"}
+      end
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -238,8 +242,8 @@ defmodule Storia.Storage do
   def list_curated_folders do
     base_path = "audio/curated"
 
-    # First, list folders (not files) in audio/curated
-    with {:ok, folder_items} <- list_folders_in_path(base_path) do
+    with :ok <- validate_storage_config(),
+         {:ok, folder_items} <- list_folders_in_path(base_path) do
       folders =
         folder_items
         |> Enum.map(fn folder_name ->
@@ -252,6 +256,7 @@ defmodule Storia.Storage do
                 path: folder_path,
                 file_count: length(files)
               }
+
             {:error, _} ->
               %{
                 name: folder_name,
@@ -263,6 +268,8 @@ defmodule Storia.Storage do
         |> Enum.sort_by(& &1.name)
 
       {:ok, folders}
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -272,51 +279,55 @@ defmodule Storia.Storage do
   Returns folder names only, not files.
   """
   def list_folders_in_path(path) do
-    clean_path =
-      path
-      |> String.trim_leading("/")
-      |> String.trim_trailing("/")
+    with :ok <- validate_storage_config() do
+      clean_path =
+        path
+        |> String.trim_leading("/")
+        |> String.trim_trailing("/")
 
-    url = "#{supabase_url()}/storage/v1/object/list/#{bucket()}"
-    headers = [
-      {"Authorization", "Bearer #{service_role_key()}"},
-      {"Content-Type", "application/json"}
-    ]
+      url = "#{supabase_url()}/storage/v1/object/list/#{bucket()}"
+      headers = [
+        {"Authorization", "Bearer #{service_role_key()}"},
+        {"Content-Type", "application/json"}
+      ]
 
-    body = Jason.encode!(%{
-      prefix: clean_path,
-      search: "",
-      limit: 1000,
-      offset: 0
-    })
+      body = Jason.encode!(%{
+        prefix: clean_path,
+        search: "",
+        limit: 1000,
+        offset: 0
+      })
 
-    case HTTPoison.post(url, body, headers) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
-        case Jason.decode(response_body) do
-          {:ok, items} when is_list(items) ->
-            # Filter for folders only (id == nil)
-            folder_names =
-              items
-              |> Enum.filter(fn item -> Map.get(item, "id") == nil end)
-              |> Enum.map(fn item -> Map.get(item, "name") end)
-              |> Enum.reject(&is_nil/1)
+      case HTTPoison.post(url, body, headers) do
+        {:ok, %HTTPoison.Response{status_code: 200, body: response_body}} ->
+          case Jason.decode(response_body) do
+            {:ok, items} when is_list(items) ->
+              # Filter for folders only (id == nil)
+              folder_names =
+                items
+                |> Enum.filter(fn item -> Map.get(item, "id") == nil end)
+                |> Enum.map(fn item -> Map.get(item, "name") end)
+                |> Enum.reject(&is_nil/1)
 
-            {:ok, folder_names}
+              {:ok, folder_names}
 
-          {:ok, _} ->
-            {:error, "Unexpected response format"}
+            {:ok, _} ->
+              {:error, "Unexpected response format"}
 
-          {:error, reason} ->
-            {:error, "Failed to decode response: #{inspect(reason)}"}
-        end
+            {:error, reason} ->
+              {:error, "Failed to decode response: #{inspect(reason)}"}
+          end
 
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-        Logger.error("List folders failed: HTTP #{status} - #{body}")
-        {:error, "Failed to list folders: HTTP #{status}"}
+        {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+          Logger.error("List folders failed: HTTP #{status} - #{body}")
+          {:error, "Failed to list folders: HTTP #{status}"}
 
-      {:error, reason} ->
-        Logger.error("List folders request failed: #{inspect(reason)}")
-        {:error, "Request failed: #{inspect(reason)}"}
+        {:error, reason} ->
+          Logger.error("List folders request failed: #{inspect(reason)}")
+          {:error, "Request failed: #{inspect(reason)}"}
+      end
+    else
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -357,21 +368,39 @@ defmodule Storia.Storage do
   end
 
   defp upload_binary_data(binary_data, key, content_type) do
-    url = "#{supabase_url()}/storage/v1/object/#{bucket()}/#{key}"
-    headers = [
-      {"Authorization", "Bearer #{service_role_key()}"},
-      {"Content-Type", content_type}
-    ]
+    case validate_storage_config() do
+      :ok ->
+        url = "#{supabase_url()}/storage/v1/object/#{bucket()}/#{key}"
+        headers = [
+          {"Authorization", "Bearer #{service_role_key()}"},
+          {"Content-Type", content_type}
+        ]
 
-    case HTTPoison.post(url, binary_data, headers) do
-      {:ok, %HTTPoison.Response{status_code: 200}} ->
-        {:ok, build_public_url(key)}
-      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
-        Logger.error("Upload failed: HTTP #{status} - #{body}")
-        {:error, "Upload failed: HTTP #{status}"}
+        # Extended timeouts for large file uploads
+        options = [
+          timeout: 60_000,       # Overall request timeout (60s)
+          recv_timeout: 60_000   # Time to receive response after sending (60s)
+        ]
+
+        case HTTPoison.post(url, binary_data, headers, options) do
+          {:ok, %HTTPoison.Response{status_code: 200}} ->
+            {:ok, build_public_url(key)}
+
+          {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+            Logger.error("Upload failed: HTTP #{status} - #{body}")
+            {:error, "Upload failed: HTTP #{status}"}
+
+          {:error, %HTTPoison.Error{reason: :timeout}} ->
+            Logger.warning("Upload timed out for #{key}, but may have succeeded - check bucket")
+            {:error, "Upload timed out (may have succeeded; check bucket)"}
+
+          {:error, reason} ->
+            Logger.error("Upload request failed: #{inspect(reason)}")
+            {:error, "Request failed: #{inspect(reason)}"}
+        end
+
       {:error, reason} ->
-        Logger.error("Upload request failed: #{inspect(reason)}")
-        {:error, "Request failed: #{inspect(reason)}"}
+        {:error, reason}
     end
   end
 
@@ -408,5 +437,18 @@ defmodule Storia.Storage do
   """
   def build_public_url(key) do
     "#{supabase_url()}/storage/v1/object/public/#{bucket()}/#{key}"
+  end
+
+  defp validate_storage_config do
+    cond do
+      is_nil(supabase_url()) or supabase_url() == "" ->
+        {:error, "Supabase URL is not configured"}
+
+      is_nil(service_role_key()) or service_role_key() == "" ->
+        {:error, "Supabase service role key is not configured"}
+
+      true ->
+        :ok
+    end
   end
 end

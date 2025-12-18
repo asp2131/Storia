@@ -25,6 +25,13 @@ defmodule StoriaWeb.Endpoint do
     gzip: false,
     only: StoriaWeb.static_paths()
 
+  # Also serve statics under /static/* to accommodate existing URLs
+  plug Plug.Static,
+    at: "/static",
+    from: :storia,
+    gzip: false,
+    only: StoriaWeb.static_paths()
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

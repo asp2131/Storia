@@ -43,7 +43,7 @@ defmodule Storia.Content.Scene do
     descriptors = get_field(changeset, :descriptors)
 
     if descriptors && is_map(descriptors) do
-      valid_keys = ["setting", "mood", "weather", "time_of_day", "activity_level", "atmosphere"]
+      valid_keys = ["setting", "mood", "weather", "time_of_day", "activity_level", "atmosphere", "scene_type", "dominant_elements"]
       descriptor_keys = Map.keys(descriptors)
 
       if Enum.all?(descriptor_keys, &(&1 in valid_keys)) do

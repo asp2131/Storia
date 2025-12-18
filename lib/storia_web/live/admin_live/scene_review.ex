@@ -149,7 +149,7 @@ defmodule StoriaWeb.AdminLive.SceneReview do
     # Validate all scenes have soundscapes
     scenes_without_soundscapes =
       Enum.filter(book.scenes, fn scene ->
-        Enum.empty?(scene.soundscapes)
+        is_nil(scene.soundscape)
       end)
 
     if Enum.empty?(scenes_without_soundscapes) do
@@ -229,7 +229,7 @@ defmodule StoriaWeb.AdminLive.SceneReview do
     if total_scenes > 0 do
       scenes_with_soundscapes =
         book.scenes
-        |> Enum.count(fn scene -> !Enum.empty?(scene.soundscapes) end)
+        |> Enum.count(fn scene -> !is_nil(scene.soundscape) end)
 
       round(scenes_with_soundscapes / total_scenes * 100)
     else

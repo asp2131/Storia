@@ -85,7 +85,7 @@
           <!-- Soundscapes -->
           <div>
             <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Assigned Soundscapes</h4>
-            <%= if Enum.empty?(scene.soundscapes) do %>
+            <%= if is_nil(scene.soundscape) do %>
               <div class="flex items-center justify-center p-6 text-center border-2 border-dashed border-gray-300 dark:border-[#323b67] rounded-lg">
                 <div class="flex flex-col items-center">
                   <.icon name="hero-musical-note" class="w-8 h-8 text-gray-400 mb-2" />
@@ -102,7 +102,7 @@
               </div>
             <% else %>
               <div class="space-y-3">
-                <%= for soundscape <- scene.soundscapes do %>
+                <% soundscape = scene.soundscape %>
                   <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-[#232948] rounded-lg">
                     <div class={"w-10 h-10 rounded-full #{scene_color(index)} flex items-center justify-center"}>
                       <.icon name="hero-musical-note" class="w-5 h-5 text-white" />
@@ -131,7 +131,6 @@
                       </audio>
                     <% end %>
                   </div>
-                <% end %>
               </div>
             <% end %>
           </div>

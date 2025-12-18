@@ -1,27 +1,14 @@
 import Config
 
 # Configure your database
-# Use Supabase DATABASE_URL if available, otherwise fall back to local PostgreSQL
-database_url = System.get_env("DATABASE_URL")
-
-if database_url do
-  config :storia, Storia.Repo,
-    url: database_url,
-    # Disable prepared statements for Supabase transaction mode pooler
-    prepare: :unnamed,
-    stacktrace: true,
-    show_sensitive_data_on_connection_error: true,
-    pool_size: 10
-else
-  config :storia, Storia.Repo,
-    username: "postgres",
-    password: "postgres",
-    hostname: "localhost",
-    database: "storia_dev",
-    stacktrace: true,
-    show_sensitive_data_on_connection_error: true,
-    pool_size: 10
-end
+config :storia, Storia.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "storia_dev",
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

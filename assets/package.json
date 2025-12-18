@@ -8,7 +8,8 @@
     "deploy": "cd .. && mix assets.deploy && rm -f _build/esbuild*"
   },
   "dependencies": {
-    "alpinejs": "^3.14.1"
+    "alpinejs": "^3.14.1",
+    "page-flip": "^2.0.7"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.7"

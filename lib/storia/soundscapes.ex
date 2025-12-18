@@ -194,20 +194,26 @@ defmodule Storia.Soundscapes do
       }}
   """
   def list_curated_soundscapes_from_bucket do
-    with {:ok, folders} <- Storia.Storage.list_curated_folders() do
-      soundscapes_by_category =
-        folders
-        |> Enum.reduce(%{}, fn folder, acc ->
-          case Storia.Storage.list_bucket_files(folder.path) do
-            {:ok, files} ->
-              Map.put(acc, folder.name, files)
+    case Storia.Storage.list_curated_folders() do
+      {:ok, folders} ->
+        soundscapes_by_category =
+          folders
+          |> Enum.reduce(%{}, fn folder, acc ->
+            case Storia.Storage.list_bucket_files(folder.path) do
+              {:ok, files} ->
+                Map.put(acc, folder.name, files)
 
-            {:error, _} ->
-              acc
-          end
-        end)
+              {:error, reason} ->
+                Logger.warning("Failed to list files for #{folder.path}: #{inspect(reason)}")
+                acc
+            end
+          end)
 
-      {:ok, soundscapes_by_category}
+        {:ok, soundscapes_by_category}
+
+      {:error, reason} ->
+        Logger.warning("Failed to load curated folders: #{inspect(reason)}")
+        {:ok, %{}}
     end
   end
 
