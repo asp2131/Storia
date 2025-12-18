@@ -6,17 +6,12 @@ defmodule RustReader do
 
   require Logger
 
-  @on_load :load_nif
+  # Temporarily disabled to fix deployment issues
+  # @on_load :load_nif
 
   def load_nif do
-    case :erlang.load_nif(nif_path(), 0) do
-      :ok -> :ok
-      {:error, {:reload, _}} -> :ok
-      {:error, {:upgrade, _}} -> :ok
-      {:error, reason} ->
-        Logger.warning("RustReader NIF not loaded: #{inspect(reason)}")
-        :ok
-    end
+    Logger.warning("RustReader NIF loading disabled for deployment")
+    :ok
   end
 
   @doc """

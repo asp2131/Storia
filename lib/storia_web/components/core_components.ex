@@ -31,7 +31,7 @@ defmodule StoriaWeb.CoreComponents do
   JS commands may be passed to the `:on_cancel` to configure
   the closing/cancel event, for example:
 
-      <.modal id="confirm" on_cancel={JS.navigate(~p"/posts")}>
+      <.modal id="confirm" on_cancel={JS.navigate(~p"/library")}>
         This is another modal.
       </.modal>
 
@@ -202,7 +202,7 @@ defmodule StoriaWeb.CoreComponents do
   def simple_form(assigns) do
     ~H"""
     <.form :let={f} for={@for} as={@as} {@rest}>
-      <div class="mt-10 space-y-8 bg-white">
+      <div class="mt-10 space-y-8 bg-transparent">
         <%= render_slot(@inner_block, f) %>
         <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
           <%= render_slot(action, f) %>
@@ -396,7 +396,7 @@ defmodule StoriaWeb.CoreComponents do
 
   def label(assigns) do
     ~H"""
-    <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
+    <label for={@for} class="block text-sm font-semibold leading-6 text-white">
       <%= render_slot(@inner_block) %>
     </label>
     """
@@ -429,7 +429,7 @@ defmodule StoriaWeb.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8 text-zinc-800">
+        <h1 class="text-lg font-semibold leading-8 text-white">
           <%= render_slot(@inner_block) %>
         </h1>
         <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
@@ -551,7 +551,7 @@ defmodule StoriaWeb.CoreComponents do
 
   ## Examples
 
-      <.back navigate={~p"/posts"}>Back to posts</.back>
+      <.back navigate={~p"/library"}>Back to library</.back>
   """
   attr :navigate, :any, required: true
   slot :inner_block, required: true

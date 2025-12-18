@@ -39,8 +39,10 @@ if config_env() == :prod do
 
   config :storia, Storia.Repo,
     url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    socket_options: maybe_ipv6
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "20"),
+    socket_options: maybe_ipv6,
+    queue_target: 5000,
+    queue_interval: 1000
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
@@ -62,11 +64,8 @@ if config_env() == :prod do
   config :storia, StoriaWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
-      # Enable IPv6 and bind on all interfaces.
-      # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
-      # See the documentation on https://hexdocs.pm/bandit/Bandit.html#t:options/0
-      # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0},
+      # Bind on all IPv4 interfaces for Fly.io compatibility
+      ip: {0, 0, 0, 0},
       port: port
     ],
     # Increase timeouts for large file uploads (5 minutes)
@@ -136,17 +135,11 @@ if config_env() == :prod do
   config :storia,
     replicate_api_key: System.get_env("REPLICATE_API_KEY")
 
-  # Configure Oban for production
+  # Configure Oban for production - simplified config to avoid connection issues
   config :storia, Oban,
     repo: Storia.Repo,
-    plugins: [
-      # Prune completed jobs after 60 seconds
-      {Oban.Plugins.Pruner, max_age: 60},
-      # Rescue orphaned jobs after 60 minutes
-      {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(60)},
-      # Track stats for monitoring
-      Oban.Plugins.Stager
-    ],
+    notifier: false,
+    plugins: [],
     queues: [
       pdf_processing: 2,
       ai_analysis: 5,

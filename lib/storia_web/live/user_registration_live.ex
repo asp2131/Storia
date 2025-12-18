@@ -6,30 +6,38 @@ defmodule StoriaWeb.UserRegistrationLive do
 
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-sm">
-      <.header class="text-center">
-        Register for an account
-        <:subtitle>
-          Already registered?
-          <.link navigate={~p"/users/log_in"} class="font-semibold text-brand hover:underline">
-            Sign in
-          </.link>
-          to your account now.
-        </:subtitle>
-      </.header>
+    <div class="min-h-screen bg-gradient-to-br from-[#0a0e1a] via-[#0f1426] to-[#111827] flex items-center justify-center px-4 py-12">
+      <div class="w-full max-w-md">
+        <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-8">
+          <div class="text-center mb-8">
+            <p class="text-sm uppercase tracking-[0.2em] text-[#7da2f2] font-semibold mb-3">Join Storia</p>
+            <h1 class="text-3xl font-black text-white tracking-tight">Create your account</h1>
+            <p class="text-[#9aa4c2] text-sm mt-3">
+              Already registered?
+              <.link navigate={~p"/users/log_in"} class="text-[#7da2f2] font-semibold hover:underline">
+                Sign in
+              </.link>
+            </p>
+          </div>
 
-      <.simple_form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
-        <.error :if={@check_errors}>
-          Oops, something went wrong! Please check the errors below.
-        </.error>
+          <.simple_form for={@form} id="registration_form" phx-submit="save" phx-change="validate" class="space-y-4">
+            <.error :if={@check_errors} class="text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm">
+              Oops, something went wrong! Please check the errors below.
+            </.error>
 
-        <.input field={@form[:email]} type="email" label="Email" required />
-        <.input field={@form[:password]} type="password" label="Password" required />
+            <.input field={@form[:email]} type="email" label="Email" required
+              class="bg-white/5 border border-white/10 text-white placeholder:text-[#9aa4c2] focus:border-[#7da2f2] focus:ring-[#7da2f2]" />
+            <.input field={@form[:password]} type="password" label="Password" required
+              class="bg-white/5 border border-white/10 text-white placeholder:text-[#9aa4c2] focus:border-[#7da2f2] focus:ring-[#7da2f2]" />
 
-        <:actions>
-          <.button phx-disable-with="Creating account..." class="w-full">Create an account</.button>
-        </:actions>
-      </.simple_form>
+            <:actions>
+              <.button phx-disable-with="Creating account..." class="w-full bg-gradient-to-r from-[#6c8dff] to-[#7da2f2] text-white font-bold py-3 rounded-lg shadow-lg hover:opacity-95 transition">
+                Create account
+              </.button>
+            </:actions>
+          </.simple_form>
+        </div>
+      </div>
     </div>
     """
   end

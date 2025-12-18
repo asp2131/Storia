@@ -25,6 +25,7 @@ defmodule StoriaWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/health", PageController, :health
   end
 
   # Authentication routes
@@ -54,15 +55,17 @@ defmodule StoriaWeb.Router do
       live "/library", LibraryLive, :index
       live "/read/:id", ReaderLive, :show
     end
+
+    # Placeholder subscription route to satisfy navigation targets
+    get "/subscription", PageController, :subscription
   end
 
   scope "/", StoriaWeb do
     pipe_through [:browser]
 
     delete "/users/log_out", UserSessionController, :delete
-    # TODO: Implement UserConfirmationController
-    # get "/users/confirm/:token", UserConfirmationController, :edit
-    # post "/users/confirm/:token", UserConfirmationController, :update
+    # Placeholder confirmation route (full email confirmation flow not yet implemented)
+    get "/users/confirm/:token", PageController, :confirm_placeholder
   end
 
   # Admin routes

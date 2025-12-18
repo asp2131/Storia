@@ -7,25 +7,35 @@ defmodule Storia.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      StoriaWeb.Telemetry,
-      Storia.Repo,
-      {DNSCluster, query: Application.get_env(:storia, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Storia.PubSub},
-      # Start the Finch HTTP client for sending emails
-      {Finch, name: Storia.Finch},
-      # Start Oban for background job processing
-      {Oban, Application.fetch_env!(:storia, Oban)},
-      # Start a worker by calling: Storia.Worker.start_link(arg)
-      # {Storia.Worker, arg},
-      # Start to serve requests, typically the last entry
-      StoriaWeb.Endpoint
-    ]
+    children =
+      [
+        StoriaWeb.Telemetry,
+        Storia.Repo,
+        {Phoenix.PubSub, name: Storia.PubSub},
+        # Start the Finch HTTP client for sending emails
+        {Finch, name: Storia.Finch},
+        # Start to serve requests, typically the last entry
+        StoriaWeb.Endpoint
+      ] ++
+      oban_child() ++
+      dns_cluster_child()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Storia.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp oban_child do
+    # Temporarily disabled Oban entirely to debug connection issues
+    []
+  end
+
+  defp dns_cluster_child do
+    case Application.get_env(:storia, :dns_cluster_query) do
+      nil -> []
+      query -> [{DNSCluster, query: query}]
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration
