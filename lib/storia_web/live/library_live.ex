@@ -483,7 +483,7 @@ defmodule StoriaWeb.LibraryLive do
     ceil(length(books) / per_page)
   end
 
-  defp pagination_range(current, total) when total <= 7 do
+  defp pagination_range(_current, total) when total <= 7 do
     1..total |> Enum.to_list()
   end
 
@@ -613,7 +613,6 @@ defmodule StoriaWeb.LibraryLive do
 
   defp sort_books(books, _), do: books
 
-  defp subscription_tier_name(:free), do: "Free Tier"
   defp subscription_tier_name(:reader), do: "Reader Tier"
   defp subscription_tier_name(:bibliophile), do: "Bibliophile Tier"
   defp subscription_tier_name(_), do: "Free Tier"

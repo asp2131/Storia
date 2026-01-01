@@ -1,8 +1,6 @@
 defmodule StoriaWeb.UserProfileLive do
   use StoriaWeb, :live_view
 
-  alias Storia.{Content, Accounts}
-
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-[#0a0e1a]">
