@@ -43,6 +43,6 @@ npm-debug.log
 # Environment variables
 
 .env.local
-
+.env
 # Rust binary artifacts
 /target/
