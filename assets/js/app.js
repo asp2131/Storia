@@ -390,7 +390,7 @@ const LandingPage = {
     // Phase B: The Soundwave Scrub
     const heroTextEl = document.querySelector('#hero-text')
     if (heroTextEl) {
-      const heroText = new SplitType('#hero-text', { types: 'chars' })
+      const heroText = new SplitType('#hero-text', { types: 'words, chars' })
       
       const scrubTl = gsap.timeline({
         scrollTrigger: {
