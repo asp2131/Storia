@@ -41,8 +41,7 @@ npm-debug.log
 /scripts/pdf_processor/node_modules/
 
 # Environment variables
-
-.env.local
 .env
+.env.local
 # Rust binary artifacts
 /target/
