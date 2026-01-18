@@ -5,7 +5,7 @@ defmodule Storia.Accounts do
 
   import Ecto.Query, warn: false
   alias Storia.Repo
-  alias Storia.Accounts.{User, UserToken}
+  alias Storia.Accounts.{User, UserToken, UserNotifier}
 
   ## User registration
 
@@ -41,24 +41,23 @@ defmodule Storia.Accounts do
   end
 
   @doc """
-  Delivers the confirmation email instructions (placeholder for MVP).
+  Delivers the confirmation email instructions.
   """
-  def deliver_user_confirmation_instructions(_user, _confirmation_url_fun) do
-    # For MVP, we'll skip email confirmation
-    # In production, this would send an email via Swoosh
-    {:ok, %{to: "user@example.com", body: "..."}}
+  def deliver_user_confirmation_instructions(%User{} = user, confirmation_url_fun)
+      when is_function(confirmation_url_fun, 1) do
+    {token, user_token} = UserToken.build_email_token(user, "confirm")
+    Repo.insert!(user_token)
+    UserNotifier.deliver_confirmation_instructions(user, confirmation_url_fun.(token))
   end
 
   @doc """
-  Delivers the reset password email instructions (placeholder for MVP).
+  Delivers the reset password email instructions.
   """
-  def deliver_user_reset_password_instructions(user, reset_url_fun) do
-    token = generate_reset_token(user)
-    reset_url = reset_url_fun.(token)
-    # For MVP, we'll just log the reset URL
-    # In production, this would send an email via Swoosh
-    IO.puts("Password reset URL: #{reset_url}")
-    {:ok, %{to: user.email, body: "Reset URL: #{reset_url}"}}
+  def deliver_user_reset_password_instructions(%User{} = user, reset_url_fun)
+      when is_function(reset_url_fun, 1) do
+    {token, user_token} = UserToken.build_email_token(user, "reset_password")
+    Repo.insert!(user_token)
+    UserNotifier.deliver_reset_password_instructions(user, reset_url_fun.(token))
   end
 
   @doc """

@@ -9,6 +9,7 @@ defmodule Storia.Accounts.UserToken do
   # It is very important to keep the reset password token expiry short,
   # since someone with access to the email may take over the account.
   @reset_password_validity_in_days 1
+  @confirm_validity_in_days 7
   @session_validity_in_days 30
 
   schema "users_tokens" do
@@ -122,6 +123,7 @@ defmodule Storia.Accounts.UserToken do
     end
   end
 
+  defp days_for_context("confirm"), do: @confirm_validity_in_days
   defp days_for_context("reset_password"), do: @reset_password_validity_in_days
 
   @doc """

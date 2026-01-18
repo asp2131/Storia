@@ -5,7 +5,6 @@
 /* This file is for your main application CSS */
 body {
   background: #0a0a0a;
-  cursor: none;
 }
 
 @media (max-width: 768px) {
@@ -15,7 +14,7 @@ body {
 }
 
 .cursor-hover {
-  cursor: none;
+  cursor: pointer;
 }
 
 .font-serif {

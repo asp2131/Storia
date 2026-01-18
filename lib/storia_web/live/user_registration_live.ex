@@ -20,7 +20,16 @@ defmodule StoriaWeb.UserRegistrationLive do
             </p>
           </div>
 
-          <.simple_form for={@form} id="registration_form" phx-submit="save" phx-change="validate" class="space-y-4">
+          <.simple_form
+        for={@form}
+        id="registration_form"
+        phx-submit="save"
+        phx-change="validate"
+        phx-trigger-action={@trigger_submit}
+        action={~p"/users/log_in?_action=registered"}
+        method="post"
+        class="space-y-4"
+      >
             <.error :if={@check_errors} class="text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-sm">
               Oops, something went wrong! Please check the errors below.
             </.error>
