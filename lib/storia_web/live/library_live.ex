@@ -108,18 +108,18 @@ defmodule StoriaWeb.LibraryLive do
     <div class="min-h-screen bg-[#0a0e1a]">
       <!-- Navigation Bar -->
       <nav class="bg-[#101322] border-b border-[#232948]">
-        <div class="max-w-7xl mx-auto px-6">
-          <div class="flex items-center justify-between h-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-4 md:py-0 md:h-16">
             <!-- Left: Logo and Nav Links -->
-            <div class="flex items-center gap-8">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
               <.link navigate={~p"/"} class="flex items-center gap-2 text-white font-bold text-lg">
                 <svg class="w-6 h-6 text-[#1337ec]" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
                 </svg>
-                Soundscape Books
+                <span class="truncate">Soundscape Books</span>
               </.link>
 
-              <div class="flex items-center gap-6">
+              <div class="flex flex-wrap items-center gap-4 sm:gap-6">
                 <%= if Accounts.admin?(@current_user) do %>
                   <.link
                     navigate={~p"/admin/books"}
@@ -146,8 +146,8 @@ defmodule StoriaWeb.LibraryLive do
             </div>
 
             <!-- Right: Search and Subscribe -->
-            <div class="flex items-center gap-4">
-              <div class="relative">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
+              <div class="relative w-full sm:w-64">
                 <input
                   type="text"
                   placeholder="Search"
@@ -155,7 +155,7 @@ defmodule StoriaWeb.LibraryLive do
                   phx-debounce="300"
                   name="query"
                   value={@search_query || ""}
-                  class="w-64 h-9 pl-10 pr-4 bg-[#232948] text-white text-sm rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] placeholder:text-[#929bc9]"
+                  class="w-full h-9 pl-10 pr-4 bg-[#232948] text-white text-sm rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] placeholder:text-[#929bc9]"
                 />
                 <svg
                   class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#929bc9]"
@@ -174,13 +174,13 @@ defmodule StoriaWeb.LibraryLive do
 
               <.link
                 navigate={~p"/subscription"}
-                class="px-4 py-2 bg-[#1337ec] text-white rounded-lg text-sm font-bold hover:bg-opacity-90 transition"
+                class="px-4 py-2 bg-[#1337ec] text-white rounded-lg text-sm font-bold hover:bg-opacity-90 transition w-full sm:w-auto text-center"
               >
                 Subscribe
               </.link>
 
               <!-- User Dropdown -->
-              <div class="relative" x-data="{ open: false }" @click.away="open = false">
+              <div class="relative self-start sm:self-auto" x-data="{ open: false }" @click.away="open = false">
                 <button
                   @click="open = !open"
                   class="w-9 h-9 bg-[#e5e7eb] rounded-full flex items-center justify-center hover:bg-opacity-80 transition"
@@ -241,26 +241,26 @@ defmodule StoriaWeb.LibraryLive do
       </nav>
 
       <!-- Main Content -->
-      <div class="max-w-7xl mx-auto px-6 py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <!-- Hero Section -->
         <div class="mb-8">
-          <h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em] mb-2">
+          <h1 class="text-white text-3xl sm:text-4xl font-black leading-tight tracking-[-0.033em] mb-2">
             Discover Your Next Read
           </h1>
-          <p class="text-[#929bc9] text-base font-normal leading-normal">
+          <p class="text-[#929bc9] text-sm sm:text-base font-normal leading-normal">
             Browse, search, and select a book to begin your immersive reading experience.
           </p>
         </div>
 
         <!-- Filters Row -->
-        <div class="flex items-center gap-3 mb-8">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-8">
           <!-- Filter by Genre -->
-          <div class="relative">
+          <div class="relative w-full sm:w-auto">
             <select
               id="genre-filter"
               phx-change="filter_by_genre"
               name="genre"
-              class="appearance-none h-10 pl-4 pr-10 bg-[#232948] text-white text-sm font-medium rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] hover:bg-opacity-80 cursor-pointer min-w-[160px]"
+              class="appearance-none h-10 w-full sm:w-auto pl-4 pr-10 bg-[#232948] text-white text-sm font-medium rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] hover:bg-opacity-80 cursor-pointer sm:min-w-[160px]"
             >
               <option value="">Filter by Genre</option>
               <option value="fiction" selected={@genre_filter == "fiction"}>Fiction</option>
@@ -288,10 +288,10 @@ defmodule StoriaWeb.LibraryLive do
           </div>
 
           <!-- Filter by Status (placeholder) -->
-          <div class="relative">
+          <div class="relative w-full sm:w-auto">
             <select
               disabled
-              class="appearance-none h-10 pl-4 pr-10 bg-[#232948] text-[#929bc9] text-sm font-medium rounded-lg border-none cursor-not-allowed min-w-[160px]"
+              class="appearance-none h-10 w-full sm:w-auto pl-4 pr-10 bg-[#232948] text-[#929bc9] text-sm font-medium rounded-lg border-none cursor-not-allowed sm:min-w-[160px]"
             >
               <option>Filter by Status</option>
             </select>
@@ -311,12 +311,12 @@ defmodule StoriaWeb.LibraryLive do
           </div>
 
           <!-- Sort by Title -->
-          <div class="relative">
+          <div class="relative w-full sm:w-auto">
             <select
               id="sort-filter"
               phx-change="sort_by"
               name="sort"
-              class="appearance-none h-10 pl-4 pr-10 bg-[#232948] text-white text-sm font-medium rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] hover:bg-opacity-80 cursor-pointer min-w-[160px]"
+              class="appearance-none h-10 w-full sm:w-auto pl-4 pr-10 bg-[#232948] text-white text-sm font-medium rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] hover:bg-opacity-80 cursor-pointer sm:min-w-[160px]"
             >
               <option value="title_asc" selected={@sort_by == "title_asc"}>Sort by Title (A-Z)</option>
               <option value="title_desc" selected={@sort_by == "title_desc"}>
@@ -345,7 +345,7 @@ defmodule StoriaWeb.LibraryLive do
           <%= if @genre_filter || @search_query do %>
             <button
               phx-click="clear_filters"
-              class="h-10 px-4 text-[#1337ec] hover:text-[#1337ec]/80 text-sm font-medium transition"
+              class="h-10 px-4 text-[#1337ec] hover:text-[#1337ec]/80 text-sm font-medium transition w-full sm:w-auto text-left sm:text-center"
             >
               Clear filters
             </button>
@@ -364,7 +364,7 @@ defmodule StoriaWeb.LibraryLive do
             </button>
           </div>
         <% else %>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             <%= for book <- @paginated_books do %>
               <div
                 class="group cursor-pointer relative"
@@ -415,7 +415,7 @@ defmodule StoriaWeb.LibraryLive do
 
           <!-- Pagination -->
           <%= if @total_pages > 1 do %>
-            <div class="flex items-center justify-center gap-2 mt-12">
+            <div class="flex flex-wrap items-center justify-center gap-2 mt-10 sm:mt-12">
               <button
                 phx-click="prev_page"
                 disabled={@current_page == 1}
