@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     '/Users/akinpound/Documents/experiments/storia/_build/test/lib/bcrypt_elixir/priv/bcrypt_nif.so'
-relocations:     []
-...

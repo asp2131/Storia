@@ -41,3 +41,29 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Development and build artifacts
+_build/
+.bmad-core/
+.claude/
+docs/
+logs/
+test/
+
+# Project specific files
+@*.md
+PROMPT.md
+progress.json
+*.log
+.ralph_session
+.ralph_session_history
+.mcp.json
+
+# CI/CD
+.github/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+.env*.local
