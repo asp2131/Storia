@@ -71,7 +71,7 @@ export default function BookReader() {
 
   // Audio state
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
-  const [isSoundscapePlaying, setIsSoundscapePlaying] = useState(false);
+  const [isSoundscapePlaying, setIsSoundscapePlaying] = useState(true);
   const [narrationVolume, setNarrationVolume] = useState(0.85);
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationProgress, setNarrationProgress] = useState(0);
