@@ -1,6 +1,5 @@
 defmodule StoriaWeb.Router do
   use StoriaWeb, :router
-  use MagicAuth.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -9,7 +8,12 @@ defmodule StoriaWeb.Router do
     plug :put_root_layout, html: {StoriaWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug :fetch_magic_auth_session
+    plug StoriaWeb.Auth.Pipeline
+    plug :put_current_user
+  end
+
+  def put_current_user(conn, _opts) do
+    StoriaWeb.Plugs.AuthPlugs.put_current_user(conn, _opts)
   end
 
   pipeline :api do
@@ -28,46 +32,45 @@ defmodule StoriaWeb.Router do
     plug :redirect_if_authenticated
   end
 
+  def require_authenticated(conn, _opts) do
+    StoriaWeb.Plugs.AuthPlugs.require_authenticated(conn, _opts)
+  end
+
+  def redirect_if_authenticated(conn, _opts) do
+    StoriaWeb.Plugs.AuthPlugs.redirect_if_authenticated(conn, _opts)
+  end
+
   scope "/", StoriaWeb do
     pipe_through :browser
 
-    delete "/sessions/log_out", MagicAuthController, :logout
     get "/", PageController, :home
     get "/health", PageController, :health
+    post "/auth/request_magic_link", Controllers.AuthController, :request_magic_link
+    get "/auth/magic_link", Controllers.AuthController, :magic_link
+    delete "/sessions/log_out", Controllers.AuthController, :logout
   end
 
-  magic_auth("/sessions", signed_in: "/library")
-
-  # Authentication routes (legacy password flow)
+  # Authentication routes (legacy password flow - disabled for now)
   scope "/", StoriaWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
 
-    live_session :redirect_if_user_is_authenticated,
-      on_mount: [{MagicAuth, :redirect_if_authenticated}] do
-      live "/users/register", UserRegistrationLive, :new
-      live "/users/log_in", UserLoginLive, :new
-      live "/users/reset_password", UserForgotPasswordLive, :new
-      live "/users/reset_password/:token", UserResetPasswordLive, :edit
-    end
-
-    post "/users/log_in", UserSessionController, :create
-    post "/users/register", UserRegistrationController, :create
+    # post "/users/log_in", UserSessionController, :create
+    # post "/users/register", UserRegistrationController, :create
   end
 
   scope "/", StoriaWeb do
     pipe_through [:browser]
 
-    post "/auth/request_code", MagicAuthController, :request_code
-    post "/auth/verify", MagicAuthController, :verify
+    # Magic Auth routes removed
   end
 
   scope "/", StoriaWeb do
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :require_authenticated_user,
-      on_mount: [{MagicAuth, :require_authenticated}] do
-      live "/users/settings", UserSettingsLive, :edit
-      live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
+      on_mount: [{StoriaWeb.Auth.LiveAuth, :ensure_authenticated}] do
+      # live "/users/settings", UserSettingsLive, :edit
+      # live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
 
       # Reader routes - accessible to all authenticated users including admins
       live "/library", LibraryLive, :index
@@ -81,7 +84,7 @@ defmodule StoriaWeb.Router do
   scope "/", StoriaWeb do
     pipe_through [:browser]
 
-    delete "/users/log_out", UserSessionController, :delete
+    # delete "/users/log_out", UserSessionController, :delete
     # Placeholder confirmation route (full email confirmation flow not yet implemented)
     get "/users/confirm/:token", PageController, :confirm_placeholder
   end
@@ -91,7 +94,7 @@ defmodule StoriaWeb.Router do
     pipe_through [:browser, :require_authenticated_user, :admin]
 
     live_session :admin,
-      on_mount: [{MagicAuth, :require_authenticated}],
+      on_mount: [{StoriaWeb.Auth.LiveAuth, :ensure_authenticated}],
       layout: {StoriaWeb.Layouts, :admin} do
       live "/books", BookList, :index
       live "/books/:id/scenes", SceneReview, :show

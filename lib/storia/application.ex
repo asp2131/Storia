@@ -17,7 +17,6 @@ defmodule Storia.Application do
         # Start to serve requests, typically the last entry
         StoriaWeb.Endpoint
       ] ++
-      MagicAuth.children() ++
       oban_child() ++
       dns_cluster_child()
 

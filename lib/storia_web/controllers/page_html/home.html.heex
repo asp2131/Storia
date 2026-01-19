@@ -52,14 +52,13 @@
           </div>
         </div>
 
-        <!-- Login/Register -->
+        <!-- Login/Register (Magic Link) -->
         <div x-show="authStep === 'email' || !authStep">
-          <h2 class="text-3xl font-serif font-black text-center mb-2" x-text="authMode === 'register' ? 'Sign up with email' : 'Sign in with email'"></h2>
-          <p class="text-center text-sm text-[#6b7280] mb-8" x-text="authMode === 'register' ? 'Create your account to start listening.' : 'We will send a one-time code.'"></p>
+          <h2 class="text-3xl font-serif font-black text-center mb-2">Log in / Sign up</h2>
+          <p class="text-center text-sm text-[#6b7280] mb-8">Enter your email to receive a magic login link.</p>
 
-          <form action="/auth/request_code" method="post" class="space-y-5">
+          <form action="/auth/request_magic_link" method="post" class="space-y-5">
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <input type="hidden" name="mode" x-model="authMode" />
             <div>
               <label class="block text-sm font-medium mb-2">Your email</label>
               <input
@@ -75,58 +74,12 @@
               type="submit"
               class="w-full h-12 rounded-full bg-[#111827] text-white font-semibold hover:bg-black transition"
             >
-              Continue
+              Send Magic Link
             </button>
           </form>
-
-          <div class="text-center text-sm mt-6">
-            <button
-              class="underline text-[#111827]"
-              @click="authMode = authMode === 'register' ? 'login' : 'register'"
-            >
-              <span x-text="authMode === 'register' ? 'Already have an account? Sign in' : 'Create an account'"></span>
-            </button>
-          </div>
         </div>
 
-        <!-- Verify -->
-        <div x-show="authStep === 'code'">
-          <h2 class="text-3xl font-serif font-black text-center mb-2">Enter your code</h2>
-          <p class="text-center text-sm text-[#6b7280] mb-8">We sent a 6-digit code to <span class="font-semibold" x-text="authEmail"></span>.</p>
-
-          <form action="/auth/verify" method="post" class="space-y-5">
-            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-            <input type="hidden" name="email" x-model="authEmail" />
-            <div>
-              <label class="block text-sm font-medium mb-2">Verification code</label>
-              <input
-                type="text"
-                name="code"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                required
-                class="w-full h-12 rounded-lg border border-[#e5e7eb] px-4 text-center tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-[#111827]"
-                placeholder="000000"
-              />
-            </div>
-            <button
-              type="submit"
-              class="w-full h-12 rounded-full bg-[#111827] text-white font-semibold hover:bg-black transition"
-            >
-              Verify
-            </button>
-          </form>
-
-          <div class="text-center text-sm mt-6 space-y-3">
-            <form action="/auth/request_code" method="post">
-              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-              <input type="hidden" name="mode" x-model="authMode" />
-              <input type="hidden" name="email" x-model="authEmail" />
-              <button type="submit" class="underline text-[#111827]">Resend code</button>
-            </form>
-            <button class="underline text-[#111827]" @click="authStep = 'email'">Change email</button>
-          </div>
-        </div>
+        <!-- Verify (REMOVED - Not needed for magic links) -->
       </div>
     </div>
   </div>
@@ -169,18 +122,11 @@
           </a>
         <% else %>
           <a
-            href="/sessions/log_in"
+            href="#"
             class="hover:opacity-100 transition-opacity cursor-hover"
             @click.prevent="authOpen = true; authMode = 'login'; authStep = 'email'; authEmail = ''"
           >
-            Login
-          </a>
-          <a
-            href="/sessions/log_in"
-            class="hover:opacity-100 transition-opacity cursor-hover"
-            @click.prevent="authOpen = true; authMode = 'register'; authStep = 'email'; authEmail = ''"
-          >
-            Register
+            Login / Register
           </a>
         <% end %>
       </nav>
@@ -213,7 +159,7 @@
             </a>
           <% else %>
             <a
-              href="/sessions/log_in"
+              href="#"
               class="group relative px-12 py-5 overflow-hidden rounded-full border border-white/20 hover:border-white/50 transition-colors cursor-hover"
               @click.prevent="authOpen = true; authMode = 'register'; authStep = 'email'; authEmail = ''"
             >
@@ -266,7 +212,7 @@
           </a>
         <% else %>
           <a
-            href="/sessions/log_in"
+            href="#"
             class="text-2xl md:text-3xl font-serif italic hover:text-amber-200 transition-colors cursor-hover border-b border-white/20 pb-2"
             @click.prevent="authOpen = true; authMode = 'register'; authStep = 'email'; authEmail = ''"
           >

@@ -54,6 +54,8 @@ defmodule Storia.MixProject do
       {:swoosh, "~> 1.5"},
       {:gen_smtp, "~> 1.0"},
       {:finch, "~> 0.13"},
+      {:guardian, "~> 2.3"},
+      {:jose, "~> 1.11"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
@@ -70,8 +72,7 @@ defmodule Storia.MixProject do
       # Temporarily disabled to test startup
       # {:rustler, "~> 0.37.1", runtime: false},
       # Load environment variables from .env files
-      {:dotenvy, "~> 0.8.0", only: [:dev, :test]},
-      {:magic_auth, "~> 0.2.0"}
+      {:dotenvy, "~> 0.8.0", only: [:dev, :test]}
     ]
   end
 

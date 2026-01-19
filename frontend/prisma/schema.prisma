@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model books {
+  id                BigInt             @id @default(autoincrement())
+  title             String             @db.VarChar(255)
+  author            String             @db.VarChar(255)
+  pdf_url           String?            @db.VarChar(255)
+  total_pages       Int?               @default(0)
+  source_type       String             @default("public_domain") @db.VarChar(255)
+  is_published      Boolean            @default(false)
+  processing_status String?            @default("pending") @db.VarChar(255)
+  processing_cost   Decimal?           @db.Decimal(10, 4)
+  processing_error  String?
+  inserted_at       DateTime           @db.Timestamp(0)
+  updated_at        DateTime           @db.Timestamp(0)
+  metadata          Json?              @default("{}")
+  cover_url         String?            @db.VarChar(255)
+  description       String?
+  book_type         String             @default("pdf_book") @db.VarChar(255)
+  pages             pages[]
+  reading_progress  reading_progress[]
+  scenes            scenes[]
+
+  @@index([author(ops: raw("gin_trgm_ops"))], map: "books_author_gin_idx", type: Gin)
+  @@index([is_published], map: "books_is_published_index")
+  @@index([is_published, updated_at], map: "books_is_published_updated_at_index")
+  @@index([metadata], map: "books_metadata_index", type: Gin)
+  @@index([processing_status], map: "books_processing_status_index")
+  @@index([source_type], map: "books_source_type_index")
+  @@index([title(ops: raw("gin_trgm_ops"))], map: "books_title_gin_idx", type: Gin)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model oban_jobs {
+  id           BigInt         @id @default(autoincrement())
+  state        oban_job_state @default(available)
+  queue        String         @default("default")
+  worker       String
+  args         Json           @default("{}")
+  errors       Json[]         @default([])
+  attempt      Int            @default(0)
+  max_attempts Int            @default(20)
+  inserted_at  DateTime       @default(dbgenerated("timezone('UTC'::text, now())")) @db.Timestamp(6)
+  scheduled_at DateTime       @default(dbgenerated("timezone('UTC'::text, now())")) @db.Timestamp(6)
+  attempted_at DateTime?      @db.Timestamp(6)
+  completed_at DateTime?      @db.Timestamp(6)
+  attempted_by String[]
+  discarded_at DateTime?      @db.Timestamp(6)
+  priority     Int            @default(0)
+  tags         String[]       @default([])
+  meta         Json?          @default("{}")
+  cancelled_at DateTime?      @db.Timestamp(6)
+
+  @@index([args], map: "oban_jobs_args_index", type: Gin)
+  @@index([meta], map: "oban_jobs_meta_index", type: Gin)
+  @@index([state, queue, priority, scheduled_at, id], map: "oban_jobs_state_queue_priority_scheduled_at_id_index")
+}
+
+model oban_peers {
+  name       String   @id
+  node       String
+  started_at DateTime @db.Timestamp(6)
+  expires_at DateTime @db.Timestamp(6)
+}
+
+model pages {
+  id                   BigInt   @id @default(autoincrement())
+  book_id              BigInt
+  page_number          Int
+  text_content         String?
+  inserted_at          DateTime @db.Timestamp(0)
+  updated_at           DateTime @db.Timestamp(0)
+  scene_id             BigInt?
+  image_url            String?  @db.VarChar(255)
+  narration_url        String?  @db.VarChar(255)
+  narration_timestamps Json?
+  illustration_prompt  String?
+  books                books    @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  scenes               scenes?  @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
+
+  @@unique([book_id, page_number], map: "pages_book_id_page_number_index")
+  @@index([book_id], map: "pages_book_id_index")
+  @@index([scene_id], map: "pages_scene_id_index")
+}
+
+model reading_progress {
+  id           BigInt    @id @default(autoincrement())
+  user_id      BigInt
+  book_id      BigInt
+  current_page Int       @default(1)
+  last_read_at DateTime? @db.Timestamp(0)
+  inserted_at  DateTime  @db.Timestamp(0)
+  updated_at   DateTime  @db.Timestamp(0)
+  books        books     @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, book_id], map: "reading_progress_user_id_book_id_index")
+  @@index([book_id], map: "reading_progress_book_id_index")
+  @@index([user_id], map: "reading_progress_user_id_index")
+}
+
+model scenes {
+  id           BigInt        @id @default(autoincrement())
+  book_id      BigInt
+  start_page   Int
+  end_page     Int
+  descriptors  Json?         @default("{}")
+  inserted_at  DateTime      @db.Timestamp(0)
+  updated_at   DateTime      @db.Timestamp(0)
+  scene_number Int?
+  pages        pages[]
+  books        books         @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  soundscapes  soundscapes[]
+
+  @@index([book_id], map: "scenes_book_id_index")
+  @@index([book_id, scene_number], map: "scenes_book_id_scene_number_index")
+  @@index([book_id, start_page, end_page], map: "scenes_book_id_start_page_end_page_index")
+}
+
+model schema_migrations {
+  version     BigInt    @id
+  inserted_at DateTime? @db.Timestamp(0)
+}
+
+model soundscapes {
+  id                BigInt   @id @default(autoincrement())
+  scene_id          BigInt?
+  audio_url         String   @db.VarChar(255)
+  source_type       String   @default("curated") @db.VarChar(255)
+  confidence_score  Float?
+  admin_approved    Boolean  @default(false)
+  inserted_at       DateTime @db.Timestamp(0)
+  updated_at        DateTime @db.Timestamp(0)
+  generation_prompt String?
+  tags              String[] @default([]) @db.VarChar(255)
+  scenes            scenes?  @relation(fields: [scene_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([admin_approved], map: "soundscapes_admin_approved_index")
+  @@index([generation_prompt(ops: raw("gin_trgm_ops"))], map: "soundscapes_generation_prompt_gin_idx", type: Gin)
+  @@index([scene_id], map: "soundscapes_scene_id_index")
+  @@index([source_type], map: "soundscapes_source_type_index")
+  @@index([tags], map: "soundscapes_tags_gin_idx", type: Gin)
+}
+
+model users {
+  id                  BigInt             @id @default(autoincrement())
+  email               String             @unique(map: "users_email_index") @db.VarChar(255)
+  password_hash       String             @db.VarChar(255)
+  subscription_tier   String             @default("free") @db.VarChar(255)
+  stripe_customer_id  String?            @db.VarChar(255)
+  subscription_status String?            @db.VarChar(255)
+  role                String             @default("user") @db.VarChar(255)
+  inserted_at         DateTime           @db.Timestamp(0)
+  updated_at          DateTime           @db.Timestamp(0)
+  reading_progress    reading_progress[]
+  users_tokens        users_tokens[]
+
+  @@index([role], map: "users_role_index")
+}
+
+model users_tokens {
+  id          BigInt   @id @default(autoincrement())
+  user_id     BigInt
+  token       Bytes
+  context     String   @db.VarChar(255)
+  sent_to     String?  @db.VarChar(255)
+  inserted_at DateTime @db.Timestamp(0)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([context, token], map: "users_tokens_context_token_index")
+  @@index([user_id], map: "users_tokens_user_id_index")
+}
+
+// Better Auth Core Tables
+model user {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      session[]
+  accounts      account[]
+}
+
+model session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+enum oban_job_state {
+  available
+  scheduled
+  executing
+  retryable
+  completed
+  discarded
+  cancelled
+}

@@ -38,14 +38,10 @@ config :storia, StoriaWeb.Endpoint,
 # at the `config/runtime.exs`.
 config :storia, Storia.Mailer, adapter: Swoosh.Adapters.Local
 
-# Configure MagicAuth
-config :magic_auth,
-  repo: Storia.Repo,
-  router: StoriaWeb.Router,
-  callbacks: StoriaWeb.MagicAuth,
-  endpoint: StoriaWeb.Endpoint,
-  remember_me_cookie: "_storia_magic_auth_remember_me",
-  get_user: &Storia.Accounts.get_user_by_id/1
+# Configure Guardian
+config :storia, Storia.Guardian,
+  issuer: "storia",
+  secret_key: System.get_env("GUARDIAN_SECRET_KEY") || "eX+...replace_this_with_a_real_secret...=="
 
 # Configure esbuild (the version is required)
 config :esbuild,
