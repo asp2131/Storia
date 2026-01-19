@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   BookOpen,
   GripVertical,
@@ -34,10 +34,22 @@ import {
   CloudRain,
   Music,
   Upload,
+  Loader2,
 } from "lucide-react";
 
-export default function StoryCraftEditor() {
+type PageData = {
+  id?: string;
+  number: number;
+  text: string;
+  imageUrl: string;
+};
+
+export default function BookEditor() {
   const router = useRouter();
+  const params = useParams();
+  const bookIdParam = params.id as string;
+
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookId, setBookId] = useState<string | null>(null);
@@ -64,13 +76,8 @@ export default function StoryCraftEditor() {
     >
   >({});
   const [title, setTitle] = useState("Untitled Book");
-  const [pages, setPages] = useState(
-    Array.from({ length: 4 }, (_, idx) => ({
-      number: idx + 1,
-      text: "",
-      imageUrl: "",
-    }))
-  );
+  const [author, setAuthor] = useState("Unknown");
+  const [pages, setPages] = useState<PageData[]>([]);
   const [activePage, setActivePage] = useState(1);
   const [isSoundscapePlaying, setIsSoundscapePlaying] = useState(false);
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
@@ -86,6 +93,77 @@ export default function StoryCraftEditor() {
   const narrationActiveUrl =
     narrationUrl || activeAssignments?.narration?.url || "";
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Load book and pages on mount
+  useEffect(() => {
+    const loadBook = async () => {
+      if (!bookIdParam) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Fetch book details
+        const bookResponse = await fetch(`/api/admin/books/${bookIdParam}`);
+        if (!bookResponse.ok) {
+          throw new Error("Failed to load book.");
+        }
+        const bookData = await bookResponse.json();
+        setBookId(bookData.book.id);
+        setTitle(bookData.book.title || "Untitled Book");
+        setAuthor(bookData.book.author || "Unknown");
+
+        // Fetch pages
+        const pagesResponse = await fetch(
+          `/api/admin/books/${bookIdParam}/pages`
+        );
+        if (!pagesResponse.ok) {
+          throw new Error("Failed to load pages.");
+        }
+        const pagesData = await pagesResponse.json();
+
+        if (pagesData.pages && pagesData.pages.length > 0) {
+          const loadedPages: PageData[] = pagesData.pages.map(
+            (page: {
+              id: string;
+              pageNumber: number;
+              textContent: string | null;
+              imageUrl: string | null;
+            }) => ({
+              id: page.id,
+              number: page.pageNumber,
+              text: page.textContent || "",
+              imageUrl: page.imageUrl || "",
+            })
+          );
+          setPages(loadedPages);
+
+          const mapping: Record<number, string> = {};
+          pagesData.pages.forEach(
+            (page: { id: string; pageNumber: number }) => {
+              mapping[page.pageNumber] = page.id;
+            }
+          );
+          setPageIdMap(mapping);
+        } else {
+          // No pages exist, create default ones
+          setPages(
+            Array.from({ length: 4 }, (_, idx) => ({
+              number: idx + 1,
+              text: "",
+              imageUrl: "",
+            }))
+          );
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load book.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBook();
+  }, [bookIdParam]);
 
   useEffect(() => {
     setNarrationRangeStart(activePage);
@@ -218,35 +296,18 @@ export default function StoryCraftEditor() {
     imageInputRef.current?.click();
   };
 
-  const ensureBookAndPages = async () => {
-    if (bookId && Object.keys(pageIdMap).length > 0) {
+  const ensurePagesExist = async () => {
+    if (!bookId) {
+      throw new Error("Book not loaded.");
+    }
+
+    // If we already have all pages mapped, return
+    if (Object.keys(pageIdMap).length >= pages.length) {
       return { bookId, pageIdMap };
     }
-    const bookResponse = await fetch("/api/admin/books", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: title.trim() || "Untitled Book",
-        author: "Unknown",
-        description: "",
-        isPublished: false,
-        processingStatus: "pending",
-      }),
-    });
 
-    if (!bookResponse.ok) {
-      const payload = await bookResponse.json().catch(() => ({}));
-      throw new Error(payload?.error || "Failed to create book.");
-    }
-
-    const bookPayload = await bookResponse.json();
-    const createdBookId = bookPayload?.book?.id;
-
-    if (!createdBookId) {
-      throw new Error("Missing book id.");
-    }
-
-    const pagesResponse = await fetch(`/api/admin/books/${createdBookId}/pages`, {
+    // Create any missing pages
+    const pagesResponse = await fetch(`/api/admin/books/${bookId}/pages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -265,14 +326,13 @@ export default function StoryCraftEditor() {
     const pagesPayload = (await pagesResponse.json()) as {
       pages?: Array<{ id: string; pageNumber: number }>;
     };
-    const mapping: Record<number, string> = {};
+    const mapping: Record<number, string> = { ...pageIdMap };
     (pagesPayload.pages || []).forEach((page) => {
       mapping[page.pageNumber] = page.id;
     });
 
-    setBookId(createdBookId);
     setPageIdMap(mapping);
-    return { bookId: createdBookId, pageIdMap: mapping };
+    return { bookId, pageIdMap: mapping };
   };
 
   const handleAssignAudio = async (
@@ -291,7 +351,7 @@ export default function StoryCraftEditor() {
     setError(null);
 
     try {
-      const ensured = await ensureBookAndPages();
+      const ensured = await ensurePagesExist();
       const pageId = ensured.pageIdMap[activePage];
       if (!pageId) {
         throw new Error("Page not initialized yet.");
@@ -341,19 +401,22 @@ export default function StoryCraftEditor() {
   };
 
   const handleSave = async () => {
+    if (!bookId) {
+      setError("Book not loaded.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
     try {
-      const ensured = await ensureBookAndPages();
-
       // Update book metadata
-      const updateResponse = await fetch(`/api/admin/books/${ensured.bookId}`, {
+      const updateResponse = await fetch(`/api/admin/books/${bookId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim() || "Untitled Book",
-          author: "Unknown",
+          author: author,
         }),
       });
 
@@ -363,7 +426,7 @@ export default function StoryCraftEditor() {
       }
 
       // Save all page content
-      const pagesResponse = await fetch(`/api/admin/books/${ensured.bookId}/pages`, {
+      const pagesResponse = await fetch(`/api/admin/books/${bookId}/pages`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -399,14 +462,17 @@ export default function StoryCraftEditor() {
   };
 
   const handlePublish = async () => {
+    if (!bookId) {
+      setError("Book not loaded.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
     try {
-      const ensured = await ensureBookAndPages();
-
       // Save all page content first
-      const pagesResponse = await fetch(`/api/admin/books/${ensured.bookId}/pages`, {
+      const pagesResponse = await fetch(`/api/admin/books/${bookId}/pages`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -424,12 +490,12 @@ export default function StoryCraftEditor() {
       }
 
       // Update the book to be published
-      const updateResponse = await fetch(`/api/admin/books/${ensured.bookId}`, {
+      const updateResponse = await fetch(`/api/admin/books/${bookId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim() || "Untitled Book",
-          author: "Unknown",
+          author: author,
           isPublished: true,
           processingStatus: "published",
         }),
@@ -475,7 +541,9 @@ export default function StoryCraftEditor() {
 
     assignments.forEach((assignment) => {
       const range =
-        assignment.scope === "range" && assignment.rangeStart && assignment.rangeEnd
+        assignment.scope === "range" &&
+        assignment.rangeStart &&
+        assignment.rangeEnd
           ? `${assignment.rangeStart}-${assignment.rangeEnd}`
           : "current";
       if (assignment.audioType === "soundscape") {
@@ -502,6 +570,17 @@ export default function StoryCraftEditor() {
     }));
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+          <span className="text-slate-600">Loading book...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
       {soundscapeActiveUrl ? (
@@ -527,12 +606,16 @@ export default function StoryCraftEditor() {
       <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
         {/* Sidebar Header */}
         <div className="h-16 flex items-center px-5 border-b border-slate-100">
-          <div className="flex items-center gap-2 text-teal-600">
+          <a
+            href="/admin/books"
+            className="flex items-center gap-2 text-teal-600 hover:text-teal-700"
+          >
+            <ArrowLeft className="w-4 h-4" />
             <BookOpen className="w-6 h-6" />
             <span className="font-bold tracking-tight text-slate-900">
               Storia
             </span>
-          </div>
+          </a>
         </div>
 
         {/* Page List */}
@@ -559,7 +642,9 @@ export default function StoryCraftEditor() {
               >
                 <div
                   className={`absolute -left-2 top-1/2 -translate-y-1/2 ${
-                    isActive ? "opacity-100 text-teal-400" : "opacity-0 text-slate-400"
+                    isActive
+                      ? "opacity-100 text-teal-400"
+                      : "opacity-0 text-slate-400"
                   } group-hover:opacity-100`}
                 >
                   <GripVertical className="w-4 h-4" />
@@ -804,10 +889,10 @@ export default function StoryCraftEditor() {
           <div className="flex items-center gap-2 w-1/3">
             <div className="flex items-center gap-1.5 text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full text-xs font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Draft
+              Editing
             </div>
             <span className="text-xs text-slate-400 ml-2">
-              {error ? error : "Unsaved changes"}
+              {error ? error : "Changes not saved yet"}
             </span>
           </div>
 
@@ -878,7 +963,7 @@ export default function StoryCraftEditor() {
                     Forest Ambience
                   </h3>
                   <span className="text-xs text-amber-600/80 font-medium">
-                    00:45 • Looping
+                    00:45 - Looping
                   </span>
                 </div>
                 <button className="text-slate-400 hover:text-red-500 transition-colors p-1 -mr-1 rounded hover:bg-white/50">
@@ -888,22 +973,20 @@ export default function StoryCraftEditor() {
 
               {/* Waveform Visualization */}
               <div className="flex items-center justify-between gap-0.5 h-6 mb-4 px-1 opacity-80">
-                {[3, 2, 4, 2, 5, 3, 2, 4, 3, 5, 2, 4, 3, 2, 4].map(
-                  (h, i) => (
-                    <div
-                      key={i}
-                      className={`w-1 bg-amber-400 rounded-full ${
-                        h === 2
-                          ? "h-2 bg-amber-300"
-                          : h === 3
-                          ? "h-3"
-                          : h === 4
-                          ? "h-4"
-                          : "h-5 bg-amber-500"
-                      }`}
-                    ></div>
-                  )
-                )}
+                {[3, 2, 4, 2, 5, 3, 2, 4, 3, 5, 2, 4, 3, 2, 4].map((h, i) => (
+                  <div
+                    key={i}
+                    className={`w-1 bg-amber-400 rounded-full ${
+                      h === 2
+                        ? "h-2 bg-amber-300"
+                        : h === 3
+                        ? "h-3"
+                        : h === 4
+                        ? "h-4"
+                        : "h-5 bg-amber-500"
+                    }`}
+                  ></div>
+                ))}
               </div>
 
               {/* Controls: Play + Volume */}
@@ -940,8 +1023,8 @@ export default function StoryCraftEditor() {
                     {activeAssignments?.soundscape?.range === "current"
                       ? "Current Page"
                       : activeAssignments?.soundscape?.range
-                        ? `Pages ${activeAssignments.soundscape.range}`
-                        : "No range set"}
+                      ? `Pages ${activeAssignments.soundscape.range}`
+                      : "No range set"}
                   </div>
                 </div>
               </div>
@@ -1032,7 +1115,7 @@ export default function StoryCraftEditor() {
 
           <hr className="border-slate-100" />
 
-          {/* Section: Voice Narration (NEW) */}
+          {/* Section: Voice Narration */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -1040,7 +1123,6 @@ export default function StoryCraftEditor() {
               </h4>
               <div className="group/tooltip relative">
                 <Info className="w-3 h-3 text-slate-300 hover:text-slate-500 cursor-help align-middle" />
-                {/* Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-opacity z-50 text-center">
                   Narration is a voice overlay, distinct from ambient background
                   audio.
@@ -1048,9 +1130,8 @@ export default function StoryCraftEditor() {
               </div>
             </div>
 
-            {/* Narration Card (Active State) */}
+            {/* Narration Card */}
             <div className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-200 shadow-sm relative group">
-              {/* Header & Info */}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-linear-to-br from-orange-100 to-yellow-100 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100 shadow-sm">
@@ -1058,12 +1139,12 @@ export default function StoryCraftEditor() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-slate-800 leading-tight">
-                      Chapter 1 Reading
+                      Chapter Reading
                     </h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                       <span className="text-xs text-orange-700/70 font-medium">
-                        02:14 • Voice
+                        Voice
                       </span>
                     </div>
                   </div>
@@ -1084,30 +1165,29 @@ export default function StoryCraftEditor() {
                 </div>
               </div>
 
-              {/* Narration Waveform (Bronze/Gold Theme) */}
+              {/* Narration Waveform */}
               <div className="bg-white/40 rounded-lg p-2 mb-3 border border-orange-100/50">
                 <div className="flex items-center justify-between gap-0.5 h-8 opacity-90">
-                  {/* Simulated voice waveform */}
-                  {[
-                    2, 3, 5, 3, 2, 4, 6, 4, 2, 1, 3, 5, 2, 4, 3, 1, 2, 4,
-                  ].map((h, i) => (
-                    <div
-                      key={i}
-                      className={`w-1 rounded-full ${
-                        h === 1
-                          ? "h-1 bg-orange-200"
-                          : h === 2
-                          ? "h-2 bg-orange-300"
-                          : h === 3
-                          ? "h-3 bg-orange-400"
-                          : h === 4
-                          ? "h-4 bg-orange-500"
-                          : h === 5
-                          ? "h-5 bg-orange-500"
-                          : "h-6 bg-orange-600"
-                      }`}
-                    ></div>
-                  ))}
+                  {[2, 3, 5, 3, 2, 4, 6, 4, 2, 1, 3, 5, 2, 4, 3, 1, 2, 4].map(
+                    (h, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 rounded-full ${
+                          h === 1
+                            ? "h-1 bg-orange-200"
+                            : h === 2
+                            ? "h-2 bg-orange-300"
+                            : h === 3
+                            ? "h-3 bg-orange-400"
+                            : h === 4
+                            ? "h-4 bg-orange-500"
+                            : h === 5
+                            ? "h-5 bg-orange-500"
+                            : "h-6 bg-orange-600"
+                        }`}
+                      ></div>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -1136,21 +1216,6 @@ export default function StoryCraftEditor() {
                     }
                     className="w-full h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
                   />
-                </div>
-              </div>
-
-              {/* Assignment Toggle */}
-              <div className="mt-4 pt-3 border-t border-orange-200/60 flex items-center justify-between">
-                <label className="text-xs font-medium text-slate-500">
-                  Applied to:
-                </label>
-                <div className="flex bg-white/60 rounded-lg p-0.5 border border-orange-200/50">
-                  <button className="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-white shadow-sm text-orange-700 border border-orange-100">
-                    Current Page
-                  </button>
-                  <button className="px-2.5 py-1 text-[10px] font-medium rounded-md text-slate-500 hover:bg-white/50 hover:text-slate-700 transition-colors">
-                    Range
-                  </button>
                 </div>
               </div>
 
@@ -1240,7 +1305,7 @@ export default function StoryCraftEditor() {
 
           <hr className="border-slate-100" />
 
-          {/* Section: Library (Existing) */}
+          {/* Section: Library */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -1251,9 +1316,7 @@ export default function StoryCraftEditor() {
               </button>
             </div>
 
-            {/* Track List */}
             <div className="space-y-2">
-              {/* Track Item 1 */}
               <div className="group flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer">
                 <div className="w-8 h-8 rounded bg-indigo-50 text-indigo-400 flex items-center justify-center shrink-0">
                   <CloudRain className="w-4 h-4" />
@@ -1263,7 +1326,7 @@ export default function StoryCraftEditor() {
                     Heavy Rainfall
                   </h5>
                   <span className="text-[10px] text-slate-400">
-                    01:20 • Ambience
+                    01:20 - Ambience
                   </span>
                 </div>
                 <button className="opacity-0 group-hover:opacity-100 bg-white border border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-200 px-2.5 py-1 rounded text-xs font-medium transition-all shadow-sm">
@@ -1271,7 +1334,6 @@ export default function StoryCraftEditor() {
                 </button>
               </div>
 
-              {/* Track Item 2 */}
               <div className="group flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer">
                 <div className="w-8 h-8 rounded bg-rose-50 text-rose-400 flex items-center justify-center shrink-0">
                   <Music className="w-4 h-4" />
@@ -1281,7 +1343,7 @@ export default function StoryCraftEditor() {
                     Soft Piano Theme
                   </h5>
                   <span className="text-[10px] text-slate-400">
-                    02:15 • Music
+                    02:15 - Music
                   </span>
                 </div>
                 <button className="opacity-0 group-hover:opacity-100 bg-white border border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-200 px-2.5 py-1 rounded text-xs font-medium transition-all shadow-sm">

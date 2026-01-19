@@ -7,6 +7,40 @@ type Params = {
   }>;
 };
 
+export async function GET(_request: NextRequest, { params }: Params) {
+  try {
+    const { id } = await params;
+    const bookId = BigInt(id);
+
+    const book = await prisma.books.findUnique({
+      where: { id: bookId },
+    });
+
+    if (!book) {
+      return NextResponse.json({ error: "Book not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      book: {
+        id: book.id.toString(),
+        title: book.title,
+        author: book.author,
+        processingStatus: book.processing_status,
+        updatedAt: book.updated_at?.toISOString?.() ?? null,
+        coverUrl: book.cover_url,
+        description: book.description,
+        isPublished: book.is_published,
+      },
+    });
+  } catch (error) {
+    console.error("[admin books] Failed to fetch:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch book." },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const body = await request.json();

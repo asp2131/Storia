@@ -328,23 +328,28 @@ export default function AdminBooksPage() {
                       </td>
                       <td className="h-[72px] px-4 py-2">
                         <div className="flex items-center gap-3 text-sm">
+                          <a
+                            href={`/admin/books/${book.id}/edit`}
+                            className="text-[#60a5fa] hover:underline font-semibold"
+                          >
+                            Edit
+                          </a>
                           {["ready_for_review", "published"].includes(
                             book.processingStatus || ""
-                          ) ? (
+                          ) && (
                             <a
                               href={`/admin/books/${book.id}/scenes`}
                               className="text-[#1337ec] hover:underline font-semibold"
                             >
                               View Scenes
                             </a>
-                          ) : (
-                            <span className="text-[#4b5563]">Processing...</span>
                           )}
                           <button
                             type="button"
                             className="p-1 text-[#6b7280] hover:text-[#60a5fa]"
-                            aria-label="Edit book"
+                            aria-label="Edit metadata"
                             onClick={() => openEditModal(book)}
+                            title="Edit metadata"
                           >
                             ✏️
                           </button>

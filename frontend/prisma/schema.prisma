@@ -86,10 +86,29 @@ model pages {
   illustration_prompt  String?
   books                books    @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   scenes               scenes?  @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
+  page_audio_assignments page_audio_assignments[]
 
   @@unique([book_id, page_number], map: "pages_book_id_page_number_index")
   @@index([book_id], map: "pages_book_id_index")
   @@index([scene_id], map: "pages_scene_id_index")
+}
+
+model page_audio_assignments {
+  id           BigInt   @id @default(autoincrement())
+  page_id      BigInt
+  audio_url    String   @db.VarChar(255)
+  audio_type   String   @db.VarChar(50)
+  scope        String   @db.VarChar(50)
+  range_start  Int?
+  range_end    Int?
+  volume       Float?
+  inserted_at  DateTime @db.Timestamp(0)
+  updated_at   DateTime @db.Timestamp(0)
+
+  pages pages @relation(fields: [page_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([page_id], map: "page_audio_assignments_page_id_index")
+  @@index([audio_type], map: "page_audio_assignments_audio_type_index")
 }
 
 model reading_progress {
