@@ -142,78 +142,48 @@ export default function LibraryPage() {
   }
 
   const user = session.user;
+  const isAdmin = (session as any)?.user?.role === "admin";
 
   return (
     <div className="min-h-screen bg-[#0a0e1a]">
       {/* Navigation Bar */}
       <nav className="bg-[#101322] border-b border-[#232948]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-4 md:py-0 md:h-16">
-            {/* Left: Logo and Nav Links */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
-              <Link
-                href="/"
-                className="flex items-center gap-2 text-white font-bold text-lg"
-              >
-                <svg
-                  className="w-6 h-6 text-[#1337ec]"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                </svg>
-                <span className="truncate">Storia</span>
-              </Link>
-
-              <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+          <div className="flex flex-col gap-4 py-4 md:py-0 md:h-16">
+            {/* Top row: logo/links left, user avatar right */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 sm:gap-8">
                 <Link
-                  href="/library"
-                  className="text-white font-medium text-sm"
+                  href="/"
+                  className="flex items-center gap-2 text-white font-bold text-lg"
                 >
-                  Library
+                  <svg
+                    className="w-6 h-6 text-[#1337ec]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                  </svg>
+                  <span className="truncate">Storia</span>
                 </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="text-[#929bc9] hover:text-white font-medium text-sm transition sm:hidden"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
 
-            {/* Right: Search and User Menu */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full md:w-auto">
-              <div className="relative w-full sm:w-64">
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={search}
-                  onChange={handleSearch}
-                  className="w-full h-9 pl-10 pr-4 bg-[#232948] text-white text-sm rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] placeholder:text-[#929bc9]"
-                />
-                <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#929bc9]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+                <div className="hidden sm:flex flex-wrap items-center gap-4 sm:gap-6">
+                  <Link
+                    href="/library"
+                    className="text-white font-medium text-sm"
+                  >
+                    Library
+                  </Link>
+                </div>
               </div>
 
-              {/* User Dropdown */}
-              <div
-                ref={userMenuRef}
-                className="relative self-start sm:self-auto hidden sm:block"
-              >
+              {/* User Dropdown (always visible, top-right) */}
+              <div ref={userMenuRef} className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="w-9 h-9 bg-[#e5e7eb] rounded-full flex items-center justify-center hover:bg-opacity-80 transition"
+                  aria-haspopup="true"
+                  aria-expanded={userMenuOpen}
+                  className="w-10 h-10 bg-[#e5e7eb] rounded-full flex items-center justify-center hover:bg-opacity-80 transition focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
                 >
                   <span className="text-[#0a0e1a] font-bold text-sm">
                     {user.email?.charAt(0).toUpperCase()}
@@ -222,28 +192,30 @@ export default function LibraryPage() {
 
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-[#232948] rounded-lg shadow-lg border border-[#373c5a] py-1 z-50">
-                    <Link
-                      href="/profile"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                      Profile
-                    </Link>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M3 7h18M3 12h18M3 17h18"
+                          />
+                        </svg>
+                        Admin Dashboard
+                      </Link>
+                    )}
 
                     <Link
-                      href="/settings"
+                      href="/admin"
                       className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
                     >
                       <svg
@@ -256,16 +228,10 @@ export default function LibraryPage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth="2"
-                          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          d="M3 7h18M3 12h18M3 17h18"
                         />
                       </svg>
-                      Settings
+                      Admin Dashboard
                     </Link>
 
                     <hr className="border-[#373c5a] my-1" />
@@ -291,6 +257,32 @@ export default function LibraryPage() {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Search bar below on mobile, inline on desktop via width */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full">
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={search}
+                  onChange={handleSearch}
+                  className="w-full h-9 pl-10 pr-4 bg-[#232948] text-white text-sm rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] placeholder:text-[#929bc9]"
+                />
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#929bc9]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
               </div>
             </div>
           </div>
