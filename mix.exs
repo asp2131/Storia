@@ -69,7 +69,8 @@ defmodule Storia.MixProject do
       # Temporarily disabled to test startup
       # {:rustler, "~> 0.37.1", runtime: false},
       # Load environment variables from .env files
-      {:dotenvy, "~> 0.8.0", only: [:dev, :test]}
+      {:dotenvy, "~> 0.8.0", only: [:dev, :test]},
+      {:magic_auth, "~> 0.2.0"}
     ]
   end
 

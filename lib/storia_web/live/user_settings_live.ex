@@ -83,7 +83,7 @@ defmodule StoriaWeb.UserSettingsLive do
                   <hr class="border-[#373c5a] my-1">
 
                   <.link
-                    href={~p"/users/log_out"}
+                    href={~p"/sessions/log_out"}
                     method="delete"
                     class="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
                   >

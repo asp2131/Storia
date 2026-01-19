@@ -147,6 +147,11 @@ defmodule Storia.Accounts do
   """
   def get_user!(id), do: Repo.get!(User, id)
 
+  @doc """
+  Gets a user by id or returns nil.
+  """
+  def get_user_by_id(id), do: Repo.get(User, id)
+
   ## Password reset
 
   @doc """

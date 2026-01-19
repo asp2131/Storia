@@ -116,7 +116,7 @@ defmodule StoriaWeb.LibraryLive do
                 <svg class="w-6 h-6 text-[#1337ec]" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
                 </svg>
-                <span class="truncate">Soundscape Books</span>
+                <span class="truncate">Storia</span>
               </.link>
 
               <div class="flex flex-wrap items-center gap-4 sm:gap-6">
@@ -139,8 +139,13 @@ defmodule StoriaWeb.LibraryLive do
                 <.link navigate={~p"/library"} class="text-white font-medium text-sm">
                   Library
                 </.link>
-                <.link navigate={~p"/"} class="text-[#929bc9] hover:text-white font-medium text-sm transition">
+                <!-- Desktop: Profile Link -->
+                <.link navigate={~p"/"} class="text-[#929bc9] hover:text-white font-medium text-sm transition hidden sm:block">
                   My Profile
+                </.link>
+                <!-- Mobile: Sign Out -->
+                <.link href={~p"/sessions/log_out"} method="delete" class="text-[#929bc9] hover:text-white font-medium text-sm transition sm:hidden">
+                  Sign Out
                 </.link>
               </div>
             </div>
@@ -224,7 +229,7 @@ defmodule StoriaWeb.LibraryLive do
                   <hr class="border-[#373c5a] my-1">
 
                   <.link
-                    href={~p"/users/log_out"}
+                    href={~p"/sessions/log_out"}
                     method="delete"
                     class="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
                   >
