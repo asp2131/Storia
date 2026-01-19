@@ -32,6 +32,32 @@ defmodule StoriaWeb.MagicAuthController do
     MagicAuth.log_in(conn, email, sanitized_code)
   end
 
+  def logout(conn, _params) do
+    # Custom logout logic to redirect to landing page instead of login page
+    # This duplicates the logic from MagicAuth.log_out/1 but changes the redirect
+
+    # 1. Clean up database session
+    session_token = get_session(conn, :session_token)
+    if session_token do
+      # MagicAuth.Repo is an alias for our Repo in config
+      import Ecto.Query
+      Storia.Repo.delete_all(from s in MagicAuth.Session, where: s.token == ^session_token)
+    end
+
+    # 2. Broadcast disconnect to LiveViews
+    if live_socket_id = get_session(conn, :live_socket_id) do
+      StoriaWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
+    end
+
+    # 3. Clean up Conn session and cookie
+    conn
+    |> configure_session(renew: true)
+    |> clear_session()
+    |> delete_resp_cookie(MagicAuth.Config.remember_me_cookie())
+    |> put_flash(:info, "Logged out successfully.")
+    |> redirect(to: ~p"/")
+  end
+
   defp auth_redirect(step, mode, email) do
     "/?" <>
       URI.encode_query(%{

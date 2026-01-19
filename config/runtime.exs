@@ -27,6 +27,21 @@ if System.get_env("PHX_SERVER") do
   config :storia, StoriaWeb.Endpoint, server: true
 end
 
+# Configure Gmail SMTP for sending emails (Global runtime config)
+if System.get_env("SMTP_USERNAME") && System.get_env("SMTP_PASSWORD") do
+  config :storia, Storia.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    relay: "smtp.gmail.com",
+    username: System.get_env("SMTP_USERNAME"),
+    password: System.get_env("SMTP_PASSWORD"),
+    port: 587,
+    tls: :always,
+    auth: :always,
+    retries: 2,
+    no_mx_lookups: true,
+    tls_options: [verify: :verify_none]
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
@@ -134,6 +149,12 @@ if config_env() == :prod do
   #     config :swoosh, :api_client, Swoosh.ApiClient.Hackney
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+
+  # Fallback to Logger in PROD if no SMTP credentials are provided (and not already configured globally)
+  unless System.get_env("SMTP_USERNAME") && System.get_env("SMTP_PASSWORD") do
+    config :storia, Storia.Mailer,
+      adapter: Swoosh.Adapters.Logger
+  end
 
 
   # Configure Stripe

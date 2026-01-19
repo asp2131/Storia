@@ -177,15 +177,9 @@ defmodule StoriaWeb.LibraryLive do
                 </svg>
               </div>
 
-              <.link
-                navigate={~p"/subscription"}
-                class="px-4 py-2 bg-[#1337ec] text-white rounded-lg text-sm font-bold hover:bg-opacity-90 transition w-full sm:w-auto text-center"
-              >
-                Subscribe
-              </.link>
 
-              <!-- User Dropdown -->
-              <div class="relative self-start sm:self-auto" x-data="{ open: false }" @click.away="open = false">
+              <!-- User Dropdown (Hidden on Mobile) -->
+              <div class="relative self-start sm:self-auto hidden sm:block" x-data="{ open: false }" @click.away="open = false">
                 <button
                   @click="open = !open"
                   class="w-9 h-9 bg-[#e5e7eb] rounded-full flex items-center justify-center hover:bg-opacity-80 transition"
@@ -617,13 +611,6 @@ defmodule StoriaWeb.LibraryLive do
   end
 
   defp sort_books(books, _), do: books
-
-  defp subscription_tier_name(:reader), do: "Reader Tier"
-  defp subscription_tier_name(:bibliophile), do: "Bibliophile Tier"
-  defp subscription_tier_name(_), do: "Free Tier"
-
-  defp format_limit(:unlimited), do: "Unlimited"
-  defp format_limit(limit), do: to_string(limit)
 
   defp has_soundscape?(book) do
     # Check if book actually has soundscapes

@@ -31,6 +31,7 @@ defmodule StoriaWeb.Router do
   scope "/", StoriaWeb do
     pipe_through :browser
 
+    delete "/sessions/log_out", MagicAuthController, :logout
     get "/", PageController, :home
     get "/health", PageController, :health
   end
