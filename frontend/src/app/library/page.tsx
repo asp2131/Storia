@@ -401,7 +401,7 @@ console.log(user);
               {books.map((book) => (
                 <Link
                   key={book.id}
-                  href={`/read/${book.id}`}
+                  href={`/books/${book.id}/reader`}
                   className="group cursor-pointer relative"
                 >
                     {/* Book Cover */}
