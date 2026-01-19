@@ -34,11 +34,13 @@ import {
   CloudRain,
   Music,
   Upload,
+  Loader2,
 } from "lucide-react";
 
 export default function StoryCraftEditor() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookId, setBookId] = useState<string | null>(null);
   const [pageIdMap, setPageIdMap] = useState<Record<number, string>>({});
@@ -189,18 +191,47 @@ export default function StoryCraftEditor() {
     );
   };
 
-  const handleImageFile = (file: File) => {
+  const handleImageFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setError("Please upload a valid image file.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setActiveImage(reader.result);
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError("File too large. Maximum size is 10MB.");
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (bookId) {
+        formData.append("bookId", bookId);
+        formData.append("pageNumber", activePage.toString());
       }
-    };
-    reader.readAsDataURL(file);
+
+      const response = await fetch("/api/admin/uploads", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to upload image.");
+      }
+
+      const data = await response.json();
+      setActiveImage(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload image.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -714,7 +745,19 @@ export default function StoryCraftEditor() {
                   onChange={handleImageChange}
                 />
 
-                {activePageData?.imageUrl ? (
+                {uploading ? (
+                  <div className="flex flex-col items-center text-center p-6">
+                    <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                    </div>
+                    <h3 className="text-slate-700 font-medium text-lg mb-1">
+                      Uploading...
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      Please wait while your image uploads
+                    </p>
+                  </div>
+                ) : activePageData?.imageUrl ? (
                   <>
                     <Image
                       src={activePageData.imageUrl}
