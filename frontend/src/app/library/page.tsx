@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient, useSession } from "@/lib/auth-client";
@@ -51,6 +51,7 @@ export default function LibraryPage() {
   const [sort, setSort] = useState("recent");
   const [page, setPage] = useState(1);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -84,6 +85,20 @@ export default function LibraryPage() {
       router.push("/");
     }
   }, [session, isPending, router]);
+
+  // Close user menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -193,8 +208,8 @@ export default function LibraryPage() {
 
               {/* User Dropdown */}
               <div
+                ref={userMenuRef}
                 className="relative self-start sm:self-auto hidden sm:block"
-                onMouseLeave={() => setUserMenuOpen(false)}
               >
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
