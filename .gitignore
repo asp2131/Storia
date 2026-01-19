@@ -1,47 +1,43 @@
-env.local
-.env
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# The directory Mix will write compiled artifacts to.
-/_build/
+# testing
+/coverage
 
-# If you run "mix test --cover", coverage assets end up here.
-/cover/
+# next.js
+/.next/
+/out/
 
-# The directory Mix downloads your dependencies sources to.
-/deps/
+# production
+/build
 
-# Where 3rd-party dependencies like ExDoc output generated docs.
-/doc/
+# misc
+.DS_Store
+*.pem
 
-# Ignore .fetch files in case you like to edit your project deps locally.
-/.fetch
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# If the VM crashes, it generates a dump, let's ignore it too.
-erl_crash.dump
+# env files (can opt-in for committing if needed)
+.env*
 
-# Also ignore archive artifacts (built via "mix archive.build").
-*.ez
+# vercel
+.vercel
 
-# Temporary files, for example, from tests.
-/tmp/
+# typescript
+*.tsbuildinfo
+next-env.d.ts
 
-# Ignore package tarball (built via "mix hex.build").
-storia-*.tar
-
-# Ignore assets that are produced by build tools.
-/priv/static/assets/
-
-# Ignore digested assets cache.
-/priv/static/cache_manifest.json
-
-# In case you use Node.js/npm, you want to ignore these.
-npm-debug.log
-/assets/node_modules/
-/scripts/pdf_processor/node_modules/
-
-# Environment variables
-.env
-.env.local
-# Rust binary artifacts
-/target/
+/src/generated/prisma
