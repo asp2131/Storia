@@ -1,48 +1,169 @@
-# This file excludes paths from the Docker build context.
-#
-# By default, Docker's build context includes all files (and folders) in the
-# current directory. Even if a file isn't copied into the container it is still sent to
-# the Docker daemon.
-#
-# There are multiple reasons to exclude files from the build context:
-#
-# 1. Prevent nested folders from being copied into the container (ex: exclude
-#    /assets/node_modules when copying /assets)
-# 2. Reduce the size of the build context and improve build time (ex. /build, /deps, /doc)
-# 3. Avoid sending files containing sensitive information
-#
-# More information on using .dockerignore is available here:
-# https://docs.docker.com/engine/reference/builder/#dockerignore-file
+# Docker build context exclusions for Next.js deployment on Render
+# See https://docs.docker.com/engine/reference/builder/#dockerignore-file
 
 .dockerignore
 
-# Ignore git, but keep git HEAD and refs to access current commit hash if needed:
-#
-# $ cat .git/HEAD | awk '{print ".git/"$2}' | xargs cat
-# d0b8727759e1e0e7aa3d41707d12376e373d5ecc
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Next.js build output
+.next
+out
+.vercel
+
+# Production builds
+build
+dist
+
+# Environment files
+.env*
+!.env.example
+
+# Debug logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build / output folders
+.next/
+out/
+
+# Nuxt.js build / output folder
+.nuxt
+dist
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Git
 .git
-!.git/HEAD
-!.git/refs
+.gitignore
 
-# Common development/test artifacts
-/cover/
-/doc/
-/test/
-/tmp/
-.elixir_ls
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
 
-# Mix artifacts
-/_build/
-/deps/
-*.ez
+# Documentation
+README.md
+docs/
+*.md
 
-# Generated on crash by the VM
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Testing
+coverage/
+.nyc_output/
+test/
+jest.config.js
+cypress/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Screenshots and assets for docs
+screenshots/
+assets/
+
+# Project specific
+@*.md
+PROMPT.md
+progress.json
+frontend/
+_build/
+deps/
 erl_crash.dump
-
-# Static artifacts - These should be fetched and built inside the Docker image
-/assets/node_modules/
-/priv/static/assets/
-/priv/static/cache_manifest.json
-
-# Rust build artifacts
-/target/
+.fly.toml
+mix.exs
+mix.lock
+.elixir_ls/
+config/
+lib/
+priv/
+rel/
+scripts/
+native/
+target/
+test/fixtures/
+*.pdf
