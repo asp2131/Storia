@@ -147,12 +147,12 @@ export default function LibraryPage() {
   return (
     <div className="min-h-screen bg-[#0a0e1a]">
       {/* Navigation Bar */}
-      <nav className="bg-[#101322] border-b border-[#232948]">
+      <nav className="sticky top-0 z-40 w-full border-b border-[#232948] bg-[#0a0e1a]/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col gap-4 py-4 md:py-0 md:h-16">
-            {/* Top row: logo/links left, user avatar right */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 sm:gap-8">
+          <div className="flex flex-col md:flex-row md:items-center md:h-16 gap-4 py-4 md:py-0">
+            {/* Top row / Left section: Logo & Mobile User Menu */}
+            <div className="flex items-center justify-between md:w-auto">
+              <div className="flex items-center gap-8">
                 <Link
                   href="/"
                   className="flex items-center gap-2 text-white font-bold text-lg"
@@ -167,91 +167,45 @@ export default function LibraryPage() {
                   <span className="truncate">Storia</span>
                 </Link>
 
-                <div className="hidden sm:flex flex-wrap items-center gap-4 sm:gap-6">
+                <div className="hidden md:flex items-center gap-6">
                   <Link
                     href="/library"
-                    className="text-white font-medium text-sm"
+                    className="text-white font-medium text-sm border-b-2 border-[#1337ec] py-5"
                   >
                     Library
                   </Link>
                 </div>
               </div>
 
-              {/* User Dropdown (always visible, top-right) */}
-              <div ref={userMenuRef} className="relative">
-                <button
+              {/* Mobile User Menu Toggle (moved here for mobile layout) */}
+              <div className="md:hidden relative" ref={userMenuRef}>
+                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  aria-haspopup="true"
-                  aria-expanded={userMenuOpen}
-                  className="w-10 h-10 bg-[#e5e7eb] rounded-full flex items-center justify-center hover:bg-opacity-80 transition focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
+                  className="w-9 h-9 bg-[#232948] rounded-full flex items-center justify-center text-white"
                 >
-                  <span className="text-[#0a0e1a] font-bold text-sm">
+                  <span className="font-bold text-sm">
                     {user.email?.charAt(0).toUpperCase()}
                   </span>
                 </button>
-
-                {userMenuOpen && (
+                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-[#232948] rounded-lg shadow-lg border border-[#373c5a] py-1 z-50">
-                    {isAdmin && (
+                     {isAdmin && (
                       <Link
                         href="/admin"
                         className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M3 7h18M3 12h18M3 17h18"
-                          />
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
                         </svg>
                         Admin Dashboard
                       </Link>
                     )}
-
-                    <Link
-                      href="/admin"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M3 7h18M3 12h18M3 17h18"
-                        />
-                      </svg>
-                      Admin Dashboard
-                    </Link>
-
-                    <hr className="border-[#373c5a] my-1" />
-
                     <button
                       onClick={handleSignOut}
                       className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition w-full"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
                       Log out
                     </button>
@@ -260,18 +214,18 @@ export default function LibraryPage() {
               </div>
             </div>
 
-            {/* Search bar below on mobile, inline on desktop via width */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full">
-              <div className="relative w-full sm:w-64">
+            {/* Search Bar (Center on Desktop, Full on Mobile) */}
+            <div className="flex-1 max-w-2xl mx-auto w-full md:px-8">
+              <div className="relative group">
                 <input
                   type="text"
-                  placeholder="Search"
+                  placeholder="Search title, author, or keyword..."
                   value={search}
                   onChange={handleSearch}
-                  className="w-full h-9 pl-10 pr-4 bg-[#232948] text-white text-sm rounded-lg border-none focus:ring-2 focus:ring-[#1337ec] placeholder:text-[#929bc9]"
+                  className="w-full h-10 pl-11 pr-4 bg-[#1a1f36] text-white text-sm rounded-full border border-[#232948] focus:border-[#1337ec] focus:ring-1 focus:ring-[#1337ec] placeholder:text-[#58628a] transition-all"
                 />
                 <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#929bc9]"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#58628a] group-focus-within:text-[#1337ec] transition-colors"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -283,6 +237,50 @@ export default function LibraryPage() {
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
+              </div>
+            </div>
+
+            {/* Desktop User Menu (Right) */}
+            <div className="hidden md:flex items-center justify-end md:w-auto relative">
+              <div className="relative" onBlur={() => setUserMenuOpen(false)}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-3 hover:opacity-80 transition focus:outline-none"
+                >
+                   <span className="text-[#929bc9] text-sm font-medium mr-2">
+                    {user.email}
+                   </span>
+                  <div className="w-9 h-9 bg-gradient-to-br from-[#1337ec] to-[#0e27a3] rounded-full flex items-center justify-center shadow-lg border border-[#2e355b]">
+                    <span className="text-white font-bold text-sm">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-[#1a1f36] rounded-xl shadow-2xl border border-[#2e355b] py-2 z-50 overflow-hidden ring-1 ring-black ring-opacity-5">
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#929bc9] hover:text-white hover:bg-[#232948] transition"
+                      >
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
+                        </svg>
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#929bc9] hover:text-white hover:bg-[#232948] transition w-full text-left"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Sign out
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

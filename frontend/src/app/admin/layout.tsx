@@ -5,6 +5,7 @@ const tabs = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/soundscapes", label: "Soundscapes" },
   { href: "/admin/books/new", label: "Create Book" },
+  { href: "/library", label: "Back to Library" },
 ];
 
 export default function AdminLayout({
