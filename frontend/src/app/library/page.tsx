@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { authClient, useSession } from "@/lib/auth-client";
 
@@ -14,6 +15,15 @@ interface Book {
   totalPages: number | null;
   metadata: Record<string, unknown> | null;
   hasSoundscape: boolean;
+}
+
+interface UserWithRole {
+  role?: string;
+  email?: string;
+  id?: string;
+  name?: string;
+  image?: string | null;
+  emailVerified?: boolean;
 }
 
 interface Pagination {
@@ -141,9 +151,9 @@ export default function LibraryPage() {
     return null;
   }
 
-  const user = session.user;
-  const isAdmin = (session as any)?.user?.role === "admin";
-
+  const user = session.user as UserWithRole;
+  const isAdmin = user?.role === "admin";
+console.log(user);
   return (
     <div className="min-h-screen bg-[#0a0e1a]">
       {/* Navigation Bar */}
@@ -250,7 +260,7 @@ export default function LibraryPage() {
                    <span className="text-[#929bc9] text-sm font-medium mr-2">
                     {user.email}
                    </span>
-                  <div className="w-9 h-9 bg-gradient-to-br from-[#1337ec] to-[#0e27a3] rounded-full flex items-center justify-center shadow-lg border border-[#2e355b]">
+                  <div className="w-9 h-9 bg-linear-to-br from-[#1337ec] to-[#0e27a3] rounded-full flex items-center justify-center shadow-lg border border-[#2e355b]">
                     <span className="text-white font-bold text-sm">
                       {user.email?.charAt(0).toUpperCase()}
                     </span>
@@ -394,16 +404,20 @@ export default function LibraryPage() {
                   href={`/read/${book.id}`}
                   className="group cursor-pointer relative"
                 >
-                  {/* Book Cover */}
-                  <div className="w-full aspect-[2/3] bg-[#232948] rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl group-hover:scale-105 transition-all duration-300 relative">
+                    {/* Book Cover */}
+                  <div className="w-full aspect-2/3 bg-[#232948] rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl group-hover:scale-105 transition-all duration-300 relative">
                     {book.coverUrl ? (
-                      <img
-                        src={book.coverUrl}
-                        alt={`Book cover for ${book.title}`}
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={book.coverUrl}
+                          alt={`Book cover for ${book.title}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                        />
+                      </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[#929bc9] bg-gradient-to-br from-[#232948] to-[#1a1f3e]">
+                      <div className="w-full h-full flex items-center justify-center text-[#929bc9] bg-linear-to-br from-[#232948] to-[#1a1f3e]">
                         <svg
                           className="w-20 h-20"
                           fill="currentColor"

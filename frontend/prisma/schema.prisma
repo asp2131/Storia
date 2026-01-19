@@ -187,6 +187,7 @@ model user {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
+  role          String    @default("user")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      session[]
