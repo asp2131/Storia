@@ -1,5 +1,8 @@
 "use client";
 
+// Disable prerendering for admin pages
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useMemo, useState } from "react";
 
 type AdminBook = {

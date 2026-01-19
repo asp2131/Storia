@@ -1,3 +1,6 @@
+// Disable prerendering for admin pages
+export const dynamic = 'force-dynamic';
+
 export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">

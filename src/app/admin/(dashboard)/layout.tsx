@@ -1,5 +1,8 @@
 "use client";
 import Link from "next/link";
+
+// Disable all prerendering for admin pages
+export const dynamic = 'force-dynamic';
 import { usePathname } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
