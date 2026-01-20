@@ -365,15 +365,15 @@ export default function BookReader() {
           <div className="absolute inset-0 bg-gradient-to-b from-slate-900/0 via-slate-900/0 to-slate-900 pointer-events-none" />
         </div>
 
-        {/* Text Content Area */}
-        <div className="flex-1 w-full relative z-10 -mt-20 md:-mt-32 px-4 md:px-0">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-slate-900/95 backdrop-blur-md md:bg-transparent md:backdrop-blur-none rounded-t-3xl p-6 md:p-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none min-h-[40vh] md:min-h-0">
+        {/* Text Content Area - z-30 to be above tap overlay */}
+        <div className="flex-1 w-full relative z-30 -mt-20 md:-mt-32 px-4 md:px-0 pointer-events-none">
+          <div className="max-w-2xl mx-auto h-full">
+            <div className="bg-slate-900/95 backdrop-blur-md md:bg-transparent md:backdrop-blur-none rounded-t-3xl p-6 md:p-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none max-h-[50vh] md:max-h-none overflow-y-auto pointer-events-auto touch-pan-y">
               {/* Mobile Handle */}
-              <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6 md:hidden opacity-50" />
+              <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6 md:hidden opacity-50 sticky top-0 bg-slate-900/95" />
 
               {/* Text Content */}
-              <div className="prose prose-invert prose-lg md:prose-xl mx-auto font-serif leading-relaxed text-slate-300/90">
+              <div className="prose prose-invert prose-lg md:prose-xl mx-auto font-serif leading-relaxed text-slate-300/90 pb-16">
                 {pageData?.textContent ? (
                   <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left whitespace-pre-wrap">
                     {pageData.textContent}
