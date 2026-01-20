@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { emailOTP } from "better-auth/plugins";
-import { prismaAdapter } from "better-auth/adapters/prisma";
+import { Pool } from "pg";
 import { Resend } from "resend";
 
 // Lazy-loaded auth instance to avoid database connection during build
@@ -24,12 +24,9 @@ function createAuth() {
   const resend =
     RESEND_KEY && RESEND_KEY.startsWith("re_") ? new Resend(RESEND_KEY) : null;
 
-  // Import prisma only when needed to avoid build-time issues
-  const { prisma } = require("./prisma");
-
   authInstance = betterAuth({
-    database: prismaAdapter(prisma, {
-      provider: "postgresql",
+    database: new Pool({
+      connectionString: databaseUrl,
     }),
     trustedOrigins: [
       "http://localhost:3000",
