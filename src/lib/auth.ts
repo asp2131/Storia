@@ -35,6 +35,12 @@ export const auth = new Proxy({} as ReturnType<typeof betterAuth>, {
         database: prismaAdapter(prisma, {
           provider: "postgresql",
         }),
+        trustedOrigins: [
+          "http://localhost:3000",
+          "https://storia.kids",
+          "https://www.storia.kids",
+          "https://storia-gray.vercel.app",
+        ],
         user: {
           additionalFields: {
             role: {
