@@ -71,7 +71,7 @@ export default function BookReader() {
 
   // Audio state
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
-  const [isSoundscapePlaying, setIsSoundscapePlaying] = useState(true);
+  const [isSoundscapePlaying, setIsSoundscapePlaying] = useState(false);
   const [narrationVolume, setNarrationVolume] = useState(0.85);
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationProgress, setNarrationProgress] = useState(0);
@@ -370,7 +370,7 @@ export default function BookReader() {
           <div className="max-w-2xl mx-auto h-full">
             <div className="bg-slate-900/95 backdrop-blur-md md:bg-transparent md:backdrop-blur-none rounded-t-3xl p-6 md:p-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none max-h-[50vh] md:max-h-none overflow-y-auto pointer-events-auto touch-pan-y">
               {/* Mobile Handle */}
-              <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6 md:hidden opacity-50 sticky top-0 bg-slate-900/95" />
+              <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-6 md:hidden opacity-50 sticky top-0" />
 
               {/* Text Content */}
               <div className="prose prose-invert prose-lg md:prose-xl mx-auto font-serif leading-relaxed text-slate-300/90 pb-16">
