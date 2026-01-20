@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { Sheet, SheetRef } from "react-modal-sheet";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -19,6 +20,7 @@ import {
   Info,
   Music,
   Loader2,
+  DoorOpen,
 } from "lucide-react";
 
 type AudioAssignment = {
@@ -68,6 +70,7 @@ export default function BookReader() {
   const [uiVisible, setUiVisible] = useState(false);
   const [audioExpanded, setAudioExpanded] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [textSheetOpen, setTextSheetOpen] = useState(true);
 
   // Audio state
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
@@ -83,6 +86,7 @@ export default function BookReader() {
   const uiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartX = useRef<number>(0);
+  const sheetRef = useRef<SheetRef>(null);
 
   // Get current page data
   const pageData = readerData?.pages.find((p) => p.pageNumber === currentPage);
@@ -365,15 +369,12 @@ export default function BookReader() {
           <div className="absolute inset-0 bg-gradient-to-b from-slate-900/0 via-slate-900/0 to-slate-900 pointer-events-none" />
         </div>
 
-        {/* Text Content Area - z-30 to be above tap overlay */}
-        <div className="flex-1 w-full relative z-30 -mt-20 md:-mt-32 px-4 md:px-0 pointer-events-none">
+        {/* Desktop Text Content */}
+        <div className="hidden md:flex flex-1 w-full relative z-30 -mt-32 px-4 pointer-events-none">
           <div className="max-w-2xl mx-auto h-full">
-            <div className="bg-slate-900/95 backdrop-blur-md md:bg-transparent md:backdrop-blur-none rounded-t-3xl p-6 md:p-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-none max-h-[50vh] md:max-h-none overflow-y-auto pointer-events-auto touch-pan-y">
-              {/* Mobile Handle */}
-              <div className="w-12 h-1.5 bg-slate-600 rounded-full mx-auto mb-6 md:hidden opacity-50 sticky top-0" />
-
+            <div className="bg-transparent p-0 max-h-none overflow-y-auto pointer-events-auto">
               {/* Text Content */}
-              <div className="prose prose-invert prose-lg md:prose-xl mx-auto font-serif leading-relaxed text-slate-300/90 pb-16">
+              <div className="prose prose-invert prose-xl mx-auto font-serif leading-relaxed text-slate-300/90 pb-16">
                 {pageData?.textContent ? (
                   <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left whitespace-pre-wrap">
                     {pageData.textContent}
@@ -463,6 +464,17 @@ export default function BookReader() {
         </button>
       )}
 
+      {/* Library Back Button (when UI is visible) */}
+      {uiVisible && (
+        <button
+          onClick={() => router.back()}
+          className="absolute top-16 right-4 z-40 flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md shadow-lg border bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition-all pointer-events-auto"
+          aria-label="Exit to library"
+        >
+          <DoorOpen className="w-5 h-5" />
+        </button>
+      )}
+
       {/* UI CHROME LAYER */}
       <div
         className={`absolute inset-0 z-30 pointer-events-none transition-opacity duration-300 ${
@@ -499,162 +511,7 @@ export default function BookReader() {
 
         {/* Bottom Bar */}
         <footer className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-auto flex flex-col md:flex-row items-end md:items-center justify-between gap-4">
-          {/* Audio Player */}
-          <div className="w-full md:w-auto flex-1 md:flex-initial">
-            {audioExpanded ? (
-              /* Expanded Player Panel */
-              <div className="w-full md:w-[420px] bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 ring-1 ring-inset ring-amber-500/20">
-                      {narrationUrl ? (
-                        <Mic className="w-5 h-5" />
-                      ) : (
-                        <Music className="w-5 h-5" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">
-                          {narrationUrl ? "Narration" : "Audio"}
-                        </span>
-                        {soundscapeUrl && isSoundscapePlaying && (
-                          <>
-                            <span className="w-1 h-1 rounded-full bg-slate-600" />
-                            <span className="text-[10px] uppercase tracking-wider text-slate-500">
-                              Soundscape Active
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <h3 className="text-sm font-medium text-white leading-tight mt-0.5">
-                        Page {currentPage}
-                      </h3>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setAudioExpanded(false)}
-                    className="text-slate-500 hover:text-white transition-colors"
-                  >
-                    <ChevronDown className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Waveform Visualizer */}
-                <div className="relative h-12 flex items-center justify-center gap-[3px] mb-4 opacity-80">
-                  {[...Array(14)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-1 rounded-full transition-all ${
-                        isNarrationPlaying
-                          ? "animate-pulse bg-amber-500"
-                          : "bg-amber-500/30"
-                      }`}
-                      style={{
-                        height: `${20 + Math.random() * 60}%`,
-                        animationDelay: `${i * 0.1}s`,
-                      }}
-                    />
-                  ))}
-
-                  {/* Time Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-between text-[10px] font-mono text-slate-400 pointer-events-none px-1">
-                    <span>{formatTime(narrationProgress)}</span>
-                    <span>{formatTime(narrationDuration)}</span>
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center justify-between gap-4">
-                  {/* Volume */}
-                  <div className="flex items-center gap-2 group w-1/4">
-                    <button className="text-slate-400 group-hover:text-white transition-colors">
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={narrationVolume * 100}
-                      onChange={(e) =>
-                        setNarrationVolume(Number(e.target.value) / 100)
-                      }
-                      className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-white"
-                    />
-                  </div>
-
-                  {/* Playback Controls */}
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={prevPage}
-                      className="text-slate-400 hover:text-white transition-colors"
-                    >
-                      <SkipBack className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={toggleNarration}
-                      disabled={!narrationUrl}
-                      className="w-12 h-12 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform shadow-lg shadow-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isNarrationPlaying ? (
-                        <Pause className="w-5 h-5" />
-                      ) : (
-                        <Play className="w-5 h-5 ml-0.5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={nextPage}
-                      className="text-slate-400 hover:text-white transition-colors"
-                    >
-                      <SkipForward className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Soundscape Toggle */}
-                  <div className="w-1/4 flex justify-end">
-                    {soundscapeUrl && (
-                      <button
-                        onClick={toggleSoundscape}
-                        className={`text-xs font-medium border rounded px-2 py-1 transition-colors ${
-                          isSoundscapePlaying
-                            ? "bg-teal-500/20 border-teal-500 text-teal-400"
-                            : "border-slate-700 text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        <Music className="w-3 h-3 inline mr-1" />
-                        BG
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* Collapsed Badge */
-              <button
-                onClick={() => setAudioExpanded(true)}
-                className="flex items-center gap-3 bg-slate-800/80 backdrop-blur rounded-full pl-3 pr-4 py-2 shadow-lg border border-white/5 hover:bg-slate-800 transition-colors"
-              >
-                <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-amber-500/20 text-amber-500">
-                  <Mic className="w-4 h-4" />
-                  {isNarrationPlaying && (
-                    <span className="absolute flex h-2 w-2 top-0 right-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
-                    Audio
-                  </span>
-                  <span className="text-xs font-medium text-white">
-                    {isNarrationPlaying ? "Playing" : "Tap to expand"}
-                  </span>
-                </div>
-              </button>
-            )}
-          </div>
+         
 
           {/* Page Counter & Progress */}
           <div className="flex flex-col items-end gap-2 text-right md:mb-4">
@@ -690,6 +547,59 @@ export default function BookReader() {
           <Info className="w-4 h-4 text-teal-400" />
           <span>{toast}</span>
         </div>
+      </div>
+
+      {/* Mobile Text Sheet */}
+      <div className="md:hidden">
+        <Sheet
+          ref={sheetRef}
+          isOpen={textSheetOpen}
+          onClose={() => setTextSheetOpen(false)}
+          detent="content"
+          snapPoints={[0, 0.5, 1]}
+          initialSnap={2}
+          disableDismiss={true}
+          onSnap={(snapIndex) => {
+            // If it snaps to 0 (closed position), immediately snap it back to position 1 (0.5 height)
+            if (snapIndex === 0) {
+              setTimeout(() => {
+                sheetRef.current?.snapTo(1);
+              }, 50);
+            }
+          }}
+        >
+          <Sheet.Container
+            unstyled
+            className="bg-slate-900/95 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] rounded-t-3xl"
+            style={{
+              backgroundColor: 'rgb(15 23 42 / 0.95)',
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.5)',
+              borderTopLeftRadius: '1.5rem',
+              borderTopRightRadius: '1.5rem'
+            }}
+          >
+            <Sheet.Header unstyled className="flex items-center justify-center py-3">
+              <div className="flex gap-1">
+                <div className="w-4 h-1 bg-slate-500 rounded-full" />
+                <div className="w-4 h-1 bg-slate-500 rounded-full" />
+              </div>
+            </Sheet.Header>
+            <Sheet.Content className="p-6">
+              {/* Text Content */}
+              <div className="prose prose-invert prose-lg mx-auto font-serif leading-relaxed text-slate-300/90 max-w-none">
+                {pageData?.textContent ? (
+                  <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left whitespace-pre-wrap">
+                    {pageData.textContent}
+                  </p>
+                ) : (
+                  <p className="text-slate-500 italic">No text content</p>
+                )}
+              </div>
+            </Sheet.Content>
+          </Sheet.Container>
+          <Sheet.Backdrop />
+        </Sheet>
       </div>
     </div>
   );
