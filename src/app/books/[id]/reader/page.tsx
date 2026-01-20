@@ -387,11 +387,43 @@ export default function BookReader() {
         </div>
       </div>
 
-      {/* TAP TARGET OVERLAY */}
+      {/* TAP TARGET OVERLAY - handles swipe and tap */}
       <div
         className="absolute inset-0 z-20 cursor-default"
         onClick={toggleUI}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       />
+
+      {/* Mobile Navigation Tap Zones (always visible) */}
+      {currentPage > 1 && (
+        <div className="md:hidden absolute inset-y-0 left-0 w-1/4 pointer-events-auto" style={{ zIndex: 25 }}>
+          <button
+            className="w-full h-full flex items-center justify-start pl-2 opacity-0 active:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              prevPage();
+            }}
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="w-8 h-8 text-white/50" />
+          </button>
+        </div>
+      )}
+      {currentPage < totalPages && (
+        <div className="md:hidden absolute inset-y-0 right-0 w-1/4 pointer-events-auto" style={{ zIndex: 25 }}>
+          <button
+            className="w-full h-full flex items-center justify-end pr-2 opacity-0 active:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              nextPage();
+            }}
+            aria-label="Next page"
+          >
+            <ChevronRight className="w-8 h-8 text-white/50" />
+          </button>
+        </div>
+      )}
 
       {/* UI CHROME LAYER */}
       <div

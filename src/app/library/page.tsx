@@ -65,6 +65,7 @@ export default function LibraryPage() {
   const [page, setPage] = useState(1);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const desktopMenuRef = useRef<HTMLDivElement>(null);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -102,7 +103,12 @@ export default function LibraryPage() {
   // Close user menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isOutsideMobile = userMenuRef.current && !userMenuRef.current.contains(target);
+      const isOutsideDesktop = desktopMenuRef.current && !desktopMenuRef.current.contains(target);
+
+      // Close if click is outside both menu refs
+      if (isOutsideMobile && isOutsideDesktop) {
         setUserMenuOpen(false);
       }
     };
@@ -254,8 +260,8 @@ console.log(user);
             </div>
 
             {/* Desktop User Menu (Right) */}
-            <div className="hidden md:flex items-center justify-end md:w-auto relative">
-              <div className="relative" onBlur={() => setUserMenuOpen(false)}>
+            <div className="hidden md:flex items-center justify-end md:w-auto relative" ref={desktopMenuRef}>
+              <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-3 hover:opacity-80 transition focus:outline-none"
@@ -273,15 +279,16 @@ console.log(user);
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-[#1a1f36] rounded-xl shadow-2xl border border-[#2e355b] py-2 z-50 overflow-hidden ring-1 ring-black ring-opacity-5">
                     {isAdmin && (
-                      <button
-                        onClick={() => router.push("/admin")}
+                      <Link
+                        href="/admin"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#929bc9] hover:text-white hover:bg-[#232948] transition w-full text-left"
+                        onClick={() => setUserMenuOpen(false)}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
                         </svg>
                         Admin Dashboard
-                      </button>
+                      </Link>
                     )}
                     <button
                       onClick={handleSignOut}
