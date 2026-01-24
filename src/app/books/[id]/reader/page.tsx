@@ -22,6 +22,7 @@ import {
   Loader2,
   DoorOpen,
 } from "lucide-react";
+import FeedbackModal from "@/components/FeedbackModal";
 
 type AudioAssignment = {
   id: string;
@@ -56,6 +57,8 @@ type ReaderData = {
 };
 
 export default function BookReader() {
+  console.log("🔵 BookReader component rendered");
+
   const params = useParams();
   const router = useRouter();
   const bookId = params.id as string;
@@ -71,6 +74,7 @@ export default function BookReader() {
   const [audioExpanded, setAudioExpanded] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [textSheetOpen, setTextSheetOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Audio state
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
@@ -79,6 +83,12 @@ export default function BookReader() {
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationProgress, setNarrationProgress] = useState(0);
   const [narrationDuration, setNarrationDuration] = useState(0);
+
+  // Feedback state
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackEligible, setFeedbackEligible] = useState(false);
+  const [pagesViewed, setPagesViewed] = useState(new Set<number>());
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   // Refs
   const narrationRef = useRef<HTMLAudioElement>(null);
@@ -102,6 +112,20 @@ export default function BookReader() {
   const narrationUrl = narrationAssignment?.audioUrl || pageData?.narrationUrl;
   const soundscapeUrl = soundscapeAssignment?.audioUrl;
 
+  // Detect if we're on mobile
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Check on mount
+    checkIsMobile();
+
+    // Listen for window resize
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
   // Load book data
   useEffect(() => {
     const loadData = async () => {
@@ -123,6 +147,98 @@ export default function BookReader() {
       loadData();
     }
   }, [bookId]);
+
+  // Check feedback eligibility on mount
+  useEffect(() => {
+    const checkFeedbackEligibility = async () => {
+      // Check if already skipped this session
+      const skippedThisSession = sessionStorage.getItem("feedback_skipped") === "true";
+      if (skippedThisSession) {
+        setFeedbackEligible(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/feedback/status");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("[Feedback] Eligibility response:", data);
+          setFeedbackEligible(data.shouldShowFeedback);
+        }
+      } catch (error) {
+        console.error("Failed to check feedback eligibility:", error);
+        setFeedbackEligible(false);
+      }
+    };
+
+    checkFeedbackEligibility();
+  }, []);
+
+  // Track pages viewed
+  useEffect(() => {
+    if (currentPage > 0) {
+      setPagesViewed((prev) => new Set(prev).add(currentPage));
+    }
+  }, [currentPage]);
+
+  // Exit handling - check if feedback modal should be shown
+  const handleExitAttempt = useCallback(
+    (navigateFn: () => void) => {
+      const hasViewedEnoughPages = pagesViewed.size >= 2;
+      const skippedThisSession = sessionStorage.getItem("feedback_skipped") === "true";
+
+      console.log("[Feedback Debug]", {
+        feedbackEligible,
+        pagesViewedCount: pagesViewed.size,
+        hasViewedEnoughPages,
+        skippedThisSession,
+        shouldShowModal: feedbackEligible && hasViewedEnoughPages && !skippedThisSession,
+      });
+
+      if (feedbackEligible && hasViewedEnoughPages && !skippedThisSession) {
+        setPendingNavigation(() => navigateFn);
+        setShowFeedbackModal(true);
+      } else {
+        navigateFn();
+      }
+    },
+    [feedbackEligible, pagesViewed]
+  );
+
+  // Handle feedback submission
+  const handleFeedbackSubmit = async (rating: number, feedback?: string) => {
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating, feedback }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit feedback");
+    }
+
+    // After successful submit, navigate away
+    setFeedbackEligible(false);
+  };
+
+  // Handle feedback skip
+  const handleFeedbackSkip = useCallback(() => {
+    sessionStorage.setItem("feedback_skipped", "true");
+    setShowFeedbackModal(false);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    }
+  }, [pendingNavigation]);
+
+  // Handle feedback close (after successful submit)
+  const handleFeedbackClose = useCallback(() => {
+    setShowFeedbackModal(false);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    }
+  }, [pendingNavigation]);
 
   // Auto-hide UI
   const resetAutoHide = useCallback(() => {
@@ -327,7 +443,7 @@ export default function BookReader() {
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || "Book not found"}</p>
           <button
-            onClick={() => router.back()}
+            onClick={() => handleExitAttempt(() => router.back())}
             className="text-teal-500 hover:text-teal-400"
           >
             Go back
@@ -467,7 +583,7 @@ export default function BookReader() {
       {/* Library Back Button (when UI is visible) */}
       {uiVisible && (
         <button
-          onClick={() => router.back()}
+          onClick={() => handleExitAttempt(() => router.back())}
           className="absolute top-16 right-4 z-40 flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md shadow-lg border bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition-all pointer-events-auto"
           aria-label="Exit to library"
         >
@@ -484,7 +600,10 @@ export default function BookReader() {
         {/* Top Bar */}
         <header className="absolute top-0 left-0 right-0 p-4 md:p-6 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-auto">
           <button
-            onClick={() => router.back()}
+            onClick={() => {
+              console.log("[Click] Back button clicked");
+              handleExitAttempt(() => router.back());
+            }}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
@@ -549,8 +668,8 @@ export default function BookReader() {
         </div>
       </div>
 
-      {/* Mobile Text Sheet */}
-      <div className="md:hidden">
+      {/* Mobile Text Sheet - Only render on mobile */}
+      {isMobile && (
         <Sheet
           ref={sheetRef}
           isOpen={textSheetOpen}
@@ -600,7 +719,15 @@ export default function BookReader() {
           </Sheet.Container>
           <Sheet.Backdrop />
         </Sheet>
-      </div>
+      )}
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={handleFeedbackClose}
+        onSubmit={handleFeedbackSubmit}
+        onSkip={handleFeedbackSkip}
+      />
     </div>
   );
 }

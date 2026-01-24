@@ -202,16 +202,17 @@ model users_tokens {
 
 // Better Auth Core Tables
 model user {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  role          String    @default("user")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      session[]
-  accounts      account[]
+  id              String            @id @default(cuid())
+  name            String
+  email           String            @unique
+  emailVerified   Boolean           @default(false)
+  image           String?
+  role            String            @default("user")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  sessions        session[]
+  accounts        account[]
+  reader_feedback reader_feedback[]
 }
 
 model session {
@@ -256,6 +257,18 @@ model verification {
   updatedAt  DateTime @updatedAt
 
   @@index([identifier])
+}
+
+model reader_feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  rating    Int      // 1-5 stars
+  feedback  String?  // Optional text feedback (max 200 chars)
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 enum oban_job_state {
