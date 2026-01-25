@@ -1,22 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import SplitType from "split-type";
 import HeroDissolveShader from "./HeroDissolveShader";
-
-// Dynamically import the 3D model to avoid SSR issues
-const PopupBookModel = dynamic(() => import("./PopupBookModel"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="w-16 h-16 border-2 border-amber-200/30 border-t-amber-200 rounded-full animate-spin" />
-    </div>
-  ),
-});
+import PopupBookModel from "./PopupBookModel";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -31,6 +21,8 @@ export default function MorphogenesisHero({
 }: MorphogenesisHeroProps) {
   const heroRef = useRef<HTMLElement>(null);
   const heroContentRef = useRef<HTMLDivElement>(null);
+  const spotlightRef = useRef<HTMLElement>(null);
+  const svgPathRef = useRef<SVGPathElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const lenisRef = useRef<Lenis | null>(null);
 
@@ -54,12 +46,10 @@ export default function MorphogenesisHero({
     lenisRef.current = lenis;
 
     // RAF loop for Lenis
-    function raf(time: number) {
-      lenis.raf(time);
-      ScrollTrigger.update();
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+    gsap.ticker.lagSmoothing(0);
 
     // Connect Lenis to ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
@@ -107,6 +97,25 @@ export default function MorphogenesisHero({
       }
     }
 
+    // SVG Stroke Draw Animation
+    const path = svgPathRef.current;
+    if (path) {
+      const pathLength = path.getTotalLength();
+      path.style.strokeDasharray = `${pathLength}`;
+      path.style.strokeDashoffset = `${pathLength}`;
+
+      gsap.to(path, {
+        strokeDashoffset: 0,
+        ease: "none",
+        scrollTrigger: {
+          trigger: spotlightRef.current,
+          start: "top 80%", // Start drawing when spotlight is 80% from top (earlier)
+          end: "bottom 20%", // End when spotlight bottom is 20% from top
+          scrub: 1,
+        },
+      });
+    }
+
     return () => {
       lenis.destroy();
       ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
@@ -121,11 +130,13 @@ export default function MorphogenesisHero({
         className="hero relative w-full overflow-hidden"
         style={{ height: "200svh" }}
       >
-        {/* 3D Book Model Background */}
-        <div className="hero-visual absolute inset-0 w-full h-full">
-          <PopupBookModel scrollProgress={scrollProgress} />
+        {/* Hero Background Image */}
+        <div className="hero-visual absolute inset-0 w-full h-full flex items-center justify-center">
+                 {/* Row 5: Final Image */}
+        <div className="row flex justify-center relative z-10 pb-16">
+           <PopupBookModel scrollProgress={100} />
         </div>
-
+        </div>
         {/* Hero Header - First viewport */}
         <div
           className="hero-header absolute w-full flex flex-col justify-center items-center gap-4 text-center px-4"
@@ -172,40 +183,107 @@ export default function MorphogenesisHero({
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="relative min-h-screen py-32 px-4 md:px-8 flex flex-col items-center justify-center bg-[#0a0a0a]">
-        <div className="grid md:grid-cols-3 gap-8 md:gap-16 max-w-7xl">
-          <div className="space-y-6 group">
-            <div className="font-mono text-xs opacity-40">01 / Analysis</div>
-            <h3 className="text-3xl md:text-4xl font-serif italic text-amber-100">
-              AI Scene Analysis
-            </h3>
-            <p className="font-light opacity-60 leading-relaxed">
-              Our AI identifies scenes, moods, settings, and emotions —
-              understanding the context just like a human reader would.
-            </p>
+      {/* Spotlight Section with SVG Stroke Animation */}
+      <section
+        ref={spotlightRef}
+        className="spotlight relative w-full py-8 px-4 md:px-8 flex flex-col gap-24 md:gap-40 overflow-hidden bg-[#fef3c7]"
+      >
+        {/* SVG Path Background */}
+        <div className="svg-path absolute top-[5vh] md:top-[10vh] left-1/2 -translate-x-1/2 w-[275%] md:w-[90%] h-[120%] z-0 pointer-events-none">
+          <svg
+            viewBox="0 0 1378 3500"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="xMidYMin meet"
+            className="w-full h-auto"
+          >
+            <path
+              ref={svgPathRef}
+              d="M639.668 100C639.668 100 105.669 100 199.669 601.503C293.669 1103.01 1277.17 691.502 1277.17 1399.5C1277.17 2107.5 -155.332 1968 140.168 1438.5C435.669 909.002 1442.66 2093.5 713.168 2659.5C400 2900 200 3100 500 3300"
+              stroke="#FF5F0A"
+              strokeWidth="200"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+
+        {/* Row 1: Image */}
+
+        {/* Row 2: Card + Image */}
+        <div className="row flex flex-col md:flex-row justify-center gap-8 relative z-10">
+          <div className="col flex-1 flex flex-col justify-center">
+            <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
+              <div className="font-mono text-xs opacity-40">01 / Analysis</div>
+              <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
+                AI Scene Analysis
+              </h2>
+              <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
+                Our AI identifies scenes, moods, settings, and emotions —
+                understanding the context just like a human reader would.
+              </p>
+            </div>
           </div>
-          <div className="space-y-6 group">
-            <div className="font-mono text-xs opacity-40">02 / Generation</div>
-            <h3 className="text-3xl md:text-4xl font-serif italic text-amber-100">
-              Sonic Immersion
-            </h3>
-            <p className="font-light opacity-60 leading-relaxed">
-              Enjoy seamlessly generated soundscapes that crossfade between
-              scenes, adapting to the story&apos;s mood in real-time.
-            </p>
-          </div>
-          <div className="space-y-6 group">
-            <div className="font-mono text-xs opacity-40">03 / Experience</div>
-            <h3 className="text-3xl md:text-4xl font-serif italic text-amber-100">
-              The Living Text
-            </h3>
-            <p className="font-light opacity-60 leading-relaxed">
-              Every word resonates with meaning. Experience your library as a
-              multi-sensory journey through sound and light.
-            </p>
+          <div className="col flex-1 flex items-center justify-center">
+            <img
+              src="/landing/MagicalCreature.svg"
+              alt="Magical creature emerging"
+              className="w-full md:w-3/4 h-auto"
+            />
           </div>
         </div>
+
+        {/* Row 3: Image + Card */}
+        <div className="row flex flex-col md:flex-row-reverse justify-center gap-8 relative z-10">
+          <div className="col flex-1 flex flex-col justify-center">
+            <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
+              <div className="font-mono text-xs opacity-40">02 / Generation</div>
+              <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
+                Sonic Immersion
+              </h2>
+              <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
+                Enjoy seamlessly generated soundscapes that crossfade between
+                scenes, adapting to the story&apos;s mood in real-time.
+              </p>
+            </div>
+          </div>
+          <div className="col flex-1 flex items-center justify-center">
+            <img
+              src="/landing/Floating:Emerging.svg"
+              alt="Elements floating from book"
+              className="w-full md:w-3/4 h-auto"
+            />
+          </div>
+        </div>
+
+        {/* Row 4: Card + Image */}
+        <div className="row flex flex-col md:flex-row justify-center gap-8 relative z-10">
+          <div className="col flex-1 flex flex-col justify-center">
+            <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
+              <div className="font-mono text-xs opacity-40">03 / Experience</div>
+              <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
+                The Living Text
+              </h2>
+              <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
+                Every word resonates with meaning. Experience your library as a
+                multi-sensory journey through sound and light.
+              </p>
+            </div>
+          </div>
+          <div className="col flex-1 flex items-center justify-center">
+            <img
+              src="/landing/TheReader.svg"
+              alt="Reader immersed in story"
+              className="w-full md:w-3/4 h-auto"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Transition Section */}
+      <section className="relative w-full h-[50vh] flex flex-col items-center justify-center text-center px-4 md:px-8 bg-[#fef3c7]">
+        <h2 className="max-w-4xl text-3xl md:text-5xl font-serif font-black text-[#0a0a0a]">
+          Clearer stories, deeper connections, ready for whatever comes next
+        </h2>
       </section>
 
       {/* Final CTA */}
