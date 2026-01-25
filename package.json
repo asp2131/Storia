@@ -9,11 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@sendgrid/mail": "^8.1.6",
     "@supabase/supabase-js": "^2.90.1",
+    "@types/three": "^0.182.0",
     "better-auth": "^1.4.15",
     "dotenv": "^17.2.3",
     "gsap": "^3.14.2",
+    "lenis": "^1.3.17",
     "lucide-react": "^0.562.0",
     "motion": "^12.27.5",
     "next": "^16.1.3",
@@ -24,6 +28,7 @@
     "react-modal-sheet": "^5.2.1",
     "resend": "^6.8.0",
     "split-type": "^0.3.4",
+    "three": "^0.182.0",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
