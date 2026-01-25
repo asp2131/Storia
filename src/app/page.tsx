@@ -329,7 +329,7 @@ export default function Home() {
 
       <div className="storia-container relative z-10">
         {/* Header */}
-        <header className="fixed top-0 left-0 right-0 p-8 flex justify-between items-center mix-blend-difference z-50">
+        <header className="fixed top-0 left-0 right-0 px-4 py-4 md:p-8 flex justify-between items-center mix-blend-difference z-50">
           <div className="flex items-center gap-2">
             <span className="text-2xl font-serif font-black tracking-tighter">
               Storia
@@ -355,15 +355,15 @@ export default function Home() {
         </header>
 
         {/* Phase B: The Soundwave Scrub Section */}
-        <section className="min-h-screen flex flex-col items-center">
+        <section className="min-h-screen flex flex-col items-center pt-16 md:pt-0">
           <div className="h-screen flex flex-col items-center justify-center px-4 text-center max-w-6xl mx-auto overflow-hidden">
-            <div className="mb-4 font-mono text-xs tracking-[0.5em] uppercase opacity-40 translate-y-10 reveal-item">
+            <div className="mb-8 md:mb-4 font-mono text-xs tracking-[0.5em] uppercase opacity-40 reveal-item">
               Experience Literature through Sound
             </div>
 
             <h1
               id="hero-text"
-              className="text-6xl md:text-8xl lg:text-9xl font-serif font-black leading-none mb-12 tracking-tight"
+              className="text-5xl md:text-8xl lg:text-9xl font-serif font-black leading-tight md:leading-none mb-12 tracking-tight"
             >
               Books That Sound Amazing
             </h1>
@@ -407,7 +407,7 @@ export default function Home() {
             </div>
 
             {/* Scroll Indicator */}
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 opacity-40">
+            <div className="hidden sm:flex absolute bottom-12 left-1/2 -translate-x-1/2 flex-col items-center gap-4 opacity-40">
               <div className="w-[1px] h-12 bg-gradient-to-b from-white to-transparent"></div>
               <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
                 Scroll to play
@@ -471,9 +471,9 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="p-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 opacity-40 text-xs font-mono tracking-widest uppercase">
-          <div>© 2026 Storia</div>
-          <div className="flex gap-8">
+        <footer className="px-4 py-8 md:p-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8 opacity-40 text-xs font-mono tracking-wider md:tracking-widest uppercase">
+          <div className="text-center md:text-left">© 2026 Storia</div>
+          <div className="flex gap-6 md:gap-8">
             <a href="/admin/books" className="hover:opacity-100 transition-opacity">
               Admin
             </a>
