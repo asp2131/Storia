@@ -20,6 +20,8 @@ import {
   Info,
   Music,
   Loader2,
+  X,
+  Volume1,
 } from "lucide-react";
 import FeedbackModal from "@/components/FeedbackModal";
 import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences";
@@ -94,6 +96,10 @@ export default function BookReader() {
   // Navigation hint state
   const [showNavigationHint, setShowNavigationHint] = useState(false);
   const [hintDismissing, setHintDismissing] = useState(false);
+
+  // Settings panel state
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [narrationAutoPlay, setNarrationAutoPlay] = useState(false);
 
   // Soundscape mode state
   const [showSoundscapeMenu, setShowSoundscapeMenu] = useState(false);
@@ -746,31 +752,56 @@ export default function BookReader() {
         </button>
       )}
 
-      {/* Desktop BGM/Soundscape Toggle (desktop only) */}
-      {soundscapeUrl && !isMobile && (
-        <div className="absolute z-40 top-4 left-4">
-          <button
-            onClick={toggleSoundscape}
-            className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
-              isSoundscapePlaying
-                ? "bg-teal-500/20 border-teal-500/50 text-teal-400"
-                : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
-            }`}
-            aria-label={isSoundscapePlaying ? "Mute background music" : "Play background music"}
-          >
-            {isSoundscapePlaying ? (
-              <div className="flex items-end gap-0.5 h-4">
-                <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-1" style={{ height: '60%' }} />
-                <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-2" style={{ height: '100%' }} />
-                <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-3" style={{ height: '80%' }} />
-              </div>
-            ) : (
-              <Music className="w-5 h-5" />
-            )}
-            <span className="text-xs font-medium">
-              {isSoundscapePlaying ? "BGM On" : "BGM Off"}
-            </span>
-          </button>
+      {/* Desktop Audio Controls (desktop only) */}
+      {!isMobile && (soundscapeUrl || narrationUrl) && (
+        <div className="absolute z-40 top-4 left-4 flex gap-2">
+          {/* Soundscape Toggle */}
+          {soundscapeUrl && (
+            <button
+              onClick={toggleSoundscape}
+              className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
+                isSoundscapePlaying
+                  ? "bg-teal-500/20 border-teal-500/50 text-teal-400"
+                  : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+              }`}
+              aria-label={isSoundscapePlaying ? "Mute background music" : "Play background music"}
+            >
+              {isSoundscapePlaying ? (
+                <div className="flex items-end gap-0.5 h-4">
+                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-1" style={{ height: '60%' }} />
+                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-2" style={{ height: '100%' }} />
+                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-3" style={{ height: '80%' }} />
+                </div>
+              ) : (
+                <Music className="w-5 h-5" />
+              )}
+              <span className="text-xs font-medium">
+                {isSoundscapePlaying ? "BGM On" : "BGM Off"}
+              </span>
+            </button>
+          )}
+
+          {/* Narration Toggle */}
+          {narrationUrl && (
+            <button
+              onClick={toggleNarration}
+              className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
+                isNarrationPlaying
+                  ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
+                  : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+              }`}
+              aria-label={isNarrationPlaying ? "Pause narration" : "Play narration"}
+            >
+              {isNarrationPlaying ? (
+                <Pause className="w-4 h-4" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
+              <span className="text-xs font-medium">
+                {isNarrationPlaying ? "Narration" : "Narrate"}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
@@ -803,7 +834,10 @@ export default function BookReader() {
           </div>
 
           <div className="flex gap-3">
-            <button className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors">
+            <button
+              onClick={() => setShowSettingsPanel(true)}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors"
+            >
               <Settings className="w-5 h-5" />
             </button>
             <button className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors">
@@ -958,6 +992,204 @@ export default function BookReader() {
           </Sheet.Container>
           <Sheet.Backdrop />
         </Sheet>
+      )}
+
+      {/* Settings Panel */}
+      {showSettingsPanel && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowSettingsPanel(false)}
+          />
+
+          {/* Panel */}
+          <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-slate-900/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <h2 className="text-lg font-semibold text-white">Settings</h2>
+              <button
+                onClick={() => setShowSettingsPanel(false)}
+                className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {/* Narration Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <Mic className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-white">Narration</h3>
+                    <p className="text-xs text-slate-400">Voice reading of the story</p>
+                  </div>
+                </div>
+
+                {narrationUrl ? (
+                  <div className="space-y-3 pl-[52px]">
+                    {/* Play/Pause Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Playback</span>
+                      <button
+                        onClick={toggleNarration}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                          isNarrationPlaying
+                            ? "bg-orange-500 text-white"
+                            : "bg-white/10 text-slate-300 hover:bg-white/20"
+                        }`}
+                      >
+                        {isNarrationPlaying ? (
+                          <>
+                            <Pause className="w-4 h-4" />
+                            Playing
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4" />
+                            Play
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Volume Slider */}
+                    <div className="flex items-center gap-3">
+                      <Volume1 className="w-4 h-4 text-slate-400" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(narrationVolume * 100)}
+                        onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
+                        className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-orange-500 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500 [&::-webkit-slider-thumb]:appearance-none"
+                      />
+                      <Volume2 className="w-4 h-4 text-slate-400" />
+                    </div>
+
+                    {/* Auto-play Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Auto-play on page turn</span>
+                      <button
+                        onClick={() => setNarrationAutoPlay(!narrationAutoPlay)}
+                        className={`relative w-11 h-6 rounded-full transition-colors ${
+                          narrationAutoPlay ? "bg-orange-500" : "bg-white/20"
+                        }`}
+                      >
+                        <div
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                            narrationAutoPlay ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pl-[52px]">
+                    <p className="text-sm text-slate-500 italic">
+                      No narration available for this page
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-white/10" />
+
+              {/* Soundscape Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center">
+                    <Music className="w-5 h-5 text-teal-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-white">Soundscape</h3>
+                    <p className="text-xs text-slate-400">Ambient background audio</p>
+                  </div>
+                </div>
+
+                {soundscapeUrl ? (
+                  <div className="space-y-3 pl-[52px]">
+                    {/* Play/Pause Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Playback</span>
+                      <button
+                        onClick={toggleSoundscape}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                          isSoundscapePlaying
+                            ? "bg-teal-500 text-white"
+                            : "bg-white/10 text-slate-300 hover:bg-white/20"
+                        }`}
+                      >
+                        {isSoundscapePlaying ? (
+                          <>
+                            <Pause className="w-4 h-4" />
+                            Playing
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4" />
+                            Play
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Volume Slider */}
+                    <div className="flex items-center gap-3">
+                      <Volume1 className="w-4 h-4 text-slate-400" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(soundscapeVolume * 100)}
+                        onChange={(e) => setSoundscapeVolume(Number(e.target.value) / 100)}
+                        className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-teal-500 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-500 [&::-webkit-slider-thumb]:appearance-none"
+                      />
+                      <Volume2 className="w-4 h-4 text-slate-400" />
+                    </div>
+
+                    {/* Mode Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Play mode</span>
+                      <div className="flex items-center bg-white/10 rounded-full p-1 gap-1">
+                        <button
+                          onClick={() => handleSoundscapeModeChange('intro-only')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            preferences.soundscapeMode === 'intro-only'
+                              ? 'bg-teal-500 text-white'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Intro
+                        </button>
+                        <button
+                          onClick={() => handleSoundscapeModeChange('continuous')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            preferences.soundscapeMode === 'continuous'
+                              ? 'bg-teal-500 text-white'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Loop
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pl-[52px]">
+                    <p className="text-sm text-slate-500 italic">
+                      No soundscape available for this page
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Feedback Modal */}
