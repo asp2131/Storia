@@ -12,11 +12,8 @@ import {
   Bookmark,
   Mic,
   Volume2,
-  SkipBack,
-  SkipForward,
   Play,
   Pause,
-  ChevronDown,
   Info,
   Music,
   Loader2,
@@ -26,50 +23,16 @@ import {
 import FeedbackModal from "@/components/FeedbackModal";
 import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences";
 import { useAudioCrossFade } from "@/hooks/useAudioCrossFade";
-
-type AudioAssignment = {
-  id: string;
-  audioUrl: string;
-  audioType: "narration" | "soundscape";
-  scope: string;
-  rangeStart: number | null;
-  rangeEnd: number | null;
-  volume: number | null;
-};
-
-type PageData = {
-  id: string;
-  pageNumber: number;
-  textContent: string | null;
-  imageUrl: string | null;
-  narrationUrl: string | null;
-  assignments: AudioAssignment[];
-};
-
-type BookData = {
-  id: string;
-  title: string;
-  author: string | null;
-  coverUrl: string | null;
-  description: string | null;
-};
-
-type ReaderData = {
-  book: BookData;
-  pages: PageData[];
-};
+import { useReaderData, WordTimestamp } from "@/hooks/useBookData";
 
 export default function BookReader() {
-  console.log("🔵 BookReader component rendered");
-
   const params = useParams();
   const router = useRouter();
   const bookId = params.id as string;
 
-  // Data state
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [readerData, setReaderData] = useState<ReaderData | null>(null);
+  // Fetch data with React Query
+  const { data: readerData, isLoading: loading, error: queryError } = useReaderData(bookId);
+  const error = queryError?.message || null;
 
   // UI state
   const [currentPage, setCurrentPage] = useState(1);
@@ -86,6 +49,11 @@ export default function BookReader() {
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationProgress, setNarrationProgress] = useState(0);
   const [narrationDuration, setNarrationDuration] = useState(0);
+
+  // Word highlighting state
+  const [wordTimestamps, setWordTimestamps] = useState<WordTimestamp[]>([]);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const [timestampsLoaded, setTimestampsLoaded] = useState(false);
 
   // Feedback state
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -122,14 +90,79 @@ export default function BookReader() {
   const totalPages = readerData?.pages.length ?? 0;
 
   // Get audio for current page
-  const narrationAssignment = pageData?.assignments.find(
+  const narrationAssignment = pageData?.assignments?.find(
     (a) => a.audioType === "narration"
   );
-  const soundscapeAssignment = pageData?.assignments.find(
+  const soundscapeAssignment = pageData?.assignments?.find(
     (a) => a.audioType === "soundscape"
   );
   const narrationUrl = narrationAssignment?.audioUrl || pageData?.narrationUrl;
   const soundscapeUrl = soundscapeAssignment?.audioUrl;
+
+  // Load word timestamps from page data when page changes
+  useEffect(() => {
+    if (!narrationUrl || !pageData?.narrationTimestamps) {
+      setWordTimestamps([]);
+      setTimestampsLoaded(false);
+      setActiveWordIndex(-1);
+      return;
+    }
+
+    // Use timestamps from database (loaded via API)
+    const timestamps = pageData.narrationTimestamps as WordTimestamp[];
+    if (Array.isArray(timestamps) && timestamps.length > 0) {
+      setWordTimestamps(timestamps);
+      setTimestampsLoaded(true);
+      console.log(`[Reader] Loaded ${timestamps.length} word timestamps from database`);
+    } else {
+      setWordTimestamps([]);
+      setTimestampsLoaded(false);
+    }
+  }, [narrationUrl, pageData?.narrationTimestamps]);
+
+  // Calculate active word based on narration progress and timestamps
+  useEffect(() => {
+    if (!isNarrationPlaying || wordTimestamps.length === 0) {
+      if (!isNarrationPlaying) setActiveWordIndex(-1);
+      return;
+    }
+
+    const currentTime = narrationProgress;
+    let foundIndex = -1;
+
+    // Linear search - more reliable than binary search when timestamps have gaps
+    // Find the word whose time range contains currentTime, or the last word that started
+    for (let i = 0; i < wordTimestamps.length; i++) {
+      const wordData = wordTimestamps[i];
+      const nextWord = wordTimestamps[i + 1];
+
+      // Check if current time is within this word's range
+      if (currentTime >= wordData.start && currentTime <= wordData.end) {
+        foundIndex = i;
+        break;
+      }
+
+      // Check if current time is between this word's end and next word's start (gap)
+      // In this case, keep highlighting the current word until the next one starts
+      if (nextWord && currentTime > wordData.end && currentTime < nextWord.start) {
+        foundIndex = i;
+        break;
+      }
+
+      // If this is the last word and we've passed its start, highlight it
+      if (!nextWord && currentTime >= wordData.start) {
+        foundIndex = i;
+        break;
+      }
+
+      // If current time is past this word but before we've checked the next, continue
+      if (currentTime > wordData.end) {
+        foundIndex = i; // Tentatively set, will be updated if a better match is found
+      }
+    }
+
+    setActiveWordIndex(foundIndex);
+  }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
 
   // Detect if we're on mobile
   useEffect(() => {
@@ -167,28 +200,6 @@ export default function BookReader() {
       }
     }
   }, [isMobile, loading]);
-
-  // Load book data
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const response = await fetch(`/api/books/${bookId}/reader`);
-        if (!response.ok) {
-          throw new Error("Failed to load book");
-        }
-        const data = await response.json();
-        setReaderData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load book");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (bookId) {
-      loadData();
-    }
-  }, [bookId]);
 
   // Check feedback eligibility on mount
   useEffect(() => {
@@ -660,8 +671,31 @@ export default function BookReader() {
               {/* Text Content */}
               <div className="prose prose-invert prose-xl mx-auto font-serif leading-relaxed text-slate-300/90 pb-16">
                 {pageData?.textContent ? (
-                  <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left whitespace-pre-wrap">
-                    {pageData.textContent}
+                  <p className="whitespace-pre-wrap">
+                    {timestampsLoaded && wordTimestamps.length > 0 ? (
+                      // Render with word-level highlighting
+                      wordTimestamps.map((wordData, index) => (
+                        <span
+                          key={index}
+                          className={`transition-all duration-200 ${
+                            index === 0
+                              ? "text-5xl font-bold text-amber-500 mr-3 float-left"
+                              : ""
+                          } ${
+                            index === activeWordIndex && isNarrationPlaying
+                              ? "text-amber-300 bg-amber-500/30 rounded px-1 -mx-0.5 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                              : ""
+                          }`}
+                        >
+                          {wordData.word}{" "}
+                        </span>
+                      ))
+                    ) : (
+                      // Fallback: plain text
+                      <span className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left">
+                        {pageData.textContent}
+                      </span>
+                    )}
                   </p>
                 ) : (
                   <p className="text-slate-500 italic">No text content</p>
@@ -1005,8 +1039,31 @@ export default function BookReader() {
               {/* Text Content */}
               <div className="prose prose-invert prose-lg mx-auto font-serif leading-relaxed text-slate-300/90 max-w-none">
                 {pageData?.textContent ? (
-                  <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left whitespace-pre-wrap">
-                    {pageData.textContent}
+                  <p className="whitespace-pre-wrap">
+                    {timestampsLoaded && wordTimestamps.length > 0 ? (
+                      // Render with word-level highlighting
+                      wordTimestamps.map((wordData, index) => (
+                        <span
+                          key={index}
+                          className={`transition-all duration-200 ${
+                            index === 0
+                              ? "text-5xl font-bold text-amber-500 mr-3 float-left"
+                              : ""
+                          } ${
+                            index === activeWordIndex && isNarrationPlaying
+                              ? "text-amber-300 bg-amber-500/30 rounded px-1 -mx-0.5 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                              : ""
+                          }`}
+                        >
+                          {wordData.word}{" "}
+                        </span>
+                      ))
+                    ) : (
+                      // Fallback: plain text
+                      <span className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left">
+                        {pageData.textContent}
+                      </span>
+                    )}
                   </p>
                 ) : (
                   <p className="text-slate-500 italic">No text content</p>

@@ -132,6 +132,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         update: {
           text_content: page.textContent ?? null,
           image_url: page.imageUrl ?? null,
+          narration_url: page.narrationUrl ?? undefined,
+          narration_timestamps: page.narrationTimestamps ?? undefined,
           updated_at: now,
         },
         create: {
@@ -139,6 +141,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
           page_number: pageNumber,
           text_content: page.textContent ?? null,
           image_url: page.imageUrl ?? null,
+          narration_url: page.narrationUrl ?? null,
+          narration_timestamps: page.narrationTimestamps ?? null,
           inserted_at: now,
           updated_at: now,
         },

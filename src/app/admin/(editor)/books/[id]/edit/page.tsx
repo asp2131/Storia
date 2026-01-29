@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import {
@@ -38,12 +38,24 @@ import {
   Wand2,
   Sparkles,
 } from "lucide-react";
+import {
+  useBookDetails,
+  useEditorPages,
+  useAudioAssignments,
+  useGenerateNarration,
+  useAssignAudio,
+  useDeleteAudioAssignment,
+  useSavePages,
+  useUpdateBook,
+  WordTimestamp,
+} from "@/hooks/useBookData";
 
-type PageData = {
+type LocalPageData = {
   id?: string;
   number: number;
   text: string;
   imageUrl: string;
+  narrationTimestamps?: WordTimestamp[];
 };
 
 export default function BookEditor() {
@@ -51,139 +63,112 @@ export default function BookEditor() {
   const params = useParams();
   const bookIdParam = params.id as string;
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  // React Query hooks
+  const { data: bookDetails, isLoading: bookLoading } = useBookDetails(bookIdParam);
+  const { data: serverPages, isLoading: pagesLoading } = useEditorPages(bookIdParam);
+
+  // Local state for edits (not yet saved to server)
+  const [localPages, setLocalPages] = useState<LocalPageData[]>([]);
+  const [localTitle, setLocalTitle] = useState("");
+  const [localAuthor, setLocalAuthor] = useState("");
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
+
+  // Sync server data to local state when loaded
+  useEffect(() => {
+    if (serverPages && serverPages.length > 0 && !hasLocalChanges) {
+      setLocalPages(
+        serverPages.map((p) => ({
+          id: p.id,
+          number: p.pageNumber,
+          text: p.textContent || "",
+          imageUrl: p.imageUrl || "",
+          narrationTimestamps: p.narrationTimestamps || undefined,
+        }))
+      );
+    }
+  }, [serverPages, hasLocalChanges]);
+
+  useEffect(() => {
+    if (bookDetails && !hasLocalChanges) {
+      setLocalTitle(bookDetails.title || "Untitled Book");
+      setLocalAuthor(bookDetails.author || "Unknown");
+    }
+  }, [bookDetails, hasLocalChanges]);
+
+  // UI state
+  const [activePage, setActivePage] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [bookId, setBookId] = useState<string | null>(null);
-  const [pageIdMap, setPageIdMap] = useState<Record<number, string>>({});
-  const [narrationUrl, setNarrationUrl] = useState("");
-  const [soundscapeUrl, setSoundscapeUrl] = useState("");
-  const [narrationScope, setNarrationScope] = useState<"current" | "range">(
-    "current"
-  );
-  const [soundscapeScope, setSoundscapeScope] = useState<"current" | "range">(
-    "current"
-  );
+
+  // Audio URL inputs (for manual entry)
+  const [narrationUrlInput, setNarrationUrlInput] = useState("");
+  const [soundscapeUrlInput, setSoundscapeUrlInput] = useState("");
+  const [narrationScope, setNarrationScope] = useState<"current" | "range">("current");
+  const [soundscapeScope, setSoundscapeScope] = useState<"current" | "range">("current");
   const [narrationRangeStart, setNarrationRangeStart] = useState(1);
   const [narrationRangeEnd, setNarrationRangeEnd] = useState(1);
   const [soundscapeRangeStart, setSoundscapeRangeStart] = useState(1);
   const [soundscapeRangeEnd, setSoundscapeRangeEnd] = useState(1);
-  const [audioAssignments, setAudioAssignments] = useState<
-    Record<
-      number,
-      {
-        narration?: { url: string; scope: string; range?: string };
-        soundscape?: { url: string; scope: string; range?: string };
-      }
-    >
-  >({});
-  const [title, setTitle] = useState("Untitled Book");
-  const [author, setAuthor] = useState("Unknown");
-  const [pages, setPages] = useState<PageData[]>([]);
-  const [activePage, setActivePage] = useState(1);
+
+  // Audio playback state
   const [isSoundscapePlaying, setIsSoundscapePlaying] = useState(false);
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationVolume, setNarrationVolume] = useState(0.85);
-  const [generatingNarration, setGeneratingNarration] = useState(false);
   const [generatingAllNarration, setGeneratingAllNarration] = useState(false);
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+
+  // Sync preview state
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const [narrationProgress, setNarrationProgress] = useState(0);
+  const [showSyncPreview, setShowSyncPreview] = useState(false);
+
+  // Refs
   const soundscapeRef = useRef<HTMLAudioElement>(null);
   const narrationRef = useRef<HTMLAudioElement>(null);
-
-  const activePageData = pages.find((page) => page.number === activePage);
-  const activeAssignments = audioAssignments[activePage];
-  const soundscapeActiveUrl =
-    soundscapeUrl || activeAssignments?.soundscape?.url || "";
-  const narrationActiveUrl =
-    narrationUrl || activeAssignments?.narration?.url || "";
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Load book and pages on mount
-  useEffect(() => {
-    const loadBook = async () => {
-      if (!bookIdParam) return;
+  // Mutations
+  const generateNarrationMutation = useGenerateNarration(bookIdParam);
+  const assignAudioMutation = useAssignAudio(bookIdParam);
+  const deleteAudioMutation = useDeleteAudioAssignment(bookIdParam);
+  const savePagesMutation = useSavePages(bookIdParam);
+  const updateBookMutation = useUpdateBook(bookIdParam);
 
-      setLoading(true);
-      setError(null);
+  // Audio assignments for current page
+  const { data: currentAssignments } = useAudioAssignments(bookIdParam, activePage);
 
-      try {
-        // Fetch book details
-        const bookResponse = await fetch(`/api/admin/books/${bookIdParam}`);
-        if (!bookResponse.ok) {
-          throw new Error("Failed to load book.");
-        }
-        const bookData = await bookResponse.json();
-        setBookId(bookData.book.id);
-        setTitle(bookData.book.title || "Untitled Book");
-        setAuthor(bookData.book.author || "Unknown");
+  // Derived state
+  const loading = bookLoading || pagesLoading;
+  const saving = savePagesMutation.isPending || updateBookMutation.isPending;
+  const generatingNarration = generateNarrationMutation.isPending;
 
-        // Fetch pages
-        const pagesResponse = await fetch(
-          `/api/admin/books/${bookIdParam}/pages`
-        );
-        if (!pagesResponse.ok) {
-          throw new Error("Failed to load pages.");
-        }
-        const pagesData = await pagesResponse.json();
+  const activePageData = localPages.find((page) => page.number === activePage);
+  const wordTimestamps = activePageData?.narrationTimestamps || [];
 
-        if (pagesData.pages && pagesData.pages.length > 0) {
-          const loadedPages: PageData[] = pagesData.pages.map(
-            (page: {
-              id: string;
-              pageNumber: number;
-              textContent: string | null;
-              imageUrl: string | null;
-            }) => ({
-              id: page.id,
-              number: page.pageNumber,
-              text: page.textContent || "",
-              imageUrl: page.imageUrl || "",
-            })
-          );
-          setPages(loadedPages);
+  // Build page ID map from server pages
+  const pageIdMap = useMemo(() => {
+    const map: Record<number, string> = {};
+    serverPages?.forEach((p) => {
+      map[p.pageNumber] = p.id;
+    });
+    return map;
+  }, [serverPages]);
 
-          const mapping: Record<number, string> = {};
-          pagesData.pages.forEach(
-            (page: { id: string; pageNumber: number }) => {
-              mapping[page.pageNumber] = page.id;
-            }
-          );
-          setPageIdMap(mapping);
-        } else {
-          // No pages exist, create default ones
-          setPages(
-            Array.from({ length: 4 }, (_, idx) => ({
-              number: idx + 1,
-              text: "",
-              imageUrl: "",
-            }))
-          );
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load book.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Get audio URLs for current page
+  const narrationAssignment = currentAssignments?.find((a) => a.audioType === "narration");
+  const soundscapeAssignment = currentAssignments?.find((a) => a.audioType === "soundscape");
+  const narrationActiveUrl = narrationAssignment?.audioUrl || activePageData?.narrationTimestamps ?
+    serverPages?.find(p => p.pageNumber === activePage)?.narrationUrl || "" : "";
+  const soundscapeActiveUrl = soundscapeAssignment?.audioUrl || soundscapeUrlInput;
 
-    loadBook();
-  }, [bookIdParam]);
-
+  // Update range defaults when active page changes
   useEffect(() => {
     setNarrationRangeStart(activePage);
     setNarrationRangeEnd(activePage);
     setSoundscapeRangeStart(activePage);
     setSoundscapeRangeEnd(activePage);
   }, [activePage]);
-
-  useEffect(() => {
-    if (bookId) {
-      loadActiveAssignments(bookId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePage, bookId]);
 
   useEffect(() => {
     if (soundscapeRef.current) {
@@ -196,6 +181,46 @@ export default function BookEditor() {
       narrationRef.current.volume = narrationVolume;
     }
   }, [narrationVolume]);
+
+
+  // Calculate active word based on narration progress
+  useEffect(() => {
+    if (!isNarrationPlaying || wordTimestamps.length === 0) {
+      if (!isNarrationPlaying) setActiveWordIndex(-1);
+      return;
+    }
+
+    const currentTime = narrationProgress;
+
+    // Debug: Log timestamps structure on first run
+    if (currentTime < 0.1 && wordTimestamps.length > 0) {
+      console.log("[Editor] First 5 timestamps:", wordTimestamps.slice(0, 5));
+      console.log("[Editor] Last timestamp:", wordTimestamps[wordTimestamps.length - 1]);
+    }
+
+    // Find the word that should be highlighted at currentTime
+    let foundIndex = -1;
+
+    for (let i = 0; i < wordTimestamps.length; i++) {
+      const wordData = wordTimestamps[i];
+
+      // If we haven't reached this word's start time yet, stop
+      if (currentTime < wordData.start) {
+        break;
+      }
+
+      // This word has started, so it's a candidate
+      foundIndex = i;
+    }
+
+    // Debug: Log every ~0.5 seconds
+    if (Math.floor(currentTime * 2) !== Math.floor((currentTime - 0.1) * 2)) {
+      const currentWord = foundIndex >= 0 ? wordTimestamps[foundIndex] : null;
+      console.log(`[Editor] Time: ${currentTime.toFixed(2)}s | Word ${foundIndex}: "${currentWord?.word}" (${currentWord?.start?.toFixed(2)}-${currentWord?.end?.toFixed(2)})`);
+    }
+
+    setActiveWordIndex(foundIndex);
+  }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
 
   const toggleSoundscape = async () => {
     if (!soundscapeActiveUrl) {
@@ -234,21 +259,23 @@ export default function BookEditor() {
   };
 
   const handleAddPage = () => {
-    setPages((prev) => [
+    setLocalPages((prev) => [
       ...prev,
       { number: prev.length + 1, text: "", imageUrl: "" },
     ]);
+    setHasLocalChanges(true);
   };
 
   const handleDeletePage = (pageNumber: number) => {
-    if (pages.length <= 1) return;
-    const updated = pages
+    if (localPages.length <= 1) return;
+    const updated = localPages
       .filter((page) => page.number !== pageNumber)
       .map((page, index) => ({
         ...page,
         number: index + 1,
       }));
-    setPages(updated);
+    setLocalPages(updated);
+    setHasLocalChanges(true);
     setActivePage((prev) => {
       if (prev === pageNumber) {
         return Math.max(1, pageNumber - 1);
@@ -258,19 +285,21 @@ export default function BookEditor() {
   };
 
   const handleTextChange = (value: string) => {
-    setPages((prev) =>
+    setLocalPages((prev) =>
       prev.map((page) =>
         page.number === activePage ? { ...page, text: value } : page
       )
     );
+    setHasLocalChanges(true);
   };
 
   const setActiveImage = (imageUrl: string) => {
-    setPages((prev) =>
+    setLocalPages((prev) =>
       prev.map((page) =>
         page.number === activePage ? { ...page, imageUrl } : page
       )
     );
+    setHasLocalChanges(true);
   };
 
   const handleImageFile = async (file: File) => {
@@ -292,8 +321,8 @@ export default function BookEditor() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      if (bookId) {
-        formData.append("bookId", bookId);
+      if (bookIdParam) {
+        formData.append("bookId", bookIdParam);
         formData.append("pageNumber", activePage.toString());
       }
 
@@ -331,44 +360,10 @@ export default function BookEditor() {
     imageInputRef.current?.click();
   };
 
-  const ensurePagesExist = async () => {
-    if (!bookId) {
-      throw new Error("Book not loaded.");
-    }
-
-    // If we already have all pages mapped, return
-    if (Object.keys(pageIdMap).length >= pages.length) {
-      return { bookId, pageIdMap };
-    }
-
-    // Create any missing pages
-    const pagesResponse = await fetch(`/api/admin/books/${bookId}/pages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pages: pages.map((page) => ({
-          pageNumber: page.number,
-          textContent: page.text,
-        })),
-      }),
-    });
-
-    if (!pagesResponse.ok) {
-      const payload = await pagesResponse.json().catch(() => ({}));
-      throw new Error(payload?.error || "Failed to create pages.");
-    }
-
-    const pagesPayload = (await pagesResponse.json()) as {
-      pages?: Array<{ id: string; pageNumber: number }>;
-    };
-    const mapping: Record<number, string> = { ...pageIdMap };
-    (pagesPayload.pages || []).forEach((page) => {
-      mapping[page.pageNumber] = page.id;
-    });
-
-    setPageIdMap(mapping);
-    return { bookId, pageIdMap: mapping };
-  };
+  // Helper to ensure pages exist and get page ID
+  const getPageId = useCallback((pageNumber: number): string | undefined => {
+    return pageIdMap[pageNumber];
+  }, [pageIdMap]);
 
   const handleAssignAudio = async (
     type: "narration" | "soundscape",
@@ -382,117 +377,77 @@ export default function BookEditor() {
       return;
     }
 
-    setSaving(true);
-    setError(null);
+    const pageId = getPageId(activePage);
+    if (!pageId) {
+      setError("Page not saved yet. Save the book first.");
+      return;
+    }
 
     try {
-      const ensured = await ensurePagesExist();
-      const pageId = ensured.pageIdMap[activePage];
-      if (!pageId) {
-        throw new Error("Page not initialized yet.");
-      }
-
       const normalizedScope = scope === "current" ? "single" : "range";
-      const payload = {
+      await assignAudioMutation.mutateAsync({
         pageId,
         audioUrl: url,
         audioType: type,
         scope: normalizedScope,
         rangeStart: normalizedScope === "range" ? rangeStart : null,
         rangeEnd: normalizedScope === "range" ? rangeEnd : null,
-      };
-
-      const response = await fetch("/api/admin/audio-assignments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
       });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data?.error || "Failed to assign audio.");
-      }
-
-      setAudioAssignments((prev) => ({
-        ...prev,
-        [activePage]: {
-          ...prev[activePage],
-          [type]: {
-            url,
-            scope: normalizedScope,
-            range:
-              normalizedScope === "range"
-                ? `${rangeStart}-${rangeEnd}`
-                : "current",
-          },
-        },
-      }));
-      await loadActiveAssignments(ensured.bookId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to assign audio.");
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleGenerateNarration = async (pageNumber?: number) => {
     const targetPage = pageNumber ?? activePage;
-    const pageData = pages.find((p) => p.number === targetPage);
+    const pageData = localPages.find((p) => p.number === targetPage);
 
     if (!pageData?.text?.trim()) {
       setError("No text content to generate narration from.");
       return;
     }
 
-    if (!bookId) {
-      setError("Book not loaded.");
-      return;
-    }
-
-    setGeneratingNarration(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/admin/generate-narration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: pageData.text,
-          bookId,
-          pageNumber: targetPage,
-        }),
+      const data = await generateNarrationMutation.mutateAsync({
+        text: pageData.text,
+        pageNumber: targetPage,
       });
 
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.error || "Failed to generate narration.");
+      // Update local state with timestamps
+      if (data.wordTimestamps && data.wordTimestamps.length > 0) {
+        console.log(`[Editor] Received ${data.wordTimestamps.length} word timestamps`);
+        setLocalPages((prev) =>
+          prev.map((p) =>
+            p.number === targetPage
+              ? { ...p, narrationTimestamps: data.wordTimestamps }
+              : p
+          )
+        );
+      } else {
+        console.warn(`[Editor] No word timestamps received from API. Alignment quality: ${data.alignmentQuality}`);
       }
 
-      const data = await response.json();
-      setNarrationUrl(data.url);
-
       // Auto-assign the generated narration to the current page
-      await handleAssignAudio(
-        "narration",
-        data.url,
-        "current",
-        targetPage,
-        targetPage
-      );
+      const pageId = getPageId(targetPage);
+      if (pageId) {
+        await assignAudioMutation.mutateAsync({
+          pageId,
+          audioUrl: data.url,
+          audioType: "narration",
+          scope: "single",
+          rangeStart: null,
+          rangeEnd: null,
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate narration.");
-    } finally {
-      setGeneratingNarration(false);
     }
   };
 
   const handleGenerateAllNarration = async () => {
-    if (!bookId) {
-      setError("Book not loaded.");
-      return;
-    }
-
-    const pagesWithText = pages.filter((p) => p.text?.trim());
+    const pagesWithText = localPages.filter((p) => p.text?.trim());
     if (pagesWithText.length === 0) {
       setError("No pages with text content.");
       return;
@@ -507,46 +462,35 @@ export default function BookEditor() {
         const page = pagesWithText[i];
         setGenerationProgress({ current: i + 1, total: pagesWithText.length });
 
-        const response = await fetch("/api/admin/generate-narration", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: page.text,
-            bookId,
-            pageNumber: page.number,
-          }),
+        const data = await generateNarrationMutation.mutateAsync({
+          text: page.text,
+          pageNumber: page.number,
         });
 
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(`Page ${page.number}: ${payload?.error || "Failed to generate"}`);
+        // Update local state with timestamps
+        if (data.wordTimestamps && data.wordTimestamps.length > 0) {
+          setLocalPages((prev) =>
+            prev.map((p) =>
+              p.number === page.number
+                ? { ...p, narrationTimestamps: data.wordTimestamps }
+                : p
+            )
+          );
         }
 
-        const data = await response.json();
-
-        // Ensure pages exist before assigning
-        const ensured = await ensurePagesExist();
-        const pageId = ensured.pageIdMap[page.number];
-
+        // Assign the audio if page exists
+        const pageId = getPageId(page.number);
         if (pageId) {
-          // Assign the audio
-          await fetch("/api/admin/audio-assignments", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              pageId,
-              audioUrl: data.url,
-              audioType: "narration",
-              scope: "single",
-              rangeStart: null,
-              rangeEnd: null,
-            }),
+          await assignAudioMutation.mutateAsync({
+            pageId,
+            audioUrl: data.url,
+            audioType: "narration",
+            scope: "single",
+            rangeStart: null,
+            rangeEnd: null,
           });
         }
       }
-
-      // Reload assignments for current page
-      await loadActiveAssignments(bookId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate narration.");
     } finally {
@@ -556,174 +500,80 @@ export default function BookEditor() {
   };
 
   const handleSave = async () => {
-    if (!bookId) {
-      setError("Book not loaded.");
-      return;
-    }
-
-    setSaving(true);
     setError(null);
 
     try {
       // Update book metadata
-      const updateResponse = await fetch(`/api/admin/books/${bookId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim() || "Untitled Book",
-          author: author,
-        }),
+      await updateBookMutation.mutateAsync({
+        title: localTitle.trim() || "Untitled Book",
+        author: localAuthor,
       });
-
-      if (!updateResponse.ok) {
-        const payload = await updateResponse.json().catch(() => ({}));
-        throw new Error(payload?.error || "Failed to save book.");
-      }
 
       // Save all page content
-      const pagesResponse = await fetch(`/api/admin/books/${bookId}/pages`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pages: pages.map((page) => ({
-            pageNumber: page.number,
-            textContent: page.text,
-            imageUrl: page.imageUrl || null,
-          })),
-        }),
-      });
+      await savePagesMutation.mutateAsync(
+        localPages.map((page) => ({
+          pageNumber: page.number,
+          textContent: page.text,
+          imageUrl: page.imageUrl || null,
+        }))
+      );
 
-      if (!pagesResponse.ok) {
-        const payload = await pagesResponse.json().catch(() => ({}));
-        throw new Error(payload?.error || "Failed to save pages.");
-      }
-
-      // Update page ID map from response
-      const pagesPayload = await pagesResponse.json();
-      if (pagesPayload.pages) {
-        const mapping: Record<number, string> = {};
-        pagesPayload.pages.forEach((page: { id: string; pageNumber: number }) => {
-          mapping[page.pageNumber] = page.id;
-        });
-        setPageIdMap(mapping);
-      }
-
-      setError(null);
+      setHasLocalChanges(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save.");
-    } finally {
-      setSaving(false);
     }
   };
 
   const handlePublish = async () => {
-    if (!bookId) {
-      setError("Book not loaded.");
-      return;
-    }
-
-    setSaving(true);
     setError(null);
 
     try {
       // Save all page content first
-      const pagesResponse = await fetch(`/api/admin/books/${bookId}/pages`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pages: pages.map((page) => ({
-            pageNumber: page.number,
-            textContent: page.text,
-            imageUrl: page.imageUrl || null,
-          })),
-        }),
-      });
-
-      if (!pagesResponse.ok) {
-        const payload = await pagesResponse.json().catch(() => ({}));
-        throw new Error(payload?.error || "Failed to save pages.");
-      }
+      await savePagesMutation.mutateAsync(
+        localPages.map((page) => ({
+          pageNumber: page.number,
+          textContent: page.text,
+          imageUrl: page.imageUrl || null,
+        }))
+      );
 
       // Update the book to be published
-      const updateResponse = await fetch(`/api/admin/books/${bookId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim() || "Untitled Book",
-          author: author,
-          isPublished: true,
-          processingStatus: "published",
-        }),
+      await updateBookMutation.mutateAsync({
+        title: localTitle.trim() || "Untitled Book",
+        author: localAuthor,
+        isPublished: true,
+        processingStatus: "published",
       });
 
-      if (!updateResponse.ok) {
-        const payload = await updateResponse.json().catch(() => ({}));
-        throw new Error(payload?.error || "Failed to publish book.");
-      }
-
+      setHasLocalChanges(false);
       router.push("/admin/books");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish.");
-    } finally {
-      setSaving(false);
     }
   };
 
-  const loadActiveAssignments = async (targetBookId?: string | null) => {
-    const resolvedBookId = targetBookId ?? bookId;
-    if (!resolvedBookId) return;
-    const response = await fetch(
-      `/api/admin/audio-assignments?bookId=${resolvedBookId}&pageNumber=${activePage}`
-    );
-    if (!response.ok) {
-      return;
-    }
-    const payload = (await response.json()) as {
-      assignments?: Array<{
-        id: string;
-        audioUrl: string;
-        audioType: "soundscape" | "narration";
-        scope: string;
-        rangeStart?: number | null;
-        rangeEnd?: number | null;
-      }>;
+  // Derive active assignments info for UI display
+  const activeAssignments = useMemo(() => {
+    if (!currentAssignments) return undefined;
+    const narration = currentAssignments.find((a) => a.audioType === "narration");
+    const soundscape = currentAssignments.find((a) => a.audioType === "soundscape");
+    return {
+      narration: narration ? {
+        url: narration.audioUrl,
+        scope: narration.scope,
+        range: narration.scope === "range" && narration.rangeStart && narration.rangeEnd
+          ? `${narration.rangeStart}-${narration.rangeEnd}`
+          : "current",
+      } : undefined,
+      soundscape: soundscape ? {
+        url: soundscape.audioUrl,
+        scope: soundscape.scope,
+        range: soundscape.scope === "range" && soundscape.rangeStart && soundscape.rangeEnd
+          ? `${soundscape.rangeStart}-${soundscape.rangeEnd}`
+          : "current",
+      } : undefined,
     };
-    const assignments = payload.assignments ?? [];
-    const nextAssignments: {
-      narration?: { url: string; scope: string; range?: string };
-      soundscape?: { url: string; scope: string; range?: string };
-    } = {};
-
-    assignments.forEach((assignment) => {
-      const range =
-        assignment.scope === "range" &&
-        assignment.rangeStart &&
-        assignment.rangeEnd
-          ? `${assignment.rangeStart}-${assignment.rangeEnd}`
-          : "current";
-      if (assignment.audioType === "soundscape") {
-        nextAssignments.soundscape = {
-          url: assignment.audioUrl,
-          scope: assignment.scope,
-          range,
-        };
-        setSoundscapeUrl(assignment.audioUrl);
-      }
-      if (assignment.audioType === "narration") {
-        nextAssignments.narration = {
-          url: assignment.audioUrl,
-          scope: assignment.scope,
-          range,
-        };
-        setNarrationUrl(assignment.audioUrl);
-      }
-    });
-
-    setAudioAssignments((prev) => ({
-      ...prev,
-      [activePage]: nextAssignments,
-    }));
-  };
+  }, [currentAssignments]);
 
   if (loading) {
     return (
@@ -748,15 +598,15 @@ export default function BookEditor() {
       ) : (
         <audio ref={soundscapeRef} />
       )}
-      {narrationActiveUrl ? (
-        <audio
-          ref={narrationRef}
-          src={narrationActiveUrl}
-          onEnded={() => setIsNarrationPlaying(false)}
-        />
-      ) : (
-        <audio ref={narrationRef} />
-      )}
+      <audio
+        ref={narrationRef}
+        src={narrationActiveUrl || undefined}
+        onTimeUpdate={(e) => setNarrationProgress(e.currentTarget.currentTime)}
+        onEnded={() => {
+          setIsNarrationPlaying(false);
+          setActiveWordIndex(-1);
+        }}
+      />
       {/* LEFT SIDEBAR: Navigator */}
       <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
         {/* Sidebar Header */}
@@ -779,7 +629,7 @@ export default function BookEditor() {
             Pages
           </div>
 
-          {pages.map((page) => {
+          {localPages.map((page) => {
             const isActive = page.number === activePage;
             return (
               <div
@@ -804,7 +654,7 @@ export default function BookEditor() {
                 >
                   <GripVertical className="w-4 h-4" />
                 </div>
-                {pages.length > 1 && (
+                {localPages.length > 1 && (
                   <span
                     role="button"
                     tabIndex={0}
@@ -884,8 +734,8 @@ export default function BookEditor() {
             <input
               type="text"
               id="book-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
+              value={localTitle}
+              onChange={(event) => { setLocalTitle(event.target.value); setHasLocalChanges(true); }}
               className="w-full text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
               placeholder="Untitled Book"
             />
@@ -896,7 +746,7 @@ export default function BookEditor() {
           <div className="flex items-center gap-6">
             <div className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">
               Page {activePage} <span className="text-slate-300 mx-1">/</span>{" "}
-              {pages.length}
+              {localPages.length}
             </div>
 
             <div className="h-6 w-px bg-slate-200"></div>
@@ -1080,7 +930,7 @@ export default function BookEditor() {
             <button
               type="button"
               onClick={() =>
-                setActivePage((prev) => Math.min(pages.length, prev + 1))
+                setActivePage((prev) => Math.min(localPages.length, prev + 1))
               }
               className="p-3 rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 transition-all hover:translate-x-1 active:scale-95"
             >
@@ -1133,7 +983,24 @@ export default function BookEditor() {
                     00:45 - Looping
                   </span>
                 </div>
-                <button className="text-slate-400 hover:text-red-500 transition-colors p-1 -mr-1 rounded hover:bg-white/50">
+                <button
+                  onClick={async () => {
+                    const pageId = getPageId(activePage);
+                    if (pageId) {
+                      try {
+                        await deleteAudioMutation.mutateAsync({
+                          pageId,
+                          audioType: "soundscape",
+                        });
+                        setSoundscapeUrlInput("");
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Failed to remove");
+                      }
+                    }
+                  }}
+                  disabled={deleteAudioMutation.isPending}
+                  className="text-slate-400 hover:text-red-500 transition-colors p-1 -mr-1 rounded hover:bg-white/50 disabled:opacity-50"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1207,8 +1074,8 @@ export default function BookEditor() {
                   )}
                 </div>
                 <input
-                  value={soundscapeUrl}
-                  onChange={(event) => setSoundscapeUrl(event.target.value)}
+                  value={soundscapeUrlInput}
+                  onChange={(event) => setSoundscapeUrlInput(event.target.value)}
                   placeholder="Paste soundscape URL"
                   className="w-full rounded-md border border-amber-200 bg-white/70 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
                 />
@@ -1240,7 +1107,7 @@ export default function BookEditor() {
                       <input
                         type="number"
                         min={1}
-                        max={pages.length}
+                        max={localPages.length}
                         value={soundscapeRangeStart}
                         onChange={(event) =>
                           setSoundscapeRangeStart(Number(event.target.value))
@@ -1251,7 +1118,7 @@ export default function BookEditor() {
                       <input
                         type="number"
                         min={soundscapeRangeStart}
-                        max={pages.length}
+                        max={localPages.length}
                         value={soundscapeRangeEnd}
                         onChange={(event) =>
                           setSoundscapeRangeEnd(Number(event.target.value))
@@ -1266,7 +1133,7 @@ export default function BookEditor() {
                   onClick={() =>
                     handleAssignAudio(
                       "soundscape",
-                      soundscapeUrl,
+                      soundscapeUrlInput,
                       soundscapeScope,
                       soundscapeRangeStart,
                       soundscapeRangeEnd
@@ -1324,8 +1191,31 @@ export default function BookEditor() {
                     <ArrowLeftRight className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    title="Remove"
-                    className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50"
+                    title="Remove narration"
+                    onClick={async () => {
+                      const pageId = getPageId(activePage);
+                      if (pageId) {
+                        try {
+                          await deleteAudioMutation.mutateAsync({
+                            pageId,
+                            audioType: "narration",
+                          });
+                          setNarrationUrlInput("");
+                          // Clear local timestamps
+                          setLocalPages((prev) =>
+                            prev.map((p) =>
+                              p.number === activePage
+                                ? { ...p, narrationTimestamps: undefined }
+                                : p
+                            )
+                          );
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Failed to remove");
+                        }
+                      }
+                    }}
+                    disabled={deleteAudioMutation.isPending}
+                    className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1386,6 +1276,59 @@ export default function BookEditor() {
                 </div>
               </div>
 
+              {/* Current Narration Status */}
+              <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
+                <div className="text-xs font-semibold text-orange-700">Current Status</div>
+
+                {activeAssignments?.narration?.url || narrationActiveUrl ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-xs font-semibold text-green-700">Narration Assigned</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const pageId = getPageId(activePage);
+                          if (pageId) {
+                            try {
+                              await deleteAudioMutation.mutateAsync({
+                                pageId,
+                                audioType: "narration",
+                              });
+                              setNarrationUrlInput("");
+                              // Clear local timestamps
+                              setLocalPages((prev) =>
+                                prev.map((p) =>
+                                  p.number === activePage
+                                    ? { ...p, narrationTimestamps: undefined }
+                                    : p
+                                )
+                              );
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : "Failed to remove");
+                            }
+                          }
+                        }}
+                        disabled={deleteAudioMutation.isPending}
+                        className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                      >
+                        {deleteAudioMutation.isPending ? "Removing..." : "Remove"}
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-green-600 truncate font-mono bg-green-100/50 px-2 py-1 rounded">
+                      {activeAssignments?.narration?.url || narrationActiveUrl}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-300" />
+                    <span className="text-xs text-slate-500">No narration for this page</span>
+                  </div>
+                )}
+              </div>
+
               {/* AI Generation Controls */}
               <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
                 <div className="flex items-center justify-between text-xs text-orange-700">
@@ -1393,6 +1336,11 @@ export default function BookEditor() {
                     <Wand2 className="w-3.5 h-3.5" />
                     Generate with AI
                   </span>
+                  {(activeAssignments?.narration?.url || narrationActiveUrl) && (
+                    <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                      Will replace current
+                    </span>
+                  )}
                 </div>
 
                 {/* Generate Buttons */}
@@ -1443,6 +1391,83 @@ export default function BookEditor() {
                 )}
               </div>
 
+              {/* Sync Preview Section */}
+              {(wordTimestamps.length > 0 || activeAssignments?.narration?.url || narrationActiveUrl) && (
+                <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
+                      <PlayCircle className="w-3.5 h-3.5" />
+                      Sync Preview
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSyncPreview(!showSyncPreview)}
+                      className="text-[10px] text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-200 transition-colors"
+                    >
+                      {showSyncPreview ? "Hide" : "Show"}
+                    </button>
+                  </div>
+
+                  {showSyncPreview && (
+                    <div className="bg-white/70 rounded-lg p-3 border border-orange-200/50">
+                      {/* Play controls */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <button
+                          type="button"
+                          onClick={toggleNarration}
+                          className="w-7 h-7 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-all"
+                        >
+                          {isNarrationPlaying ? (
+                            <Pause className="w-3 h-3" />
+                          ) : (
+                            <Play className="w-3 h-3 ml-0.5" />
+                          )}
+                        </button>
+                        <span className="text-[10px] text-slate-500">
+                          {isNarrationPlaying ? "Playing..." : "Click to preview sync"}
+                        </span>
+                      </div>
+
+                      {/* Word highlighting preview */}
+                      <div className="max-h-32 overflow-y-auto">
+                        <p className="text-sm leading-relaxed text-slate-700 font-serif">
+                          {wordTimestamps.length > 0 ? (
+                            wordTimestamps.map((wordData, index) => (
+                              <span
+                                key={index}
+                                className={`transition-all duration-150 ${
+                                  index === activeWordIndex && isNarrationPlaying
+                                    ? "bg-orange-300 text-orange-900 rounded px-0.5 font-semibold"
+                                    : ""
+                                }`}
+                              >
+                                {wordData.word}{" "}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">
+                              No sync data available. Generate narration to see word highlighting.
+                            </span>
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Sync stats */}
+                      {wordTimestamps.length > 0 && (
+                        <div className="mt-3 pt-2 border-t border-orange-100 flex items-center gap-3 text-[10px] text-slate-500">
+                          <span>{wordTimestamps.length} words synced</span>
+                          {isNarrationPlaying && activeWordIndex >= 0 && (
+                            <span className="text-orange-600 font-medium">
+                              Word {activeWordIndex + 1} of {wordTimestamps.length}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Manual URL Assignment */}
               <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
                 <div className="flex items-center justify-between text-xs text-orange-700">
@@ -1454,8 +1479,8 @@ export default function BookEditor() {
                   )}
                 </div>
                 <input
-                  value={narrationUrl}
-                  onChange={(event) => setNarrationUrl(event.target.value)}
+                  value={narrationUrlInput}
+                  onChange={(event) => setNarrationUrlInput(event.target.value)}
                   placeholder="Paste narration URL"
                   className="w-full rounded-md border border-orange-200 bg-white/70 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-300"
                 />
@@ -1487,7 +1512,7 @@ export default function BookEditor() {
                       <input
                         type="number"
                         min={1}
-                        max={pages.length}
+                        max={localPages.length}
                         value={narrationRangeStart}
                         onChange={(event) =>
                           setNarrationRangeStart(Number(event.target.value))
@@ -1498,7 +1523,7 @@ export default function BookEditor() {
                       <input
                         type="number"
                         min={narrationRangeStart}
-                        max={pages.length}
+                        max={localPages.length}
                         value={narrationRangeEnd}
                         onChange={(event) =>
                           setNarrationRangeEnd(Number(event.target.value))
@@ -1513,13 +1538,13 @@ export default function BookEditor() {
                   onClick={() =>
                     handleAssignAudio(
                       "narration",
-                      narrationUrl,
+                      narrationUrlInput,
                       narrationScope,
                       narrationRangeStart,
                       narrationRangeEnd
                     )
                   }
-                  disabled={!narrationUrl}
+                  disabled={!narrationUrlInput}
                   className="w-full rounded-md bg-orange-500 text-white text-xs font-semibold py-2 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Narration Assignment
