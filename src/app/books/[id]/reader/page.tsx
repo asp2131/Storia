@@ -20,8 +20,6 @@ import {
   Info,
   Music,
   Loader2,
-  DoorOpen,
-  Waves,
 } from "lucide-react";
 import FeedbackModal from "@/components/FeedbackModal";
 import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences";
@@ -776,16 +774,6 @@ export default function BookReader() {
         </div>
       )}
 
-      {/* Library Back Button (when UI is visible) */}
-      {uiVisible && (
-        <button
-          onClick={() => handleExitAttempt(() => router.back())}
-          className="absolute top-16 right-4 z-40 flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md shadow-lg border bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition-all pointer-events-auto"
-          aria-label="Exit to library"
-        >
-          <DoorOpen className="w-5 h-5" />
-        </button>
-      )}
 
       {/* UI CHROME LAYER */}
       <div
