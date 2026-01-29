@@ -706,22 +706,23 @@ export default function BookReader() {
         </div>
       )}
 
-      {/* Navigation Hint Overlay - Edge Glow Style (first-time users) */}
-      {showNavigationHint && isMobile && (
-        <div
-          className={`absolute inset-0 z-30 pointer-events-none ${
-            hintDismissing ? 'animate-hint-fade-out' : ''
-          }`}
-        >
-          {/* Left edge glow */}
-          <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-teal-400/40 to-transparent animate-edge-glow" />
+      {/* Navigation Hint Overlay - Always show on page 1 on mobile */}
+      {isMobile && currentPage === 1 && (
+        <div className="absolute inset-0 z-30 pointer-events-none">
           {/* Right edge glow */}
           <div className="absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-teal-400/40 to-transparent animate-edge-glow" />
+
+          {/* Right chevron hint */}
+          <div className="absolute right-4 top-1/3 flex flex-col items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center animate-hint-pulse">
+              <ChevronRight className="w-6 h-6 text-white/80" />
+            </div>
+          </div>
 
           {/* Center subtle instruction */}
           <div className="absolute inset-x-0 bottom-[55%] flex flex-col items-center">
             <span className="text-white/60 text-[10px] tracking-[0.2em] uppercase font-light bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
-              Swipe or tap edges to turn
+              Swipe to turn page
             </span>
           </div>
         </div>
@@ -906,9 +907,13 @@ export default function BookReader() {
                   onClick={toggleSoundscape}
                   className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
                 >
-                  {/* Activity Indicator */}
+                  {/* Play/Pause Indicator */}
                   <div className="flex items-center gap-2">
-                    <Waves className={`w-4 h-4 ${isSoundscapePlaying ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]' : 'text-slate-400'}`} />
+                    {isSoundscapePlaying ? (
+                      <Pause className="w-4 h-4 text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]" />
+                    ) : (
+                      <Play className="w-4 h-4 text-slate-400" />
+                    )}
                     {isSoundscapePlaying && (
                       <div className="flex items-end gap-0.5 h-3">
                         <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-1" style={{ height: '6px' }} />
