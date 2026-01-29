@@ -565,33 +565,6 @@ export default function BookReader() {
     }
   }, [soundscapeVolume]);
 
-  // Narration progress tracking
-  useEffect(() => {
-    const audio = narrationRef.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => {
-      setNarrationProgress(audio.currentTime);
-    };
-
-    const handleLoadedMetadata = () => {
-      setNarrationDuration(audio.duration);
-    };
-
-    const handleEnded = () => {
-      setIsNarrationPlaying(false);
-    };
-
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, []);
 
   // Format time
   const formatTime = (seconds: number) => {
@@ -635,7 +608,16 @@ export default function BookReader() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 overflow-hidden relative selection:bg-teal-500/30 selection:text-teal-200">
       {/* Hidden Audio Elements */}
-      <audio ref={narrationRef} crossOrigin="anonymous" />
+      <audio
+        ref={narrationRef}
+        crossOrigin="anonymous"
+        onTimeUpdate={(e) => setNarrationProgress(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => setNarrationDuration(e.currentTarget.duration)}
+        onEnded={() => {
+          setIsNarrationPlaying(false);
+          setActiveWordIndex(-1);
+        }}
+      />
       <audio ref={soundscapeRef} loop crossOrigin="anonymous" />
 
       {/* BACKGROUND / MAIN CONTENT LAYER */}
