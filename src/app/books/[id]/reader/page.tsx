@@ -21,8 +21,11 @@ import {
   Music,
   Loader2,
   DoorOpen,
+  Waves,
 } from "lucide-react";
 import FeedbackModal from "@/components/FeedbackModal";
+import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences";
+import { useAudioCrossFade } from "@/hooks/useAudioCrossFade";
 
 type AudioAssignment = {
   id: string;
@@ -90,6 +93,18 @@ export default function BookReader() {
   const [pagesViewed, setPagesViewed] = useState(new Set<number>());
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
+  // Navigation hint state
+  const [showNavigationHint, setShowNavigationHint] = useState(false);
+  const [hintDismissing, setHintDismissing] = useState(false);
+
+  // Soundscape mode state
+  const [showSoundscapeMenu, setShowSoundscapeMenu] = useState(false);
+  const [introFadedPages, setIntroFadedPages] = useState<Set<number>>(new Set());
+  const introFadeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { preferences, isLoaded: prefsLoaded, setSoundscapeMode } = useLocalPreferences();
+  const { initAudioContext, connectAudioElement, fadeIn, fadeOut, setVolume } = useAudioCrossFade();
+  const audioConnectedRef = useRef(false);
+
   // Refs
   const narrationRef = useRef<HTMLAudioElement>(null);
   const soundscapeRef = useRef<HTMLAudioElement>(null);
@@ -125,6 +140,29 @@ export default function BookReader() {
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
+
+  // Check if user has seen navigation hints
+  useEffect(() => {
+    if (isMobile && !loading) {
+      const hasSeenHint = localStorage.getItem('storia-nav-hint-seen');
+      if (!hasSeenHint) {
+        // Show hint after a brief delay
+        const timer = setTimeout(() => {
+          setShowNavigationHint(true);
+          // Auto-dismiss after 3 seconds
+          setTimeout(() => {
+            setHintDismissing(true);
+            setTimeout(() => {
+              setShowNavigationHint(false);
+              setHintDismissing(false);
+              localStorage.setItem('storia-nav-hint-seen', 'true');
+            }, 500);
+          }, 3000);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isMobile, loading]);
 
   // Load book data
   useEffect(() => {
@@ -346,12 +384,45 @@ export default function BookReader() {
   const toggleSoundscape = () => {
     if (!soundscapeRef.current || !soundscapeUrl) return;
 
+    // Initialize Web Audio API on first interaction (iOS requirement)
+    // Only attempt if not already connected
+    if (!audioConnectedRef.current) {
+      initAudioContext();
+      const gainNode = connectAudioElement(soundscapeRef.current);
+      if (gainNode) {
+        audioConnectedRef.current = true;
+      }
+      // If connection failed (CORS), we'll use native volume control as fallback
+    }
+
     if (isSoundscapePlaying) {
-      soundscapeRef.current.pause();
+      if (audioConnectedRef.current) {
+        // Fade out instead of abrupt pause
+        fadeOut(0.5);
+        setTimeout(() => {
+          soundscapeRef.current?.pause();
+        }, 500);
+      } else {
+        // Fallback: direct pause
+        soundscapeRef.current.pause();
+      }
     } else {
       soundscapeRef.current.play();
+      if (audioConnectedRef.current) {
+        fadeIn(0.5, soundscapeVolume);
+      }
     }
     setIsSoundscapePlaying(!isSoundscapePlaying);
+  };
+
+  // Handle soundscape mode toggle
+  const handleSoundscapeModeChange = (mode: SoundscapeMode) => {
+    setSoundscapeMode(mode);
+    setShowSoundscapeMenu(false);
+    // Reset intro faded pages when switching modes
+    if (mode === 'continuous') {
+      setIntroFadedPages(new Set());
+    }
   };
 
   // Update audio sources when page changes
@@ -364,14 +435,107 @@ export default function BookReader() {
     }
   }, [narrationUrl, isNarrationPlaying]);
 
+  // Handle soundscape source changes with cross-fade
   useEffect(() => {
     if (soundscapeRef.current && soundscapeUrl) {
-      soundscapeRef.current.src = soundscapeUrl;
-      if (isSoundscapePlaying) {
-        soundscapeRef.current.play();
+      const prevSrc = soundscapeRef.current.src;
+      const isNewSource = prevSrc && !prevSrc.includes(soundscapeUrl);
+
+      if (isNewSource && isSoundscapePlaying) {
+        if (audioConnectedRef.current) {
+          // Web Audio API available - smooth cross-fade
+          fadeOut(1.0);
+          setTimeout(() => {
+            if (soundscapeRef.current) {
+              soundscapeRef.current.src = soundscapeUrl;
+              soundscapeRef.current.play();
+              fadeIn(1.0, soundscapeVolume);
+            }
+          }, 1000);
+        } else {
+          // Fallback: quick volume dip for transition
+          const audio = soundscapeRef.current;
+          const startVolume = audio.volume;
+          audio.volume = 0;
+          audio.src = soundscapeUrl;
+          audio.play();
+          // Fade back in
+          let step = 0;
+          const steps = 10;
+          const fadeInterval = setInterval(() => {
+            step++;
+            audio.volume = startVolume * (step / steps);
+            if (step >= steps) {
+              clearInterval(fadeInterval);
+            }
+          }, 100);
+        }
+      } else {
+        soundscapeRef.current.src = soundscapeUrl;
+        if (isSoundscapePlaying) {
+          soundscapeRef.current.play();
+        }
       }
     }
-  }, [soundscapeUrl, isSoundscapePlaying]);
+  }, [soundscapeUrl]);
+
+  // Intro-only mode: fade out after 10 seconds
+  useEffect(() => {
+    // Clear any existing timer
+    if (introFadeTimerRef.current) {
+      clearTimeout(introFadeTimerRef.current);
+      introFadeTimerRef.current = null;
+    }
+
+    // Only apply intro-only logic when playing and in intro-only mode
+    if (
+      preferences.soundscapeMode === 'intro-only' &&
+      isSoundscapePlaying &&
+      soundscapeUrl &&
+      !introFadedPages.has(currentPage)
+    ) {
+      introFadeTimerRef.current = setTimeout(() => {
+        // Mark this page as having played its intro
+        setIntroFadedPages((prev) => new Set(prev).add(currentPage));
+
+        if (audioConnectedRef.current) {
+          // Web Audio API available - smooth fade
+          fadeOut(3.0);
+          setTimeout(() => {
+            if (soundscapeRef.current) {
+              soundscapeRef.current.pause();
+            }
+            setIsSoundscapePlaying(false);
+          }, 3000);
+        } else {
+          // Fallback: manual volume fade using native API
+          const audio = soundscapeRef.current;
+          if (audio) {
+            const startVolume = audio.volume;
+            const steps = 30;
+            const stepDuration = 3000 / steps;
+            let step = 0;
+            const fadeInterval = setInterval(() => {
+              step++;
+              audio.volume = Math.max(0, startVolume * (1 - step / steps));
+              if (step >= steps) {
+                clearInterval(fadeInterval);
+                audio.pause();
+                audio.volume = startVolume; // Reset volume for next play
+                setIsSoundscapePlaying(false);
+              }
+            }, stepDuration);
+          }
+        }
+      }, 10000); // Play for 10 seconds before fading
+    }
+
+    return () => {
+      if (introFadeTimerRef.current) {
+        clearTimeout(introFadeTimerRef.current);
+      }
+    };
+  }, [currentPage, preferences.soundscapeMode, isSoundscapePlaying, soundscapeUrl, introFadedPages, fadeOut]);
 
   // Volume controls
   useEffect(() => {
@@ -456,8 +620,8 @@ export default function BookReader() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 overflow-hidden relative selection:bg-teal-500/30 selection:text-teal-200">
       {/* Hidden Audio Elements */}
-      <audio ref={narrationRef} />
-      <audio ref={soundscapeRef} loop />
+      <audio ref={narrationRef} crossOrigin="anonymous" />
+      <audio ref={soundscapeRef} loop crossOrigin="anonymous" />
 
       {/* BACKGROUND / MAIN CONTENT LAYER */}
       <div
@@ -542,6 +706,27 @@ export default function BookReader() {
         </div>
       )}
 
+      {/* Navigation Hint Overlay - Edge Glow Style (first-time users) */}
+      {showNavigationHint && isMobile && (
+        <div
+          className={`absolute inset-0 z-30 pointer-events-none ${
+            hintDismissing ? 'animate-hint-fade-out' : ''
+          }`}
+        >
+          {/* Left edge glow */}
+          <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-teal-400/40 to-transparent animate-edge-glow" />
+          {/* Right edge glow */}
+          <div className="absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-teal-400/40 to-transparent animate-edge-glow" />
+
+          {/* Center subtle instruction */}
+          <div className="absolute inset-x-0 bottom-[55%] flex flex-col items-center">
+            <span className="text-white/60 text-[10px] tracking-[0.2em] uppercase font-light bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
+              Swipe or tap edges to turn
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Desktop Navigation Arrows (always visible) */}
       {currentPage > 1 && (
         <button
@@ -562,22 +747,32 @@ export default function BookReader() {
         </button>
       )}
 
-      {/* Persistent BGM/Soundscape Toggle (always visible) */}
-      {soundscapeUrl && (
-        <button
-          onClick={toggleSoundscape}
-          className={`absolute top-4 left-4 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full backdrop-blur-md shadow-lg border transition-all ${
-            isSoundscapePlaying
-              ? "bg-teal-500/20 border-teal-500/50 text-teal-400"
-              : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
-          }`}
-          aria-label={isSoundscapePlaying ? "Mute background music" : "Play background music"}
-        >
-          <Music className="w-4 h-4" />
-          <span className="text-xs font-medium">
-            {isSoundscapePlaying ? "BGM On" : "BGM Off"}
-          </span>
-        </button>
+      {/* Desktop BGM/Soundscape Toggle (desktop only) */}
+      {soundscapeUrl && !isMobile && (
+        <div className="absolute z-40 top-4 left-4">
+          <button
+            onClick={toggleSoundscape}
+            className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
+              isSoundscapePlaying
+                ? "bg-teal-500/20 border-teal-500/50 text-teal-400"
+                : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+            }`}
+            aria-label={isSoundscapePlaying ? "Mute background music" : "Play background music"}
+          >
+            {isSoundscapePlaying ? (
+              <div className="flex items-end gap-0.5 h-4">
+                <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-1" style={{ height: '60%' }} />
+                <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-2" style={{ height: '100%' }} />
+                <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-3" style={{ height: '80%' }} />
+              </div>
+            ) : (
+              <Music className="w-5 h-5" />
+            )}
+            <span className="text-xs font-medium">
+              {isSoundscapePlaying ? "BGM On" : "BGM Off"}
+            </span>
+          </button>
+        </div>
       )}
 
       {/* Library Back Button (when UI is visible) */}
@@ -698,11 +893,62 @@ export default function BookReader() {
               borderTopRightRadius: '1.5rem'
             }}
           >
-            <Sheet.Header unstyled className="flex items-center justify-center py-3">
-              <div className="flex gap-1">
-                <div className="w-4 h-1 bg-slate-500 rounded-full" />
-                <div className="w-4 h-1 bg-slate-500 rounded-full" />
+            <Sheet.Header unstyled className="flex items-center justify-between px-6 pt-5 pb-2">
+              {/* Minimal Drag Handle */}
+              <div className="flex gap-1.5">
+                <div className="w-5 h-1.5 bg-slate-700 rounded-full opacity-60" />
+                <div className="w-5 h-1.5 bg-slate-700 rounded-full opacity-60" />
               </div>
+
+              {/* Premium Soundscape Island (Glass Morphism Pill) */}
+              {soundscapeUrl && (
+                <button
+                  onClick={toggleSoundscape}
+                  className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
+                >
+                  {/* Activity Indicator */}
+                  <div className="flex items-center gap-2">
+                    <Waves className={`w-4 h-4 ${isSoundscapePlaying ? 'text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]' : 'text-slate-400'}`} />
+                    {isSoundscapePlaying && (
+                      <div className="flex items-end gap-0.5 h-3">
+                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-1" style={{ height: '6px' }} />
+                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-2" style={{ height: '12px' }} />
+                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-3" style={{ height: '8px' }} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mode Toggle Pill */}
+                  <div className="flex items-center bg-black/40 rounded-full p-0.5 gap-0.5 border border-white/5">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSoundscapeModeChange('intro-only');
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                        preferences.soundscapeMode === 'intro-only'
+                          ? 'bg-white/10 text-white shadow-sm'
+                          : 'text-white/40 hover:text-white/60'
+                      }`}
+                    >
+                      Intro
+                    </span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSoundscapeModeChange('continuous');
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                        preferences.soundscapeMode === 'continuous'
+                          ? 'bg-white/10 text-white shadow-sm'
+                          : 'text-white/40 hover:text-white/60'
+                      }`}
+                    >
+                      Loop
+                    </span>
+                  </div>
+                </button>
+              )}
             </Sheet.Header>
             <Sheet.Content className="p-6">
               {/* Text Content */}
