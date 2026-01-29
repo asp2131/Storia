@@ -923,59 +923,83 @@ export default function BookReader() {
                 <div className="w-5 h-1.5 bg-slate-700 rounded-full opacity-60" />
               </div>
 
-              {/* Premium Soundscape Island (Glass Morphism Pill) */}
-              {soundscapeUrl && (
-                <button
-                  onClick={toggleSoundscape}
-                  className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
-                >
-                  {/* Play/Pause Indicator */}
-                  <div className="flex items-center gap-2">
-                    {isSoundscapePlaying ? (
-                      <Pause className="w-4 h-4 text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]" />
+              {/* Audio Controls Island */}
+              <div className="flex items-center gap-2">
+                {/* Narration Toggle (Compact Pill) */}
+                {narrationUrl && (
+                  <button
+                    onClick={toggleNarration}
+                    className={`flex items-center gap-2 py-1.5 px-3 backdrop-blur-2xl border rounded-full shadow-lg transition-all ${
+                      isNarrationPlaying
+                        ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
+                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                    }`}
+                  >
+                    {isNarrationPlaying ? (
+                      <Pause className="w-3.5 h-3.5" />
                     ) : (
-                      <Play className="w-4 h-4 text-slate-400" />
+                      <Mic className="w-3.5 h-3.5" />
                     )}
-                    {isSoundscapePlaying && (
-                      <div className="flex items-end gap-0.5 h-3">
-                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-1" style={{ height: '6px' }} />
-                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-2" style={{ height: '12px' }} />
-                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-3" style={{ height: '8px' }} />
-                      </div>
-                    )}
-                  </div>
+                    <span className="text-[10px] font-semibold">
+                      {isNarrationPlaying ? "Reading" : "Read"}
+                    </span>
+                  </button>
+                )}
 
-                  {/* Mode Toggle Pill */}
-                  <div className="flex items-center bg-black/40 rounded-full p-0.5 gap-0.5 border border-white/5">
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSoundscapeModeChange('intro-only');
-                      }}
-                      className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
-                        preferences.soundscapeMode === 'intro-only'
-                          ? 'bg-white/10 text-white shadow-sm'
-                          : 'text-white/40 hover:text-white/60'
-                      }`}
-                    >
-                      Intro
-                    </span>
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSoundscapeModeChange('continuous');
-                      }}
-                      className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
-                        preferences.soundscapeMode === 'continuous'
-                          ? 'bg-white/10 text-white shadow-sm'
-                          : 'text-white/40 hover:text-white/60'
-                      }`}
-                    >
-                      Loop
-                    </span>
-                  </div>
-                </button>
-              )}
+                {/* Soundscape Toggle (Glass Morphism Pill) */}
+                {soundscapeUrl && (
+                  <button
+                    onClick={toggleSoundscape}
+                    className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
+                  >
+                    {/* Play/Pause Indicator */}
+                    <div className="flex items-center gap-2">
+                      {isSoundscapePlaying ? (
+                        <Pause className="w-4 h-4 text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]" />
+                      ) : (
+                        <Play className="w-4 h-4 text-slate-400" />
+                      )}
+                      {isSoundscapePlaying && (
+                        <div className="flex items-end gap-0.5 h-3">
+                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-1" style={{ height: '6px' }} />
+                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-2" style={{ height: '12px' }} />
+                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-3" style={{ height: '8px' }} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mode Toggle Pill */}
+                    <div className="flex items-center bg-black/40 rounded-full p-0.5 gap-0.5 border border-white/5">
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSoundscapeModeChange('intro-only');
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                          preferences.soundscapeMode === 'intro-only'
+                            ? 'bg-white/10 text-white shadow-sm'
+                            : 'text-white/40 hover:text-white/60'
+                        }`}
+                      >
+                        Intro
+                      </span>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSoundscapeModeChange('continuous');
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                          preferences.soundscapeMode === 'continuous'
+                            ? 'bg-white/10 text-white shadow-sm'
+                            : 'text-white/40 hover:text-white/60'
+                        }`}
+                      >
+                        Loop
+                      </span>
+                    </div>
+                  </button>
+                )}
+              </div>
             </Sheet.Header>
             <Sheet.Content className="p-6">
               {/* Text Content */}
