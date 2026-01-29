@@ -35,6 +35,8 @@ import {
   Music,
   Upload,
   Loader2,
+  Wand2,
+  Sparkles,
 } from "lucide-react";
 
 type PageData = {
@@ -84,6 +86,9 @@ export default function BookEditor() {
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationVolume, setNarrationVolume] = useState(0.85);
+  const [generatingNarration, setGeneratingNarration] = useState(false);
+  const [generatingAllNarration, setGeneratingAllNarration] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   const soundscapeRef = useRef<HTMLAudioElement>(null);
   const narrationRef = useRef<HTMLAudioElement>(null);
 
@@ -427,6 +432,126 @@ export default function BookEditor() {
       setError(err instanceof Error ? err.message : "Failed to assign audio.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateNarration = async (pageNumber?: number) => {
+    const targetPage = pageNumber ?? activePage;
+    const pageData = pages.find((p) => p.number === targetPage);
+
+    if (!pageData?.text?.trim()) {
+      setError("No text content to generate narration from.");
+      return;
+    }
+
+    if (!bookId) {
+      setError("Book not loaded.");
+      return;
+    }
+
+    setGeneratingNarration(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/admin/generate-narration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: pageData.text,
+          bookId,
+          pageNumber: targetPage,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to generate narration.");
+      }
+
+      const data = await response.json();
+      setNarrationUrl(data.url);
+
+      // Auto-assign the generated narration to the current page
+      await handleAssignAudio(
+        "narration",
+        data.url,
+        "current",
+        targetPage,
+        targetPage
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate narration.");
+    } finally {
+      setGeneratingNarration(false);
+    }
+  };
+
+  const handleGenerateAllNarration = async () => {
+    if (!bookId) {
+      setError("Book not loaded.");
+      return;
+    }
+
+    const pagesWithText = pages.filter((p) => p.text?.trim());
+    if (pagesWithText.length === 0) {
+      setError("No pages with text content.");
+      return;
+    }
+
+    setGeneratingAllNarration(true);
+    setGenerationProgress({ current: 0, total: pagesWithText.length });
+    setError(null);
+
+    try {
+      for (let i = 0; i < pagesWithText.length; i++) {
+        const page = pagesWithText[i];
+        setGenerationProgress({ current: i + 1, total: pagesWithText.length });
+
+        const response = await fetch("/api/admin/generate-narration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: page.text,
+            bookId,
+            pageNumber: page.number,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(`Page ${page.number}: ${payload?.error || "Failed to generate"}`);
+        }
+
+        const data = await response.json();
+
+        // Ensure pages exist before assigning
+        const ensured = await ensurePagesExist();
+        const pageId = ensured.pageIdMap[page.number];
+
+        if (pageId) {
+          // Assign the audio
+          await fetch("/api/admin/audio-assignments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              pageId,
+              audioUrl: data.url,
+              audioType: "narration",
+              scope: "single",
+              rangeStart: null,
+              rangeEnd: null,
+            }),
+          });
+        }
+      }
+
+      // Reload assignments for current page
+      await loadActiveAssignments(bookId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate narration.");
+    } finally {
+      setGeneratingAllNarration(false);
+      setGenerationProgress({ current: 0, total: 0 });
     }
   };
 
@@ -1261,10 +1386,67 @@ export default function BookEditor() {
                 </div>
               </div>
 
-              {/* Narration Assignment Controls */}
+              {/* AI Generation Controls */}
               <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
                 <div className="flex items-center justify-between text-xs text-orange-700">
-                  <span className="font-semibold">Assign Narration</span>
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <Wand2 className="w-3.5 h-3.5" />
+                    Generate with AI
+                  </span>
+                </div>
+
+                {/* Generate Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleGenerateNarration()}
+                    disabled={generatingNarration || generatingAllNarration || !activePageData?.text?.trim()}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    {generatingNarration ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-3.5 h-3.5" />
+                        This Page
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGenerateAllNarration}
+                    disabled={generatingNarration || generatingAllNarration}
+                    className="flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    title="Generate narration for all pages"
+                  >
+                    {generatingAllNarration ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        {generationProgress.current}/{generationProgress.total}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        All Pages
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {!activePageData?.text?.trim() && (
+                  <p className="text-[10px] text-orange-600/70 italic">
+                    Add text content to this page to generate narration.
+                  </p>
+                )}
+              </div>
+
+              {/* Manual URL Assignment */}
+              <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
+                <div className="flex items-center justify-between text-xs text-orange-700">
+                  <span className="font-semibold">Or paste URL manually</span>
                   {activeAssignments?.narration && (
                     <span className="px-2 py-0.5 rounded-full bg-white/70 border border-orange-200 text-orange-600">
                       Assigned ({activeAssignments.narration.range})
@@ -1337,7 +1519,8 @@ export default function BookEditor() {
                       narrationRangeEnd
                     )
                   }
-                  className="w-full rounded-md bg-orange-500 text-white text-xs font-semibold py-2 hover:bg-orange-600"
+                  disabled={!narrationUrl}
+                  className="w-full rounded-md bg-orange-500 text-white text-xs font-semibold py-2 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Narration Assignment
                 </button>

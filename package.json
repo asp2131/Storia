@@ -22,6 +22,7 @@
     "react-dnd": "^16.0.1",
     "react-dom": "^19.2.3",
     "react-modal-sheet": "^5.2.1",
+    "replicate": "^1.4.0",
     "resend": "^6.8.0",
     "split-type": "^0.3.4",
     "zustand": "^5.0.10"
