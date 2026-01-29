@@ -6,7 +6,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import SplitType from "split-type";
 import HeroDissolveShader from "./HeroDissolveShader";
-import PopupBookModel from "./PopupBookModel";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -130,13 +129,6 @@ export default function MorphogenesisHero({
         className="hero relative w-full overflow-hidden"
         style={{ height: "200svh" }}
       >
-        {/* Hero Background Image */}
-        <div className="hero-visual absolute inset-0 w-full h-full flex items-center justify-center">
-                 {/* Row 5: Final Image */}
-        <div className="row flex justify-center relative z-10 pb-16">
-           <PopupBookModel scrollProgress={100} />
-        </div>
-        </div>
         {/* Hero Header - First viewport */}
         <div
           className="hero-header absolute w-full flex flex-col justify-center items-center gap-4 text-center px-4"
