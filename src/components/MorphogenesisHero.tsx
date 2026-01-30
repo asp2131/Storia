@@ -135,7 +135,7 @@ export default function MorphogenesisHero({
     // Description animation
     if (descriptionRef.current) {
       gsap.from(descriptionRef.current, {
-        opacity: 0,
+        opacity: 0.75,
         y: 30,
         duration: 1,
         delay: 0.4,
@@ -285,7 +285,7 @@ export default function MorphogenesisHero({
           <img
             src="https://res.cloudinary.com/https-pilot-tune-herokuapp-com/image/upload/v1667439399/cloud-ring-b9996e3e8fe9b463920384977b0d854c_gl7kn5.webp"
             alt=""
-            className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[140%] max-w-[1000px] h-auto object-contain opacity-90"
+            className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[140%] max-w-[2000px] h-auto object-contain opacity-90"
             style={{ 
               maskImage: "linear-gradient(to bottom, black 50%, transparent 90%)",
               WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 90%)",
@@ -322,13 +322,13 @@ export default function MorphogenesisHero({
               Storia
             </h1>
             
-            <h5
+            <h4
               ref={descriptionRef}
-              className="opacity-100 max-w-xs md:max-w-sm text-lg md:text-base font-medium text-white mt-16 leading-snug"
+              className="max-w-xs md:max-w-sm text-lg md:text-base font-medium text-white mt-16 leading-snug"
               style={{ textShadow: '0 2px 4px rgba(255, 255, 255, 0.77)' }}
             >
-                            Experience Literature through soundscapes that bring stories to life
-            </h5>
+              Experience Literature through soundscapes that bring stories to life
+            </h4>
           </div>
 
           {/* Middle section: Prince 3D Model */}
