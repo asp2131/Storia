@@ -97,7 +97,7 @@ export default function Home() {
       {authOpen && (
         <div
           id="auth-modal"
-          className="fixed inset-0 z-200 flex items-center justify-center bg-black/70 px-4"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) closeModal();
           }}
@@ -308,7 +308,7 @@ export default function Home() {
       )}
 
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 px-4 py-4 md:p-8 flex justify-between items-center z-50">
+      <header className="fixed top-0 left-0 right-0 px-4 py-4 md:p-8 flex justify-between items-center z-[60]">
         <div className="flex items-center gap-2">
           <span className="text-2xl font-serif font-black tracking-tighter text-white drop-shadow-md">
             Storia
