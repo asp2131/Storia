@@ -289,7 +289,7 @@ export default function MorphogenesisHero({
             style={{ 
               maskImage: "linear-gradient(to bottom, black 50%, transparent 90%)",
               WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 90%)",
-              filter: "brightness(1.1) contrast(1.1)"
+              filter: "hue-rotate(45deg) invert(0.75)"
             }}
           />
           {/* Gradient overlay for smooth transition */}
@@ -324,7 +324,7 @@ export default function MorphogenesisHero({
             
             <h4
               ref={descriptionRef}
-              className="max-w-xs md:max-w-sm text-lg md:text-base font-medium text-white mt-16 leading-snug"
+              className="max-w-xs md:max-w-sm text-lg md:text-xl font-medium text-white pt-4 leading-snug"
               style={{ textShadow: '0 2px 4px rgba(255, 255, 255, 0.77)' }}
             >
               Experience Literature through soundscapes that bring stories to life
