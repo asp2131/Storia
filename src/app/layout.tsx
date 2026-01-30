@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, JetBrains_Mono, Lora, Inter } from "next/font/google";
+import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -35,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} antialiased`}>
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

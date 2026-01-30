@@ -103,6 +103,97 @@ body {
   font-family: 'Playfair Display', serif;
 }
 
+/* Navigation hint animations */
+@keyframes hint-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(4px);
+  }
+}
+
+@keyframes hint-pulse-left {
+  0%, 100% {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-4px);
+  }
+}
+
+/* Edge glow navigation hint */
+@keyframes edge-glow {
+  0%, 100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-edge-glow {
+  animation: edge-glow 2s ease-in-out infinite;
+}
+
+@keyframes hint-fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-hint-pulse {
+  animation: hint-pulse 1s ease-in-out infinite;
+}
+
+.animate-hint-pulse-left {
+  animation: hint-pulse-left 1s ease-in-out infinite;
+}
+
+.animate-hint-fade-out {
+  animation: hint-fade-out 0.5s ease-out forwards;
+}
+
+/* iOS Safe Area Support */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Sound wave animation for BGM button */
+@keyframes sound-wave {
+  0%, 100% {
+    transform: scaleY(0.5);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.animate-sound-wave-1 {
+  animation: sound-wave 0.5s ease-in-out infinite;
+}
+
+.animate-sound-wave-2 {
+  animation: sound-wave 0.5s ease-in-out infinite 0.1s;
+}
+
+.animate-sound-wave-3 {
+  animation: sound-wave 0.5s ease-in-out infinite 0.2s;
+}
+
 @media (max-width: 768px) {
   body {
     cursor: auto;

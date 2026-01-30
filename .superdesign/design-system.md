@@ -11,6 +11,16 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 - **Elegant and immersive** - Premium feel, cinematic quality
 - **Warm and inviting** - Accessible, not intimidating
 
+### Product Context
+**Storia** is an immersive reading platform where every page comes alive with AI-generated soundscapes. The app transforms reading into a multi-sensory experience through sound and visuals.
+
+**Target Audience:** Readers seeking immersive experiences, parents with children, anyone who wants to experience stories through sound.
+
+### Logo & Name
+- **Name:** Storia (Italian for "story/history")
+- **Typography:** Playfair Display, serif, bold
+- **Tagline:** "Experience Literature through Sound"
+
 ---
 
 ## Color Palette
@@ -20,8 +30,12 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 |------|-----|-------|
 | Deep Black | `#0a0a0a` | Primary background |
 | Pure White | `#ffffff` | Primary text, high contrast elements |
-| Amber Glow | `#fef3c7` | Selection highlight, accent warmth |
+| Amber Glow | `#fef3c7` | Selection highlight, accent warmth, spotlight sections |
 | Amber-200 | `#fde68a` | Hover states, warm accents |
+| Slate 900 | `#0f172a` | Reader background |
+| Amber 500 | `#f59e0b` | First letter drop caps, badges |
+| Teal 400 | `#2dd4bf` | Active states, playing indicators |
+| Teal 500/20 | `rgba(20, 184, 166, 0.2)` | Active button backgrounds |
 
 ### Atmospheric Colors (Background Blobs)
 | Name | Hex | Usage |
@@ -41,6 +55,7 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 | Border Light | `#e5e7eb` | Input borders, dividers |
 | Error Red | `#dc2626` (red-600) | Error states |
 | Error BG | `#fef2f2` (red-50) | Error background |
+| White/10-50 | `rgba(255,255,255,0.1-0.5)` | Borders, subtle UI elements |
 
 ---
 
@@ -53,6 +68,13 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 --font-mono: 'JetBrains Mono', monospace;
 --font-playfair: 'Playfair Display', serif;
 ```
+
+| Font | Usage |
+|------|-------|
+| **Playfair Display** | Hero headlines, brand name |
+| **Lora** | Story text, serif content |
+| **Inter** | UI elements, labels, buttons |
+| **JetBrains Mono** | Metadata, technical labels |
 
 ### Type Scale
 
@@ -84,6 +106,11 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 - Hero: `min-h-screen`, centered flex
 - Features: `min-h-screen`, `py-32`, grid `md:grid-cols-3`
 - CTA: `min-h-screen`, centered
+
+### Spacing Guidelines
+- **Safe areas:** Always respect iOS safe-area-inset-*
+- **Touch targets:** Minimum 48x48px
+- **Padding:** 16px (p-4) mobile, 24px (p-6) desktop
 
 ---
 
@@ -128,6 +155,21 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 - Structure: Number label, serif italic title, light body text
 - Spacing: `space-y-6`
 
+### Mobile Navigation
+- **Tap zones:** Left/right 25% of screen
+- **Swipe:** 50px threshold for page turn
+- **Hints:** Animated chevrons for first-time users
+
+### Audio Controls
+- **BGM Button:** Floating action button, bottom-right on mobile
+- **Sound wave animation:** 3 bars with staggered animation
+- **Mode selector:** Popover menu with radio-style options
+
+### Text Display
+- **Bottom sheet:** Draggable, snaps to 0%, 50%, 100%
+- **First letter:** Drop cap style, amber color
+- **Font size:** prose-lg (18px base)
+
 ---
 
 ## Animation & Interaction
@@ -147,6 +189,15 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 - Circle with sound wave bars
 - Mix blend mode: `mix-blend-difference`
 - Scale on hover: `1.5x`
+
+### Animation Guidelines
+
+| Animation | Duration | Easing |
+|-----------|----------|--------|
+| UI fade | 300ms | ease-out |
+| Cross-fade audio | 1000-1500ms | linear |
+| Hint pulse | 1000ms | ease-in-out, infinite |
+| Sound wave | 500ms | ease-in-out, infinite |
 
 ---
 
@@ -177,6 +228,7 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 
 ### 3D Models
 - `public/little_prince_pop_up_story_book.glb` - Interactive pop-up book model
+- `public/landing/prince.glb` - Prince character model
 
 ---
 
@@ -190,3 +242,13 @@ Revolutionize digital reading through multi-sensory literary experiences. Combat
 - Adjust hero text size
 - Stack navigation
 - Reduced animation complexity
+
+---
+
+## Design Principles
+
+1. **Dark-first:** Rich dark backgrounds for immersive reading
+2. **Cinematic:** Full-bleed imagery, dramatic gradients
+3. **Minimal Chrome:** UI fades away during reading
+4. **Subtle Animation:** Gentle transitions, nothing jarring
+5. **Accessible:** Large tap targets (48px+), clear contrast

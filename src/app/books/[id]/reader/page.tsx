@@ -12,61 +12,27 @@ import {
   Bookmark,
   Mic,
   Volume2,
-  SkipBack,
-  SkipForward,
   Play,
   Pause,
-  ChevronDown,
   Info,
   Music,
   Loader2,
-  DoorOpen,
+  X,
+  Volume1,
 } from "lucide-react";
 import FeedbackModal from "@/components/FeedbackModal";
-
-type AudioAssignment = {
-  id: string;
-  audioUrl: string;
-  audioType: "narration" | "soundscape";
-  scope: string;
-  rangeStart: number | null;
-  rangeEnd: number | null;
-  volume: number | null;
-};
-
-type PageData = {
-  id: string;
-  pageNumber: number;
-  textContent: string | null;
-  imageUrl: string | null;
-  narrationUrl: string | null;
-  assignments: AudioAssignment[];
-};
-
-type BookData = {
-  id: string;
-  title: string;
-  author: string | null;
-  coverUrl: string | null;
-  description: string | null;
-};
-
-type ReaderData = {
-  book: BookData;
-  pages: PageData[];
-};
+import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences";
+import { useAudioCrossFade } from "@/hooks/useAudioCrossFade";
+import { useReaderData, WordTimestamp } from "@/hooks/useBookData";
 
 export default function BookReader() {
-  console.log("🔵 BookReader component rendered");
-
   const params = useParams();
   const router = useRouter();
   const bookId = params.id as string;
 
-  // Data state
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [readerData, setReaderData] = useState<ReaderData | null>(null);
+  // Fetch data with React Query
+  const { data: readerData, isLoading: loading, error: queryError } = useReaderData(bookId);
+  const error = queryError?.message || null;
 
   // UI state
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,11 +50,32 @@ export default function BookReader() {
   const [narrationProgress, setNarrationProgress] = useState(0);
   const [narrationDuration, setNarrationDuration] = useState(0);
 
+  // Word highlighting state
+  const [wordTimestamps, setWordTimestamps] = useState<WordTimestamp[]>([]);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const [timestampsLoaded, setTimestampsLoaded] = useState(false);
+
   // Feedback state
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackEligible, setFeedbackEligible] = useState(false);
   const [pagesViewed, setPagesViewed] = useState(new Set<number>());
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+
+  // Navigation hint state
+  const [showNavigationHint, setShowNavigationHint] = useState(false);
+  const [hintDismissing, setHintDismissing] = useState(false);
+
+  // Settings panel state
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [narrationAutoPlay, setNarrationAutoPlay] = useState(false);
+
+  // Soundscape mode state
+  const [showSoundscapeMenu, setShowSoundscapeMenu] = useState(false);
+  const [introFadedPages, setIntroFadedPages] = useState<Set<number>>(new Set());
+  const introFadeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { preferences, isLoaded: prefsLoaded, setSoundscapeMode } = useLocalPreferences();
+  const { initAudioContext, connectAudioElement, fadeIn, fadeOut, setVolume } = useAudioCrossFade();
+  const audioConnectedRef = useRef(false);
 
   // Refs
   const narrationRef = useRef<HTMLAudioElement>(null);
@@ -103,14 +90,79 @@ export default function BookReader() {
   const totalPages = readerData?.pages.length ?? 0;
 
   // Get audio for current page
-  const narrationAssignment = pageData?.assignments.find(
+  const narrationAssignment = pageData?.assignments?.find(
     (a) => a.audioType === "narration"
   );
-  const soundscapeAssignment = pageData?.assignments.find(
+  const soundscapeAssignment = pageData?.assignments?.find(
     (a) => a.audioType === "soundscape"
   );
   const narrationUrl = narrationAssignment?.audioUrl || pageData?.narrationUrl;
   const soundscapeUrl = soundscapeAssignment?.audioUrl;
+
+  // Load word timestamps from page data when page changes
+  useEffect(() => {
+    if (!narrationUrl || !pageData?.narrationTimestamps) {
+      setWordTimestamps([]);
+      setTimestampsLoaded(false);
+      setActiveWordIndex(-1);
+      return;
+    }
+
+    // Use timestamps from database (loaded via API)
+    const timestamps = pageData.narrationTimestamps as WordTimestamp[];
+    if (Array.isArray(timestamps) && timestamps.length > 0) {
+      setWordTimestamps(timestamps);
+      setTimestampsLoaded(true);
+      console.log(`[Reader] Loaded ${timestamps.length} word timestamps from database`);
+    } else {
+      setWordTimestamps([]);
+      setTimestampsLoaded(false);
+    }
+  }, [narrationUrl, pageData?.narrationTimestamps]);
+
+  // Calculate active word based on narration progress and timestamps
+  useEffect(() => {
+    if (!isNarrationPlaying || wordTimestamps.length === 0) {
+      if (!isNarrationPlaying) setActiveWordIndex(-1);
+      return;
+    }
+
+    const currentTime = narrationProgress;
+    let foundIndex = -1;
+
+    // Linear search - more reliable than binary search when timestamps have gaps
+    // Find the word whose time range contains currentTime, or the last word that started
+    for (let i = 0; i < wordTimestamps.length; i++) {
+      const wordData = wordTimestamps[i];
+      const nextWord = wordTimestamps[i + 1];
+
+      // Check if current time is within this word's range
+      if (currentTime >= wordData.start && currentTime <= wordData.end) {
+        foundIndex = i;
+        break;
+      }
+
+      // Check if current time is between this word's end and next word's start (gap)
+      // In this case, keep highlighting the current word until the next one starts
+      if (nextWord && currentTime > wordData.end && currentTime < nextWord.start) {
+        foundIndex = i;
+        break;
+      }
+
+      // If this is the last word and we've passed its start, highlight it
+      if (!nextWord && currentTime >= wordData.start) {
+        foundIndex = i;
+        break;
+      }
+
+      // If current time is past this word but before we've checked the next, continue
+      if (currentTime > wordData.end) {
+        foundIndex = i; // Tentatively set, will be updated if a better match is found
+      }
+    }
+
+    setActiveWordIndex(foundIndex);
+  }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
 
   // Detect if we're on mobile
   useEffect(() => {
@@ -126,27 +178,28 @@ export default function BookReader() {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Load book data
+  // Check if user has seen navigation hints
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const response = await fetch(`/api/books/${bookId}/reader`);
-        if (!response.ok) {
-          throw new Error("Failed to load book");
-        }
-        const data = await response.json();
-        setReaderData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load book");
-      } finally {
-        setLoading(false);
+    if (isMobile && !loading) {
+      const hasSeenHint = localStorage.getItem('storia-nav-hint-seen');
+      if (!hasSeenHint) {
+        // Show hint after a brief delay
+        const timer = setTimeout(() => {
+          setShowNavigationHint(true);
+          // Auto-dismiss after 3 seconds
+          setTimeout(() => {
+            setHintDismissing(true);
+            setTimeout(() => {
+              setShowNavigationHint(false);
+              setHintDismissing(false);
+              localStorage.setItem('storia-nav-hint-seen', 'true');
+            }, 500);
+          }, 3000);
+        }, 1000);
+        return () => clearTimeout(timer);
       }
-    };
-
-    if (bookId) {
-      loadData();
     }
-  }, [bookId]);
+  }, [isMobile, loading]);
 
   // Check feedback eligibility on mount
   useEffect(() => {
@@ -346,12 +399,45 @@ export default function BookReader() {
   const toggleSoundscape = () => {
     if (!soundscapeRef.current || !soundscapeUrl) return;
 
+    // Initialize Web Audio API on first interaction (iOS requirement)
+    // Only attempt if not already connected
+    if (!audioConnectedRef.current) {
+      initAudioContext();
+      const gainNode = connectAudioElement(soundscapeRef.current);
+      if (gainNode) {
+        audioConnectedRef.current = true;
+      }
+      // If connection failed (CORS), we'll use native volume control as fallback
+    }
+
     if (isSoundscapePlaying) {
-      soundscapeRef.current.pause();
+      if (audioConnectedRef.current) {
+        // Fade out instead of abrupt pause
+        fadeOut(0.5);
+        setTimeout(() => {
+          soundscapeRef.current?.pause();
+        }, 500);
+      } else {
+        // Fallback: direct pause
+        soundscapeRef.current.pause();
+      }
     } else {
       soundscapeRef.current.play();
+      if (audioConnectedRef.current) {
+        fadeIn(0.5, soundscapeVolume);
+      }
     }
     setIsSoundscapePlaying(!isSoundscapePlaying);
+  };
+
+  // Handle soundscape mode toggle
+  const handleSoundscapeModeChange = (mode: SoundscapeMode) => {
+    setSoundscapeMode(mode);
+    setShowSoundscapeMenu(false);
+    // Reset intro faded pages when switching modes
+    if (mode === 'continuous') {
+      setIntroFadedPages(new Set());
+    }
   };
 
   // Update audio sources when page changes
@@ -364,14 +450,107 @@ export default function BookReader() {
     }
   }, [narrationUrl, isNarrationPlaying]);
 
+  // Handle soundscape source changes with cross-fade
   useEffect(() => {
     if (soundscapeRef.current && soundscapeUrl) {
-      soundscapeRef.current.src = soundscapeUrl;
-      if (isSoundscapePlaying) {
-        soundscapeRef.current.play();
+      const prevSrc = soundscapeRef.current.src;
+      const isNewSource = prevSrc && !prevSrc.includes(soundscapeUrl);
+
+      if (isNewSource && isSoundscapePlaying) {
+        if (audioConnectedRef.current) {
+          // Web Audio API available - smooth cross-fade
+          fadeOut(1.0);
+          setTimeout(() => {
+            if (soundscapeRef.current) {
+              soundscapeRef.current.src = soundscapeUrl;
+              soundscapeRef.current.play();
+              fadeIn(1.0, soundscapeVolume);
+            }
+          }, 1000);
+        } else {
+          // Fallback: quick volume dip for transition
+          const audio = soundscapeRef.current;
+          const startVolume = audio.volume;
+          audio.volume = 0;
+          audio.src = soundscapeUrl;
+          audio.play();
+          // Fade back in
+          let step = 0;
+          const steps = 10;
+          const fadeInterval = setInterval(() => {
+            step++;
+            audio.volume = startVolume * (step / steps);
+            if (step >= steps) {
+              clearInterval(fadeInterval);
+            }
+          }, 100);
+        }
+      } else {
+        soundscapeRef.current.src = soundscapeUrl;
+        if (isSoundscapePlaying) {
+          soundscapeRef.current.play();
+        }
       }
     }
-  }, [soundscapeUrl, isSoundscapePlaying]);
+  }, [soundscapeUrl]);
+
+  // Intro-only mode: fade out after 10 seconds
+  useEffect(() => {
+    // Clear any existing timer
+    if (introFadeTimerRef.current) {
+      clearTimeout(introFadeTimerRef.current);
+      introFadeTimerRef.current = null;
+    }
+
+    // Only apply intro-only logic when playing and in intro-only mode
+    if (
+      preferences.soundscapeMode === 'intro-only' &&
+      isSoundscapePlaying &&
+      soundscapeUrl &&
+      !introFadedPages.has(currentPage)
+    ) {
+      introFadeTimerRef.current = setTimeout(() => {
+        // Mark this page as having played its intro
+        setIntroFadedPages((prev) => new Set(prev).add(currentPage));
+
+        if (audioConnectedRef.current) {
+          // Web Audio API available - smooth fade
+          fadeOut(3.0);
+          setTimeout(() => {
+            if (soundscapeRef.current) {
+              soundscapeRef.current.pause();
+            }
+            setIsSoundscapePlaying(false);
+          }, 3000);
+        } else {
+          // Fallback: manual volume fade using native API
+          const audio = soundscapeRef.current;
+          if (audio) {
+            const startVolume = audio.volume;
+            const steps = 30;
+            const stepDuration = 3000 / steps;
+            let step = 0;
+            const fadeInterval = setInterval(() => {
+              step++;
+              audio.volume = Math.max(0, startVolume * (1 - step / steps));
+              if (step >= steps) {
+                clearInterval(fadeInterval);
+                audio.pause();
+                audio.volume = startVolume; // Reset volume for next play
+                setIsSoundscapePlaying(false);
+              }
+            }, stepDuration);
+          }
+        }
+      }, 10000); // Play for 10 seconds before fading
+    }
+
+    return () => {
+      if (introFadeTimerRef.current) {
+        clearTimeout(introFadeTimerRef.current);
+      }
+    };
+  }, [currentPage, preferences.soundscapeMode, isSoundscapePlaying, soundscapeUrl, introFadedPages, fadeOut]);
 
   // Volume controls
   useEffect(() => {
@@ -386,33 +565,6 @@ export default function BookReader() {
     }
   }, [soundscapeVolume]);
 
-  // Narration progress tracking
-  useEffect(() => {
-    const audio = narrationRef.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => {
-      setNarrationProgress(audio.currentTime);
-    };
-
-    const handleLoadedMetadata = () => {
-      setNarrationDuration(audio.duration);
-    };
-
-    const handleEnded = () => {
-      setIsNarrationPlaying(false);
-    };
-
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, []);
 
   // Format time
   const formatTime = (seconds: number) => {
@@ -456,8 +608,17 @@ export default function BookReader() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 overflow-hidden relative selection:bg-teal-500/30 selection:text-teal-200">
       {/* Hidden Audio Elements */}
-      <audio ref={narrationRef} />
-      <audio ref={soundscapeRef} loop />
+      <audio
+        ref={narrationRef}
+        crossOrigin="anonymous"
+        onTimeUpdate={(e) => setNarrationProgress(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => setNarrationDuration(e.currentTarget.duration)}
+        onEnded={() => {
+          setIsNarrationPlaying(false);
+          setActiveWordIndex(-1);
+        }}
+      />
+      <audio ref={soundscapeRef} loop crossOrigin="anonymous" />
 
       {/* BACKGROUND / MAIN CONTENT LAYER */}
       <div
@@ -492,8 +653,31 @@ export default function BookReader() {
               {/* Text Content */}
               <div className="prose prose-invert prose-xl mx-auto font-serif leading-relaxed text-slate-300/90 pb-16">
                 {pageData?.textContent ? (
-                  <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left whitespace-pre-wrap">
-                    {pageData.textContent}
+                  <p className="whitespace-pre-wrap">
+                    {timestampsLoaded && wordTimestamps.length > 0 ? (
+                      // Render with word-level highlighting
+                      wordTimestamps.map((wordData, index) => (
+                        <span
+                          key={index}
+                          className={`transition-all duration-200 ${
+                            index === 0
+                              ? "text-5xl font-bold text-amber-500 mr-3 float-left"
+                              : ""
+                          } ${
+                            index === activeWordIndex && isNarrationPlaying
+                              ? "text-amber-300 bg-amber-500/30 rounded px-1 -mx-0.5 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                              : ""
+                          }`}
+                        >
+                          {wordData.word}{" "}
+                        </span>
+                      ))
+                    ) : (
+                      // Fallback: plain text
+                      <span className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left">
+                        {pageData.textContent}
+                      </span>
+                    )}
                   </p>
                 ) : (
                   <p className="text-slate-500 italic">No text content</p>
@@ -542,6 +726,28 @@ export default function BookReader() {
         </div>
       )}
 
+      {/* Navigation Hint Overlay - Always show on page 1 on mobile */}
+      {isMobile && currentPage === 1 && (
+        <div className="absolute inset-0 z-30 pointer-events-none">
+          {/* Right edge glow */}
+          <div className="absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-teal-400/40 to-transparent animate-edge-glow" />
+
+          {/* Right chevron hint */}
+          <div className="absolute right-4 top-1/3 flex flex-col items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center animate-hint-pulse">
+              <ChevronRight className="w-6 h-6 text-white/80" />
+            </div>
+          </div>
+
+          {/* Center subtle instruction */}
+          <div className="absolute inset-x-0 bottom-[55%] flex flex-col items-center">
+            <span className="text-white/60 text-[10px] tracking-[0.2em] uppercase font-light bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
+              Swipe to turn page
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Desktop Navigation Arrows (always visible) */}
       {currentPage > 1 && (
         <button
@@ -562,34 +768,59 @@ export default function BookReader() {
         </button>
       )}
 
-      {/* Persistent BGM/Soundscape Toggle (always visible) */}
-      {soundscapeUrl && (
-        <button
-          onClick={toggleSoundscape}
-          className={`absolute top-4 left-4 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full backdrop-blur-md shadow-lg border transition-all ${
-            isSoundscapePlaying
-              ? "bg-teal-500/20 border-teal-500/50 text-teal-400"
-              : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
-          }`}
-          aria-label={isSoundscapePlaying ? "Mute background music" : "Play background music"}
-        >
-          <Music className="w-4 h-4" />
-          <span className="text-xs font-medium">
-            {isSoundscapePlaying ? "BGM On" : "BGM Off"}
-          </span>
-        </button>
+      {/* Desktop Audio Controls (desktop only) */}
+      {!isMobile && (soundscapeUrl || narrationUrl) && (
+        <div className="absolute z-40 top-4 left-4 flex gap-2">
+          {/* Soundscape Toggle */}
+          {soundscapeUrl && (
+            <button
+              onClick={toggleSoundscape}
+              className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
+                isSoundscapePlaying
+                  ? "bg-teal-500/20 border-teal-500/50 text-teal-400"
+                  : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+              }`}
+              aria-label={isSoundscapePlaying ? "Mute background music" : "Play background music"}
+            >
+              {isSoundscapePlaying ? (
+                <div className="flex items-end gap-0.5 h-4">
+                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-1" style={{ height: '60%' }} />
+                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-2" style={{ height: '100%' }} />
+                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-3" style={{ height: '80%' }} />
+                </div>
+              ) : (
+                <Music className="w-5 h-5" />
+              )}
+              <span className="text-xs font-medium">
+                {isSoundscapePlaying ? "BGM On" : "BGM Off"}
+              </span>
+            </button>
+          )}
+
+          {/* Narration Toggle */}
+          {narrationUrl && (
+            <button
+              onClick={toggleNarration}
+              className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
+                isNarrationPlaying
+                  ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
+                  : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
+              }`}
+              aria-label={isNarrationPlaying ? "Pause narration" : "Play narration"}
+            >
+              {isNarrationPlaying ? (
+                <Pause className="w-4 h-4" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
+              <span className="text-xs font-medium">
+                {isNarrationPlaying ? "Narration" : "Narrate"}
+              </span>
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Library Back Button (when UI is visible) */}
-      {uiVisible && (
-        <button
-          onClick={() => handleExitAttempt(() => router.back())}
-          className="absolute top-16 right-4 z-40 flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md shadow-lg border bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition-all pointer-events-auto"
-          aria-label="Exit to library"
-        >
-          <DoorOpen className="w-5 h-5" />
-        </button>
-      )}
 
       {/* UI CHROME LAYER */}
       <div
@@ -619,7 +850,10 @@ export default function BookReader() {
           </div>
 
           <div className="flex gap-3">
-            <button className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors">
+            <button
+              onClick={() => setShowSettingsPanel(true)}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors"
+            >
               <Settings className="w-5 h-5" />
             </button>
             <button className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors">
@@ -698,18 +932,120 @@ export default function BookReader() {
               borderTopRightRadius: '1.5rem'
             }}
           >
-            <Sheet.Header unstyled className="flex items-center justify-center py-3">
-              <div className="flex gap-1">
-                <div className="w-4 h-1 bg-slate-500 rounded-full" />
-                <div className="w-4 h-1 bg-slate-500 rounded-full" />
+            <Sheet.Header unstyled className="flex items-center justify-between px-6 pt-5 pb-2">
+              {/* Minimal Drag Handle */}
+              <div className="flex gap-1.5">
+                <div className="w-5 h-1.5 bg-slate-700 rounded-full opacity-60" />
+                <div className="w-5 h-1.5 bg-slate-700 rounded-full opacity-60" />
+              </div>
+
+              {/* Audio Controls Island */}
+              <div className="flex items-center gap-2">
+                {/* Narration Toggle (Compact Pill) */}
+                {narrationUrl && (
+                  <button
+                    onClick={toggleNarration}
+                    className={`flex items-center gap-2 py-1.5 px-3 backdrop-blur-2xl border rounded-full shadow-lg transition-all ${
+                      isNarrationPlaying
+                        ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
+                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                    }`}
+                  >
+                    {isNarrationPlaying ? (
+                      <Pause className="w-3.5 h-3.5" />
+                    ) : (
+                      <Mic className="w-3.5 h-3.5" />
+                    )}
+                    <span className="text-[10px] font-semibold">
+                      {isNarrationPlaying ? "Reading" : "Read"}
+                    </span>
+                  </button>
+                )}
+
+                {/* Soundscape Toggle (Glass Morphism Pill) */}
+                {soundscapeUrl && (
+                  <button
+                    onClick={toggleSoundscape}
+                    className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
+                  >
+                    {/* Play/Pause Indicator */}
+                    <div className="flex items-center gap-2">
+                      {isSoundscapePlaying ? (
+                        <Pause className="w-4 h-4 text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]" />
+                      ) : (
+                        <Play className="w-4 h-4 text-slate-400" />
+                      )}
+                      {isSoundscapePlaying && (
+                        <div className="flex items-end gap-0.5 h-3">
+                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-1" style={{ height: '6px' }} />
+                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-2" style={{ height: '12px' }} />
+                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-3" style={{ height: '8px' }} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mode Toggle Pill */}
+                    <div className="flex items-center bg-black/40 rounded-full p-0.5 gap-0.5 border border-white/5">
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSoundscapeModeChange('intro-only');
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                          preferences.soundscapeMode === 'intro-only'
+                            ? 'bg-white/10 text-white shadow-sm'
+                            : 'text-white/40 hover:text-white/60'
+                        }`}
+                      >
+                        Intro
+                      </span>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSoundscapeModeChange('continuous');
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                          preferences.soundscapeMode === 'continuous'
+                            ? 'bg-white/10 text-white shadow-sm'
+                            : 'text-white/40 hover:text-white/60'
+                        }`}
+                      >
+                        Loop
+                      </span>
+                    </div>
+                  </button>
+                )}
               </div>
             </Sheet.Header>
             <Sheet.Content className="p-6">
               {/* Text Content */}
               <div className="prose prose-invert prose-lg mx-auto font-serif leading-relaxed text-slate-300/90 max-w-none">
                 {pageData?.textContent ? (
-                  <p className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left whitespace-pre-wrap">
-                    {pageData.textContent}
+                  <p className="whitespace-pre-wrap">
+                    {timestampsLoaded && wordTimestamps.length > 0 ? (
+                      // Render with word-level highlighting
+                      wordTimestamps.map((wordData, index) => (
+                        <span
+                          key={index}
+                          className={`transition-all duration-200 ${
+                            index === 0
+                              ? "text-5xl font-bold text-amber-500 mr-3 float-left"
+                              : ""
+                          } ${
+                            index === activeWordIndex && isNarrationPlaying
+                              ? "text-amber-300 bg-amber-500/30 rounded px-1 -mx-0.5 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                              : ""
+                          }`}
+                        >
+                          {wordData.word}{" "}
+                        </span>
+                      ))
+                    ) : (
+                      // Fallback: plain text
+                      <span className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left">
+                        {pageData.textContent}
+                      </span>
+                    )}
                   </p>
                 ) : (
                   <p className="text-slate-500 italic">No text content</p>
@@ -719,6 +1055,204 @@ export default function BookReader() {
           </Sheet.Container>
           <Sheet.Backdrop />
         </Sheet>
+      )}
+
+      {/* Settings Panel */}
+      {showSettingsPanel && (
+        <div className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowSettingsPanel(false)}
+          />
+
+          {/* Panel */}
+          <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-slate-900/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <h2 className="text-lg font-semibold text-white">Settings</h2>
+              <button
+                onClick={() => setShowSettingsPanel(false)}
+                className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {/* Narration Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <Mic className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-white">Narration</h3>
+                    <p className="text-xs text-slate-400">Voice reading of the story</p>
+                  </div>
+                </div>
+
+                {narrationUrl ? (
+                  <div className="space-y-3 pl-[52px]">
+                    {/* Play/Pause Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Playback</span>
+                      <button
+                        onClick={toggleNarration}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                          isNarrationPlaying
+                            ? "bg-orange-500 text-white"
+                            : "bg-white/10 text-slate-300 hover:bg-white/20"
+                        }`}
+                      >
+                        {isNarrationPlaying ? (
+                          <>
+                            <Pause className="w-4 h-4" />
+                            Playing
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4" />
+                            Play
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Volume Slider */}
+                    <div className="flex items-center gap-3">
+                      <Volume1 className="w-4 h-4 text-slate-400" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(narrationVolume * 100)}
+                        onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
+                        className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-orange-500 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500 [&::-webkit-slider-thumb]:appearance-none"
+                      />
+                      <Volume2 className="w-4 h-4 text-slate-400" />
+                    </div>
+
+                    {/* Auto-play Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Auto-play on page turn</span>
+                      <button
+                        onClick={() => setNarrationAutoPlay(!narrationAutoPlay)}
+                        className={`relative w-11 h-6 rounded-full transition-colors ${
+                          narrationAutoPlay ? "bg-orange-500" : "bg-white/20"
+                        }`}
+                      >
+                        <div
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                            narrationAutoPlay ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pl-[52px]">
+                    <p className="text-sm text-slate-500 italic">
+                      No narration available for this page
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-white/10" />
+
+              {/* Soundscape Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center">
+                    <Music className="w-5 h-5 text-teal-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-white">Soundscape</h3>
+                    <p className="text-xs text-slate-400">Ambient background audio</p>
+                  </div>
+                </div>
+
+                {soundscapeUrl ? (
+                  <div className="space-y-3 pl-[52px]">
+                    {/* Play/Pause Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Playback</span>
+                      <button
+                        onClick={toggleSoundscape}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                          isSoundscapePlaying
+                            ? "bg-teal-500 text-white"
+                            : "bg-white/10 text-slate-300 hover:bg-white/20"
+                        }`}
+                      >
+                        {isSoundscapePlaying ? (
+                          <>
+                            <Pause className="w-4 h-4" />
+                            Playing
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4" />
+                            Play
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Volume Slider */}
+                    <div className="flex items-center gap-3">
+                      <Volume1 className="w-4 h-4 text-slate-400" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={Math.round(soundscapeVolume * 100)}
+                        onChange={(e) => setSoundscapeVolume(Number(e.target.value) / 100)}
+                        className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-teal-500 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-teal-500 [&::-webkit-slider-thumb]:appearance-none"
+                      />
+                      <Volume2 className="w-4 h-4 text-slate-400" />
+                    </div>
+
+                    {/* Mode Toggle */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-300">Play mode</span>
+                      <div className="flex items-center bg-white/10 rounded-full p-1 gap-1">
+                        <button
+                          onClick={() => handleSoundscapeModeChange('intro-only')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            preferences.soundscapeMode === 'intro-only'
+                              ? 'bg-teal-500 text-white'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Intro
+                        </button>
+                        <button
+                          onClick={() => handleSoundscapeModeChange('continuous')}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            preferences.soundscapeMode === 'continuous'
+                              ? 'bg-teal-500 text-white'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Loop
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pl-[52px]">
+                    <p className="text-sm text-slate-500 italic">
+                      No soundscape available for this page
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Feedback Modal */}
