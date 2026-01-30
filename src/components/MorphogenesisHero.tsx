@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
@@ -282,9 +283,12 @@ export default function MorphogenesisHero({
       >
         {/* Background Image - positioned at top with gradient fade */}
         <div className="absolute inset-0 w-full h-full">
-          <img
+          <Image
             src="https://res.cloudinary.com/https-pilot-tune-herokuapp-com/image/upload/v1667439399/cloud-ring-b9996e3e8fe9b463920384977b0d854c_gl7kn5.webp"
-            alt=""
+            alt="Cloud ring background"
+            width={2000}
+            height={1000}
+            priority
             className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[140%] max-w-[2000px] h-auto object-contain opacity-90"
             style={{ 
               maskImage: "linear-gradient(to bottom, black 50%, transparent 90%)",
@@ -294,7 +298,7 @@ export default function MorphogenesisHero({
           />
           {/* Gradient overlay for smooth transition */}
           <div 
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-[#6495ED]/30 to-[#6495ED]"
+            className="absolute inset-0 bg-linear-to-b from-transparent via-[#6495ED]/30 to-[#6495ED]"
             style={{ top: "20%" }}
           />
         </div>
@@ -388,7 +392,7 @@ export default function MorphogenesisHero({
                   <path d="M5 12h14"/>
                   <path d="m12 5 7 7-7 7"/>
                 </svg>
-                <div className="absolute inset-0 bg-gradient-to-r from-white via-[#e8f0fe] to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-linear-to-r from-white via-[#e8f0fe] to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </button>
             )}
           </div>
@@ -398,7 +402,7 @@ export default function MorphogenesisHero({
             ref={scrollIndicatorRef}
             className="flex flex-col items-center gap-3 pb-8 md:pb-12"
           >
-            <div className="scroll-line w-[1px] h-10 bg-gradient-to-b from-white/60 to-transparent" />
+            <div className="scroll-line w-0.5 h-10 bg-linear-to-b from-white/60 to-transparent" />
             <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-white/60">
               Scroll to discover
             </span>
@@ -410,7 +414,7 @@ export default function MorphogenesisHero({
           progress={scrollProgress}
           color="#fef3c7"
           spread={0.5}
-          className="z-[5] pointer-events-none"
+          className="z-5 pointer-events-none"
         />
 
         {/* Hero Content - Revealed after dissolve */}
@@ -468,9 +472,11 @@ export default function MorphogenesisHero({
             </div>
           </div>
           <div className="col flex-1 flex items-center justify-center">
-            <img
+            <Image
               src="/landing/MagicalCreature.svg"
               alt="Magical creature emerging"
+              width={500}
+              height={500}
               className="w-full md:w-3/4 h-auto"
             />
           </div>
@@ -491,9 +497,11 @@ export default function MorphogenesisHero({
             </div>
           </div>
           <div className="col flex-1 flex items-center justify-center">
-            <img
+            <Image
               src="/landing/Floating:Emerging.svg"
               alt="Elements floating from book"
+              width={500}
+              height={500}
               className="w-full md:w-3/4 h-auto"
             />
           </div>
@@ -514,9 +522,11 @@ export default function MorphogenesisHero({
             </div>
           </div>
           <div className="col flex-1 flex items-center justify-center">
-            <img
+            <Image
               src="/landing/TheReader.svg"
               alt="Reader immersed in story"
+              width={500}
+              height={500}
               className="w-full md:w-3/4 h-auto"
             />
           </div>

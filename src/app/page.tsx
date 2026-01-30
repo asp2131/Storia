@@ -97,7 +97,7 @@ export default function Home() {
       {authOpen && (
         <div
           id="auth-modal"
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-4"
+          className="fixed inset-0 z-200 flex items-center justify-center bg-black/70 px-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) closeModal();
           }}
