@@ -277,7 +277,7 @@ export default function MorphogenesisHero({
       {/* Hero Section */}
       <section
         ref={heroRef}
-        className="hero relative w-full overflow-hidden bg-[#6495ED]"
+        className="hero relative w-full overflow-hidden bg-unset"
         style={{ height: "200svh" }}
       >
         {/* Background Image - positioned at top with gradient fade */}
@@ -310,18 +310,7 @@ export default function MorphogenesisHero({
           }}
         >
           {/* Top section: Subtitle + Title */}
-          <div className="flex flex-col items-center">
-            <span
-              ref={subtitleRef}
-              className="font-mono text-[11px] md:text-sm tracking-[0.3em] uppercase text-white font-bold"
-              style={{ 
-                textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.2)',
-                WebkitTextStroke: '0.5px rgba(0,0,0,0.1)'
-              }}
-            >
-              Experience Literature through Sound
-            </span>
-            
+          <div className="flex flex-col items-center">          
             <h1
               ref={titleRef}
               className="text-[14vw] sm:text-[11vw] md:text-[9vw] lg:text-[7vw] font-serif font-black leading-[0.85] tracking-tighter text-white cursor-default select-none -mt-1"
@@ -333,13 +322,13 @@ export default function MorphogenesisHero({
               Storia
             </h1>
             
-            <p
+            <h5
               ref={descriptionRef}
-              className="max-w-xs md:max-w-sm text-sm md:text-base font-medium text-white mt-0 leading-snug"
-              style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+              className="opacity-100 max-w-xs md:max-w-sm text-lg md:text-base font-medium text-white mt-16 leading-snug"
+              style={{ textShadow: '0 2px 4px rgba(255, 255, 255, 0.77)' }}
             >
-              AI soundscapes that bring stories to life
-            </p>
+                            Experience Literature through soundscapes that bring stories to life
+            </h5>
           </div>
 
           {/* Middle section: Prince 3D Model */}

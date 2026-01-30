@@ -318,13 +318,26 @@ export default function Home() {
           {currentUser ? (
             <a
               href="/library"
-              className="text-white/80 hover:text-white transition-colors cursor-pointer drop-shadow-md"
+              className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white/90 hover:text-white transition-all duration-300 cursor-pointer text-xs font-semibold tracking-wider inline-flex items-center gap-2"
             >
-              Go to Library
+              <span>Go to Library</span>
+              <svg 
+                className="w-3.5 h-3.5" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14"/>
+                <path d="m12 5 7 7-7 7"/>
+              </svg>
             </a>
           ) : (
             <button
-              className="text-white/80 hover:text-white transition-colors cursor-pointer drop-shadow-md"
+              className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white/90 hover:text-white transition-all duration-300 cursor-pointer text-xs font-semibold tracking-wider"
               onClick={() => setAuthOpen(true)}
             >
               Login / Register
