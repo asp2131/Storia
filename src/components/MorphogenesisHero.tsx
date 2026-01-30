@@ -277,7 +277,7 @@ export default function MorphogenesisHero({
       {/* Hero Section */}
       <section
         ref={heroRef}
-        className="hero relative w-full overflow-hidden bg-[#050505]"
+        className="hero relative w-full overflow-hidden bg-[#6495ED]"
         style={{ height: "200svh" }}
       >
         {/* Background Image - positioned at top with gradient fade */}
@@ -301,10 +301,10 @@ export default function MorphogenesisHero({
         {/* Hero Header - First viewport */}
         <div
           ref={magneticElementsRef}
-          className="hero-header absolute w-full flex flex-col items-center text-center px-4"
+          className="hero-header absolute w-full flex flex-col items-center text-center px-4 pointer-events-auto"
           style={{ 
             height: "100svh", 
-            zIndex: 10,
+            zIndex: 50,
             paddingTop: "12vh"
           }}
         >
@@ -312,14 +312,14 @@ export default function MorphogenesisHero({
           <div className="flex flex-col items-center gap-3">
             <span
               ref={subtitleRef}
-              className="font-mono text-xs tracking-[0.5em] uppercase text-amber-100/50"
+              className="font-mono text-xs tracking-[0.5em] uppercase text-black/90 drop-shadow-md"
             >
               Experience Literature through Sound
             </span>
             
             <h1
               ref={titleRef}
-              className="text-[18vw] sm:text-[15vw] md:text-[12vw] lg:text-[10vw] font-serif font-black leading-[0.85] tracking-tighter text-amber-50 cursor-default select-none"
+              className="text-[18vw] sm:text-[15vw] md:text-[12vw] lg:text-[10vw] font-serif font-black leading-[0.85] tracking-tighter text-white cursor-default select-none drop-shadow-lg"
               style={{ perspective: "1000px" }}
             >
               Storia
@@ -327,7 +327,7 @@ export default function MorphogenesisHero({
             
             <p
               ref={descriptionRef}
-              className="max-w-md text-base md:text-lg font-light text-amber-100/60 mt-2"
+              className="max-w-md text-base md:text-lg font-light text-white/80 mt-2 drop-shadow-md"
             >
               Where every page comes alive with AI-generated soundscapes
             </p>
@@ -338,13 +338,46 @@ export default function MorphogenesisHero({
             <PrinceModel />
           </div>
 
+          {/* CTA Button */}
+          <div className="mt-6 md:mt-8 mb-4" style={{ position: 'relative', zIndex: 100 }}>
+            {isLoggedIn ? (
+              <a
+                href="/library"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-white/90 border border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 shadow-lg"
+                style={{ position: 'relative', zIndex: 100 }}
+              >
+                <span>Start Reading</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14"/>
+                  <path d="m12 5 7 7-7 7"/>
+                </svg>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  console.log("Start Reading clicked, isLoggedIn:", isLoggedIn);
+                  onAuthClick();
+                }}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-white/90 border border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 shadow-lg"
+                style={{ position: 'relative', zIndex: 100 }}
+              >
+                <span>Start Reading</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14"/>
+                  <path d="m12 5 7 7-7 7"/>
+                </svg>
+              </button>
+            )}
+          </div>
+
           {/* Bottom section: Scroll Indicator */}
           <div
             ref={scrollIndicatorRef}
             className="flex flex-col items-center gap-3 pb-8 md:pb-12"
           >
-            <div className="scroll-line w-[1px] h-10 bg-gradient-to-b from-amber-100/40 to-transparent" />
-            <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-amber-100/40">
+            <div className="scroll-line w-[1px] h-10 bg-gradient-to-b from-white/60 to-transparent" />
+            <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-white/60">
               Scroll to discover
             </span>
           </div>
@@ -355,7 +388,7 @@ export default function MorphogenesisHero({
           progress={scrollProgress}
           color="#fef3c7"
           spread={0.5}
-          className="z-10"
+          className="z-[5] pointer-events-none"
         />
 
         {/* Hero Content - Revealed after dissolve */}

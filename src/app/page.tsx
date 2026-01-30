@@ -308,23 +308,23 @@ export default function Home() {
       )}
 
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 px-4 py-4 md:p-8 flex justify-between items-center mix-blend-difference z-50">
+      <header className="fixed top-0 left-0 right-0 px-4 py-4 md:p-8 flex justify-between items-center z-50">
         <div className="flex items-center gap-2">
-          <span className="text-2xl font-serif font-black tracking-tighter">
+          <span className="text-2xl font-serif font-black tracking-tighter text-white drop-shadow-md">
             Storia
           </span>
         </div>
-        <nav className="flex gap-8 text-sm font-mono tracking-widest uppercase opacity-70">
+        <nav className="flex gap-8 text-sm font-mono tracking-widest uppercase">
           {currentUser ? (
             <a
               href="/library"
-              className="hover:opacity-100 transition-opacity cursor-pointer"
+              className="text-white/80 hover:text-white transition-colors cursor-pointer drop-shadow-md"
             >
               Go to Library
             </a>
           ) : (
             <button
-              className="hover:opacity-100 transition-opacity cursor-pointer"
+              className="text-white/80 hover:text-white transition-colors cursor-pointer drop-shadow-md"
               onClick={() => setAuthOpen(true)}
             >
               Login / Register
