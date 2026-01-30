@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import SplitType from "split-type";
 import HeroDissolveShader from "./HeroDissolveShader";
+import PrinceModel from "./PrinceModel";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,6 +25,16 @@ export default function MorphogenesisHero({
   const svgPathRef = useRef<SVGPathElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const lenisRef = useRef<Lenis | null>(null);
+
+  // Refs for GSAP animations
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const subtitleRef = useRef<HTMLSpanElement>(null);
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
+  const scrollIndicatorRef = useRef<HTMLDivElement>(null);
+  const parallaxLayer1Ref = useRef<HTMLDivElement>(null);
+  const parallaxLayer2Ref = useRef<HTMLDivElement>(null);
+  const parallaxLayer3Ref = useRef<HTMLDivElement>(null);
+  const magneticElementsRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback((scroll: number) => {
     if (!heroRef.current) return;
@@ -54,7 +65,146 @@ export default function MorphogenesisHero({
     lenis.on("scroll", ScrollTrigger.update);
     lenis.on("scroll", ({ scroll }: { scroll: number }) => handleScroll(scroll));
 
-    // Word-by-word reveal animation
+    // Character-by-character title animation with magnetic effect
+    if (titleRef.current) {
+      const splitTitle = new SplitType(titleRef.current, { types: "chars" });
+      const chars = splitTitle.chars;
+
+      if (chars) {
+        // Initial state - hidden
+        gsap.set(chars, { 
+          opacity: 0, 
+          y: 100,
+          rotateX: -90,
+          transformOrigin: "center bottom"
+        });
+
+        // Entrance animation - staggered character reveal
+        gsap.to(chars, {
+          opacity: 1,
+          y: 0,
+          rotateX: 0,
+          duration: 1.2,
+          stagger: 0.08,
+          ease: "power4.out",
+          delay: 0.5
+        });
+
+        // Magnetic cursor effect for each character
+        chars.forEach((char) => {
+          char.addEventListener("mousemove", (e: MouseEvent) => {
+            const rect = char.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const deltaX = (e.clientX - centerX) * 0.3;
+            const deltaY = (e.clientY - centerY) * 0.3;
+
+            gsap.to(char, {
+              x: deltaX,
+              y: deltaY,
+              scale: 1.2,
+              duration: 0.3,
+              ease: "power2.out"
+            });
+          });
+
+          char.addEventListener("mouseleave", () => {
+            gsap.to(char, {
+              x: 0,
+              y: 0,
+              scale: 1,
+              duration: 0.5,
+              ease: "elastic.out(1, 0.3)"
+            });
+          });
+        });
+      }
+    }
+
+    // Subtitle animation
+    if (subtitleRef.current) {
+      gsap.from(subtitleRef.current, {
+        opacity: 0,
+        y: 30,
+        duration: 1,
+        delay: 0.2,
+        ease: "power3.out"
+      });
+    }
+
+    // Description animation
+    if (descriptionRef.current) {
+      gsap.from(descriptionRef.current, {
+        opacity: 0,
+        y: 30,
+        duration: 1,
+        delay: 0.4,
+        ease: "power3.out"
+      });
+    }
+
+    // Scroll indicator animation
+    if (scrollIndicatorRef.current) {
+      gsap.from(scrollIndicatorRef.current, {
+        opacity: 0,
+        y: 20,
+        duration: 1,
+        delay: 1.5,
+        ease: "power3.out"
+      });
+
+      // Continuous bounce animation
+      gsap.to(scrollIndicatorRef.current.querySelector(".scroll-line"), {
+        scaleY: 0.5,
+        transformOrigin: "top",
+        duration: 1,
+        repeat: -1,
+        yoyo: true,
+        ease: "power1.inOut"
+      });
+    }
+
+    // Parallax layers on scroll
+    if (parallaxLayer1Ref.current) {
+      gsap.to(parallaxLayer1Ref.current, {
+        y: -150,
+        ease: "none",
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: 1
+        }
+      });
+    }
+
+    if (parallaxLayer2Ref.current) {
+      gsap.to(parallaxLayer2Ref.current, {
+        y: -80,
+        ease: "none",
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.5
+        }
+      });
+    }
+
+    if (parallaxLayer3Ref.current) {
+      gsap.to(parallaxLayer3Ref.current, {
+        y: -40,
+        ease: "none",
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: 2
+        }
+      });
+    }
+
+    // Word-by-word reveal animation for hero content h2
     const heroH2 = heroContentRef.current?.querySelector("h2");
     if (heroH2) {
       const split = new SplitType(heroH2, { types: "words" });
@@ -108,8 +258,8 @@ export default function MorphogenesisHero({
         ease: "none",
         scrollTrigger: {
           trigger: spotlightRef.current,
-          start: "top 80%", // Start drawing when spotlight is 80% from top (earlier)
-          end: "bottom 20%", // End when spotlight bottom is 20% from top
+          start: "top 80%",
+          end: "bottom 20%",
           scrub: 1,
         },
       });
@@ -123,31 +273,78 @@ export default function MorphogenesisHero({
 
   return (
     <>
+      {/* <GrainOverlay /> */}
       {/* Hero Section */}
       <section
         ref={heroRef}
-        className="hero relative w-full overflow-hidden"
+        className="hero relative w-full overflow-hidden bg-[#050505]"
         style={{ height: "200svh" }}
       >
+        {/* Background Image - positioned at top with gradient fade */}
+        <div className="absolute inset-0 w-full h-full">
+          <img
+            src="https://res.cloudinary.com/https-pilot-tune-herokuapp-com/image/upload/v1667439399/cloud-ring-b9996e3e8fe9b463920384977b0d854c_gl7kn5.webp"
+            alt=""
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] max-w-[900px] h-auto object-contain"
+            style={{ 
+              maskImage: "linear-gradient(to bottom, black 40%, transparent 85%)",
+              WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 85%)"
+            }}
+          />
+          {/* Gradient overlay for smooth transition */}
+          <div 
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505]"
+            style={{ top: "30%" }}
+          />
+        </div>
+
         {/* Hero Header - First viewport */}
         <div
-          className="hero-header absolute w-full flex flex-col justify-center items-center gap-4 text-center px-4"
-          style={{ height: "100svh" }}
+          ref={magneticElementsRef}
+          className="hero-header absolute w-full flex flex-col items-center text-center px-4"
+          style={{ 
+            height: "100svh", 
+            zIndex: 10,
+            paddingTop: "12vh"
+          }}
         >
-          <span className="font-mono text-xs tracking-[0.5em] uppercase opacity-40">
-            Experience Literature through Sound
-          </span>
-          <h1 className="text-5xl md:text-8xl lg:text-9xl font-serif font-black leading-tight md:leading-none tracking-tight text-amber-100">
-            Storia
-          </h1>
-          <p className="max-w-xl text-lg md:text-xl font-light opacity-70">
-            Where every page comes alive with AI-generated soundscapes
-          </p>
+          {/* Top section: Subtitle + Title */}
+          <div className="flex flex-col items-center gap-3">
+            <span
+              ref={subtitleRef}
+              className="font-mono text-xs tracking-[0.5em] uppercase text-amber-100/50"
+            >
+              Experience Literature through Sound
+            </span>
+            
+            <h1
+              ref={titleRef}
+              className="text-[18vw] sm:text-[15vw] md:text-[12vw] lg:text-[10vw] font-serif font-black leading-[0.85] tracking-tighter text-amber-50 cursor-default select-none"
+              style={{ perspective: "1000px" }}
+            >
+              Storia
+            </h1>
+            
+            <p
+              ref={descriptionRef}
+              className="max-w-md text-base md:text-lg font-light text-amber-100/60 mt-2"
+            >
+              Where every page comes alive with AI-generated soundscapes
+            </p>
+          </div>
 
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 opacity-40">
-            <div className="w-[1px] h-12 bg-gradient-to-b from-white to-transparent" />
-            <span className="font-mono text-[10px] tracking-[0.3em] uppercase">
+          {/* Middle section: Prince 3D Model */}
+          <div className="flex-1 w-full max-w-[500px] min-h-[250px] md:min-h-[350px] relative mt-4 md:mt-8">
+            <PrinceModel />
+          </div>
+
+          {/* Bottom section: Scroll Indicator */}
+          <div
+            ref={scrollIndicatorRef}
+            className="flex flex-col items-center gap-3 pb-8 md:pb-12"
+          >
+            <div className="scroll-line w-[1px] h-10 bg-gradient-to-b from-amber-100/40 to-transparent" />
+            <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-amber-100/40">
               Scroll to discover
             </span>
           </div>
@@ -165,7 +362,7 @@ export default function MorphogenesisHero({
         <div
           ref={heroContentRef}
           className="hero-content absolute bottom-0 w-full flex justify-center items-center text-center px-4"
-          style={{ height: "150svh" }}
+          style={{ height: "150svh", zIndex: 10 }}
         >
           <h2 className="max-w-4xl text-3xl md:text-5xl lg:text-6xl font-serif font-black leading-tight text-[#0a0a0a]">
             40% of children struggle to read on grade level. We believe every

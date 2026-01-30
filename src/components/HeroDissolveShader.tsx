@@ -109,7 +109,7 @@ export default function HeroDissolveShader({
     const width = container.offsetWidth;
     const height = container.offsetHeight;
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
 
     // Material with shader
     const rgb = hexToRgb(color);
