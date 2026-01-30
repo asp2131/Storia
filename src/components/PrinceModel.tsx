@@ -9,12 +9,14 @@ function PrinceCharacter() {
   const { scene } = useGLTF("/landing/prince.glb");
   const modelRef = useRef<THREE.Group>(null);
   const { viewport } = useThree();
+  const centerRef = useRef<THREE.Vector3>(new THREE.Vector3());
 
   useEffect(() => {
     if (modelRef.current) {
       // Center the model
       const box = new THREE.Box3().setFromObject(modelRef.current);
       const center = box.getCenter(new THREE.Vector3());
+      centerRef.current = center;
       modelRef.current.position.x = -center.x;
       modelRef.current.position.y = -center.y;
       modelRef.current.position.z = -center.z;
@@ -37,10 +39,15 @@ function PrinceCharacter() {
 
   useFrame((state) => {
     if (modelRef.current) {
-      // Subtle floating animation
-      modelRef.current.position.y += Math.sin(state.clock.elapsedTime * 0.5) * 0.002;
-      // Slow rotation
-      modelRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.1;
+      // Floating animation - gentle bobbing
+      const floatY = Math.sin(state.clock.elapsedTime * 1.2) * 0.15;
+      modelRef.current.position.y = -centerRef.current.y + floatY;
+      
+      // Gentle rotation
+      modelRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.15;
+      
+      // Subtle tilt
+      modelRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
     }
   });
 

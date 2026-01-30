@@ -285,16 +285,17 @@ export default function MorphogenesisHero({
           <img
             src="https://res.cloudinary.com/https-pilot-tune-herokuapp-com/image/upload/v1667439399/cloud-ring-b9996e3e8fe9b463920384977b0d854c_gl7kn5.webp"
             alt=""
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] max-w-[900px] h-auto object-contain"
+            className="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[140%] max-w-[1000px] h-auto object-contain opacity-90"
             style={{ 
-              maskImage: "linear-gradient(to bottom, black 40%, transparent 85%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 85%)"
+              maskImage: "linear-gradient(to bottom, black 50%, transparent 90%)",
+              WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 90%)",
+              filter: "brightness(1.1) contrast(1.1)"
             }}
           />
           {/* Gradient overlay for smooth transition */}
           <div 
-            className="absolute inset-0 bg-gradient-to-b from-transparent via-[#050505]/50 to-[#050505]"
-            style={{ top: "30%" }}
+            className="absolute inset-0 bg-gradient-to-b from-transparent via-[#6495ED]/30 to-[#6495ED]"
+            style={{ top: "20%" }}
           />
         </div>
 
@@ -309,48 +310,68 @@ export default function MorphogenesisHero({
           }}
         >
           {/* Top section: Subtitle + Title */}
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center">
             <span
               ref={subtitleRef}
-              className="font-mono text-xs tracking-[0.5em] uppercase text-black/90 drop-shadow-md"
+              className="font-mono text-[11px] md:text-sm tracking-[0.3em] uppercase text-white font-bold"
+              style={{ 
+                textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.2)',
+                WebkitTextStroke: '0.5px rgba(0,0,0,0.1)'
+              }}
             >
               Experience Literature through Sound
             </span>
             
             <h1
               ref={titleRef}
-              className="text-[18vw] sm:text-[15vw] md:text-[12vw] lg:text-[10vw] font-serif font-black leading-[0.85] tracking-tighter text-white cursor-default select-none drop-shadow-lg"
-              style={{ perspective: "1000px" }}
+              className="text-[14vw] sm:text-[11vw] md:text-[9vw] lg:text-[7vw] font-serif font-black leading-[0.85] tracking-tighter text-white cursor-default select-none -mt-1"
+              style={{ 
+                perspective: "1000px",
+                textShadow: '0 4px 8px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.3)'
+              }}
             >
               Storia
             </h1>
             
             <p
               ref={descriptionRef}
-              className="max-w-md text-base md:text-lg font-light text-white/80 mt-2 drop-shadow-md"
+              className="max-w-xs md:max-w-sm text-sm md:text-base font-medium text-white mt-0 leading-snug"
+              style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
             >
-              Where every page comes alive with AI-generated soundscapes
+              AI soundscapes that bring stories to life
             </p>
           </div>
 
           {/* Middle section: Prince 3D Model */}
-          <div className="flex-1 w-full max-w-[500px] min-h-[250px] md:min-h-[350px] relative mt-4 md:mt-8">
+          <div className="flex-1 w-full max-w-[380px] md:max-w-[450px] min-h-[180px] md:min-h-[240px] relative -mt-2">
             <PrinceModel />
           </div>
 
           {/* CTA Button */}
-          <div className="mt-6 md:mt-8 mb-4" style={{ position: 'relative', zIndex: 100 }}>
+          <div className="mt-4 md:mt-6 mb-4" style={{ position: 'relative', zIndex: 100 }}>
             {isLoggedIn ? (
               <a
                 href="/library"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-white/90 border border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 shadow-lg"
+                className="group inline-flex items-center gap-3 px-8 py-4 bg-white hover:bg-white border-2 border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg relative overflow-hidden"
                 style={{ position: 'relative', zIndex: 100 }}
               >
-                <span>Start Reading</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <span className="relative z-10">Start Reading</span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="relative z-10 transition-transform duration-300 group-hover:translate-x-1"
+                >
                   <path d="M5 12h14"/>
                   <path d="m12 5 7 7-7 7"/>
                 </svg>
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-[#e8f0fe] to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </a>
             ) : (
               <button
@@ -359,14 +380,26 @@ export default function MorphogenesisHero({
                   console.log("Start Reading clicked, isLoggedIn:", isLoggedIn);
                   onAuthClick();
                 }}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-white/90 border border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 shadow-lg"
+                className="group inline-flex items-center gap-3 px-8 py-4 bg-white hover:bg-white border-2 border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg relative overflow-hidden"
                 style={{ position: 'relative', zIndex: 100 }}
               >
-                <span>Start Reading</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <span className="relative z-10">Start Reading</span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="relative z-10 transition-transform duration-300 group-hover:translate-x-1"
+                >
                   <path d="M5 12h14"/>
                   <path d="m12 5 7 7-7 7"/>
                 </svg>
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-[#e8f0fe] to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </button>
             )}
           </div>
