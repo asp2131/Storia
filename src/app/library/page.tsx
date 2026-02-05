@@ -89,8 +89,15 @@ export default function LibraryPage() {
       const res = await fetch(`/api/books?${params}`);
       const data = await res.json();
 
-      setBooks(data.books);
-      setPagination(data.pagination);
+      if (!res.ok) {
+        console.error("API error:", data.error || "Unknown error");
+        setBooks([]);
+        setPagination(null);
+        return;
+      }
+
+      setBooks(data.books || []);
+      setPagination(data.pagination || null);
 
       // Filter and sort continue reading books (only on first page, no filters)
       if (userId && page === 1 && !search && !genre) {

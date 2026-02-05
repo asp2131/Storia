@@ -72,27 +72,32 @@ export async function GET(request: NextRequest) {
 
     // Fetch user reading progress if userId is provided
     let progressMap: Map<string, { currentPage: number; totalPages: number; lastReadAt: Date }> = new Map();
-    if (userId) {
-      const bookIds = books.map((book) => book.id);
-      const progressRecords = await prisma.user_reading_progress.findMany({
-        where: {
-          userId: userId,
-          bookId: { in: bookIds },
-        },
-        select: {
-          bookId: true,
-          currentPage: true,
-          totalPages: true,
-          lastReadAt: true,
-        },
-      });
-      progressRecords.forEach((record) => {
-        progressMap.set(record.bookId.toString(), {
-          currentPage: record.currentPage,
-          totalPages: record.totalPages,
-          lastReadAt: record.lastReadAt,
+    if (userId && books.length > 0) {
+      try {
+        const bookIds = books.map((book) => book.id);
+        const progressRecords = await prisma.user_reading_progress.findMany({
+          where: {
+            userId: userId,
+            bookId: { in: bookIds },
+          },
+          select: {
+            bookId: true,
+            currentPage: true,
+            totalPages: true,
+            lastReadAt: true,
+          },
         });
-      });
+        progressRecords.forEach((record) => {
+          progressMap.set(record.bookId.toString(), {
+            currentPage: record.currentPage,
+            totalPages: record.totalPages,
+            lastReadAt: record.lastReadAt,
+          });
+        });
+      } catch (progressError) {
+        console.error("Error fetching reading progress:", progressError);
+        // Continue without progress data - don't fail the whole request
+      }
     }
 
     // Transform books to include hasSoundscape flag and progress data
@@ -137,8 +142,13 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching books:", error);
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json(
-      { error: "Failed to fetch books" },
+      { error: "Failed to fetch books", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
