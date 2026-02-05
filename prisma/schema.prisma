@@ -202,17 +202,18 @@ model users_tokens {
 
 // Better Auth Core Tables
 model user {
-  id              String            @id @default(cuid())
-  name            String
-  email           String            @unique
-  emailVerified   Boolean           @default(false)
-  image           String?
-  role            String            @default("user")
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  sessions        session[]
-  accounts        account[]
-  reader_feedback reader_feedback[]
+  id                    String                  @id @default(cuid())
+  name                  String
+  email                 String                  @unique
+  emailVerified         Boolean                 @default(false)
+  image                 String?
+  role                  String                  @default("user")
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  sessions              session[]
+  accounts              account[]
+  reader_feedback       reader_feedback[]
+  user_reading_progress user_reading_progress[]
 }
 
 model session {
@@ -269,6 +270,23 @@ model reader_feedback {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model user_reading_progress {
+  id          String   @id @default(cuid())
+  userId      String
+  bookId      BigInt
+  currentPage Int      @default(1)
+  totalPages  Int
+  lastReadAt  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+  @@index([lastReadAt])
 }
 
 enum oban_job_state {

@@ -18,6 +18,9 @@ interface Book {
   totalPages: number | null;
   metadata: Record<string, unknown> | null;
   hasSoundscape: boolean;
+  currentPage?: number | null;
+  progressPercent?: number | null;
+  lastReadAt?: string | null;
 }
 
 interface UserWithRole {
@@ -57,6 +60,7 @@ export default function LibraryPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [books, setBooks] = useState<Book[]>([]);
+  const [continueReadingBooks, setContinueReadingBooks] = useState<Book[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -66,6 +70,9 @@ export default function LibraryPage() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const desktopMenuRef = useRef<HTMLDivElement>(null);
+
+  const user = session?.user as UserWithRole | undefined;
+  const userId = user?.id;
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -77,28 +84,43 @@ export default function LibraryPage() {
       });
       if (search) params.set("search", search);
       if (genre) params.set("genre", genre);
+      if (userId) params.set("userId", userId);
 
       const res = await fetch(`/api/books?${params}`);
       const data = await res.json();
 
       setBooks(data.books);
       setPagination(data.pagination);
+
+      // Filter and sort continue reading books (only on first page, no filters)
+      if (userId && page === 1 && !search && !genre) {
+        const inProgressBooks = data.books
+          .filter((book: Book) =>
+            book.progressPercent !== null &&
+            book.progressPercent !== undefined &&
+            book.progressPercent > 0 &&
+            book.progressPercent < 100
+          )
+          .sort((a: Book, b: Book) => {
+            const dateA = a.lastReadAt ? new Date(a.lastReadAt).getTime() : 0;
+            const dateB = b.lastReadAt ? new Date(b.lastReadAt).getTime() : 0;
+            return dateB - dateA;
+          })
+          .slice(0, 6);
+        setContinueReadingBooks(inProgressBooks);
+      } else {
+        setContinueReadingBooks([]);
+      }
     } catch (error) {
       console.error("Failed to fetch books:", error);
     } finally {
       setLoading(false);
     }
-  }, [page, search, genre, sort]);
+  }, [page, search, genre, sort, userId]);
 
   useEffect(() => {
     fetchBooks();
   }, [fetchBooks]);
-
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push("/");
-    }
-  }, [session, isPending, router]);
 
   // Close user menu on outside click
   useEffect(() => {
@@ -156,13 +178,7 @@ export default function LibraryPage() {
     );
   }
 
-  if (!session) {
-    return null;
-  }
-
-  const user = session.user as UserWithRole;
   const isAdmin = user?.role === "admin";
-console.log(user);
   return (
     <div className="min-h-screen bg-[#0a0e1a]">
       {/* Navigation Bar */}
@@ -198,37 +214,48 @@ console.log(user);
 
               {/* Mobile User Menu Toggle (moved here for mobile layout) */}
               <div className="md:hidden relative" ref={userMenuRef}>
-                 <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="w-9 h-9 bg-[#232948] rounded-full flex items-center justify-center text-white"
-                >
-                  <span className="font-bold text-sm">
-                    {user.email?.charAt(0).toUpperCase()}
-                  </span>
-                </button>
-                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#232948] rounded-lg shadow-lg border border-[#373c5a] py-1 z-50">
-                     {isAdmin && (
-                      <Link
-                        href="/admin"
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
-                        </svg>
-                        Admin Dashboard
-                      </Link>
-                    )}
+                {session ? (
+                  <>
                     <button
-                      onClick={handleSignOut}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition w-full"
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="w-9 h-9 bg-[#232948] rounded-full flex items-center justify-center text-white"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Log out
+                      <span className="font-bold text-sm">
+                        {user?.email?.charAt(0).toUpperCase()}
+                      </span>
                     </button>
-                  </div>
+                    {userMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-[#232948] rounded-lg shadow-lg border border-[#373c5a] py-1 z-50">
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
+                            </svg>
+                            Admin Dashboard
+                          </Link>
+                        )}
+                        <button
+                          onClick={handleSignOut}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-[#929bc9] hover:text-white hover:bg-[#373c5a] transition w-full"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Log out
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href="/"
+                    className="h-9 px-4 bg-[#1337ec] text-white text-sm font-medium rounded-lg flex items-center justify-center hover:bg-[#0e27a3] transition"
+                  >
+                    Login
+                  </Link>
                 )}
               </div>
             </div>
@@ -261,47 +288,56 @@ console.log(user);
 
             {/* Desktop User Menu (Right) */}
             <div className="hidden md:flex items-center justify-end md:w-auto relative" ref={desktopMenuRef}>
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-3 hover:opacity-80 transition focus:outline-none"
-                >
-                   <span className="text-[#929bc9] text-sm font-medium mr-2">
-                    {user.email}
-                   </span>
-                  <div className="w-9 h-9 bg-linear-to-br from-[#1337ec] to-[#0e27a3] rounded-full flex items-center justify-center shadow-lg border border-[#2e355b]">
-                    <span className="text-white font-bold text-sm">
-                      {user.email?.charAt(0).toUpperCase()}
+              {session ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-3 hover:opacity-80 transition focus:outline-none"
+                  >
+                    <span className="text-[#929bc9] text-sm font-medium mr-2">
+                      {user?.email}
                     </span>
-                  </div>
-                </button>
+                    <div className="w-9 h-9 bg-linear-to-br from-[#1337ec] to-[#0e27a3] rounded-full flex items-center justify-center shadow-lg border border-[#2e355b]">
+                      <span className="text-white font-bold text-sm">
+                        {user?.email?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </button>
 
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-[#1a1f36] rounded-xl shadow-2xl border border-[#2e355b] py-2 z-50 overflow-hidden ring-1 ring-black ring-opacity-5">
-                    {isAdmin && (
-                      <Link
-                        href="/admin"
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-[#1a1f36] rounded-xl shadow-2xl border border-[#2e355b] py-2 z-50 overflow-hidden ring-1 ring-black ring-opacity-5">
+                      {isAdmin && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#929bc9] hover:text-white hover:bg-[#232948] transition w-full text-left"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
+                          </svg>
+                          Admin Dashboard
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleSignOut}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#929bc9] hover:text-white hover:bg-[#232948] transition w-full text-left"
-                        onClick={() => setUserMenuOpen(false)}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
-                        Admin Dashboard
-                      </Link>
-                    )}
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#929bc9] hover:text-white hover:bg-[#232948] transition w-full text-left"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Sign out
-                    </button>
-                  </div>
-                )}
-              </div>
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/"
+                  className="h-9 px-4 bg-[#1337ec] text-white text-sm font-medium rounded-lg flex items-center justify-center hover:bg-[#0e27a3] transition"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -319,6 +355,88 @@ console.log(user);
             experience.
           </p>
         </div>
+
+        {/* Continue Reading Section - Only show for authenticated users with progress */}
+        {session && continueReadingBooks.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center gap-3 mb-5">
+              <svg
+                className="w-6 h-6 text-[#1337ec]"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+              </svg>
+              <h2 className="text-white text-xl sm:text-2xl font-bold tracking-tight">
+                Continue Reading
+              </h2>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-[#232948] scrollbar-track-transparent">
+              {continueReadingBooks.map((book) => (
+                <Link
+                  key={book.id}
+                  href={`/books/${book.id}/reader`}
+                  className="group cursor-pointer flex-shrink-0 w-36 sm:w-40"
+                >
+                  {/* Book Cover with Progress Bar */}
+                  <div className="w-full aspect-2/3 bg-[#232948] rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl group-hover:scale-105 transition-all duration-300 relative">
+                    {book.coverUrl ? (
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={book.coverUrl}
+                          alt={`Book cover for ${book.title}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 144px, 160px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#929bc9] bg-linear-to-br from-[#232948] to-[#1a1f3e]">
+                        <svg
+                          className="w-16 h-16"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Progress Bar at bottom of cover */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
+                      <div className="w-full h-1 bg-[#232948] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                          style={{ width: `${book.progressPercent || 0}%` }}
+                        />
+                      </div>
+                      <p className="text-white/80 text-xs mt-1 text-center">
+                        {book.progressPercent}% complete
+                      </p>
+                    </div>
+
+                    {/* Soundscape Badge */}
+                    {book.hasSoundscape && (
+                      <div className="absolute top-2 right-2 px-2 py-1 bg-[#1337ec] text-white text-xs font-bold rounded flex items-center gap-1">
+                        <span>🔊</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Book Info */}
+                  <div className="mt-3">
+                    <h3 className="text-white text-sm font-semibold leading-tight line-clamp-2 mb-1">
+                      {book.title}
+                    </h3>
+                    <p className="text-[#929bc9] text-xs font-normal">
+                      {book.author}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Filters Row */}
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-8">
@@ -444,6 +562,23 @@ console.log(user);
                         <span>🔊</span>
                       </div>
                     )}
+
+                    {/* Progress Bar for books with reading progress */}
+                    {book.progressPercent !== null &&
+                      book.progressPercent !== undefined &&
+                      book.progressPercent > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
+                          <div className="w-full h-1 bg-[#232948] rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-teal-500 rounded-full transition-all duration-300"
+                              style={{ width: `${book.progressPercent}%` }}
+                            />
+                          </div>
+                          <p className="text-white/80 text-xs mt-1 text-center">
+                            {book.progressPercent}% complete
+                          </p>
+                        </div>
+                      )}
                   </div>
 
                   {/* Book Info */}

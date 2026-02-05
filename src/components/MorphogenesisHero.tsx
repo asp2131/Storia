@@ -342,59 +342,29 @@ export default function MorphogenesisHero({
 
           {/* CTA Button */}
           <div className="mt-4 md:mt-6 mb-4" style={{ position: 'relative', zIndex: 100 }}>
-            {isLoggedIn ? (
-              <a
-                href="/library"
-                className="group inline-flex items-center gap-3 px-8 py-4 bg-white hover:bg-white border-2 border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg relative overflow-hidden"
-                style={{ position: 'relative', zIndex: 100 }}
+            <a
+              href="/library"
+              className="group inline-flex items-center gap-3 px-8 py-4 bg-white hover:bg-white border-2 border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg relative overflow-hidden"
+              style={{ position: 'relative', zIndex: 100 }}
+            >
+              <span className="relative z-10">Go to Library</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="relative z-10 transition-transform duration-300 group-hover:translate-x-1"
               >
-                <span className="relative z-10">Start Reading</span>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="18" 
-                  height="18" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  className="relative z-10 transition-transform duration-300 group-hover:translate-x-1"
-                >
-                  <path d="M5 12h14"/>
-                  <path d="m12 5 7 7-7 7"/>
-                </svg>
-                <div className="absolute inset-0 bg-gradient-to-r from-white via-[#e8f0fe] to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  console.log("Start Reading clicked, isLoggedIn:", isLoggedIn);
-                  onAuthClick();
-                }}
-                className="group inline-flex items-center gap-3 px-8 py-4 bg-white hover:bg-white border-2 border-white rounded-full text-[#6495ED] font-mono text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-xl shadow-lg relative overflow-hidden"
-                style={{ position: 'relative', zIndex: 100 }}
-              >
-                <span className="relative z-10">Start Reading</span>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="18" 
-                  height="18" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  className="relative z-10 transition-transform duration-300 group-hover:translate-x-1"
-                >
-                  <path d="M5 12h14"/>
-                  <path d="m12 5 7 7-7 7"/>
-                </svg>
-                <div className="absolute inset-0 bg-linear-to-r from-white via-[#e8f0fe] to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </button>
-            )}
+                <path d="M5 12h14"/>
+                <path d="m12 5 7 7-7 7"/>
+              </svg>
+              <div className="absolute inset-0 bg-gradient-to-r from-white via-[#e8f0fe] to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </a>
           </div>
 
           {/* Bottom section: Scroll Indicator */}
@@ -424,9 +394,7 @@ export default function MorphogenesisHero({
           style={{ height: "150svh", zIndex: 10 }}
         >
           <h2 className="max-w-4xl text-3xl md:text-5xl lg:text-6xl font-serif font-black leading-tight text-[#0a0a0a]">
-            40% of children struggle to read on grade level. We believe every
-            story deserves to be heard, felt, and experienced through the magic
-            of sound.
+            <a href="https://brighterly.com/blog/literacy-statistics/" target="_blank" rel="noopener noreferrer" className="hover:text-amber-700 transition-colors">67% of fourth-graders aren't reading at grade level</a>. We're actively combating this crisis—because every story deserves to be heard, felt, and experienced through an immersive, relatable vibe kids can enjoy.
           </h2>
         </div>
       </section>
@@ -546,21 +514,12 @@ export default function MorphogenesisHero({
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-serif font-black mb-12 text-white">
             Ready to listen?
           </h2>
-          {isLoggedIn ? (
-            <a
-              href="/library"
-              className="text-xl md:text-2xl lg:text-3xl font-serif italic hover:text-amber-200 transition-colors cursor-pointer border-b border-white/20 pb-2"
-            >
-              Continue your journey in the Library
-            </a>
-          ) : (
-            <button
-              onClick={onAuthClick}
-              className="text-xl md:text-2xl lg:text-3xl font-serif italic hover:text-amber-200 transition-colors cursor-pointer border-b border-white/20 pb-2"
-            >
-              Read your first Storia soundscape-book today
-            </button>
-          )}
+          <a
+            href="/library"
+            className="text-xl md:text-2xl lg:text-3xl font-serif italic hover:text-amber-200 transition-colors cursor-pointer border-b border-white/20 pb-2"
+          >
+            Continue your journey in the Library
+          </a>
         </div>
       </section>
 

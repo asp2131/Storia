@@ -21,24 +21,37 @@ import {
   Volume1,
 } from "lucide-react";
 import FeedbackModal from "@/components/FeedbackModal";
+import LoginPrompt from "@/components/LoginPrompt";
 import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences";
 import { useAudioCrossFade } from "@/hooks/useAudioCrossFade";
 import { useReaderData, WordTimestamp } from "@/hooks/useBookData";
+import { useReadingProgress, useAutoSaveProgressWithAuth, loadProgressFromLocalStorage } from "@/hooks/useReadingProgress";
+import { useSession } from "@/lib/auth-client";
 
 export default function BookReader() {
   const params = useParams();
   const router = useRouter();
   const bookId = params.id as string;
 
+  // Auth session for progress tracking
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+
   // Fetch data with React Query
   const { data: readerData, isLoading: loading, error: queryError } = useReaderData(bookId);
   const error = queryError?.message || null;
+
+  // Reading progress tracking
+  const { data: savedProgress, isLoading: progressLoading } = useReadingProgress(bookId);
+  const progressRestoredRef = useRef(false);
+  const hasManuallyNavigatedRef = useRef(false);
 
   // UI state
   const [currentPage, setCurrentPage] = useState(1);
   const [uiVisible, setUiVisible] = useState(false);
   const [audioExpanded, setAudioExpanded] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [progressToast, setProgressToast] = useState<string | null>(null);
   const [textSheetOpen, setTextSheetOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -64,6 +77,11 @@ export default function BookReader() {
   // Navigation hint state
   const [showNavigationHint, setShowNavigationHint] = useState(false);
   const [hintDismissing, setHintDismissing] = useState(false);
+
+  // Login prompt state
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const pageLoadTimeRef = useRef<number>(Date.now());
 
   // Settings panel state
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
@@ -227,12 +245,96 @@ export default function BookReader() {
     checkFeedbackEligibility();
   }, []);
 
-  // Track pages viewed
+  // Track pages viewed and navigation
   useEffect(() => {
     if (currentPage > 0) {
       setPagesViewed((prev) => new Set(prev).add(currentPage));
     }
   }, [currentPage]);
+
+  // Track navigation for login prompt
+  useEffect(() => {
+    if (currentPage > 1) {
+      setHasNavigated(true);
+    }
+  }, [currentPage]);
+
+  // Show login prompt after 30 seconds AND user has navigated at least once
+  useEffect(() => {
+    // Only show for unauthenticated users
+    if (isAuthenticated || !loading) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      // Check if user has been on the page for 30 seconds AND has navigated
+      const timeOnPage = Date.now() - pageLoadTimeRef.current;
+      const hasBeen30Seconds = timeOnPage >= 30000;
+
+      if (hasBeen30Seconds && hasNavigated) {
+        setShowLoginPrompt(true);
+      }
+    }, 30000);
+
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, loading, hasNavigated]);
+
+  // Show login prompt immediately when trying to access page > 1 directly
+  useEffect(() => {
+    // If user tries to access a page > 1 directly (e.g., from URL or restored progress)
+    // and is not authenticated, show the login prompt
+    if (!isAuthenticated && !loading && currentPage > 1 && !progressRestoredRef.current) {
+      setShowLoginPrompt(true);
+    }
+  }, [isAuthenticated, loading, currentPage]);
+
+  // Restore reading progress on mount
+  useEffect(() => {
+    // Skip if already restored or no data yet
+    if (progressRestoredRef.current || loading || progressLoading) {
+      return;
+    }
+
+    // Skip if user has already manually navigated
+    if (hasManuallyNavigatedRef.current) {
+      return;
+    }
+
+    // Try to restore from API (authenticated users) or localStorage (anonymous)
+    let restoredPage: number | null = null;
+
+    if (isAuthenticated && savedProgress?.currentPage && savedProgress.currentPage > 1) {
+      restoredPage = savedProgress.currentPage;
+    } else if (!isAuthenticated) {
+      // Check localStorage for anonymous users
+      const localProgress = loadProgressFromLocalStorage(bookId);
+      if (localProgress?.currentPage && localProgress.currentPage > 1) {
+        restoredPage = localProgress.currentPage;
+      }
+    }
+
+    if (restoredPage && restoredPage <= totalPages) {
+      setCurrentPage(restoredPage);
+      progressRestoredRef.current = true;
+
+      // Show progress toast notification
+      setProgressToast(`Continuing from page ${restoredPage}`);
+      setTimeout(() => {
+        setProgressToast(null);
+      }, 3000);
+    } else {
+      // Mark as restored even if no progress to prevent future restoration attempts
+      progressRestoredRef.current = true;
+    }
+  }, [bookId, savedProgress, isAuthenticated, loading, progressLoading, totalPages]);
+
+  // Auto-save reading progress on page change
+  useAutoSaveProgressWithAuth({
+    bookId,
+    currentPage,
+    totalPages,
+    enabled: !loading && totalPages > 0,
+  });
 
   // Exit handling - check if feedback modal should be shown
   const handleExitAttempt = useCallback(
@@ -329,6 +431,7 @@ export default function BookReader() {
   const goToPage = useCallback(
     (page: number) => {
       if (page >= 1 && page <= totalPages) {
+        hasManuallyNavigatedRef.current = true;
         setCurrentPage(page);
         showToast(`Page ${page} of ${totalPages}`);
       }
@@ -902,6 +1005,18 @@ export default function BookReader() {
         </div>
       </div>
 
+      {/* Progress Restored Toast */}
+      <div
+        className={`fixed top-24 left-1/2 -translate-x-1/2 pointer-events-none z-50 transition-all duration-500 ${
+          progressToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+        }`}
+      >
+        <div className="bg-teal-600/90 backdrop-blur text-white text-sm px-5 py-3 rounded-lg shadow-xl flex items-center gap-3 border border-teal-400/30">
+          <Bookmark className="w-4 h-4 text-teal-200" />
+          <span className="font-medium">{progressToast}</span>
+        </div>
+      </div>
+
       {/* Mobile Text Sheet - Only render on mobile */}
       {isMobile && (
         <Sheet
@@ -1261,6 +1376,12 @@ export default function BookReader() {
         onClose={handleFeedbackClose}
         onSubmit={handleFeedbackSubmit}
         onSkip={handleFeedbackSkip}
+      />
+
+      {/* Login Prompt */}
+      <LoginPrompt
+        show={showLoginPrompt && !session}
+        onDismiss={() => setShowLoginPrompt(false)}
       />
     </div>
   );

@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") || "recent";
   const page = parseInt(searchParams.get("page") || "1");
   const perPage = parseInt(searchParams.get("perPage") || "10");
+  const userId = searchParams.get("userId");
 
   const skip = (page - 1) * perPage;
 
@@ -69,17 +70,61 @@ export async function GET(request: NextRequest) {
       prisma.books.count({ where }),
     ]);
 
-    // Transform books to include hasSoundscape flag
-    const transformedBooks = books.map((book) => ({
-      id: book.id.toString(),
-      title: book.title,
-      author: book.author,
-      coverUrl: book.cover_url,
-      description: book.description,
-      totalPages: book.total_pages,
-      metadata: book.metadata,
-      hasSoundscape: book.scenes.some((scene) => scene.soundscapes.length > 0),
-    }));
+    // Fetch user reading progress if userId is provided
+    let progressMap: Map<string, { currentPage: number; totalPages: number; lastReadAt: Date }> = new Map();
+    if (userId) {
+      const bookIds = books.map((book) => book.id);
+      const progressRecords = await prisma.user_reading_progress.findMany({
+        where: {
+          userId: userId,
+          bookId: { in: bookIds },
+        },
+        select: {
+          bookId: true,
+          currentPage: true,
+          totalPages: true,
+          lastReadAt: true,
+        },
+      });
+      progressRecords.forEach((record) => {
+        progressMap.set(record.bookId.toString(), {
+          currentPage: record.currentPage,
+          totalPages: record.totalPages,
+          lastReadAt: record.lastReadAt,
+        });
+      });
+    }
+
+    // Transform books to include hasSoundscape flag and progress data
+    const transformedBooks = books.map((book) => {
+      const bookIdStr = book.id.toString();
+      const progress = userId ? progressMap.get(bookIdStr) : undefined;
+
+      const baseBook = {
+        id: bookIdStr,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.cover_url,
+        description: book.description,
+        totalPages: book.total_pages,
+        metadata: book.metadata,
+        hasSoundscape: book.scenes.some((scene) => scene.soundscapes.length > 0),
+      };
+
+      // Only add progress fields when userId is provided
+      if (userId) {
+        return {
+          ...baseBook,
+          currentPage: progress ? progress.currentPage : null,
+          progressPercent: progress && progress.totalPages > 0
+            ? Math.round((progress.currentPage / progress.totalPages) * 100)
+            : null,
+          lastReadAt: progress ? progress.lastReadAt.toISOString() : null,
+        };
+      }
+
+      return baseBook;
+    });
 
     return NextResponse.json({
       books: transformedBooks,
