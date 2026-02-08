@@ -16,6 +16,17 @@
   --reader-nav-btn-bg: #1cb0f6;
   --reader-nav-btn-text: #ffffff;
   --reader-close-color: #afafaf;
+
+  /* Storia brand palette */
+  --storia-primary: #6366F1;
+  --storia-primary-hover: #818CF8;
+  --storia-primary-dark: #4F46E5;
+  --storia-accent: #F59E0B;
+  --storia-accent-hover: #D97706;
+  --storia-surface: #F8FAFC;
+  --storia-border: #E2E8F0;
+  --storia-input-bg: #F1F5F9;
+  --storia-nav-bg: #FFFFFF;
 }
 
 @theme inline {
@@ -218,6 +229,17 @@ body {
     --reader-nav-btn-bg: #1cb0f6;
     --reader-nav-btn-text: #ffffff;
     --reader-close-color: #64748b;
+
+    /* Storia brand palette - dark mode */
+    --storia-primary: #818CF8;
+    --storia-primary-hover: #A5B4FC;
+    --storia-primary-dark: #6366F1;
+    --storia-accent: #FBBF24;
+    --storia-accent-hover: #F59E0B;
+    --storia-surface: #1E293B;
+    --storia-border: #334155;
+    --storia-input-bg: #1E293B;
+    --storia-nav-bg: #0F172A;
   }
 }
 
