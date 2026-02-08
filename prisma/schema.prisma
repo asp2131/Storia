@@ -83,8 +83,9 @@ model pages {
   scene_id             BigInt?
   image_url            String?  @db.VarChar(255)
   narration_url        String?  @db.VarChar(255)
-  narration_timestamps Json?
-  illustration_prompt  String?
+  narration_timestamps  Json?
+  word_pronunciations   Json?
+  illustration_prompt   String?
   books                books    @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   scenes               scenes?  @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
   page_audio_assignments page_audio_assignments[]

@@ -16,6 +16,7 @@
   --reader-nav-btn-bg: #1cb0f6;
   --reader-nav-btn-text: #ffffff;
   --reader-close-color: #afafaf;
+  --reader-tap-highlight: #bef264;
 
   /* Storia brand palette */
   --storia-primary: #6366F1;
@@ -229,6 +230,7 @@ body {
     --reader-nav-btn-bg: #1cb0f6;
     --reader-nav-btn-text: #ffffff;
     --reader-close-color: #64748b;
+    --reader-tap-highlight: rgba(190, 242, 100, 0.35);
 
     /* Storia brand palette - dark mode */
     --storia-primary: #818CF8;
@@ -246,6 +248,47 @@ body {
 @keyframes progress-fill {
   from { width: 0%; }
   to { width: var(--progress-width, 0%); }
+}
+
+@keyframes word-tap-pulse {
+  0% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+  40% {
+    transform: scale(1.15);
+    background-color: var(--reader-tap-highlight);
+  }
+  100% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
+/* Tap-to-pronounce word styles */
+.word-tappable {
+  cursor: pointer;
+  display: inline;
+  border-radius: 4px;
+  padding: 1px 2px;
+  margin: -1px -2px;
+  transition: background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.word-tappable:hover {
+  background-color: var(--reader-tap-highlight);
+}
+
+.word-tappable:active {
+  transform: scale(0.95);
+}
+
+.word-pronouncing {
+  animation: word-tap-pulse 0.4s ease-out;
+  background-color: var(--reader-tap-highlight);
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {

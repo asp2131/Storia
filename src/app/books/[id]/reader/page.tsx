@@ -23,6 +23,7 @@ import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences
 import { useAudioCrossFade } from "@/hooks/useAudioCrossFade";
 import { useReaderData, WordTimestamp } from "@/hooks/useBookData";
 import { useReadingProgress, useAutoSaveProgressWithAuth, loadProgressFromLocalStorage } from "@/hooks/useReadingProgress";
+import { useWordPronunciation } from "@/hooks/useWordPronunciation";
 import { useSession } from "@/lib/auth-client";
 
 export default function BookReader() {
@@ -90,7 +91,14 @@ export default function BookReader() {
 
   // Get current page data
   const pageData = readerData?.pages.find((p) => p.pageNumber === currentPage);
+  const nextPageData = readerData?.pages.find((p) => p.pageNumber === currentPage + 1);
   const totalPages = readerData?.pages.length ?? 0;
+
+  // Word pronunciation (tap-to-pronounce) with next-page prefetch
+  const { pronounceWord, pronouncingIndex, isLoading: pronunciationLoading } = useWordPronunciation({
+    wordPronunciations: (pageData?.wordPronunciations as Record<string, string>) ?? null,
+    nextPagePronunciations: (nextPageData?.wordPronunciations as Record<string, string>) ?? null,
+  });
 
   // Get audio for current page
   const narrationAssignment = pageData?.assignments?.find(
@@ -752,14 +760,17 @@ export default function BookReader() {
                 wordTimestamps.map((wordData, index) => (
                   <span
                     key={index}
-                    className={`transition-all duration-200 ${
+                    onClick={() => pronounceWord(wordData.word, index)}
+                    className={`word-tappable transition-all duration-200 ${
                       index === activeWordIndex && isNarrationPlaying
                         ? "rounded px-1 -mx-0.5 font-extrabold"
                         : ""
-                    }`}
+                    } ${pronouncingIndex === index ? "word-pronouncing" : ""}`}
                     style={
                       index === activeWordIndex && isNarrationPlaying
                         ? { backgroundColor: 'var(--reader-highlight-bg)' }
+                        : pronouncingIndex === index
+                        ? { backgroundColor: 'var(--reader-tap-highlight)' }
                         : undefined
                     }
                   >
@@ -767,7 +778,26 @@ export default function BookReader() {
                   </span>
                 ))
               ) : (
-                <span>{pageData.textContent}</span>
+                <>
+                  {pageData.textContent.split(/(\s+)/).map((segment, i) =>
+                    segment.trim() ? (
+                      <span
+                        key={i}
+                        onClick={() => pronounceWord(segment, i)}
+                        className={`word-tappable ${pronouncingIndex === i ? "word-pronouncing" : ""}`}
+                        style={
+                          pronouncingIndex === i
+                            ? { backgroundColor: 'var(--reader-tap-highlight)' }
+                            : undefined
+                        }
+                      >
+                        {segment}
+                      </span>
+                    ) : (
+                      <span key={i}>{segment}</span>
+                    )
+                  )}
+                </>
               )}
             </p>
           ) : (

@@ -332,6 +332,119 @@ export async function POST(request: NextRequest) {
         console.warn(`[generate-narration] No timestamps to upload (finalTimestamps is empty)`);
       }
 
+      // Step 3: Pre-generate individual word pronunciations
+      let pronunciationMap: Record<string, string> = {};
+      try {
+        // Extract unique words from the text
+        const allWords = trimmedText.split(/\s+/);
+        const cleanedWords = allWords
+          .map((w) => w.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").toLowerCase())
+          .filter((w) => w.length > 0);
+        const uniqueWords = Array.from(new Set(cleanedWords));
+
+        console.log(`[generate-narration] Generating pronunciations for ${uniqueWords.length} unique words`);
+
+        // Process in batches of 5
+        const batchSize = 5;
+        for (let i = 0; i < uniqueWords.length; i += batchSize) {
+          const batch = uniqueWords.slice(i, i + batchSize);
+          console.log(`[generate-narration] Processing pronunciation batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(uniqueWords.length / batchSize)}`);
+
+          const results = await Promise.all(
+            batch.map(async (word) => {
+              try {
+                const wordOutput = await replicate.run("elevenlabs/v3", {
+                  input: {
+                    text: word,
+                    prompt: word,
+                    voice: voice || "Reginald",
+                    stability: 0.5,
+                    similarity_boost: 0.75,
+                    style: 0.76,
+                    speed: 0.90,
+                  },
+                });
+
+                if (!wordOutput) return { word, url: null };
+
+                // Extract audio URL from output (same pattern as main narration)
+                let wordAudioUrl: string;
+                if (typeof wordOutput === "string") {
+                  wordAudioUrl = wordOutput;
+                } else if (wordOutput instanceof URL) {
+                  wordAudioUrl = wordOutput.href;
+                } else if (typeof wordOutput === "object" && wordOutput !== null) {
+                  const fileOut = wordOutput as { href?: string; url?: () => URL };
+                  if (fileOut.href) {
+                    wordAudioUrl = fileOut.href;
+                  } else if (typeof fileOut.url === "function") {
+                    wordAudioUrl = fileOut.url().href;
+                  } else {
+                    wordAudioUrl = String(wordOutput);
+                  }
+                } else {
+                  wordAudioUrl = String(wordOutput);
+                }
+
+                // Download the word audio from Replicate
+                const wordAudioResponse = await fetch(wordAudioUrl);
+                if (!wordAudioResponse.ok) {
+                  console.warn(`[generate-narration] Failed to download pronunciation for "${word}"`);
+                  return { word, url: null };
+                }
+
+                const wordAudioBuffer = Buffer.from(await wordAudioResponse.arrayBuffer());
+                const wordContentType = wordAudioResponse.headers.get("content-type") || "audio/wav";
+
+                let wordExt = "wav";
+                if (wordContentType.includes("mp3") || wordContentType.includes("mpeg")) {
+                  wordExt = "mp3";
+                } else if (wordContentType.includes("ogg")) {
+                  wordExt = "ogg";
+                }
+
+                // Upload to Supabase storage
+                const wordTimestamp = Date.now();
+                const wordPath = `books/${bookId}/pronunciations/word_${word}_${wordTimestamp}.${wordExt}`;
+
+                const { error: wordUploadError } = await supabase.storage
+                  .from(bucket)
+                  .upload(wordPath, wordAudioBuffer, {
+                    contentType: wordContentType,
+                    upsert: false,
+                  });
+
+                if (wordUploadError) {
+                  console.warn(`[generate-narration] Failed to upload pronunciation for "${word}":`, wordUploadError);
+                  return { word, url: null };
+                }
+
+                const { data: wordUrlData } = supabase.storage
+                  .from(bucket)
+                  .getPublicUrl(wordPath);
+
+                console.log(`[generate-narration] Pronunciation for "${word}" uploaded: ${wordUrlData.publicUrl}`);
+                return { word, url: wordUrlData.publicUrl };
+              } catch (wordError) {
+                console.warn(`[generate-narration] Error generating pronunciation for "${word}":`, wordError);
+                return { word, url: null };
+              }
+            })
+          );
+
+          for (const result of results) {
+            if (result.url) {
+              pronunciationMap[result.word] = result.url;
+            }
+          }
+        }
+
+        console.log(`[generate-narration] Generated ${Object.keys(pronunciationMap).length} word pronunciations`);
+      } catch (pronError) {
+        console.error("[generate-narration] Word pronunciation generation failed (continuing):", pronError);
+        pronunciationMap = {};
+      }
+
       // Save timestamps to database for fast access
       try {
         const bookIdBigInt = BigInt(bookId);
@@ -347,6 +460,7 @@ export async function POST(request: NextRequest) {
           data: {
             narration_url: urlData.publicUrl,
             narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
+            word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
             updated_at: now,
           },
         });
@@ -362,6 +476,7 @@ export async function POST(request: NextRequest) {
               page_number: pageNumber,
               narration_url: urlData.publicUrl,
               narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
+              word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
               inserted_at: now,
               updated_at: now,
             },
@@ -380,6 +495,7 @@ export async function POST(request: NextRequest) {
           timestampsUrl,
           wordTimestamps: finalTimestamps,
           alignmentQuality,
+          wordPronunciations: pronunciationMap,
         });
       }
     } catch (whisperError) {
@@ -391,6 +507,7 @@ export async function POST(request: NextRequest) {
       url: urlData.publicUrl,
       path: filePath,
       wordTimestamps: [],
+      wordPronunciations: {},
     });
   } catch (error) {
     console.error("[generate-narration] Error:", error);

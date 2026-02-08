@@ -24,6 +24,7 @@ export type PageData = {
   imageUrl: string | null;
   narrationUrl: string | null;
   narrationTimestamps: WordTimestamp[] | null;
+  wordPronunciations: Record<string, string> | null;
   assignments?: AudioAssignment[];
 };
 

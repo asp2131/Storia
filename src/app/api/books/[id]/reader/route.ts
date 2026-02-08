@@ -80,6 +80,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
           imageUrl: page.image_url,
           narrationUrl: page.narration_url,
           narrationTimestamps: page.narration_timestamps,
+          wordPronunciations: page.word_pronunciations,
           assignments: applicableAssignments.map((assignment) => ({
             id: assignment.id.toString(),
             audioUrl: assignment.audio_url,
