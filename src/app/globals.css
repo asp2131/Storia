@@ -4,6 +4,18 @@
 :root {
   --background: #0a0a0a;
   --foreground: #ffffff;
+
+  /* Reader theme - light mode (Duolingo style) */
+  --reader-bg: #ffffff;
+  --reader-text: #1a1a2e;
+  --reader-text-secondary: #6b7280;
+  --reader-card-bg: #f3f4f6;
+  --reader-progress-bar-bg: #e5e7eb;
+  --reader-progress-bar-fill: #58cc02;
+  --reader-highlight-bg: #d4edbc;
+  --reader-nav-btn-bg: #1cb0f6;
+  --reader-nav-btn-text: #ffffff;
+  --reader-close-color: #afafaf;
 }
 
 @theme inline {
@@ -192,6 +204,26 @@ body {
 
 .animate-sound-wave-3 {
   animation: sound-wave 0.5s ease-in-out infinite 0.2s;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --reader-bg: #131f24;
+    --reader-text: #e2e8f0;
+    --reader-text-secondary: #94a3b8;
+    --reader-card-bg: #1e293b;
+    --reader-progress-bar-bg: #334155;
+    --reader-progress-bar-fill: #58cc02;
+    --reader-highlight-bg: rgba(88, 204, 2, 0.25);
+    --reader-nav-btn-bg: #1cb0f6;
+    --reader-nav-btn-text: #ffffff;
+    --reader-close-color: #64748b;
+  }
+}
+
+@keyframes progress-fill {
+  from { width: 0%; }
+  to { width: var(--progress-width, 0%); }
 }
 
 @media (max-width: 768px) {

@@ -3,22 +3,19 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Sheet, SheetRef } from "react-modal-sheet";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Settings,
-  Bookmark,
   Mic,
   Volume2,
   Play,
   Pause,
-  Info,
   Music,
   Loader2,
   X,
   Volume1,
+  Settings,
+  Bookmark,
 } from "lucide-react";
 import FeedbackModal from "@/components/FeedbackModal";
 import LoginPrompt from "@/components/LoginPrompt";
@@ -48,12 +45,8 @@ export default function BookReader() {
 
   // UI state
   const [currentPage, setCurrentPage] = useState(1);
-  const [uiVisible, setUiVisible] = useState(false);
-  const [audioExpanded, setAudioExpanded] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [progressToast, setProgressToast] = useState<string | null>(null);
-  const [textSheetOpen, setTextSheetOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
 
   // Audio state
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
@@ -74,10 +67,6 @@ export default function BookReader() {
   const [pagesViewed, setPagesViewed] = useState(new Set<number>());
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
-  // Navigation hint state
-  const [showNavigationHint, setShowNavigationHint] = useState(false);
-  const [hintDismissing, setHintDismissing] = useState(false);
-
   // Login prompt state
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
@@ -88,20 +77,16 @@ export default function BookReader() {
   const [narrationAutoPlay, setNarrationAutoPlay] = useState(false);
 
   // Soundscape mode state
-  const [showSoundscapeMenu, setShowSoundscapeMenu] = useState(false);
   const [introFadedPages, setIntroFadedPages] = useState<Set<number>>(new Set());
   const introFadeTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const { preferences, isLoaded: prefsLoaded, setSoundscapeMode } = useLocalPreferences();
-  const { initAudioContext, connectAudioElement, fadeIn, fadeOut, setVolume } = useAudioCrossFade();
+  const { preferences, setSoundscapeMode } = useLocalPreferences();
+  const { initAudioContext, connectAudioElement, fadeIn, fadeOut } = useAudioCrossFade();
   const audioConnectedRef = useRef(false);
 
   // Refs
   const narrationRef = useRef<HTMLAudioElement>(null);
   const soundscapeRef = useRef<HTMLAudioElement>(null);
-  const uiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const touchStartX = useRef<number>(0);
-  const sheetRef = useRef<SheetRef>(null);
 
   // Get current page data
   const pageData = readerData?.pages.find((p) => p.pageNumber === currentPage);
@@ -126,12 +111,10 @@ export default function BookReader() {
       return;
     }
 
-    // Use timestamps from database (loaded via API)
     const timestamps = pageData.narrationTimestamps as WordTimestamp[];
     if (Array.isArray(timestamps) && timestamps.length > 0) {
       setWordTimestamps(timestamps);
       setTimestampsLoaded(true);
-      console.log(`[Reader] Loaded ${timestamps.length} word timestamps from database`);
     } else {
       setWordTimestamps([]);
       setTimestampsLoaded(false);
@@ -148,81 +131,36 @@ export default function BookReader() {
     const currentTime = narrationProgress;
     let foundIndex = -1;
 
-    // Linear search - more reliable than binary search when timestamps have gaps
-    // Find the word whose time range contains currentTime, or the last word that started
     for (let i = 0; i < wordTimestamps.length; i++) {
       const wordData = wordTimestamps[i];
       const nextWord = wordTimestamps[i + 1];
 
-      // Check if current time is within this word's range
       if (currentTime >= wordData.start && currentTime <= wordData.end) {
         foundIndex = i;
         break;
       }
 
-      // Check if current time is between this word's end and next word's start (gap)
-      // In this case, keep highlighting the current word until the next one starts
       if (nextWord && currentTime > wordData.end && currentTime < nextWord.start) {
         foundIndex = i;
         break;
       }
 
-      // If this is the last word and we've passed its start, highlight it
       if (!nextWord && currentTime >= wordData.start) {
         foundIndex = i;
         break;
       }
 
-      // If current time is past this word but before we've checked the next, continue
       if (currentTime > wordData.end) {
-        foundIndex = i; // Tentatively set, will be updated if a better match is found
+        foundIndex = i;
       }
     }
 
     setActiveWordIndex(foundIndex);
   }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
 
-  // Detect if we're on mobile
-  useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    // Check on mount
-    checkIsMobile();
-
-    // Listen for window resize
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
-
-  // Check if user has seen navigation hints
-  useEffect(() => {
-    if (isMobile && !loading) {
-      const hasSeenHint = localStorage.getItem('storia-nav-hint-seen');
-      if (!hasSeenHint) {
-        // Show hint after a brief delay
-        const timer = setTimeout(() => {
-          setShowNavigationHint(true);
-          // Auto-dismiss after 3 seconds
-          setTimeout(() => {
-            setHintDismissing(true);
-            setTimeout(() => {
-              setShowNavigationHint(false);
-              setHintDismissing(false);
-              localStorage.setItem('storia-nav-hint-seen', 'true');
-            }, 500);
-          }, 3000);
-        }, 1000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [isMobile, loading]);
-
   // Check feedback eligibility on mount
   useEffect(() => {
     const checkFeedbackEligibility = async () => {
-      // Check if already skipped this session
       const skippedThisSession = sessionStorage.getItem("feedback_skipped") === "true";
       if (skippedThisSession) {
         setFeedbackEligible(false);
@@ -233,7 +171,6 @@ export default function BookReader() {
         const response = await fetch("/api/feedback/status");
         if (response.ok) {
           const data = await response.json();
-          console.log("[Feedback] Eligibility response:", data);
           setFeedbackEligible(data.shouldShowFeedback);
         }
       } catch (error) {
@@ -245,7 +182,7 @@ export default function BookReader() {
     checkFeedbackEligibility();
   }, []);
 
-  // Track pages viewed and navigation
+  // Track pages viewed
   useEffect(() => {
     if (currentPage > 0) {
       setPagesViewed((prev) => new Set(prev).add(currentPage));
@@ -259,15 +196,13 @@ export default function BookReader() {
     }
   }, [currentPage]);
 
-  // Show login prompt after 30 seconds AND user has navigated at least once
+  // Show login prompt after 30 seconds AND user has navigated
   useEffect(() => {
-    // Only show for unauthenticated users
     if (isAuthenticated || !loading) {
       return;
     }
 
     const timer = setTimeout(() => {
-      // Check if user has been on the page for 30 seconds AND has navigated
       const timeOnPage = Date.now() - pageLoadTimeRef.current;
       const hasBeen30Seconds = timeOnPage >= 30000;
 
@@ -279,10 +214,8 @@ export default function BookReader() {
     return () => clearTimeout(timer);
   }, [isAuthenticated, loading, hasNavigated]);
 
-  // Show login prompt immediately when trying to access page > 1 directly
+  // Show login prompt when accessing page > 1 directly
   useEffect(() => {
-    // If user tries to access a page > 1 directly (e.g., from URL or restored progress)
-    // and is not authenticated, show the login prompt
     if (!isAuthenticated && !loading && currentPage > 1 && !progressRestoredRef.current) {
       setShowLoginPrompt(true);
     }
@@ -290,23 +223,19 @@ export default function BookReader() {
 
   // Restore reading progress on mount
   useEffect(() => {
-    // Skip if already restored or no data yet
     if (progressRestoredRef.current || loading || progressLoading) {
       return;
     }
 
-    // Skip if user has already manually navigated
     if (hasManuallyNavigatedRef.current) {
       return;
     }
 
-    // Try to restore from API (authenticated users) or localStorage (anonymous)
     let restoredPage: number | null = null;
 
     if (isAuthenticated && savedProgress?.currentPage && savedProgress.currentPage > 1) {
       restoredPage = savedProgress.currentPage;
     } else if (!isAuthenticated) {
-      // Check localStorage for anonymous users
       const localProgress = loadProgressFromLocalStorage(bookId);
       if (localProgress?.currentPage && localProgress.currentPage > 1) {
         restoredPage = localProgress.currentPage;
@@ -317,13 +246,11 @@ export default function BookReader() {
       setCurrentPage(restoredPage);
       progressRestoredRef.current = true;
 
-      // Show progress toast notification
       setProgressToast(`Continuing from page ${restoredPage}`);
       setTimeout(() => {
         setProgressToast(null);
       }, 3000);
     } else {
-      // Mark as restored even if no progress to prevent future restoration attempts
       progressRestoredRef.current = true;
     }
   }, [bookId, savedProgress, isAuthenticated, loading, progressLoading, totalPages]);
@@ -341,14 +268,6 @@ export default function BookReader() {
     (navigateFn: () => void) => {
       const hasViewedEnoughPages = pagesViewed.size >= 2;
       const skippedThisSession = sessionStorage.getItem("feedback_skipped") === "true";
-
-      console.log("[Feedback Debug]", {
-        feedbackEligible,
-        pagesViewedCount: pagesViewed.size,
-        hasViewedEnoughPages,
-        skippedThisSession,
-        shouldShowModal: feedbackEligible && hasViewedEnoughPages && !skippedThisSession,
-      });
 
       if (feedbackEligible && hasViewedEnoughPages && !skippedThisSession) {
         setPendingNavigation(() => navigateFn);
@@ -372,7 +291,6 @@ export default function BookReader() {
       throw new Error("Failed to submit feedback");
     }
 
-    // After successful submit, navigate away
     setFeedbackEligible(false);
   };
 
@@ -394,27 +312,6 @@ export default function BookReader() {
       setPendingNavigation(null);
     }
   }, [pendingNavigation]);
-
-  // Auto-hide UI
-  const resetAutoHide = useCallback(() => {
-    if (uiTimeoutRef.current) {
-      clearTimeout(uiTimeoutRef.current);
-    }
-    if (uiVisible) {
-      uiTimeoutRef.current = setTimeout(() => {
-        setUiVisible(false);
-      }, 4000);
-    }
-  }, [uiVisible]);
-
-  useEffect(() => {
-    resetAutoHide();
-    return () => {
-      if (uiTimeoutRef.current) {
-        clearTimeout(uiTimeoutRef.current);
-      }
-    };
-  }, [uiVisible, resetAutoHide]);
 
   // Show toast
   const showToast = useCallback((message: string) => {
@@ -460,32 +357,12 @@ export default function BookReader() {
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         prevPage();
-      } else if (e.key === "Escape") {
-        setUiVisible(false);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [nextPage, prevPage]);
-
-  // Touch/swipe handling
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX;
-
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) {
-        nextPage();
-      } else {
-        prevPage();
-      }
-    }
-  };
 
   // Audio controls
   const toggleNarration = () => {
@@ -502,26 +379,21 @@ export default function BookReader() {
   const toggleSoundscape = () => {
     if (!soundscapeRef.current || !soundscapeUrl) return;
 
-    // Initialize Web Audio API on first interaction (iOS requirement)
-    // Only attempt if not already connected
     if (!audioConnectedRef.current) {
       initAudioContext();
       const gainNode = connectAudioElement(soundscapeRef.current);
       if (gainNode) {
         audioConnectedRef.current = true;
       }
-      // If connection failed (CORS), we'll use native volume control as fallback
     }
 
     if (isSoundscapePlaying) {
       if (audioConnectedRef.current) {
-        // Fade out instead of abrupt pause
         fadeOut(0.5);
         setTimeout(() => {
           soundscapeRef.current?.pause();
         }, 500);
       } else {
-        // Fallback: direct pause
         soundscapeRef.current.pause();
       }
     } else {
@@ -536,8 +408,6 @@ export default function BookReader() {
   // Handle soundscape mode toggle
   const handleSoundscapeModeChange = (mode: SoundscapeMode) => {
     setSoundscapeMode(mode);
-    setShowSoundscapeMenu(false);
-    // Reset intro faded pages when switching modes
     if (mode === 'continuous') {
       setIntroFadedPages(new Set());
     }
@@ -561,7 +431,6 @@ export default function BookReader() {
 
       if (isNewSource && isSoundscapePlaying) {
         if (audioConnectedRef.current) {
-          // Web Audio API available - smooth cross-fade
           fadeOut(1.0);
           setTimeout(() => {
             if (soundscapeRef.current) {
@@ -571,13 +440,11 @@ export default function BookReader() {
             }
           }, 1000);
         } else {
-          // Fallback: quick volume dip for transition
           const audio = soundscapeRef.current;
           const startVolume = audio.volume;
           audio.volume = 0;
           audio.src = soundscapeUrl;
           audio.play();
-          // Fade back in
           let step = 0;
           const steps = 10;
           const fadeInterval = setInterval(() => {
@@ -599,13 +466,11 @@ export default function BookReader() {
 
   // Intro-only mode: fade out after 10 seconds
   useEffect(() => {
-    // Clear any existing timer
     if (introFadeTimerRef.current) {
       clearTimeout(introFadeTimerRef.current);
       introFadeTimerRef.current = null;
     }
 
-    // Only apply intro-only logic when playing and in intro-only mode
     if (
       preferences.soundscapeMode === 'intro-only' &&
       isSoundscapePlaying &&
@@ -613,11 +478,9 @@ export default function BookReader() {
       !introFadedPages.has(currentPage)
     ) {
       introFadeTimerRef.current = setTimeout(() => {
-        // Mark this page as having played its intro
         setIntroFadedPages((prev) => new Set(prev).add(currentPage));
 
         if (audioConnectedRef.current) {
-          // Web Audio API available - smooth fade
           fadeOut(3.0);
           setTimeout(() => {
             if (soundscapeRef.current) {
@@ -626,7 +489,6 @@ export default function BookReader() {
             setIsSoundscapePlaying(false);
           }, 3000);
         } else {
-          // Fallback: manual volume fade using native API
           const audio = soundscapeRef.current;
           if (audio) {
             const startVolume = audio.volume;
@@ -639,13 +501,13 @@ export default function BookReader() {
               if (step >= steps) {
                 clearInterval(fadeInterval);
                 audio.pause();
-                audio.volume = startVolume; // Reset volume for next play
+                audio.volume = startVolume;
                 setIsSoundscapePlaying(false);
               }
             }, stepDuration);
           }
         }
-      }, 10000); // Play for 10 seconds before fading
+      }, 10000);
     }
 
     return () => {
@@ -668,38 +530,37 @@ export default function BookReader() {
     }
   }, [soundscapeVolume]);
 
+  // Progress percentage
+  const progressPercent = totalPages > 0 ? (currentPage / totalPages) * 100 : 0;
 
-  // Format time
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Toggle UI
-  const toggleUI = () => {
-    setUiVisible(!uiVisible);
-  };
-
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--reader-bg)' }}
+      >
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
-          <span className="text-slate-400">Loading book...</span>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--reader-progress-bar-fill)' }} />
+          <span style={{ color: 'var(--reader-text-secondary)' }}>Loading book...</span>
         </div>
       </div>
     );
   }
 
+  // Error state
   if (error || !readerData) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--reader-bg)' }}
+      >
         <div className="text-center">
-          <p className="text-red-400 mb-4">{error || "Book not found"}</p>
+          <p className="text-red-500 mb-4">{error || "Book not found"}</p>
           <button
             onClick={() => handleExitAttempt(() => router.back())}
-            className="text-teal-500 hover:text-teal-400"
+            className="font-medium"
+            style={{ color: 'var(--reader-nav-btn-bg)' }}
           >
             Go back
           </button>
@@ -709,7 +570,10 @@ export default function BookReader() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-200 overflow-hidden relative selection:bg-teal-500/30 selection:text-teal-200">
+    <div
+      className="min-h-screen flex flex-col relative"
+      style={{ backgroundColor: 'var(--reader-bg)', color: 'var(--reader-text)' }}
+    >
       {/* Hidden Audio Elements */}
       <audio
         ref={narrationRef}
@@ -723,291 +587,268 @@ export default function BookReader() {
       />
       <audio ref={soundscapeRef} loop crossOrigin="anonymous" />
 
-      {/* BACKGROUND / MAIN CONTENT LAYER */}
-      <div
-        className="absolute inset-0 flex flex-col items-center justify-start h-full w-full z-0"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+      {/* ═══ FIXED TOP BAR: Close + Progress ═══ */}
+      <header
+        className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 safe-area-top"
+        style={{ backgroundColor: 'var(--reader-bg)' }}
       >
-        {/* Main Image Stage */}
-        <div className="relative w-full h-[65vh] md:h-[80vh] flex-shrink-0 bg-black group overflow-hidden">
+        {/* Close Button */}
+        <button
+          onClick={() => handleExitAttempt(() => router.back())}
+          className="flex-shrink-0 p-1"
+          aria-label="Close reader"
+        >
+          <X className="w-6 h-6" style={{ color: 'var(--reader-close-color)' }} />
+        </button>
+
+        {/* Progress Bar */}
+        <div
+          className="flex-1 h-3 rounded-full overflow-hidden"
+          style={{ backgroundColor: 'var(--reader-progress-bar-bg)' }}
+        >
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out"
+            style={{
+              width: `${progressPercent}%`,
+              backgroundColor: 'var(--reader-progress-bar-fill)',
+            }}
+          />
+        </div>
+
+        {/* Settings Button */}
+        <button
+          onClick={() => setShowSettingsPanel(true)}
+          className="flex-shrink-0 p-1"
+          aria-label="Settings"
+        >
+          <Settings className="w-5 h-5" style={{ color: 'var(--reader-close-color)' }} />
+        </button>
+      </header>
+
+      {/* ═══ SCROLLABLE CONTENT AREA ═══ */}
+      <main className="flex-1 flex flex-col items-center px-4 md:px-6 pt-4 pb-4 overflow-y-auto">
+        {/* Image Card */}
+        <div className="w-full max-w-md">
           {pageData?.imageUrl ? (
-            <Image
-              src={pageData.imageUrl}
-              alt={`Page ${currentPage} illustration`}
-              fill
-              className="object-cover opacity-90 transition-transform duration-[20s] ease-linear scale-100 group-hover:scale-105"
-              priority
-            />
+            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-lg">
+              <Image
+                src={pageData.imageUrl}
+                alt={`Page ${currentPage} illustration`}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-              <span className="text-slate-600 text-lg">No illustration</span>
+            <div
+              className="w-full aspect-[4/3] rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: 'var(--reader-card-bg)' }}
+            >
+              <span style={{ color: 'var(--reader-text-secondary)' }}>
+                No illustration
+              </span>
             </div>
           )}
-
-          {/* Gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-900/0 via-slate-900/0 to-slate-900 pointer-events-none" />
         </div>
 
-        {/* Desktop Text Content */}
-        <div className="hidden md:flex flex-1 w-full relative z-30 -mt-32 px-4 pointer-events-none">
-          <div className="max-w-2xl mx-auto h-full">
-            <div className="bg-transparent p-0 max-h-none overflow-y-auto pointer-events-auto">
-              {/* Text Content */}
-              <div className="prose prose-invert prose-xl mx-auto font-serif leading-relaxed text-slate-300/90 pb-16">
-                {pageData?.textContent ? (
-                  <p className="whitespace-pre-wrap">
-                    {timestampsLoaded && wordTimestamps.length > 0 ? (
-                      // Render with word-level highlighting
-                      wordTimestamps.map((wordData, index) => (
-                        <span
-                          key={index}
-                          className={`transition-all duration-200 ${
-                            index === 0
-                              ? "text-5xl font-bold text-amber-500 mr-3 float-left"
-                              : ""
-                          } ${
-                            index === activeWordIndex && isNarrationPlaying
-                              ? "text-amber-300 bg-amber-500/30 rounded px-1 -mx-0.5 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-                              : ""
-                          }`}
-                        >
-                          {wordData.word}{" "}
-                        </span>
-                      ))
-                    ) : (
-                      // Fallback: plain text
-                      <span className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left">
-                        {pageData.textContent}
-                      </span>
-                    )}
-                  </p>
+        {/* Text Content */}
+        <div className="mt-8 mb-6 text-center max-w-lg px-2 w-full">
+          {pageData?.textContent ? (
+            <p className="text-2xl md:text-3xl font-bold font-sans leading-relaxed whitespace-pre-wrap">
+              {timestampsLoaded && wordTimestamps.length > 0 ? (
+                wordTimestamps.map((wordData, index) => (
+                  <span
+                    key={index}
+                    className={`transition-all duration-200 ${
+                      index === activeWordIndex && isNarrationPlaying
+                        ? "rounded px-1 -mx-0.5 font-extrabold"
+                        : ""
+                    }`}
+                    style={
+                      index === activeWordIndex && isNarrationPlaying
+                        ? { backgroundColor: 'var(--reader-highlight-bg)' }
+                        : undefined
+                    }
+                  >
+                    {wordData.word}{" "}
+                  </span>
+                ))
+              ) : (
+                <span>{pageData.textContent}</span>
+              )}
+            </p>
+          ) : (
+            <p style={{ color: 'var(--reader-text-secondary)' }} className="italic">
+              No text content
+            </p>
+          )}
+        </div>
+
+        {/* Audio Controls Island */}
+        {(narrationUrl || soundscapeUrl) && (
+          <div className="flex items-center gap-2 mb-4">
+            {/* Narration Toggle */}
+            {narrationUrl && (
+              <button
+                onClick={toggleNarration}
+                className={`flex items-center gap-2 py-2 px-4 rounded-full border shadow-sm transition-all text-sm font-medium ${
+                  isNarrationPlaying
+                    ? "bg-orange-500/15 border-orange-400/40 text-orange-500"
+                    : "border-gray-300 dark:border-gray-600"
+                }`}
+                style={
+                  !isNarrationPlaying
+                    ? { color: 'var(--reader-text-secondary)' }
+                    : undefined
+                }
+              >
+                {isNarrationPlaying ? (
+                  <Pause className="w-4 h-4" />
                 ) : (
-                  <p className="text-slate-500 italic">No text content</p>
+                  <Mic className="w-4 h-4" />
                 )}
+                <span>{isNarrationPlaying ? "Reading" : "Read"}</span>
+              </button>
+            )}
+
+            {/* Soundscape Toggle */}
+            {soundscapeUrl && (
+              <button
+                onClick={toggleSoundscape}
+                className={`flex items-center gap-2 py-2 px-4 rounded-full border shadow-sm transition-all text-sm font-medium ${
+                  isSoundscapePlaying
+                    ? "bg-teal-500/15 border-teal-400/40 text-teal-500"
+                    : "border-gray-300 dark:border-gray-600"
+                }`}
+                style={
+                  !isSoundscapePlaying
+                    ? { color: 'var(--reader-text-secondary)' }
+                    : undefined
+                }
+              >
+                {isSoundscapePlaying ? (
+                  <div className="flex items-end gap-0.5 h-4">
+                    <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-1" style={{ height: '60%' }} />
+                    <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-2" style={{ height: '100%' }} />
+                    <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-3" style={{ height: '80%' }} />
+                  </div>
+                ) : (
+                  <Music className="w-4 h-4" />
+                )}
+                <span>{isSoundscapePlaying ? "BGM On" : "BGM"}</span>
+              </button>
+            )}
+
+            {/* Soundscape Mode Toggle (only when soundscape is playing) */}
+            {soundscapeUrl && isSoundscapePlaying && (
+              <div className="flex items-center rounded-full p-0.5 gap-0.5 border border-gray-300 dark:border-gray-600">
+                <button
+                  onClick={() => handleSoundscapeModeChange('intro-only')}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
+                    preferences.soundscapeMode === 'intro-only'
+                      ? 'bg-teal-500 text-white'
+                      : ''
+                  }`}
+                  style={
+                    preferences.soundscapeMode !== 'intro-only'
+                      ? { color: 'var(--reader-text-secondary)' }
+                      : undefined
+                  }
+                >
+                  Intro
+                </button>
+                <button
+                  onClick={() => handleSoundscapeModeChange('continuous')}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
+                    preferences.soundscapeMode === 'continuous'
+                      ? 'bg-teal-500 text-white'
+                      : ''
+                  }`}
+                  style={
+                    preferences.soundscapeMode !== 'continuous'
+                      ? { color: 'var(--reader-text-secondary)' }
+                      : undefined
+                  }
+                >
+                  Loop
+                </button>
               </div>
-            </div>
+            )}
           </div>
-        </div>
-      </div>
+        )}
+      </main>
 
-      {/* TAP TARGET OVERLAY - handles swipe and tap */}
-      <div
-        className="absolute inset-0 z-20 cursor-default"
-        onClick={toggleUI}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      />
-
-      {/* Mobile Navigation Tap Zones (always visible) */}
-      {currentPage > 1 && (
-        <div className="md:hidden absolute inset-y-0 left-0 w-1/4 pointer-events-auto" style={{ zIndex: 25 }}>
+      {/* ═══ FIXED BOTTOM NAV BAR ═══ */}
+      <nav
+        className="sticky bottom-0 z-40 px-4 pb-4 pt-2 safe-area-bottom"
+        style={{ backgroundColor: 'var(--reader-bg)' }}
+      >
+        {currentPage === 1 ? (
+          /* Page 1: Single next button (Duolingo cover page pattern) */
           <button
-            className="w-full h-full flex items-center justify-start pl-2 opacity-0 active:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              prevPage();
-            }}
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="w-8 h-8 text-white/50" />
-          </button>
-        </div>
-      )}
-      {currentPage < totalPages && (
-        <div className="md:hidden absolute inset-y-0 right-0 w-1/4 pointer-events-auto" style={{ zIndex: 25 }}>
-          <button
-            className="w-full h-full flex items-center justify-end pr-2 opacity-0 active:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              nextPage();
+            onClick={nextPage}
+            disabled={currentPage >= totalPages}
+            className="w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40"
+            style={{
+              backgroundColor: 'var(--reader-nav-btn-bg)',
+              color: 'var(--reader-nav-btn-text)',
             }}
             aria-label="Next page"
           >
-            <ChevronRight className="w-8 h-8 text-white/50" />
+            <ChevronRight className="w-6 h-6" />
           </button>
-        </div>
-      )}
-
-      {/* Navigation Hint Overlay - Always show on page 1 on mobile */}
-      {isMobile && currentPage === 1 && (
-        <div className="absolute inset-0 z-30 pointer-events-none">
-          {/* Right edge glow */}
-          <div className="absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-teal-400/40 to-transparent animate-edge-glow" />
-
-          {/* Right chevron hint */}
-          <div className="absolute right-4 top-1/3 flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center animate-hint-pulse">
-              <ChevronRight className="w-6 h-6 text-white/80" />
-            </div>
-          </div>
-
-          {/* Center subtle instruction */}
-          <div className="absolute inset-x-0 bottom-[55%] flex flex-col items-center">
-            <span className="text-white/60 text-[10px] tracking-[0.2em] uppercase font-light bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
-              Swipe to turn page
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Desktop Navigation Arrows (always visible) */}
-      {currentPage > 1 && (
-        <button
-          className="hidden md:flex absolute left-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white/50 hover:text-white transition-all hover:scale-110 z-40"
-          onClick={prevPage}
-          aria-label="Previous page"
-        >
-          <ChevronLeft className="w-10 h-10" />
-        </button>
-      )}
-      {currentPage < totalPages && (
-        <button
-          className="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 w-16 h-16 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white/50 hover:text-white transition-all hover:scale-110 z-40"
-          onClick={nextPage}
-          aria-label="Next page"
-        >
-          <ChevronRight className="w-10 h-10" />
-        </button>
-      )}
-
-      {/* Desktop Audio Controls (desktop only) */}
-      {!isMobile && (soundscapeUrl || narrationUrl) && (
-        <div className="absolute z-40 top-4 left-4 flex gap-2">
-          {/* Soundscape Toggle */}
-          {soundscapeUrl && (
-            <button
-              onClick={toggleSoundscape}
-              className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
-                isSoundscapePlaying
-                  ? "bg-teal-500/20 border-teal-500/50 text-teal-400"
-                  : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
-              }`}
-              aria-label={isSoundscapePlaying ? "Mute background music" : "Play background music"}
-            >
-              {isSoundscapePlaying ? (
-                <div className="flex items-end gap-0.5 h-4">
-                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-1" style={{ height: '60%' }} />
-                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-2" style={{ height: '100%' }} />
-                  <div className="w-1 bg-teal-400 rounded-full animate-sound-wave-3" style={{ height: '80%' }} />
-                </div>
-              ) : (
-                <Music className="w-5 h-5" />
-              )}
-              <span className="text-xs font-medium">
-                {isSoundscapePlaying ? "BGM On" : "BGM Off"}
-              </span>
-            </button>
-          )}
-
-          {/* Narration Toggle */}
-          {narrationUrl && (
-            <button
-              onClick={toggleNarration}
-              className={`flex items-center justify-center gap-2 rounded-full backdrop-blur-md shadow-lg border transition-all px-4 py-2.5 ${
-                isNarrationPlaying
-                  ? "bg-orange-500/20 border-orange-500/50 text-orange-400"
-                  : "bg-slate-900/80 border-white/10 text-slate-400 hover:text-white hover:border-white/20"
-              }`}
-              aria-label={isNarrationPlaying ? "Pause narration" : "Play narration"}
-            >
-              {isNarrationPlaying ? (
-                <Pause className="w-4 h-4" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
-              <span className="text-xs font-medium">
-                {isNarrationPlaying ? "Narration" : "Narrate"}
-              </span>
-            </button>
-          )}
-        </div>
-      )}
-
-
-      {/* UI CHROME LAYER */}
-      <div
-        className={`absolute inset-0 z-30 pointer-events-none transition-opacity duration-300 ${
-          uiVisible ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        {/* Top Bar */}
-        <header className="absolute top-0 left-0 right-0 p-4 md:p-6 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-auto">
-          <button
-            onClick={() => {
-              console.log("[Click] Back button clicked");
-              handleExitAttempt(() => router.back());
-            }}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
-          </button>
-
-          <div className="text-center">
-            <h1 className="text-xs font-bold tracking-[0.2em] text-slate-400 uppercase mb-1">
-              {readerData.book.author || "Unknown Author"}
-            </h1>
-            <h2 className="text-sm md:text-base font-serif text-slate-200">
-              {readerData.book.title}
-            </h2>
-          </div>
-
+        ) : (
+          /* Page 2+: Prev + Next buttons */
           <div className="flex gap-3">
             <button
-              onClick={() => setShowSettingsPanel(true)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors"
+              onClick={prevPage}
+              disabled={currentPage <= 1}
+              className="py-4 px-6 rounded-2xl font-bold text-lg flex items-center justify-center transition-all active:scale-[0.98] disabled:opacity-40 border-2"
+              style={{
+                borderColor: 'var(--reader-progress-bar-bg)',
+                color: 'var(--reader-text-secondary)',
+              }}
+              aria-label="Previous page"
             >
-              <Settings className="w-5 h-5" />
+              <ChevronLeft className="w-6 h-6" />
             </button>
-            <button className="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white transition-colors">
-              <Bookmark className="w-5 h-5" />
+            <button
+              onClick={nextPage}
+              disabled={currentPage >= totalPages}
+              className="flex-1 py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40"
+              style={{
+                backgroundColor: 'var(--reader-nav-btn-bg)',
+                color: 'var(--reader-nav-btn-text)',
+              }}
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-6 h-6" />
             </button>
           </div>
-        </header>
+        )}
+      </nav>
 
-        {/* Bottom Bar */}
-        <footer className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-auto flex flex-col md:flex-row items-end md:items-center justify-between gap-4">
-         
-
-          {/* Page Counter & Progress */}
-          <div className="flex flex-col items-end gap-2 text-right md:mb-4">
-            <div className="text-sm font-medium text-slate-400">
-              Page <span className="text-white">{currentPage}</span> of{" "}
-              {totalPages}
-            </div>
-            {/* Progress Bar */}
-            <div className="w-32 md:w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-teal-400 rounded-full transition-all duration-300"
-                style={{ width: `${(currentPage / totalPages) * 100}%` }}
-              />
-            </div>
-          </div>
-        </footer>
-      </div>
-
-      {/* Persistent Mini Page Counter (Mobile) */}
-      <div className="absolute top-4 right-4 z-10 pointer-events-none md:hidden">
-        <div className="bg-black/30 backdrop-blur px-3 py-1 rounded-full text-[10px] text-white/70 font-medium">
-          {currentPage} / {totalPages}
-        </div>
-      </div>
-
-      {/* Toast Notification */}
+      {/* ═══ TOAST NOTIFICATIONS ═══ */}
       <div
-        className={`absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none z-50 transition-all duration-300 ${
+        className={`fixed top-16 left-1/2 -translate-x-1/2 pointer-events-none z-50 transition-all duration-300 ${
           toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
         }`}
       >
-        <div className="bg-slate-800/90 backdrop-blur text-white text-sm px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 border border-white/10">
-          <Info className="w-4 h-4 text-teal-400" />
+        <div
+          className="backdrop-blur text-sm px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 border"
+          style={{
+            backgroundColor: 'var(--reader-card-bg)',
+            color: 'var(--reader-text)',
+            borderColor: 'var(--reader-progress-bar-bg)',
+          }}
+        >
           <span>{toast}</span>
         </div>
       </div>
 
       {/* Progress Restored Toast */}
       <div
-        className={`fixed top-24 left-1/2 -translate-x-1/2 pointer-events-none z-50 transition-all duration-500 ${
+        className={`fixed top-16 left-1/2 -translate-x-1/2 pointer-events-none z-50 transition-all duration-500 ${
           progressToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
         }`}
       >
@@ -1017,172 +858,15 @@ export default function BookReader() {
         </div>
       </div>
 
-      {/* Mobile Text Sheet - Only render on mobile */}
-      {isMobile && (
-        <Sheet
-          ref={sheetRef}
-          isOpen={textSheetOpen}
-          onClose={() => setTextSheetOpen(false)}
-          detent="content"
-          snapPoints={[0, 0.5, 1]}
-          initialSnap={2}
-          disableDismiss={true}
-          onSnap={(snapIndex) => {
-            // If it snaps to 0 (closed position), immediately snap it back to position 1 (0.5 height)
-            if (snapIndex === 0) {
-              setTimeout(() => {
-                sheetRef.current?.snapTo(1);
-              }, 50);
-            }
-          }}
-        >
-          <Sheet.Container
-            unstyled
-            className="bg-slate-900/95 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.5)] rounded-t-3xl"
-            style={{
-              backgroundColor: 'rgb(15 23 42 / 0.95)',
-              backdropFilter: 'blur(12px)',
-              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.5)',
-              borderTopLeftRadius: '1.5rem',
-              borderTopRightRadius: '1.5rem'
-            }}
-          >
-            <Sheet.Header unstyled className="flex items-center justify-between px-6 pt-5 pb-2">
-              {/* Minimal Drag Handle */}
-              <div className="flex gap-1.5">
-                <div className="w-5 h-1.5 bg-slate-700 rounded-full opacity-60" />
-                <div className="w-5 h-1.5 bg-slate-700 rounded-full opacity-60" />
-              </div>
-
-              {/* Audio Controls Island */}
-              <div className="flex items-center gap-2">
-                {/* Narration Toggle (Compact Pill) */}
-                {narrationUrl && (
-                  <button
-                    onClick={toggleNarration}
-                    className={`flex items-center gap-2 py-1.5 px-3 backdrop-blur-2xl border rounded-full shadow-lg transition-all ${
-                      isNarrationPlaying
-                        ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
-                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                    }`}
-                  >
-                    {isNarrationPlaying ? (
-                      <Pause className="w-3.5 h-3.5" />
-                    ) : (
-                      <Mic className="w-3.5 h-3.5" />
-                    )}
-                    <span className="text-[10px] font-semibold">
-                      {isNarrationPlaying ? "Reading" : "Read"}
-                    </span>
-                  </button>
-                )}
-
-                {/* Soundscape Toggle (Glass Morphism Pill) */}
-                {soundscapeUrl && (
-                  <button
-                    onClick={toggleSoundscape}
-                    className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
-                  >
-                    {/* Play/Pause Indicator */}
-                    <div className="flex items-center gap-2">
-                      {isSoundscapePlaying ? (
-                        <Pause className="w-4 h-4 text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]" />
-                      ) : (
-                        <Play className="w-4 h-4 text-slate-400" />
-                      )}
-                      {isSoundscapePlaying && (
-                        <div className="flex items-end gap-0.5 h-3">
-                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-1" style={{ height: '6px' }} />
-                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-2" style={{ height: '12px' }} />
-                          <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-3" style={{ height: '8px' }} />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Mode Toggle Pill */}
-                    <div className="flex items-center bg-black/40 rounded-full p-0.5 gap-0.5 border border-white/5">
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSoundscapeModeChange('intro-only');
-                        }}
-                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
-                          preferences.soundscapeMode === 'intro-only'
-                            ? 'bg-white/10 text-white shadow-sm'
-                            : 'text-white/40 hover:text-white/60'
-                        }`}
-                      >
-                        Intro
-                      </span>
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSoundscapeModeChange('continuous');
-                        }}
-                        className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
-                          preferences.soundscapeMode === 'continuous'
-                            ? 'bg-white/10 text-white shadow-sm'
-                            : 'text-white/40 hover:text-white/60'
-                        }`}
-                      >
-                        Loop
-                      </span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </Sheet.Header>
-            <Sheet.Content className="p-6">
-              {/* Text Content */}
-              <div className="prose prose-invert prose-lg mx-auto font-serif leading-relaxed text-slate-300/90 max-w-none">
-                {pageData?.textContent ? (
-                  <p className="whitespace-pre-wrap">
-                    {timestampsLoaded && wordTimestamps.length > 0 ? (
-                      // Render with word-level highlighting
-                      wordTimestamps.map((wordData, index) => (
-                        <span
-                          key={index}
-                          className={`transition-all duration-200 ${
-                            index === 0
-                              ? "text-5xl font-bold text-amber-500 mr-3 float-left"
-                              : ""
-                          } ${
-                            index === activeWordIndex && isNarrationPlaying
-                              ? "text-amber-300 bg-amber-500/30 rounded px-1 -mx-0.5 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-                              : ""
-                          }`}
-                        >
-                          {wordData.word}{" "}
-                        </span>
-                      ))
-                    ) : (
-                      // Fallback: plain text
-                      <span className="first-letter:text-5xl first-letter:font-bold first-letter:text-amber-500 first-letter:mr-3 first-letter:float-left">
-                        {pageData.textContent}
-                      </span>
-                    )}
-                  </p>
-                ) : (
-                  <p className="text-slate-500 italic">No text content</p>
-                )}
-              </div>
-            </Sheet.Content>
-          </Sheet.Container>
-          <Sheet.Backdrop />
-        </Sheet>
-      )}
-
-      {/* Settings Panel */}
+      {/* ═══ SETTINGS PANEL ═══ */}
       {showSettingsPanel && (
         <div className="fixed inset-0 z-50">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowSettingsPanel(false)}
           />
 
-          {/* Panel */}
-          <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-slate-900/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-slate-900/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-white/10">
               <h2 className="text-lg font-semibold text-white">Settings</h2>
@@ -1210,7 +894,6 @@ export default function BookReader() {
 
                 {narrationUrl ? (
                   <div className="space-y-3 pl-[52px]">
-                    {/* Play/Pause Toggle */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">Playback</span>
                       <button
@@ -1235,7 +918,6 @@ export default function BookReader() {
                       </button>
                     </div>
 
-                    {/* Volume Slider */}
                     <div className="flex items-center gap-3">
                       <Volume1 className="w-4 h-4 text-slate-400" />
                       <input
@@ -1249,7 +931,6 @@ export default function BookReader() {
                       <Volume2 className="w-4 h-4 text-slate-400" />
                     </div>
 
-                    {/* Auto-play Toggle */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">Auto-play on page turn</span>
                       <button
@@ -1291,7 +972,6 @@ export default function BookReader() {
 
                 {soundscapeUrl ? (
                   <div className="space-y-3 pl-[52px]">
-                    {/* Play/Pause Toggle */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">Playback</span>
                       <button
@@ -1316,7 +996,6 @@ export default function BookReader() {
                       </button>
                     </div>
 
-                    {/* Volume Slider */}
                     <div className="flex items-center gap-3">
                       <Volume1 className="w-4 h-4 text-slate-400" />
                       <input
@@ -1330,7 +1009,6 @@ export default function BookReader() {
                       <Volume2 className="w-4 h-4 text-slate-400" />
                     </div>
 
-                    {/* Mode Toggle */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">Play mode</span>
                       <div className="flex items-center bg-white/10 rounded-full p-1 gap-1">
