@@ -93,16 +93,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`[generate-narration] Generating for book ${bookId}, page ${pageNumber}`);
 
-    // Call Kokoro TTS model on Replicate
-    // Using kokoro - a high-quality open-source TTS model
-    // Voice options: af_bella (warm female), af_sarah, bf_emma (British), am_adam (male), etc.
+    // Call ElevenLabs v3 TTS model on Replicate
+    // Voice options: Aria, Rachel, Domi, Bella, Antoni, Elli, Josh, Arnold, Adam, Sam
     const output = await replicate.run(
-      "jaaari/kokoro-82m:f559560eb822dc509045f3921a1921234918b91739db4bf3daab2169b71c7a13",
+      "elevenlabs/v3",
       {
         input: {
-          text: trimmedText,
-          voice: voice || "af_nicole", // Default voice - warm female narrator
-          speed: 1.0,
+          prompt: trimmedText,
+          voice: voice || "Reginald",
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.76,
+          speed: 0.90,
         },
       }
     );
@@ -115,7 +117,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Kokoro returns a FileOutput object with a url() method or href property
+    // ElevenLabs v3 returns a FileOutput object with a url() method or href property
     let audioUrl: string;
     if (typeof output === "string") {
       audioUrl = output;
