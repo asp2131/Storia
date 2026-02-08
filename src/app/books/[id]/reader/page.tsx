@@ -651,42 +651,9 @@ export default function BookReader() {
           )}
         </div>
 
-        {/* Text Content */}
-        <div className="mt-8 mb-6 text-center max-w-lg px-2 w-full">
-          {pageData?.textContent ? (
-            <p className="text-2xl md:text-3xl font-bold font-sans leading-relaxed whitespace-pre-wrap">
-              {timestampsLoaded && wordTimestamps.length > 0 ? (
-                wordTimestamps.map((wordData, index) => (
-                  <span
-                    key={index}
-                    className={`transition-all duration-200 ${
-                      index === activeWordIndex && isNarrationPlaying
-                        ? "rounded px-1 -mx-0.5 font-extrabold"
-                        : ""
-                    }`}
-                    style={
-                      index === activeWordIndex && isNarrationPlaying
-                        ? { backgroundColor: 'var(--reader-highlight-bg)' }
-                        : undefined
-                    }
-                  >
-                    {wordData.word}{" "}
-                  </span>
-                ))
-              ) : (
-                <span>{pageData.textContent}</span>
-              )}
-            </p>
-          ) : (
-            <p style={{ color: 'var(--reader-text-secondary)' }} className="italic">
-              No text content
-            </p>
-          )}
-        </div>
-
         {/* Audio Controls Island */}
         {(narrationUrl || soundscapeUrl) && (
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mt-6 mb-4">
             {/* Narration Toggle */}
             {narrationUrl && (
               <button
@@ -776,6 +743,39 @@ export default function BookReader() {
             )}
           </div>
         )}
+
+        {/* Text Content */}
+        <div className="mt-4 mb-6 text-center max-w-lg px-2 w-full">
+          {pageData?.textContent ? (
+            <p className="text-2xl md:text-3xl font-bold font-sans leading-relaxed whitespace-pre-wrap">
+              {timestampsLoaded && wordTimestamps.length > 0 ? (
+                wordTimestamps.map((wordData, index) => (
+                  <span
+                    key={index}
+                    className={`transition-all duration-200 ${
+                      index === activeWordIndex && isNarrationPlaying
+                        ? "rounded px-1 -mx-0.5 font-extrabold"
+                        : ""
+                    }`}
+                    style={
+                      index === activeWordIndex && isNarrationPlaying
+                        ? { backgroundColor: 'var(--reader-highlight-bg)' }
+                        : undefined
+                    }
+                  >
+                    {wordData.word}{" "}
+                  </span>
+                ))
+              ) : (
+                <span>{pageData.textContent}</span>
+              )}
+            </p>
+          ) : (
+            <p style={{ color: 'var(--reader-text-secondary)' }} className="italic">
+              No text content
+            </p>
+          )}
+        </div>
       </main>
 
       {/* ═══ FIXED BOTTOM NAV BAR ═══ */}
