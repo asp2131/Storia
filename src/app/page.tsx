@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { authClient, signIn, useSession } from "@/lib/auth-client";
 
@@ -29,6 +29,31 @@ export default function Home() {
 
   const { data: session } = useSession();
   const currentUser = session?.user;
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+
+  useEffect(() => {
+    const audio = new Audio("/landing/song.wav");
+    audio.loop = true;
+    audio.volume = 0.3;
+    audioRef.current = audio;
+    return () => {
+      audio.pause();
+      audio.src = "";
+    };
+  }, []);
+
+  const toggleMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (musicPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setMusicPlaying(!musicPlaying);
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -345,6 +370,24 @@ export default function Home() {
           )}
         </nav>
       </header>
+
+      {/* Music Toggle */}
+      <button
+        onClick={toggleMusic}
+        className="fixed bottom-6 right-6 z-[60] w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white/80 hover:text-white transition-all duration-300 flex items-center justify-center"
+        aria-label={musicPlaying ? "Pause music" : "Play music"}
+      >
+        {musicPlaying ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
 
       {/* Main Content */}
       <MorphogenesisHero
