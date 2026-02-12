@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { TextOverlayConfig } from "@/types/text-overlay";
 
 type Params = {
   params: Promise<{
@@ -25,6 +26,8 @@ export async function GET(_request: NextRequest, { params }: Params) {
         imageUrl: page.image_url,
         narrationUrl: page.narration_url,
         narrationTimestamps: page.narration_timestamps,
+        compositedImageUrl: page.composited_image_url,
+        overlay: page.text_overlay as TextOverlayConfig | null,
       })),
     });
   } catch (error) {

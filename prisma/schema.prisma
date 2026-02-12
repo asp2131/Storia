@@ -86,6 +86,11 @@ model pages {
   narration_timestamps  Json?
   word_pronunciations   Json?
   illustration_prompt   String?
+  text_overlay          Json?
+  composited_image_url  String?   @db.VarChar(500)
+  composited_image_path String?   @db.VarChar(500)
+  composited_at         DateTime? @db.Timestamp(0)
+  composited_by         String?   @db.VarChar(255)
   books                books    @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   scenes               scenes?  @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
   page_audio_assignments page_audio_assignments[]
@@ -93,6 +98,7 @@ model pages {
   @@unique([book_id, page_number], map: "pages_book_id_page_number_index")
   @@index([book_id], map: "pages_book_id_index")
   @@index([scene_id], map: "pages_scene_id_index")
+  @@index([composited_image_url], map: "pages_composited_image_url_index")
 }
 
 model page_audio_assignments {
