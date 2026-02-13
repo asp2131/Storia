@@ -12,7 +12,8 @@ import {
   X,
   Volume1,
   Settings,
-  Bookmark
+  Bookmark,
+  ChevronDown,
 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -109,6 +110,7 @@ export default function BookReader() {
 
   // ─── Settings ──────────────────────────────────────────────────
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+
 
   // ─── Preferences & audio cross-fade ────────────────────────────
   const { preferences, setSoundscapeMode } = useLocalPreferences();
@@ -1036,6 +1038,28 @@ export default function BookReader() {
           );
         })}
       </div>
+
+      {/* ═══ SCROLL HINT — visible only on first page ═══ */}
+      {totalPages > 1 && (
+        <div
+          className="fixed bottom-8 left-1/2 z-30 pointer-events-none flex flex-col items-center gap-1.5 transition-opacity duration-500"
+          style={{
+            opacity: activeIndex === 0 ? 0.7 : 0,
+            transform: "translateX(-50%)",
+          }}
+        >
+          <span
+            className="text-[11px] tracking-wide uppercase font-medium"
+            style={{ color: "var(--reader-text-secondary)" }}
+          >
+            Swipe up next page
+          </span>
+          <ChevronDown
+            className="w-5 h-5 animate-bounce"
+            style={{ color: "var(--reader-text-secondary)" }}
+          />
+        </div>
+      )}
 
       {/* ═══ OUTRO / CTA ═══ */}
       <section
