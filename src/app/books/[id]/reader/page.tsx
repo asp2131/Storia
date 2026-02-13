@@ -1065,14 +1065,7 @@ export default function BookReader() {
         </div>
         <div className="flex flex-col gap-3 items-center w-full max-w-xs">
           <button
-            onClick={() => {
-              const enough = pagesViewed.size >= 2;
-              const skipped =
-                sessionStorage.getItem("feedback_skipped") === "true";
-              if (feedbackEligible && enough && !skipped) {
-                setShowFeedbackModal(true);
-              }
-            }}
+            onClick={() => setShowFeedbackModal(true)}
             className="w-full px-6 py-3 rounded-full text-sm font-semibold transition-all hover:scale-[1.03] active:scale-[0.98]"
             style={{
               backgroundColor: "var(--reader-nav-btn-bg)",

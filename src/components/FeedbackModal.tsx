@@ -148,50 +148,9 @@ export default function FeedbackModal({
               <h2 className="mb-2 font-serif text-2xl font-medium text-white">
                 How&apos;s your reading?
               </h2>
-              <p className="mb-8 max-w-[280px] text-sm leading-relaxed text-slate-400 md:text-[15px]">
-                Your feedback helps us create better stories for the Storia
-                community.
-              </p>
-
+          
               {/* Star Rating */}
-              <div className="mb-8 w-full">
-                <div className="mb-2 flex flex-row-reverse justify-center gap-1">
-                  {[5, 4, 3, 2, 1].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoveredRating(star)}
-                      onMouseLeave={() => setHoveredRating(0)}
-                      disabled={isSubmitting}
-                      className="p-2 transition-all duration-200 disabled:opacity-50 focus:outline-none"
-                      style={{
-                        color: displayRating >= star ? "#fbbf24" : "#475569",
-                        transform:
-                          hoveredRating >= star ? "scale(1.15)" : "scale(1)",
-                        textShadow:
-                          displayRating >= star
-                            ? "0 0 12px rgba(251, 191, 36, 0.4)"
-                            : "none",
-                      }}
-                      aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
-                    >
-                      <Star
-                        className="h-8 w-8"
-                        fill={displayRating >= star ? "currentColor" : "none"}
-                        strokeWidth={1.5}
-                      />
-                    </button>
-                  ))}
-                </div>
-                <p
-                  className={`h-4 text-xs font-medium uppercase tracking-widest transition-all duration-300 ${
-                    rating > 0 ? "text-amber-500" : "text-slate-500"
-                  }`}
-                >
-                  {rating > 0 ? "Thanks for rating!" : "Tap to rate"}
-                </p>
-              </div>
+        
 
               {/* Feedback Input */}
               <div className="relative mb-6 w-full group">
@@ -203,7 +162,7 @@ export default function FeedbackModal({
                   disabled={isSubmitting}
                   rows={3}
                   className="peer w-full resize-none rounded-xl border border-slate-700/50 bg-slate-950/50 p-4 text-sm text-slate-200 placeholder-slate-600 transition-all focus:border-teal-500/50 focus:outline-none focus:ring-2 focus:ring-teal-500/50 disabled:opacity-50"
-                  placeholder="What could we improve? (optional)"
+                  placeholder="What's one thing we can do better?"
                 />
                 <div className="absolute bottom-3 right-3 font-mono text-[10px] text-slate-600 opacity-0 transition-opacity peer-focus:opacity-100">
                   {feedback.length} / {MAX_CHARS}
