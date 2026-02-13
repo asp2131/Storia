@@ -13,6 +13,8 @@ import {
   Volume1,
   Settings,
   Bookmark,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import FeedbackModal from "@/components/FeedbackModal";
 import LoginPrompt from "@/components/LoginPrompt";
@@ -76,6 +78,7 @@ export default function BookReader() {
   const [toast, setToast] = useState<string | null>(null);
   const [progressToast, setProgressToast] = useState<string | null>(null);
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
 
   // Audio state
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
@@ -206,16 +209,28 @@ export default function BookReader() {
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2000);
   }, []);
 
+  const markSwipeHintSeen = useCallback(() => {
+    try {
+      sessionStorage.setItem(`reader_swipe_hint_seen:${bookId}`, "1");
+    } catch {
+      // Ignore storage errors on restricted browsers.
+    }
+  }, [bookId]);
+
   const goToPage = useCallback(
     (page: number) => {
       if (page >= 1 && page <= totalPages) {
         hasManuallyNavigatedRef.current = true;
+        if (showSwipeHint) {
+          setShowSwipeHint(false);
+          markSwipeHintSeen();
+        }
         setSlideDirection(page > currentPage ? "left" : "right");
         setCurrentPage(page);
         showToast(`Page ${page} of ${totalPages}`);
       }
     },
-    [totalPages, showToast, currentPage]
+    [currentPage, markSwipeHintSeen, showSwipeHint, showToast, totalPages]
   );
 
   const nextPage = useCallback(() => { if (currentPage < totalPages) goToPage(currentPage + 1); }, [currentPage, totalPages, goToPage]);
@@ -240,6 +255,27 @@ export default function BookReader() {
   }, [nextPage, prevPage]);
 
   const swipe = useSwipe(nextPage, prevPage);
+
+  // Show a short swipe hint for first-time reader sessions.
+  useEffect(() => {
+    if (loading || totalPages < 2) return;
+
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(`reader_swipe_hint_seen:${bookId}`) === "1";
+    } catch {
+      seen = false;
+    }
+    if (seen) return;
+
+    setShowSwipeHint(true);
+    const timer = setTimeout(() => {
+      setShowSwipeHint(false);
+      markSwipeHintSeen();
+    }, 4500);
+
+    return () => clearTimeout(timer);
+  }, [bookId, loading, markSwipeHintSeen, totalPages]);
 
   // ─── Audio ───────────────────────────────────────────────────────
 
@@ -440,6 +476,42 @@ export default function BookReader() {
         onClick={handlePageTap}
         {...swipe}
       >
+        <button
+          type="button"
+          aria-label="Previous page"
+          disabled={currentPage <= 1}
+          onClick={(e) => {
+            e.stopPropagation();
+            prevPage();
+          }}
+          className="absolute top-4 left-4 z-30 h-11 w-11 rounded-full border backdrop-blur-md flex items-center justify-center transition-all disabled:opacity-35 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: "rgba(255,255,255,0.22)",
+            borderColor: "rgba(255,255,255,0.28)",
+            color: "var(--reader-text)",
+          }}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <button
+          type="button"
+          aria-label="Next page"
+          disabled={currentPage >= totalPages}
+          onClick={(e) => {
+            e.stopPropagation();
+            nextPage();
+          }}
+          className="absolute top-4 right-4 z-30 h-11 w-11 rounded-full border backdrop-blur-md flex items-center justify-center transition-all disabled:opacity-35 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: "rgba(255,255,255,0.22)",
+            borderColor: "rgba(255,255,255,0.28)",
+            color: "var(--reader-text)",
+          }}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
         {/* Page image — composited image has text baked in */}
         <div
           className={`absolute inset-0 flex items-center justify-center p-4 ${
@@ -478,6 +550,32 @@ export default function BookReader() {
           )}
         </div>
       </main>
+
+      {showSwipeHint && (
+        <div className="absolute inset-0 pointer-events-none z-30">
+          <div className="absolute inset-y-0 left-0 w-14 flex items-center justify-center">
+            <div
+              className="h-28 w-full rounded-r-full animate-edge-glow"
+              style={{ background: "linear-gradient(to right, rgba(255,255,255,0.16), rgba(255,255,255,0))" }}
+            />
+            <span className="absolute text-white/80 text-2xl font-light animate-hint-pulse-left">‹</span>
+          </div>
+          <div className="absolute inset-y-0 right-0 w-14 flex items-center justify-center">
+            <div
+              className="h-28 w-full rounded-l-full animate-edge-glow"
+              style={{ background: "linear-gradient(to left, rgba(255,255,255,0.16), rgba(255,255,255,0))" }}
+            />
+            <span className="absolute text-white/80 text-2xl font-light animate-hint-pulse">›</span>
+          </div>
+          <div
+            className={`absolute left-1/2 -translate-x-1/2 text-[11px] tracking-wide uppercase text-white/80 ${
+              showAudioBar ? "bottom-24" : "bottom-8"
+            }`}
+          >
+            Swipe to navigate
+          </div>
+        </div>
+      )}
 
       {/* ═══ FLOATING AUDIO BAR ═══ */}
       {(narrationUrl || soundscapeUrl) && showAudioBar && (
