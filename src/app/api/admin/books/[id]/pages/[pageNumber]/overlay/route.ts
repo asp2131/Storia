@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
 import {
@@ -137,7 +137,7 @@ export async function POST(
         },
       },
       data: {
-        text_overlay: validatedOverlay as unknown as Prisma.JsonValue,
+        text_overlay: validatedOverlay as unknown as Prisma.InputJsonValue,
         text_content: derivedText || null,
         composited_image_url: null,
         composited_image_path: null,
