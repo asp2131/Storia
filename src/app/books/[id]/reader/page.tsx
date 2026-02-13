@@ -12,7 +12,7 @@ import {
   X,
   Volume1,
   Settings,
-  Bookmark,
+  Bookmark
 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -76,7 +76,6 @@ export default function BookReader() {
   const pageCounterRef = useRef<HTMLSpanElement>(null);
   const narrationRef = useRef<HTMLAudioElement>(null);
   const soundscapeRef = useRef<HTMLAudioElement>(null);
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevActiveIndexRef = useRef(0);
   const lastSnapProgressRef = useRef(0);
   const isNarrationPlayingRef = useRef(false);
@@ -84,7 +83,6 @@ export default function BookReader() {
 
   // ─── UI state ──────────────────────────────────────────────────
   const [activeIndex, setActiveIndex] = useState(0);
-  const [toast, setToast] = useState<string | null>(null);
   const [progressToast, setProgressToast] = useState<string | null>(null);
 
   // Derived current page (1-based)
@@ -380,6 +378,11 @@ export default function BookReader() {
 
       const targetProgress =
         pages.length > 1 ? targetIndex / (pages.length - 1) : 0;
+
+      // Keep the snap anchor in sync so the dead-zone logic
+      // doesn't fight the programmatic scroll on the next snap event.
+      lastSnapProgressRef.current = targetProgress;
+
       const targetScroll =
         st.start + targetProgress * (st.end - st.start);
       window.scrollTo({ top: targetScroll, behavior: "smooth" });
@@ -444,6 +447,9 @@ export default function BookReader() {
             return;
           }
           const targetProgress = pageIndex / (pages.length - 1);
+          // Sync snap anchor BEFORE scrolling so the dead-zone
+          // treats the restored page as "home" on the first interaction.
+          lastSnapProgressRef.current = targetProgress;
           const targetScroll =
             st.start + targetProgress * (st.end - st.start);
           window.scrollTo(0, targetScroll);
@@ -661,12 +667,6 @@ export default function BookReader() {
   // FEEDBACK
   // ═══════════════════════════════════════════════════════════════
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => setToast(null), 2000);
-  }, []);
-
   const handleExitAttempt = useCallback(
     (navFn: () => void) => {
       const enough = pagesViewed.size >= 2;
@@ -824,7 +824,9 @@ export default function BookReader() {
             ref={progressBarRef}
             className="h-full rounded-full"
             style={{
-              width: "0%",
+              // Single-page books start at 100%; multi-page starts at 0%
+              // and is driven by GSAP onUpdate via the ref.
+              width: totalPages <= 1 ? "100%" : "0%",
               backgroundColor: "var(--reader-progress-bar-fill)",
               transition: "none",
             }}
@@ -1099,26 +1101,7 @@ export default function BookReader() {
         </div>
       </section>
 
-      {/* ═══ TOASTS ═══ */}
-      <div
-        className={`fixed top-16 left-1/2 -translate-x-1/2 pointer-events-none z-[60] transition-all duration-300 ${
-          toast
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 -translate-y-4"
-        }`}
-      >
-        <div
-          className="backdrop-blur text-sm px-4 py-2 rounded-lg shadow-xl flex items-center gap-2 border"
-          style={{
-            backgroundColor: "var(--reader-card-bg)",
-            color: "var(--reader-text)",
-            borderColor: "var(--reader-progress-bar-bg)",
-          }}
-        >
-          <span>{toast}</span>
-        </div>
-      </div>
-
+      {/* ═══ TOAST ═══ */}
       <div
         className={`fixed top-16 left-1/2 -translate-x-1/2 pointer-events-none z-[60] transition-all duration-500 ${
           progressToast
