@@ -295,7 +295,7 @@ export default function BookReader() {
         if (isSoundscapePlaying) soundscapeRef.current.play();
       }
     }
-  }, [soundscapeUrl]);
+  }, [fadeIn, fadeOut, isSoundscapePlaying, soundscapeUrl, soundscapeVolume]);
 
   // Intro-only fade
   useEffect(() => {
@@ -420,7 +420,7 @@ export default function BookReader() {
         className="shrink-0 flex items-center gap-3 px-4 py-3 safe-area-top z-40"
         style={{ backgroundColor: "var(--reader-bg)" }}
       >
-        <button onClick={() => handleExitAttempt(() => router.back())} className="flex-shrink-0 p-1" aria-label="Close">
+        <button onClick={() => handleExitAttempt(() => router.back())} className="shrink-0 p-1" aria-label="Close">
           <X className="w-6 h-6" style={{ color: "var(--reader-close-color)" }} />
         </button>
         <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ backgroundColor: "var(--reader-progress-bar-bg)" }}>
@@ -429,7 +429,7 @@ export default function BookReader() {
         <span className="text-xs font-medium shrink-0 tabular-nums" style={{ color: "var(--reader-text-secondary)" }}>
           {currentPage}/{totalPages}
         </span>
-        <button onClick={() => setShowSettingsPanel(true)} className="flex-shrink-0 p-1" aria-label="Settings">
+        <button onClick={() => setShowSettingsPanel(true)} className="shrink-0 p-1" aria-label="Settings">
           <Settings className="w-5 h-5" style={{ color: "var(--reader-close-color)" }} />
         </button>
       </header>

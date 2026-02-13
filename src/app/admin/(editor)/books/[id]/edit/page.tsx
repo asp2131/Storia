@@ -993,7 +993,7 @@ export default function BookEditor() {
                     type="button"
                     onClick={() => handleGenerateNarration()}
                     disabled={generatingNarration || generatingAllNarration || !activePageData?.text?.trim()}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
                     {generatingNarration ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating...</> : <><Wand2 className="w-3.5 h-3.5" />This Page</>}
                   </button>
@@ -1001,7 +1001,7 @@ export default function BookEditor() {
                     type="button"
                     onClick={handleGenerateAllNarration}
                     disabled={generatingNarration || generatingAllNarration}
-                    className="flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
                     {generatingAllNarration ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{generationProgress.current}/{generationProgress.total}</> : <><Sparkles className="w-3.5 h-3.5" />All</>}
                   </button>

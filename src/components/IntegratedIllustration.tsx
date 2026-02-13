@@ -275,8 +275,19 @@ function OverlayTextElement({
 
   const interactive = typeof onWordTap === "function";
 
-  let localWordIndex = 0;
   const tokens = element.text.split(/(\s+)/);
+  const wordPositions = tokens.reduce<{ positions: number[]; wordCount: number }>(
+    (acc, token) => {
+      if (token.trim().length > 0) {
+        acc.positions.push(acc.wordCount);
+        acc.wordCount += 1;
+      } else {
+        acc.positions.push(-1);
+      }
+      return acc;
+    },
+    { positions: [], wordCount: 0 }
+  ).positions;
 
   return (
     <div
@@ -303,8 +314,7 @@ function OverlayTextElement({
           return <span key={`${element.id}-space-${tokenIdx}`}>{token}</span>;
         }
 
-        const globalIndex = wordStartIndex + localWordIndex;
-        localWordIndex += 1;
+        const globalIndex = wordStartIndex + wordPositions[tokenIdx];
         const isActive = activeWordIndex === globalIndex;
         const isPronouncing = pronouncingWordIndex === globalIndex;
 
