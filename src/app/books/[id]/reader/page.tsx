@@ -97,15 +97,13 @@ export default function BookReader() {
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [hasNavigated, setHasNavigated] = useState(false);
-  const pageLoadTimeRef = useRef<number>(Date.now());
+  const pageLoadTimeRef = useRef<number>(0);
 
   // Settings
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [showAudioBar, setShowAudioBar] = useState(true);
 
   // Soundscape mode
-  const [introFadedPages, setIntroFadedPages] = useState<Set<number>>(new Set());
-  const introFadeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { preferences, setSoundscapeMode } = useLocalPreferences();
   const { initAudioContext, connectAudioElement, fadeIn, fadeOut } = useAudioCrossFade();
   const audioConnectedRef = useRef(false);
@@ -160,6 +158,10 @@ export default function BookReader() {
       } catch { setFeedbackEligible(false); }
     };
     check();
+  }, []);
+
+  useEffect(() => {
+    pageLoadTimeRef.current = Date.now();
   }, []);
 
   // Track pages viewed
@@ -305,7 +307,6 @@ export default function BookReader() {
 
   const handleSoundscapeModeChange = (mode: SoundscapeMode) => {
     setSoundscapeMode(mode);
-    if (mode === "continuous") setIntroFadedPages(new Set());
   };
 
   // Narration source change
@@ -333,26 +334,12 @@ export default function BookReader() {
     }
   }, [fadeIn, fadeOut, isSoundscapePlaying, soundscapeUrl, soundscapeVolume]);
 
-  // Intro-only fade
+  // Keep the element loop attribute in sync with reader mode.
   useEffect(() => {
-    if (introFadeTimerRef.current) { clearTimeout(introFadeTimerRef.current); introFadeTimerRef.current = null; }
-    if (preferences.soundscapeMode === "intro-only" && isSoundscapePlaying && soundscapeUrl && !introFadedPages.has(currentPage)) {
-      introFadeTimerRef.current = setTimeout(() => {
-        setIntroFadedPages((prev) => new Set(prev).add(currentPage));
-        if (audioConnectedRef.current) {
-          fadeOut(3.0);
-          setTimeout(() => { soundscapeRef.current?.pause(); setIsSoundscapePlaying(false); }, 3000);
-        } else {
-          const a = soundscapeRef.current;
-          if (a) {
-            const sv = a.volume; let step = 0; const steps = 30;
-            const fi = setInterval(() => { step++; a.volume = Math.max(0, sv * (1 - step / steps)); if (step >= steps) { clearInterval(fi); a.pause(); a.volume = sv; setIsSoundscapePlaying(false); } }, 100);
-          }
-        }
-      }, 10000);
+    if (soundscapeRef.current) {
+      soundscapeRef.current.loop = preferences.soundscapeMode === "continuous";
     }
-    return () => { if (introFadeTimerRef.current) clearTimeout(introFadeTimerRef.current); };
-  }, [currentPage, preferences.soundscapeMode, isSoundscapePlaying, soundscapeUrl, introFadedPages, fadeOut]);
+  }, [preferences.soundscapeMode]);
 
   // Volume
   useEffect(() => { if (narrationRef.current) narrationRef.current.volume = narrationVolume; }, [narrationVolume]);
@@ -449,7 +436,12 @@ export default function BookReader() {
         onTimeUpdate={(e) => setNarrationProgress(e.currentTarget.currentTime)}
         onEnded={() => { setIsNarrationPlaying(false); setActiveWordIndex(-1); }}
       />
-      <audio ref={soundscapeRef} loop crossOrigin="anonymous" />
+      <audio
+        ref={soundscapeRef}
+        loop={preferences.soundscapeMode === "continuous"}
+        crossOrigin="anonymous"
+        onEnded={() => setIsSoundscapePlaying(false)}
+      />
 
       {/* ═══ TOP BAR ═══ */}
       <header
@@ -512,6 +504,83 @@ export default function BookReader() {
           <ChevronRight className="w-5 h-5" />
         </button>
 
+        {(narrationUrl || soundscapeUrl) && showAudioBar && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 w-[min(620px,calc(100%-7.5rem))]">
+            <div className="mx-auto flex items-center justify-center gap-2">
+              {narrationUrl && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleNarration();
+                  }}
+                  className={`flex items-center gap-2 py-1.5 px-3 backdrop-blur-2xl border rounded-full shadow-lg transition-all ${
+                    isNarrationPlaying
+                      ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
+                      : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                  }`}
+                >
+                  {isNarrationPlaying ? <Pause className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                  <span className="text-[10px] font-semibold">{isNarrationPlaying ? "Reading" : "Read"}</span>
+                </button>
+              )}
+
+              {soundscapeUrl && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSoundscape();
+                  }}
+                  className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
+                >
+                  <div className="flex items-center gap-2">
+                    {isSoundscapePlaying ? (
+                      <Pause className="w-4 h-4 text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]" />
+                    ) : (
+                      <Music className="w-4 h-4 text-slate-400" />
+                    )}
+                    {isSoundscapePlaying && (
+                      <div className="flex items-end gap-0.5 h-3">
+                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-1" style={{ height: "6px" }} />
+                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-2" style={{ height: "12px" }} />
+                        <div className="w-0.5 bg-teal-400/80 rounded-full animate-sound-wave-3" style={{ height: "8px" }} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center bg-black/40 rounded-full p-0.5 gap-0.5 border border-white/5">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSoundscapeModeChange("intro-only");
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                        preferences.soundscapeMode === "intro-only"
+                          ? "bg-white/10 text-white shadow-sm"
+                          : "text-white/40 hover:text-white/60"
+                      }`}
+                    >
+                      Intro
+                    </span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSoundscapeModeChange("continuous");
+                      }}
+                      className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
+                        preferences.soundscapeMode === "continuous"
+                          ? "bg-white/10 text-white shadow-sm"
+                          : "text-white/40 hover:text-white/60"
+                      }`}
+                    >
+                      Loop
+                    </span>
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Page image — composited image has text baked in */}
         <div
           className={`absolute inset-0 flex items-center justify-center p-4 ${
@@ -569,59 +638,10 @@ export default function BookReader() {
           </div>
           <div
             className={`absolute left-1/2 -translate-x-1/2 text-[11px] tracking-wide uppercase text-white/80 ${
-              showAudioBar ? "bottom-24" : "bottom-8"
+              showAudioBar ? "bottom-20" : "bottom-8"
             }`}
           >
             Swipe to navigate
-          </div>
-        </div>
-      )}
-
-      {/* ═══ FLOATING AUDIO BAR ═══ */}
-      {(narrationUrl || soundscapeUrl) && showAudioBar && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 safe-area-bottom">
-          <div
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl shadow-lg backdrop-blur-md border"
-            style={{
-              backgroundColor: "rgba(255,255,255,0.85)",
-              borderColor: "var(--reader-progress-bar-bg)",
-            }}
-          >
-            {narrationUrl && (
-              <button
-                onClick={toggleNarration}
-                className={`flex items-center gap-2 py-2 px-4 rounded-full text-sm font-medium transition-all ${
-                  isNarrationPlaying
-                    ? "bg-orange-500/15 text-orange-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {isNarrationPlaying ? <Pause className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                <span>{isNarrationPlaying ? "Reading" : "Read"}</span>
-              </button>
-            )}
-
-            {soundscapeUrl && (
-              <button
-                onClick={toggleSoundscape}
-                className={`flex items-center gap-2 py-2 px-4 rounded-full text-sm font-medium transition-all ${
-                  isSoundscapePlaying
-                    ? "bg-teal-500/15 text-teal-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {isSoundscapePlaying ? (
-                  <div className="flex items-end gap-0.5 h-4">
-                    <div className="w-1 bg-teal-500 rounded-full animate-sound-wave-1" style={{ height: "60%" }} />
-                    <div className="w-1 bg-teal-500 rounded-full animate-sound-wave-2" style={{ height: "100%" }} />
-                    <div className="w-1 bg-teal-500 rounded-full animate-sound-wave-3" style={{ height: "80%" }} />
-                  </div>
-                ) : (
-                  <Music className="w-4 h-4" />
-                )}
-                <span>{isSoundscapePlaying ? "BGM" : "BGM"}</span>
-              </button>
-            )}
           </div>
         </div>
       )}
@@ -712,7 +732,7 @@ export default function BookReader() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">Mode</span>
                       <div className="flex items-center bg-white/10 rounded-full p-1 gap-1">
-                        <button onClick={() => handleSoundscapeModeChange("intro-only")} className={`px-3 py-1.5 rounded-full text-xs font-medium ${preferences.soundscapeMode === "intro-only" ? "bg-teal-500 text-white" : "text-slate-400"}`}>Intro</button>
+                        <button onClick={() => handleSoundscapeModeChange("intro-only")} className={`px-3 py-1.5 rounded-full text-xs font-medium ${preferences.soundscapeMode === "intro-only" ? "bg-teal-500 text-white" : "text-slate-400"}`}>One-shot</button>
                         <button onClick={() => handleSoundscapeModeChange("continuous")} className={`px-3 py-1.5 rounded-full text-xs font-medium ${preferences.soundscapeMode === "continuous" ? "bg-teal-500 text-white" : "text-slate-400"}`}>Loop</button>
                       </div>
                     </div>
