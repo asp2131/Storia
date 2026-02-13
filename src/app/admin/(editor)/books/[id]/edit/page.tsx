@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import {
   BookOpen,
@@ -14,8 +13,6 @@ import {
   ImagePlus,
   RefreshCw,
   Trash2,
-  Bold,
-  Italic,
   CheckCircle2,
   ArrowLeft,
   ArrowRight,
@@ -37,6 +34,7 @@ import {
   Loader2,
   Wand2,
   Sparkles,
+  Type,
 } from "lucide-react";
 import {
   useBookDetails,
@@ -49,12 +47,16 @@ import {
   useUpdateBook,
   WordTimestamp,
 } from "@/hooks/useBookData";
+import type { TextOverlayConfig } from "@/types/text-overlay";
+import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
 
 type LocalPageData = {
   id?: string;
   number: number;
   text: string;
   imageUrl: string;
+  compositedImageUrl?: string;
+  overlay?: TextOverlayConfig | null;
   narrationTimestamps?: WordTimestamp[];
 };
 
@@ -73,6 +75,10 @@ export default function BookEditor() {
   const [localAuthor, setLocalAuthor] = useState("");
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
 
+  // Overlay editor modal state
+  const [overlayEditorSaving, setOverlayEditorSaving] = useState(false);
+  const [overlayEditorCompositing, setOverlayEditorCompositing] = useState(false);
+
   // Sync server data to local state when loaded
   useEffect(() => {
     if (serverPages && serverPages.length > 0 && !hasLocalChanges) {
@@ -82,6 +88,8 @@ export default function BookEditor() {
           number: p.pageNumber,
           text: p.textContent || "",
           imageUrl: p.imageUrl || "",
+          compositedImageUrl: p.compositedImageUrl || undefined,
+          overlay: p.overlay || undefined,
           narrationTimestamps: p.narrationTimestamps || undefined,
         }))
       );
@@ -100,7 +108,7 @@ export default function BookEditor() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Audio URL inputs (for manual entry)
+  // Audio URL inputs
   const [narrationUrlInput, setNarrationUrlInput] = useState("");
   const [soundscapeUrlInput, setSoundscapeUrlInput] = useState("");
   const [narrationScope, setNarrationScope] = useState<"current" | "range">("current");
@@ -182,7 +190,6 @@ export default function BookEditor() {
     }
   }, [narrationVolume]);
 
-
   // Calculate active word based on narration progress
   useEffect(() => {
     if (!isNarrationPlaying || wordTimestamps.length === 0) {
@@ -191,32 +198,12 @@ export default function BookEditor() {
     }
 
     const currentTime = narrationProgress;
-
-    // Debug: Log timestamps structure on first run
-    if (currentTime < 0.1 && wordTimestamps.length > 0) {
-      console.log("[Editor] First 5 timestamps:", wordTimestamps.slice(0, 5));
-      console.log("[Editor] Last timestamp:", wordTimestamps[wordTimestamps.length - 1]);
-    }
-
-    // Find the word that should be highlighted at currentTime
     let foundIndex = -1;
 
     for (let i = 0; i < wordTimestamps.length; i++) {
       const wordData = wordTimestamps[i];
-
-      // If we haven't reached this word's start time yet, stop
-      if (currentTime < wordData.start) {
-        break;
-      }
-
-      // This word has started, so it's a candidate
+      if (currentTime < wordData.start) break;
       foundIndex = i;
-    }
-
-    // Debug: Log every ~0.5 seconds
-    if (Math.floor(currentTime * 2) !== Math.floor((currentTime - 0.1) * 2)) {
-      const currentWord = foundIndex >= 0 ? wordTimestamps[foundIndex] : null;
-      console.log(`[Editor] Time: ${currentTime.toFixed(2)}s | Word ${foundIndex}: "${currentWord?.word}" (${currentWord?.start?.toFixed(2)}-${currentWord?.end?.toFixed(2)})`);
     }
 
     setActiveWordIndex(foundIndex);
@@ -284,15 +271,6 @@ export default function BookEditor() {
     });
   };
 
-  const handleTextChange = (value: string) => {
-    setLocalPages((prev) =>
-      prev.map((page) =>
-        page.number === activePage ? { ...page, text: value } : page
-      )
-    );
-    setHasLocalChanges(true);
-  };
-
   const setActiveImage = (imageUrl: string) => {
     setLocalPages((prev) =>
       prev.map((page) =>
@@ -307,8 +285,6 @@ export default function BookEditor() {
       setError("Please upload a valid image file.");
       return;
     }
-
-    // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       setError("File too large. Maximum size is 10MB.");
@@ -360,7 +336,7 @@ export default function BookEditor() {
     imageInputRef.current?.click();
   };
 
-  // Helper to ensure pages exist and get page ID
+  // Helper to get page ID
   const getPageId = useCallback((pageNumber: number): string | undefined => {
     return pageIdMap[pageNumber];
   }, [pageIdMap]);
@@ -403,7 +379,7 @@ export default function BookEditor() {
     const pageData = localPages.find((p) => p.number === targetPage);
 
     if (!pageData?.text?.trim()) {
-      setError("No text content to generate narration from.");
+      setError("No text content to generate narration from. Add text via the overlay editor first.");
       return;
     }
 
@@ -415,9 +391,7 @@ export default function BookEditor() {
         pageNumber: targetPage,
       });
 
-      // Update local state with timestamps
       if (data.wordTimestamps && data.wordTimestamps.length > 0) {
-        console.log(`[Editor] Received ${data.wordTimestamps.length} word timestamps`);
         setLocalPages((prev) =>
           prev.map((p) =>
             p.number === targetPage
@@ -425,11 +399,8 @@ export default function BookEditor() {
               : p
           )
         );
-      } else {
-        console.warn(`[Editor] No word timestamps received from API. Alignment quality: ${data.alignmentQuality}`);
       }
 
-      // Auto-assign the generated narration to the current page
       const pageId = getPageId(targetPage);
       if (pageId) {
         await assignAudioMutation.mutateAsync({
@@ -449,7 +420,7 @@ export default function BookEditor() {
   const handleGenerateAllNarration = async () => {
     const pagesWithText = localPages.filter((p) => p.text?.trim());
     if (pagesWithText.length === 0) {
-      setError("No pages with text content.");
+      setError("No pages with text content. Add text via the overlay editor first.");
       return;
     }
 
@@ -467,7 +438,6 @@ export default function BookEditor() {
           pageNumber: page.number,
         });
 
-        // Update local state with timestamps
         if (data.wordTimestamps && data.wordTimestamps.length > 0) {
           setLocalPages((prev) =>
             prev.map((p) =>
@@ -478,7 +448,6 @@ export default function BookEditor() {
           );
         }
 
-        // Assign the audio if page exists
         const pageId = getPageId(page.number);
         if (pageId) {
           await assignAudioMutation.mutateAsync({
@@ -503,13 +472,11 @@ export default function BookEditor() {
     setError(null);
 
     try {
-      // Update book metadata
       await updateBookMutation.mutateAsync({
         title: localTitle.trim() || "Untitled Book",
         author: localAuthor,
       });
 
-      // Save all page content
       await savePagesMutation.mutateAsync(
         localPages.map((page) => ({
           pageNumber: page.number,
@@ -528,7 +495,6 @@ export default function BookEditor() {
     setError(null);
 
     try {
-      // Save all page content first
       await savePagesMutation.mutateAsync(
         localPages.map((page) => ({
           pageNumber: page.number,
@@ -537,7 +503,6 @@ export default function BookEditor() {
         }))
       );
 
-      // Update the book to be published
       await updateBookMutation.mutateAsync({
         title: localTitle.trim() || "Untitled Book",
         author: localAuthor,
@@ -549,6 +514,88 @@ export default function BookEditor() {
       router.push("/admin/books");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish.");
+    }
+  };
+
+  // ─── Overlay Modal Handlers ──────────────────────────────────────
+
+  const handleOverlaySave = async (overlayConfig: TextOverlayConfig) => {
+    setOverlayEditorSaving(true);
+    try {
+      // 1. Save overlay config + derive textContent
+      const res = await fetch(
+        `/api/admin/books/${bookIdParam}/pages/${activePage}/overlay`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ overlay: overlayConfig }),
+        }
+      );
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to save overlay");
+      }
+      const data = await res.json();
+
+      // Update local state with overlay + derived text (composited cleared by API)
+      setLocalPages((prev) =>
+        prev.map((p) =>
+          p.number === activePage
+            ? { ...p, overlay: data.overlay || overlayConfig, text: data.textContent || "", compositedImageUrl: undefined }
+            : p
+        )
+      );
+
+      // 2. Auto-composite: bake the text into the image immediately
+      if (overlayConfig.elements.length > 0) {
+        setOverlayEditorCompositing(true);
+        const compRes = await fetch(
+          `/api/admin/books/${bookIdParam}/pages/${activePage}/composite`,
+          { method: "POST" }
+        );
+        if (compRes.ok) {
+          const compData = await compRes.json();
+          setLocalPages((prev) =>
+            prev.map((p) =>
+              p.number === activePage
+                ? { ...p, compositedImageUrl: compData.compositedImageUrl }
+                : p
+            )
+          );
+        }
+        setOverlayEditorCompositing(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save overlay");
+    } finally {
+      setOverlayEditorSaving(false);
+      setOverlayEditorCompositing(false);
+    }
+  };
+
+  const handleOverlayComposite = async () => {
+    setOverlayEditorCompositing(true);
+    try {
+      const res = await fetch(
+        `/api/admin/books/${bookIdParam}/pages/${activePage}/composite`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to composite image");
+      }
+      const data = await res.json();
+      setLocalPages((prev) =>
+        prev.map((p) =>
+          p.number === activePage
+            ? { ...p, compositedImageUrl: data.compositedImageUrl }
+            : p
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to composite image");
+    } finally {
+      setOverlayEditorCompositing(false);
     }
   };
 
@@ -575,6 +622,8 @@ export default function BookEditor() {
     };
   }, [currentAssignments]);
 
+  const hasImage = !!(activePageData?.imageUrl || activePageData?.compositedImageUrl);
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -589,12 +638,7 @@ export default function BookEditor() {
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
       {soundscapeActiveUrl ? (
-        <audio
-          ref={soundscapeRef}
-          src={soundscapeActiveUrl}
-          loop
-          onEnded={() => setIsSoundscapePlaying(false)}
-        />
+        <audio ref={soundscapeRef} src={soundscapeActiveUrl} loop onEnded={() => setIsSoundscapePlaying(false)} />
       ) : (
         <audio ref={soundscapeRef} />
       )}
@@ -602,106 +646,77 @@ export default function BookEditor() {
         ref={narrationRef}
         src={narrationActiveUrl || undefined}
         onTimeUpdate={(e) => setNarrationProgress(e.currentTarget.currentTime)}
-        onEnded={() => {
-          setIsNarrationPlaying(false);
-          setActiveWordIndex(-1);
-        }}
+        onEnded={() => { setIsNarrationPlaying(false); setActiveWordIndex(-1); }}
       />
-      {/* LEFT SIDEBAR: Navigator */}
+
+      {/* LEFT SIDEBAR: Page Navigator */}
       <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
-        {/* Sidebar Header */}
         <div className="h-16 flex items-center px-5 border-b border-slate-100">
-          <a
-            href="/admin/books"
-            className="flex items-center gap-2 text-teal-600 hover:text-teal-700"
-          >
+          <a href="/admin/books" className="flex items-center gap-2 text-teal-600 hover:text-teal-700">
             <ArrowLeft className="w-4 h-4" />
             <BookOpen className="w-6 h-6" />
-            <span className="font-bold tracking-tight text-slate-900">
-              Storia
-            </span>
+            <span className="font-bold tracking-tight text-slate-900">Storia</span>
           </a>
         </div>
 
-        {/* Page List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
-            Pages
-          </div>
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Pages</div>
 
           {localPages.map((page) => {
             const isActive = page.number === activePage;
+            const pageHasOverlay = page.overlay && page.overlay.elements.length > 0;
             return (
               <div
                 key={page.number}
                 role="button"
                 tabIndex={0}
                 onClick={() => setActivePage(page.number)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setActivePage(page.number);
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActivePage(page.number); } }}
                 className="group relative block text-left w-full cursor-pointer"
               >
-                <div
-                  className={`absolute -left-2 top-1/2 -translate-y-1/2 ${
-                    isActive
-                      ? "opacity-100 text-teal-400"
-                      : "opacity-0 text-slate-400"
-                  } group-hover:opacity-100`}
-                >
+                <div className={`absolute -left-2 top-1/2 -translate-y-1/2 ${isActive ? "opacity-100 text-teal-400" : "opacity-0 text-slate-400"} group-hover:opacity-100`}>
                   <GripVertical className="w-4 h-4" />
                 </div>
                 {localPages.length > 1 && (
                   <span
                     role="button"
                     tabIndex={0}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleDeletePage(page.number);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        handleDeletePage(page.number);
-                      }
-                    }}
-                    className={`absolute right-0 top-1/2 -translate-y-1/2 p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition ${
-                      isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                    }`}
+                    onClick={(e) => { e.stopPropagation(); handleDeletePage(page.number); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); handleDeletePage(page.number); } }}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                     aria-label="Delete page"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </span>
                 )}
                 <div className="flex items-start gap-3">
-                  <span
-                    className={`text-xs w-4 pt-1 ${
-                      isActive
-                        ? "font-bold text-teal-600"
-                        : "font-medium text-slate-400"
-                    }`}
-                  >
+                  <span className={`text-xs w-4 pt-1 ${isActive ? "font-bold text-teal-600" : "font-medium text-slate-400"}`}>
                     {page.number}
                   </span>
-                  <div
-                    className={`w-full aspect-3/4 bg-white rounded-md overflow-hidden p-2 transition-all ${
-                      isActive
-                        ? "border-2 border-teal-500 ring-2 ring-teal-100 shadow-md"
-                        : "border border-slate-200 shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5"
-                    }`}
-                  >
-                    <div className="w-full h-1/2 bg-slate-50 rounded-sm mb-2 flex items-center justify-center text-slate-300">
-                      <ImageIcon className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="h-1 w-full bg-slate-100 rounded-full"></div>
-                      <div className="h-1 w-4/5 bg-slate-100 rounded-full"></div>
-                      <div className="h-1 w-5/6 bg-slate-100 rounded-full"></div>
-                    </div>
+                  <div className={`w-full aspect-3/4 bg-white rounded-md overflow-hidden transition-all relative ${isActive ? "border-2 border-teal-500 ring-2 ring-teal-100 shadow-md" : "border border-slate-200 shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5"}`}>
+                    {page.compositedImageUrl || page.imageUrl ? (
+                      <img
+                        src={page.compositedImageUrl || page.imageUrl}
+                        alt={`Page ${page.number}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                        <div className="w-full h-1/2 bg-slate-50 rounded-sm mb-2 flex items-center justify-center text-slate-300">
+                          <ImageIcon className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-1 w-full">
+                          <div className="h-1 w-full bg-slate-100 rounded-full"></div>
+                          <div className="h-1 w-4/5 bg-slate-100 rounded-full"></div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Badges */}
+                    {page.compositedImageUrl ? (
+                      <div className="absolute top-1 right-1 bg-teal-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">Overlay</div>
+                    ) : pageHasOverlay ? (
+                      <div className="absolute top-1 right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">Text</div>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -709,7 +724,6 @@ export default function BookEditor() {
           })}
         </div>
 
-        {/* Add Page Button */}
         <div className="p-4 border-t border-slate-100 bg-white">
           <button
             type="button"
@@ -726,36 +740,22 @@ export default function BookEditor() {
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* HEADER */}
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
-          {/* Book Title Ghost Input */}
           <div className="flex-1 max-w-xl group relative">
-            <label htmlFor="book-title" className="sr-only">
-              Book Title
-            </label>
             <input
               type="text"
-              id="book-title"
               value={localTitle}
-              onChange={(event) => { setLocalTitle(event.target.value); setHasLocalChanges(true); }}
+              onChange={(e) => { setLocalTitle(e.target.value); setHasLocalChanges(true); }}
               className="w-full text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
               placeholder="Untitled Book"
             />
             <Pencil className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
           </div>
 
-          {/* Right Header Controls */}
           <div className="flex items-center gap-6">
             <div className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">
-              Page {activePage} <span className="text-slate-300 mx-1">/</span>{" "}
-              {localPages.length}
+              Page {activePage} <span className="text-slate-300 mx-1">/</span> {localPages.length}
             </div>
-
             <div className="h-6 w-px bg-slate-200"></div>
-
-            <button className="flex items-center gap-2 text-slate-600 hover:text-teal-600 font-medium transition-colors">
-              <PlayCircle className="w-5 h-5" />
-              Preview
-            </button>
-
             <button
               type="button"
               onClick={handleSave}
@@ -764,7 +764,6 @@ export default function BookEditor() {
             >
               {saving ? "Saving..." : "Save Draft"}
             </button>
-
             <button
               type="button"
               onClick={handlePublish}
@@ -778,142 +777,111 @@ export default function BookEditor() {
         </header>
 
         {error && (
-          <div className="bg-rose-50 text-rose-700 border border-rose-200 px-6 py-3 text-sm">
-            {error}
+          <div className="bg-rose-50 text-rose-700 border border-rose-200 px-6 py-3 text-sm flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-rose-400 hover:text-rose-600"><X className="w-4 h-4" /></button>
           </div>
         )}
 
-        {/* CANVAS AREA */}
-        <div className="flex-1 bg-slate-50 overflow-y-auto overflow-x-hidden flex flex-col items-center py-10 px-4">
-          {/* The Page (Card) */}
-          <div className="w-full max-w-3xl aspect-3/4 bg-white rounded-xl shadow-lg border border-slate-100 flex flex-col overflow-hidden relative group/page">
-            {/* SECTION 1: Illustration Placeholder (Top) */}
-            <div className="h-[55%] bg-slate-50/50 relative p-6 flex flex-col border-b border-slate-100">
-              {/* The Drop Zone Container */}
+        {/* CANVAS AREA - Full-bleed page preview */}
+        <div className="flex-1 bg-slate-100/80 overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-8">
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageChange}
+          />
+
+          {uploading ? (
+            <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-12 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+              <h3 className="text-slate-700 font-medium text-lg mb-1">Uploading...</h3>
+              <p className="text-sm text-slate-400">Please wait while your image uploads</p>
+            </div>
+          ) : hasImage ? (
+            <div className="flex flex-col gap-4 w-full max-w-6xl">
+              <div className="w-full bg-white rounded-lg shadow-sm border border-slate-100 px-5 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  {activePageData?.text ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
+                      <Type className="w-4 h-4 text-blue-500 shrink-0" />
+                      <span className="truncate">{activePageData.text.slice(0, 80)}{activePageData.text.length > 80 ? "..." : ""}</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-slate-400 italic">No text overlay yet</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                    Inline text editor
+                  </span>
+                  <button
+                    type="button"
+                    onClick={triggerImagePicker}
+                    className="bg-white text-slate-700 hover:text-teal-600 px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-sm flex items-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Change Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveImage("")}
+                    className="bg-white text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 font-medium text-sm flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Remove
+                  </button>
+                </div>
+              </div>
+
               <div
-                onClick={triggerImagePicker}
-                onDragOver={(event) => event.preventDefault()}
+                className="w-full h-[70vh] rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                onDragOver={(e) => e.preventDefault()}
                 onDrop={handleImageDrop}
-                className="w-full h-full border-2 border-dashed border-slate-300 rounded-xl bg-white hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-slate-400 cursor-pointer relative group/image overflow-hidden"
               >
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
+                <DraggableTextOverlayEditor
+                  imageUrl={activePageData!.imageUrl}
+                  overlay={activePageData!.overlay || null}
+                  onSave={handleOverlaySave}
+                  onComposite={handleOverlayComposite}
+                  isSaving={overlayEditorSaving}
+                  isCompositing={overlayEditorCompositing}
                 />
-
-                {uploading ? (
-                  <div className="flex flex-col items-center text-center p-6">
-                    <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
-                      <Loader2 className="w-8 h-8 animate-spin" />
-                    </div>
-                    <h3 className="text-slate-700 font-medium text-lg mb-1">
-                      Uploading...
-                    </h3>
-                    <p className="text-sm text-slate-400">
-                      Please wait while your image uploads
-                    </p>
-                  </div>
-                ) : activePageData?.imageUrl ? (
-                  <>
-                    <Image
-                      src={activePageData.imageUrl}
-                      alt="Page illustration"
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-slate-900/40 opacity-0 hover:opacity-100 transition-all flex items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          triggerImagePicker();
-                        }}
-                        className="bg-white text-slate-700 hover:text-teal-600 px-4 py-2 rounded-lg shadow-lg font-medium text-sm flex items-center gap-2"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        Change
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setActiveImage("");
-                        }}
-                        className="bg-white/90 text-red-500 hover:bg-white px-4 py-2 rounded-lg shadow-lg font-medium text-sm flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Remove
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center text-center p-6 transition-opacity group-hover/image:opacity-100">
-                    <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
-                      <ImagePlus className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-slate-700 font-medium text-lg mb-1">
-                      Add an Illustration
-                    </h3>
-                    <p className="text-sm text-slate-400 mb-4">
-                      Click to upload or drag & drop
-                    </p>
-                    <span className="text-xs text-slate-300 px-2 py-1 bg-slate-100 rounded">
-                      Supports JPG, PNG, GIF
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
-
-            {/* SECTION 2: Text Area (Bottom) */}
-            <div className="flex-1 p-10 bg-white relative">
-              <textarea
-                value={activePageData?.text ?? ""}
-                onChange={(event) => handleTextChange(event.target.value)}
-                className="w-full h-full resize-none outline-none border-none text-xl leading-relaxed text-slate-700 placeholder:text-slate-300 font-serif bg-transparent"
-                placeholder="Start writing your story here... Once upon a time, in a land far away..."
-              ></textarea>
-
-              {/* Floating Format Toolbar */}
-              <div className="absolute bottom-6 right-6 flex gap-1 opacity-0 group-focus-within/page:opacity-100 transition-opacity duration-500">
-                <button
-                  className="p-2 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors"
-                  title="Bold"
-                >
-                  <Bold className="w-4 h-4" />
-                </button>
-                <button
-                  className="p-2 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors"
-                  title="Italic"
-                >
-                  <Italic className="w-4 h-4" />
-                </button>
+          ) : (
+            /* Empty state: no image */
+            <div
+              onClick={triggerImagePicker}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleImageDrop}
+              className="w-full max-w-md aspect-3/4 bg-white rounded-xl shadow-lg border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-slate-400 cursor-pointer"
+            >
+              <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
+                <ImagePlus className="w-8 h-8" />
               </div>
+              <h3 className="text-slate-700 font-medium text-lg mb-1">Add an Illustration</h3>
+              <p className="text-sm text-slate-400 mb-4">Click to upload or drag & drop</p>
+              <span className="text-xs text-slate-300 px-2 py-1 bg-slate-100 rounded">Supports JPG, PNG, GIF</span>
             </div>
-          </div>
-
-          {/* Spacer for scrolling */}
-          <div className="h-24 w-full"></div>
+          )}
         </div>
 
-        {/* FOOTER CONTROLS */}
+        {/* FOOTER */}
         <div className="h-20 bg-white border-t border-slate-200 flex items-center justify-between px-8 absolute bottom-0 w-full z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-          {/* Autosave Status */}
           <div className="flex items-center gap-2 w-1/3">
             <div className="flex items-center gap-1.5 text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full text-xs font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Editing
             </div>
             <span className="text-xs text-slate-400 ml-2">
-              {error ? error : "Changes not saved yet"}
+              {hasLocalChanges ? "Unsaved changes" : "All saved"}
             </span>
           </div>
 
-          {/* Navigation */}
           <div className="flex items-center gap-4 w-1/3 justify-center">
             <button
               type="button"
@@ -922,23 +890,16 @@ export default function BookEditor() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-
-            <span className="text-lg font-serif text-slate-800 min-w-12 text-center">
-              {activePage}
-            </span>
-
+            <span className="text-lg font-serif text-slate-800 min-w-12 text-center">{activePage}</span>
             <button
               type="button"
-              onClick={() =>
-                setActivePage((prev) => Math.min(localPages.length, prev + 1))
-              }
+              onClick={() => setActivePage((prev) => Math.min(localPages.length, prev + 1))}
               className="p-3 rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 transition-all hover:translate-x-1 active:scale-95"
             >
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Empty right side for balance or auxiliary tools */}
           <div className="w-1/3 flex justify-end gap-4">
             <button className="text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-2 text-sm font-medium">
               <Settings className="w-4.5 h-4.5" />
@@ -948,670 +909,232 @@ export default function BookEditor() {
         </div>
       </main>
 
-      {/* RIGHT SIDEBAR: Audio Management */}
+      {/* RIGHT SIDEBAR: Audio & Enhancements */}
       <aside className="w-80 bg-white border-l border-slate-200 flex flex-col shadow-[-4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
-        {/* Sidebar Header */}
         <div className="h-16 flex items-center px-6 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
           <div className="flex items-center gap-2.5 text-slate-800">
             <Headphones className="w-6 h-6 text-amber-500" />
-            <span className="font-bold tracking-tight">Audio Manager</span>
+            <span className="font-bold tracking-tight">Page Audio</span>
           </div>
         </div>
 
-        {/* Content Scrollable */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Section: Applied Soundscape */}
+          {/* Narration Section */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Ambient Soundscape
-              </h4>
-              <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-medium border border-green-100">
-                Active
-              </span>
-            </div>
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Narration</h4>
 
-            {/* Active Audio Card */}
-            <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 shadow-sm relative group">
-              {/* Top Row: Info + Remove */}
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-800 leading-tight">
-                    Forest Ambience
-                  </h3>
-                  <span className="text-xs text-amber-600/80 font-medium">
-                    00:45 - Looping
-                  </span>
-                </div>
-                <button
-                  onClick={async () => {
-                    const pageId = getPageId(activePage);
-                    if (pageId) {
-                      try {
-                        await deleteAudioMutation.mutateAsync({
-                          pageId,
-                          audioType: "soundscape",
-                        });
-                        setSoundscapeUrlInput("");
-                      } catch (err) {
-                        setError(err instanceof Error ? err.message : "Failed to remove");
-                      }
-                    }
-                  }}
-                  disabled={deleteAudioMutation.isPending}
-                  className="text-slate-400 hover:text-red-500 transition-colors p-1 -mr-1 rounded hover:bg-white/50 disabled:opacity-50"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Waveform Visualization */}
-              <div className="flex items-center justify-between gap-0.5 h-6 mb-4 px-1 opacity-80">
-                {[3, 2, 4, 2, 5, 3, 2, 4, 3, 5, 2, 4, 3, 2, 4].map((h, i) => (
-                  <div
-                    key={i}
-                    className={`w-1 bg-amber-400 rounded-full ${
-                      h === 2
-                        ? "h-2 bg-amber-300"
-                        : h === 3
-                        ? "h-3"
-                        : h === 4
-                        ? "h-4"
-                        : "h-5 bg-amber-500"
-                    }`}
-                  ></div>
-                ))}
-              </div>
-
-              {/* Controls: Play + Volume */}
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={toggleSoundscape}
-                  className="w-8 h-8 flex items-center justify-center bg-amber-500 text-white rounded-full hover:bg-amber-600 shadow-sm transition-transform active:scale-95"
-                >
-                  {isSoundscapePlaying ? (
-                    <Pause className="w-3.5 h-3.5" />
-                  ) : (
-                    <Play className="w-3.5 h-3.5 ml-0.5" />
-                  )}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={Math.round(soundscapeVolume * 100)}
-                  onChange={(event) =>
-                    setSoundscapeVolume(Number(event.target.value) / 100)
-                  }
-                  className="w-full h-1 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                />
-                <Volume2 className="w-3 h-3 text-amber-400" />
-              </div>
-
-              {/* Page Range Assignment */}
-              <div className="pt-2 mt-3 border-t border-amber-100">
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-white/60 rounded text-xs font-medium text-amber-700 border border-amber-100/50 shadow-sm">
-                    <Layers className="w-2.5 h-2.5" />
-                    {activeAssignments?.soundscape?.range === "current"
-                      ? "Current Page"
-                      : activeAssignments?.soundscape?.range
-                      ? `Pages ${activeAssignments.soundscape.range}`
-                      : "No range set"}
+            <div className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-200 shadow-sm space-y-4">
+              {/* Current status */}
+              {(activeAssignments?.narration?.url || narrationActiveUrl) ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-xs font-semibold text-green-700">Assigned</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const pageId = getPageId(activePage);
+                        if (pageId) {
+                          try {
+                            await deleteAudioMutation.mutateAsync({ pageId, audioType: "narration" });
+                            setLocalPages((prev) => prev.map((p) => p.number === activePage ? { ...p, narrationTimestamps: undefined } : p));
+                          } catch (err) { setError(err instanceof Error ? err.message : "Failed to remove"); }
+                        }
+                      }}
+                      disabled={deleteAudioMutation.isPending}
+                      className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Assignment Controls */}
-              <div className="mt-4 space-y-3 border-t border-amber-100 pt-4">
-                <div className="flex items-center justify-between text-xs text-amber-700">
-                  <span className="font-semibold">Assign Soundscape</span>
-                  {activeAssignments?.soundscape && (
-                    <span className="px-2 py-0.5 rounded-full bg-white/70 border border-amber-200 text-amber-600">
-                      Assigned ({activeAssignments.soundscape.range})
-                    </span>
-                  )}
+              ) : (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-slate-300" />
+                  <span className="text-xs text-slate-500">No narration for this page</span>
                 </div>
-                <input
-                  value={soundscapeUrlInput}
-                  onChange={(event) => setSoundscapeUrlInput(event.target.value)}
-                  placeholder="Paste soundscape URL"
-                  className="w-full rounded-md border border-amber-200 bg-white/70 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
-                />
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSoundscapeScope("current")}
-                    className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${
-                      soundscapeScope === "current"
-                        ? "bg-amber-500 text-white border-amber-500"
-                        : "bg-white text-amber-700 border-amber-200"
-                    }`}
-                  >
-                    Current Page
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSoundscapeScope("range")}
-                    className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${
-                      soundscapeScope === "range"
-                        ? "bg-amber-500 text-white border-amber-500"
-                        : "bg-white text-amber-700 border-amber-200"
-                    }`}
-                  >
-                    Range
-                  </button>
-                  {soundscapeScope === "range" && (
-                    <div className="flex items-center gap-2 text-[10px] text-amber-700">
-                      <input
-                        type="number"
-                        min={1}
-                        max={localPages.length}
-                        value={soundscapeRangeStart}
-                        onChange={(event) =>
-                          setSoundscapeRangeStart(Number(event.target.value))
-                        }
-                        className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs"
-                      />
-                      <span>to</span>
-                      <input
-                        type="number"
-                        min={soundscapeRangeStart}
-                        max={localPages.length}
-                        value={soundscapeRangeEnd}
-                        onChange={(event) =>
-                          setSoundscapeRangeEnd(Number(event.target.value))
-                        }
-                        className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs"
-                      />
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleAssignAudio(
-                      "soundscape",
-                      soundscapeUrlInput,
-                      soundscapeScope,
-                      soundscapeRangeStart,
-                      soundscapeRangeEnd
-                    )
-                  }
-                  className="w-full rounded-md bg-amber-500 text-white text-xs font-semibold py-2 hover:bg-amber-600"
-                >
-                  Save Soundscape Assignment
-                </button>
-              </div>
-            </div>
-          </div>
+              )}
 
-          <hr className="border-slate-100" />
-
-          {/* Section: Voice Narration */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Voice Narration
-              </h4>
-              <div className="group/tooltip relative">
-                <Info className="w-3 h-3 text-slate-300 hover:text-slate-500 cursor-help align-middle" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-opacity z-50 text-center">
-                  Narration is a voice overlay, distinct from ambient background
-                  audio.
-                </div>
-              </div>
-            </div>
-
-            {/* Narration Card */}
-            <div className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-200 shadow-sm relative group">
-              <div className="flex justify-between items-start mb-4">
+              {/* Playback */}
+              {narrationActiveUrl && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-linear-to-br from-orange-100 to-yellow-100 text-orange-600 flex items-center justify-center shrink-0 border border-orange-100 shadow-sm">
-                    <Mic className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-800 leading-tight">
-                      Chapter Reading
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                      <span className="text-xs text-orange-700/70 font-medium">
-                        Voice
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-1">
                   <button
-                    title="Replace Narration"
-                    className="text-slate-400 hover:text-orange-600 transition-colors p-1.5 rounded-md hover:bg-orange-100/50"
+                    type="button"
+                    onClick={toggleNarration}
+                    className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-sm"
                   >
-                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                    {isNarrationPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                   </button>
-                  <button
-                    title="Remove narration"
-                    onClick={async () => {
-                      const pageId = getPageId(activePage);
-                      if (pageId) {
-                        try {
-                          await deleteAudioMutation.mutateAsync({
-                            pageId,
-                            audioType: "narration",
-                          });
-                          setNarrationUrlInput("");
-                          // Clear local timestamps
-                          setLocalPages((prev) =>
-                            prev.map((p) =>
-                              p.number === activePage
-                                ? { ...p, narrationTimestamps: undefined }
-                                : p
-                            )
-                          );
-                        } catch (err) {
-                          setError(err instanceof Error ? err.message : "Failed to remove");
-                        }
-                      }
-                    }}
-                    disabled={deleteAudioMutation.isPending}
-                    className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 disabled:opacity-50"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Narration Waveform */}
-              <div className="bg-white/40 rounded-lg p-2 mb-3 border border-orange-100/50">
-                <div className="flex items-center justify-between gap-0.5 h-8 opacity-90">
-                  {[2, 3, 5, 3, 2, 4, 6, 4, 2, 1, 3, 5, 2, 4, 3, 1, 2, 4].map(
-                    (h, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 rounded-full ${
-                          h === 1
-                            ? "h-1 bg-orange-200"
-                            : h === 2
-                            ? "h-2 bg-orange-300"
-                            : h === 3
-                            ? "h-3 bg-orange-400"
-                            : h === 4
-                            ? "h-4 bg-orange-500"
-                            : h === 5
-                            ? "h-5 bg-orange-500"
-                            : "h-6 bg-orange-600"
-                        }`}
-                      ></div>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Playback Controls */}
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={toggleNarration}
-                  className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-md shadow-orange-600/20 transition-all hover:scale-105 active:scale-95"
-                >
-                  {isNarrationPlaying ? (
-                    <Pause className="w-3.5 h-3.5" />
-                  ) : (
-                    <Play className="w-3.5 h-3.5 ml-0.5" />
-                  )}
-                </button>
-                <div className="flex-1 flex items-center gap-2">
-                  <Volume1 className="w-3 h-3 text-orange-600/60" />
                   <input
                     type="range"
-                    min="0"
-                    max="100"
+                    min="0" max="100"
                     value={Math.round(narrationVolume * 100)}
-                    onChange={(event) =>
-                      setNarrationVolume(Number(event.target.value) / 100)
-                    }
-                    className="w-full h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                    onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
+                    className="flex-1 h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
                   />
                 </div>
-              </div>
+              )}
 
-              {/* Current Narration Status */}
-              <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
-                <div className="text-xs font-semibold text-orange-700">Current Status</div>
-
-                {activeAssignments?.narration?.url || narrationActiveUrl ? (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-xs font-semibold text-green-700">Narration Assigned</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const pageId = getPageId(activePage);
-                          if (pageId) {
-                            try {
-                              await deleteAudioMutation.mutateAsync({
-                                pageId,
-                                audioType: "narration",
-                              });
-                              setNarrationUrlInput("");
-                              // Clear local timestamps
-                              setLocalPages((prev) =>
-                                prev.map((p) =>
-                                  p.number === activePage
-                                    ? { ...p, narrationTimestamps: undefined }
-                                    : p
-                                )
-                              );
-                            } catch (err) {
-                              setError(err instanceof Error ? err.message : "Failed to remove");
-                            }
-                          }
-                        }}
-                        disabled={deleteAudioMutation.isPending}
-                        className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
-                      >
-                        {deleteAudioMutation.isPending ? "Removing..." : "Remove"}
-                      </button>
-                    </div>
-                    <div className="text-[10px] text-green-600 truncate font-mono bg-green-100/50 px-2 py-1 rounded">
-                      {activeAssignments?.narration?.url || narrationActiveUrl}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-slate-300" />
-                    <span className="text-xs text-slate-500">No narration for this page</span>
-                  </div>
+              {/* AI Generate */}
+              <div className="border-t border-orange-200/60 pt-3 space-y-3">
+                <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
+                  <Wand2 className="w-3.5 h-3.5" />
+                  Generate with AI
+                </span>
+                {!activePageData?.text?.trim() && (
+                  <p className="text-[10px] text-orange-600/70 italic">
+                    Add text overlay first to generate narration.
+                  </p>
                 )}
-              </div>
-
-              {/* AI Generation Controls */}
-              <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
-                <div className="flex items-center justify-between text-xs text-orange-700">
-                  <span className="font-semibold flex items-center gap-1.5">
-                    <Wand2 className="w-3.5 h-3.5" />
-                    Generate with AI
-                  </span>
-                  {(activeAssignments?.narration?.url || narrationActiveUrl) && (
-                    <span className="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                      Will replace current
-                    </span>
-                  )}
-                </div>
-
-                {/* Generate Buttons */}
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => handleGenerateNarration()}
                     disabled={generatingNarration || generatingAllNarration || !activePageData?.text?.trim()}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
-                    {generatingNarration ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-3.5 h-3.5" />
-                        This Page
-                      </>
-                    )}
+                    {generatingNarration ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating...</> : <><Wand2 className="w-3.5 h-3.5" />This Page</>}
                   </button>
                   <button
                     type="button"
                     onClick={handleGenerateAllNarration}
                     disabled={generatingNarration || generatingAllNarration}
-                    className="flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                    title="Generate narration for all pages"
+                    className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
-                    {generatingAllNarration ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        {generationProgress.current}/{generationProgress.total}
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        All Pages
-                      </>
-                    )}
+                    {generatingAllNarration ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{generationProgress.current}/{generationProgress.total}</> : <><Sparkles className="w-3.5 h-3.5" />All</>}
                   </button>
                 </div>
-
-                {!activePageData?.text?.trim() && (
-                  <p className="text-[10px] text-orange-600/70 italic">
-                    Add text content to this page to generate narration.
-                  </p>
-                )}
               </div>
 
-              {/* Sync Preview Section */}
-              {(wordTimestamps.length > 0 || activeAssignments?.narration?.url || narrationActiveUrl) && (
-                <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
+              {/* Sync preview */}
+              {wordTimestamps.length > 0 && (
+                <div className="border-t border-orange-200/60 pt-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
-                      <PlayCircle className="w-3.5 h-3.5" />
-                      Sync Preview
+                      <PlayCircle className="w-3.5 h-3.5" /> Sync Preview
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowSyncPreview(!showSyncPreview)}
-                      className="text-[10px] text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-200 transition-colors"
+                      className="text-[10px] text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-200"
                     >
                       {showSyncPreview ? "Hide" : "Show"}
                     </button>
                   </div>
-
                   {showSyncPreview && (
                     <div className="bg-white/70 rounded-lg p-3 border border-orange-200/50">
-                      {/* Play controls */}
                       <div className="flex items-center gap-2 mb-3">
-                        <button
-                          type="button"
-                          onClick={toggleNarration}
-                          className="w-7 h-7 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 transition-all"
-                        >
-                          {isNarrationPlaying ? (
-                            <Pause className="w-3 h-3" />
-                          ) : (
-                            <Play className="w-3 h-3 ml-0.5" />
-                          )}
+                        <button type="button" onClick={toggleNarration} className="w-7 h-7 flex items-center justify-center bg-orange-600 text-white rounded-full">
+                          {isNarrationPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
                         </button>
-                        <span className="text-[10px] text-slate-500">
-                          {isNarrationPlaying ? "Playing..." : "Click to preview sync"}
-                        </span>
+                        <span className="text-[10px] text-slate-500">{isNarrationPlaying ? "Playing..." : "Click to preview"}</span>
                       </div>
-
-                      {/* Word highlighting preview */}
                       <div className="max-h-32 overflow-y-auto">
                         <p className="text-sm leading-relaxed text-slate-700 font-serif">
-                          {wordTimestamps.length > 0 ? (
-                            wordTimestamps.map((wordData, index) => (
-                              <span
-                                key={index}
-                                className={`transition-all duration-150 ${
-                                  index === activeWordIndex && isNarrationPlaying
-                                    ? "bg-orange-300 text-orange-900 rounded px-0.5 font-semibold"
-                                    : ""
-                                }`}
-                              >
-                                {wordData.word}{" "}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-slate-400 italic text-xs">
-                              No sync data available. Generate narration to see word highlighting.
+                          {wordTimestamps.map((wd, i) => (
+                            <span
+                              key={i}
+                              className={`transition-all duration-150 ${i === activeWordIndex && isNarrationPlaying ? "bg-orange-300 text-orange-900 rounded px-0.5 font-semibold" : ""}`}
+                            >
+                              {wd.word}{" "}
                             </span>
-                          )}
+                          ))}
                         </p>
                       </div>
-
-                      {/* Sync stats */}
-                      {wordTimestamps.length > 0 && (
-                        <div className="mt-3 pt-2 border-t border-orange-100 flex items-center gap-3 text-[10px] text-slate-500">
-                          <span>{wordTimestamps.length} words synced</span>
-                          {isNarrationPlaying && activeWordIndex >= 0 && (
-                            <span className="text-orange-600 font-medium">
-                              Word {activeWordIndex + 1} of {wordTimestamps.length}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      <div className="mt-2 text-[10px] text-slate-500">{wordTimestamps.length} words synced</div>
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Manual URL Assignment */}
-              <div className="mt-4 space-y-3 border-t border-orange-200/60 pt-4">
-                <div className="flex items-center justify-between text-xs text-orange-700">
-                  <span className="font-semibold">Or paste URL manually</span>
-                  {activeAssignments?.narration && (
-                    <span className="px-2 py-0.5 rounded-full bg-white/70 border border-orange-200 text-orange-600">
-                      Assigned ({activeAssignments.narration.range})
-                    </span>
-                  )}
-                </div>
-                <input
-                  value={narrationUrlInput}
-                  onChange={(event) => setNarrationUrlInput(event.target.value)}
-                  placeholder="Paste narration URL"
-                  className="w-full rounded-md border border-orange-200 bg-white/70 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-300"
-                />
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNarrationScope("current")}
-                    className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${
-                      narrationScope === "current"
-                        ? "bg-orange-500 text-white border-orange-500"
-                        : "bg-white text-orange-700 border-orange-200"
-                    }`}
-                  >
-                    Current Page
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNarrationScope("range")}
-                    className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${
-                      narrationScope === "range"
-                        ? "bg-orange-500 text-white border-orange-500"
-                        : "bg-white text-orange-700 border-orange-200"
-                    }`}
-                  >
-                    Range
-                  </button>
-                  {narrationScope === "range" && (
-                    <div className="flex items-center gap-2 text-[10px] text-orange-700">
-                      <input
-                        type="number"
-                        min={1}
-                        max={localPages.length}
-                        value={narrationRangeStart}
-                        onChange={(event) =>
-                          setNarrationRangeStart(Number(event.target.value))
-                        }
-                        className="w-14 rounded border border-orange-200 bg-white px-2 py-1 text-xs"
-                      />
-                      <span>to</span>
-                      <input
-                        type="number"
-                        min={narrationRangeStart}
-                        max={localPages.length}
-                        value={narrationRangeEnd}
-                        onChange={(event) =>
-                          setNarrationRangeEnd(Number(event.target.value))
-                        }
-                        className="w-14 rounded border border-orange-200 bg-white px-2 py-1 text-xs"
-                      />
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleAssignAudio(
-                      "narration",
-                      narrationUrlInput,
-                      narrationScope,
-                      narrationRangeStart,
-                      narrationRangeEnd
-                    )
-                  }
-                  disabled={!narrationUrlInput}
-                  className="w-full rounded-md bg-orange-500 text-white text-xs font-semibold py-2 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save Narration Assignment
-                </button>
-              </div>
             </div>
           </div>
 
           <hr className="border-slate-100" />
 
-          {/* Section: Library */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Soundscape Library
-              </h4>
-              <button className="text-xs text-amber-600 font-medium hover:text-amber-700 flex items-center gap-1">
-                Browse All <ChevronRight className="w-3 h-3" />
-              </button>
-            </div>
+          {/* Soundscape Section */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ambient Soundscape</h4>
 
-            <div className="space-y-2">
-              <div className="group flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer">
-                <div className="w-8 h-8 rounded bg-indigo-50 text-indigo-400 flex items-center justify-center shrink-0">
-                  <CloudRain className="w-4 h-4" />
+            <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 shadow-sm space-y-4">
+              {/* Active soundscape */}
+              {activeAssignments?.soundscape ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-xs font-semibold text-green-700">Assigned</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const pageId = getPageId(activePage);
+                      if (pageId) {
+                        try {
+                          await deleteAudioMutation.mutateAsync({ pageId, audioType: "soundscape" });
+                          setSoundscapeUrlInput("");
+                        } catch (err) { setError(err instanceof Error ? err.message : "Failed to remove"); }
+                      }
+                    }}
+                    disabled={deleteAudioMutation.isPending}
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded"
+                  >
+                    Remove
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h5 className="text-sm font-medium text-slate-700 truncate">
-                    Heavy Rainfall
-                  </h5>
-                  <span className="text-[10px] text-slate-400">
-                    01:20 - Ambience
-                  </span>
-                </div>
-                <button className="opacity-0 group-hover:opacity-100 bg-white border border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-200 px-2.5 py-1 rounded text-xs font-medium transition-all shadow-sm">
-                  Use
-                </button>
-              </div>
+              ) : null}
 
-              <div className="group flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer">
-                <div className="w-8 h-8 rounded bg-rose-50 text-rose-400 flex items-center justify-center shrink-0">
-                  <Music className="w-4 h-4" />
+              {/* Playback */}
+              {soundscapeActiveUrl && (
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={toggleSoundscape} className="w-8 h-8 flex items-center justify-center bg-amber-500 text-white rounded-full hover:bg-amber-600 shadow-sm">
+                    {isSoundscapePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                  </button>
+                  <input
+                    type="range" min="0" max="100"
+                    value={Math.round(soundscapeVolume * 100)}
+                    onChange={(e) => setSoundscapeVolume(Number(e.target.value) / 100)}
+                    className="flex-1 h-1 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h5 className="text-sm font-medium text-slate-700 truncate">
-                    Soft Piano Theme
-                  </h5>
-                  <span className="text-[10px] text-slate-400">
-                    02:15 - Music
-                  </span>
+              )}
+
+              {/* URL input */}
+              <div className="space-y-3 border-t border-amber-100 pt-3">
+                <span className="text-xs font-semibold text-amber-700">Assign Soundscape</span>
+                <input
+                  value={soundscapeUrlInput}
+                  onChange={(e) => setSoundscapeUrlInput(e.target.value)}
+                  placeholder="Paste soundscape URL"
+                  className="w-full rounded-md border border-amber-200 bg-white/70 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
+                />
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setSoundscapeScope("current")} className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${soundscapeScope === "current" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-amber-700 border-amber-200"}`}>
+                    Current Page
+                  </button>
+                  <button type="button" onClick={() => setSoundscapeScope("range")} className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${soundscapeScope === "range" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-amber-700 border-amber-200"}`}>
+                    Range
+                  </button>
+                  {soundscapeScope === "range" && (
+                    <div className="flex items-center gap-2 text-[10px] text-amber-700">
+                      <input type="number" min={1} max={localPages.length} value={soundscapeRangeStart} onChange={(e) => setSoundscapeRangeStart(Number(e.target.value))} className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs" />
+                      <span>to</span>
+                      <input type="number" min={soundscapeRangeStart} max={localPages.length} value={soundscapeRangeEnd} onChange={(e) => setSoundscapeRangeEnd(Number(e.target.value))} className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs" />
+                    </div>
+                  )}
                 </div>
-                <button className="opacity-0 group-hover:opacity-100 bg-white border border-slate-200 text-slate-600 hover:text-amber-600 hover:border-amber-200 px-2.5 py-1 rounded text-xs font-medium transition-all shadow-sm">
-                  Use
+                <button
+                  type="button"
+                  onClick={() => handleAssignAudio("soundscape", soundscapeUrlInput, soundscapeScope, soundscapeRangeStart, soundscapeRangeEnd)}
+                  className="w-full rounded-md bg-amber-500 text-white text-xs font-semibold py-2 hover:bg-amber-600"
+                >
+                  Save Assignment
                 </button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Footer: Upload */}
-        <div className="p-4 border-t border-slate-100 bg-white">
-          <button className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 hover:bg-slate-100 text-slate-600 font-medium rounded-lg border border-slate-200 border-dashed transition-all hover:text-amber-600 hover:border-amber-300 group">
-            <Upload className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-            Upload Audio File
-          </button>
-        </div>
       </aside>
+
     </div>
   );
 }

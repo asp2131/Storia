@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { TextOverlayConfig } from "@/types/text-overlay";
 
 // Types
 export type WordTimestamp = {
@@ -25,6 +26,8 @@ export type PageData = {
   narrationUrl: string | null;
   narrationTimestamps: WordTimestamp[] | null;
   wordPronunciations: Record<string, string> | null;
+  compositedImageUrl: string | null;
+  overlay: TextOverlayConfig | null;
   assignments?: AudioAssignment[];
 };
 

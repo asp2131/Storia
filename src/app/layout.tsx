@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, JetBrains_Mono, Lora, Inter } from "next/font/google";
+import { Playfair_Display, JetBrains_Mono, Lora, Inter, Gaegu } from "next/font/google";
 import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
 
@@ -23,6 +23,12 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const gaegu = Gaegu({
+  variable: "--font-gaegu",
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Storia - Books That Sound Amazing",
   description: "Experience literature like never before with AI-generated soundscapes that adapt to every scene.",
@@ -35,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} antialiased`}>
+      <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} ${gaegu.variable} antialiased`}>
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
