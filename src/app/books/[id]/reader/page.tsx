@@ -867,10 +867,10 @@ export default function BookReader() {
           {/* Narration pill — always in DOM, hidden via CSS */}
           <button
             onClick={toggleNarration}
-            className={`flex items-center gap-2 py-1.5 px-3 backdrop-blur-2xl border rounded-full shadow-lg transition-all ${
+            className={`flex items-center gap-2 py-1.5 px-3 backdrop-blur-xl border rounded-full shadow-lg transition-all ${
               isNarrationPlaying
-                ? "bg-orange-500/20 border-orange-500/40 text-orange-400"
-                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                ? "bg-orange-500/90 border-orange-400/60 text-white"
+                : "bg-black/60 border-white/15 text-slate-200 hover:bg-black/70"
             }`}
             style={{
               display: narrationUrl ? undefined : "none",
@@ -889,7 +889,7 @@ export default function BookReader() {
           {/* Soundscape pill — always in DOM, hidden via CSS */}
           <button
             onClick={toggleSoundscape}
-            className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg overflow-hidden transition-all hover:bg-white/10"
+            className="flex items-center gap-3 py-1.5 pl-3 pr-1.5 bg-black/60 backdrop-blur-xl border border-white/15 rounded-full shadow-lg overflow-hidden transition-all hover:bg-black/70"
             style={{
               display: soundscapeUrl ? undefined : "none",
             }}
@@ -898,7 +898,7 @@ export default function BookReader() {
               {isSoundscapePlaying ? (
                 <Pause className="w-4 h-4 text-teal-400 drop-shadow-[0_0_8px_rgba(45,212,191,0.3)]" />
               ) : (
-                <Music className="w-4 h-4 text-slate-400" />
+                <Music className="w-4 h-4 text-slate-200" />
               )}
               {isSoundscapePlaying && (
                 <div className="flex items-end gap-0.5 h-3">
@@ -917,7 +917,7 @@ export default function BookReader() {
                 </div>
               )}
             </div>
-            <div className="flex items-center bg-black/40 rounded-full p-0.5 gap-0.5 border border-white/5">
+            <div className="flex items-center bg-black/50 rounded-full p-0.5 gap-0.5 border border-white/10">
               <span
                 onClick={(e) => {
                   e.stopPropagation();
@@ -925,8 +925,8 @@ export default function BookReader() {
                 }}
                 className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
                   preferences.soundscapeMode === "intro-only"
-                    ? "bg-white/10 text-white shadow-sm"
-                    : "text-white/40 hover:text-white/60"
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "text-white/50 hover:text-white/70"
                 }`}
               >
                 Intro
@@ -938,8 +938,8 @@ export default function BookReader() {
                 }}
                 className={`px-2.5 py-1 rounded-full text-[9px] font-bold cursor-pointer transition-all ${
                   preferences.soundscapeMode === "continuous"
-                    ? "bg-white/10 text-white shadow-sm"
-                    : "text-white/40 hover:text-white/60"
+                    ? "bg-white/20 text-white shadow-sm"
+                    : "text-white/50 hover:text-white/70"
                 }`}
               >
                 Loop
