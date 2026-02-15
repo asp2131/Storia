@@ -1,0 +1,27 @@
+# Storia
+
+> Interactive children's books with AI-generated soundscapes and narration.
+
+Storia is a platform where children can read illustrated books enhanced with AI-generated audio narration and ambient soundscapes that adapt to every scene.
+
+## What Storia Offers
+
+- Illustrated children's books with text overlaid on artwork
+- AI-generated voice narration with word-by-word highlighting
+- Ambient soundscapes that match each scene (forest sounds, ocean waves, etc.)
+- Reading progress tracking across devices
+- Works on mobile and desktop browsers
+
+## How It Works
+
+1. Browse the library at storia.kids/library
+2. Tap a book to start reading
+3. Swipe through pages with illustrated scenes
+4. Tap "Read" to hear AI narration with word highlighting
+5. Tap the music icon to play ambient soundscapes
+
+## Links
+
+- Website: https://storia.kids
+- Library: https://storia.kids/library
+- Full documentation: https://storia.kids/llms-full.txt
