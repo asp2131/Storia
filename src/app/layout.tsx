@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, JetBrains_Mono, Lora, Inter, Gaegu } from "next/font/google";
+import Script from "next/script";
 import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
 
@@ -42,6 +43,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} ${gaegu.variable} antialiased`}>
+        {process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
+          <Script
+            src={process.env.NEXT_PUBLIC_UMAMI_URL ?? "https://cloud.umami.is/script.js"}
+            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+            strategy="lazyOnload"
+          />
+        )}
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
