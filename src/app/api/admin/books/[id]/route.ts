@@ -48,17 +48,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     const { id } = await params;
     const bookId = BigInt(id);
+
+    const data: Record<string, unknown> = { updated_at: now };
+    if ("title" in body) data.title = body.title;
+    if ("author" in body) data.author = body.author;
+    if ("coverUrl" in body) data.cover_url = body.coverUrl || null;
+    if ("description" in body) data.description = body.description || null;
+    if ("isPublished" in body) data.is_published = Boolean(body.isPublished);
+    if ("processingStatus" in body) data.processing_status = body.processingStatus || "pending";
+
     const book = await prisma.books.update({
       where: { id: bookId },
-      data: {
-        title: body.title,
-        author: body.author,
-        cover_url: body.coverUrl || null,
-        description: body.description || null,
-        is_published: Boolean(body.isPublished),
-        processing_status: body.processingStatus || "pending",
-        updated_at: now,
-      },
+      data,
     });
 
     return NextResponse.json({
