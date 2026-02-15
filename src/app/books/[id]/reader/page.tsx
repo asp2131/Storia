@@ -141,6 +141,10 @@ export default function BookReader() {
     nextPagePronunciations: nextPageData?.wordPronunciations || null,
   });
 
+  // ─── Umami analytics refs ──────────────────────────────────────
+  const pageEnteredAtRef = useRef<number>(Date.now());
+  const hasTrackedOpenRef = useRef(false);
+
   // Keep the ref in sync with state (for use inside GSAP callbacks)
   useEffect(() => {
     isNarrationPlayingRef.current = isNarrationPlaying;
@@ -531,6 +535,74 @@ export default function BookReader() {
     pageLoadTimeRef.current = Date.now();
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════
+  // UMAMI ANALYTICS
+  // ═══════════════════════════════════════════════════════════════
+
+  // Track book-open (once per reader session)
+  useEffect(() => {
+    if (hasTrackedOpenRef.current || loading || !readerData) return;
+    hasTrackedOpenRef.current = true;
+    window.umami?.track("book-open", {
+      bookId,
+      title: readerData.book.title,
+    });
+  }, [loading, readerData, bookId]);
+
+  // Track page turns + reading time per page
+  useEffect(() => {
+    if (loading || !readerData) return;
+    const now = Date.now();
+    const secondsOnPrev = Math.round((now - pageEnteredAtRef.current) / 1000);
+
+    // Send reading time for the previous page (skip if < 1s — likely initial mount)
+    if (secondsOnPrev >= 1) {
+      window.umami?.track("reading-time", {
+        bookId,
+        page: pages[prevActiveIndexRef.current]?.pageNumber ?? 0,
+        seconds: secondsOnPrev,
+      });
+    }
+
+    pageEnteredAtRef.current = now;
+
+    window.umami?.track("page-view", {
+      bookId,
+      page: pages[activeIndex]?.pageNumber ?? 0,
+    });
+
+    // Track book completion when reaching the last page
+    if (activeIndex === pages.length - 1 && pages.length > 1) {
+      window.umami?.track("book-complete", {
+        bookId,
+        title: readerData.book.title,
+        totalPages: pages.length,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
+
+  // Flush reading time on exit (tab close / navigate away)
+  useEffect(() => {
+    const flush = () => {
+      const seconds = Math.round(
+        (Date.now() - pageEnteredAtRef.current) / 1000
+      );
+      if (seconds >= 1) {
+        window.umami?.track("reading-time", {
+          bookId,
+          page: currentPage,
+          seconds,
+        });
+      }
+    };
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      flush();
+      window.removeEventListener("beforeunload", flush);
+    };
+  }, [bookId, currentPage]);
+
   // Track pages viewed
   useEffect(() => {
     if (currentPage > 0)
@@ -567,10 +639,14 @@ export default function BookReader() {
 
   const toggleNarration = useCallback(() => {
     if (!narrationRef.current || !narrationUrl) return;
-    if (isNarrationPlaying) narrationRef.current.pause();
-    else narrationRef.current.play();
+    if (isNarrationPlaying) {
+      narrationRef.current.pause();
+    } else {
+      narrationRef.current.play();
+      window.umami?.track("audio-play", { bookId, type: "narration", page: currentPage });
+    }
     setIsNarrationPlaying(!isNarrationPlaying);
-  }, [isNarrationPlaying, narrationUrl]);
+  }, [isNarrationPlaying, narrationUrl, bookId, currentPage]);
 
   const toggleSoundscape = useCallback(() => {
     if (!soundscapeRef.current || !soundscapeUrl) return;
@@ -589,12 +665,15 @@ export default function BookReader() {
     } else {
       soundscapeRef.current.play();
       if (audioConnectedRef.current) fadeIn(0.5, soundscapeVolume);
+      window.umami?.track("audio-play", { bookId, type: "soundscape", page: currentPage });
     }
     setIsSoundscapePlaying(!isSoundscapePlaying);
   }, [
     isSoundscapePlaying,
     soundscapeUrl,
     soundscapeVolume,
+    bookId,
+    currentPage,
     initAudioContext,
     connectAudioElement,
     fadeIn,
