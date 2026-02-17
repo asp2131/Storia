@@ -284,45 +284,47 @@ export default function BookReader() {
         const prevEl = pagesRef.current[i - 1];
         if (!pageEl) return;
 
-        // Layer 2: New page reveals from bottom via clip-path
-        tl.fromTo(
-          pageEl,
-          {
-            clipPath: "inset(100% 0% 0% 0%)",
-            ...(isMobile ? {} : { skewY: 2 }),
-          },
-          {
-            clipPath: "inset(0% 0% 0% 0%)",
-            ...(isMobile ? {} : { skewY: 0 }),
-            duration: 1,
-            ease: "none",
-          },
-          i - 1
-        );
+        if (isMobile) {
+          // Mobile: vertical clip-path reveal from bottom
+          tl.fromTo(
+            pageEl,
+            { clipPath: "inset(100% 0% 0% 0%)" },
+            { clipPath: "inset(0% 0% 0% 0%)", duration: 1, ease: "none" },
+            i - 1
+          );
 
-        // Layer 3: Illustration scale-in
+          if (prevEl) {
+            tl.to(
+              prevEl,
+              { yPercent: -20, opacity: 0, duration: 1, ease: "none" },
+              i - 1
+            );
+          }
+        } else {
+          // Desktop: horizontal fade + slide
+          tl.fromTo(
+            pageEl,
+            { clipPath: "inset(0% 0% 0% 0%)", xPercent: 100, opacity: 0 },
+            { xPercent: 0, opacity: 1, duration: 1, ease: "none" },
+            i - 1
+          );
+
+          if (prevEl) {
+            tl.to(
+              prevEl,
+              { xPercent: -30, opacity: 0, duration: 1, ease: "none" },
+              i - 1
+            );
+          }
+        }
+
+        // Illustration scale-in (both mobile & desktop)
         const illustration = pageEl.querySelector("[data-illustration]");
         if (illustration) {
           tl.fromTo(
             illustration,
             { scale: 1.12 },
             { scale: 1, duration: 1, ease: "none" },
-            i - 1
-          );
-        }
-
-        // Previous page exit: drift up + fade (+ blur on desktop)
-        if (prevEl) {
-          tl.to(
-            prevEl,
-            {
-              yPercent: -20,
-              ...(isMobile
-                ? { opacity: 0 }
-                : { filter: "blur(6px)", opacity: 0.4 }),
-              duration: 1,
-              ease: "none",
-            },
             i - 1
           );
         }
@@ -1058,7 +1060,7 @@ export default function BookReader() {
                 {isInWindow ? (
                   page.imageUrl || page.compositedImageUrl ? (
                     <div className="max-w-full max-h-full w-full h-full flex items-center justify-center">
-                      <div className="w-full h-full max-w-5xl max-h-[calc(100vh-7rem)] flex items-center justify-center">
+                      <div className="w-full h-full max-w-5xl md:max-w-2xl max-h-[calc(100vh-7rem)] md:max-h-[calc(100vh-10rem)] flex items-center justify-center">
                         <div className="w-full max-h-full">
                           <IntegratedIllustration
                             imageUrl={page.imageUrl || ""}
