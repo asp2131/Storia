@@ -1,319 +1,140 @@
 # Storia
 
-An immersive audiobook platform that enhances reading with AI-generated ambient soundscapes.
+Storia is an immersive reading platform that combines ebooks, narration, and soundscapes into a single reader experience.
 
-## Table of Contents
+## Tech Stack
 
-- [Overview](#overview)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Architecture](#architecture)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Documentation](#documentation)
+- Next.js (App Router) + React + TypeScript
+- Prisma + PostgreSQL (Supabase-compatible)
+- Better Auth
+- Supabase Storage for PDFs/audio/media
+- Replicate for narration generation
+- Vitest + Testing Library for tests
 
-## Overview
+## Getting Started
 
-Storia transforms traditional ebooks into immersive audiovisual experiences by:
-- Processing PDF books and extracting structured content
-- Analyzing scenes and generating contextual ambient soundscapes
-- Providing a beautiful reading interface with synchronized audio
-- Supporting multiple subscription tiers with different feature access
+### Prerequisites
 
-## Prerequisites
+- Node.js 20+
+- npm 10+
+- PostgreSQL database (or Supabase project)
+- Supabase storage bucket(s)
+- Replicate API token (for narration features)
 
-- **Elixir** 1.14+ and **Erlang/OTP** 25+
-- **PostgreSQL** (or Supabase account for cloud database)
-- **Node.js** 18+ (for asset compilation)
-- **Supabase Account** (for database and file storage)
-- **Replicate API Key** (for AI audio generation)
-
-## Quick Start
-
-### 1. Clone and Install Dependencies
+### Install
 
 ```bash
-git clone <repository-url>
-cd storia
-mix deps.get
-cd assets && npm install && cd ..
+npm install
 ```
 
-### 2. Set Up Supabase
+### Environment Variables
 
-1. **Create a Supabase project** at https://supabase.com/dashboard
-2. **Get your credentials**:
-   - Navigate to **Project Settings** → **API**
-   - Copy: `Project URL`, `anon public key`, `service_role key`
-3. **Get database connection strings**:
-   - Navigate to **Project Settings** → **Database**
-   - Click **Connection string** → **URI**
-   - Copy both **Transaction mode** and **Session mode** connection strings
-   - Replace `[YOUR-PASSWORD]` with your actual database password
-4. **Create storage bucket**:
-   - Navigate to **Storage** → **New bucket**
-   - Name: `storia-storage`
-   - Make it **public**
-
-### 3. Configure Environment Variables
-
-Create a `.env` file in the project root:
+Create `.env.local` in the project root (or use your preferred env loading setup):
 
 ```bash
-# Database Configuration (Supabase PostgreSQL)
-# Transaction mode pooler - use for general queries (port 6543)
-DATABASE_URL=postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws-1-ca-central-1.pooler.supabase.com:6543/postgres
+# Database (required by Prisma + auth)
+DATABASE_URL=postgresql://...
+DIRECT_URL=postgresql://...
 
-# Session mode pooler - use for migrations and complex transactions (port 5432)
-DIRECT_URL=postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws-1-ca-central-1.pooler.supabase.com:5432/postgres
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Supabase Configuration
-SUPABASE_URL=https://[PROJECT_ID].supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+# Supabase (client + server)
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 SUPABASE_STORAGE_BUCKET=storia-storage
 
-# Phoenix Configuration
-SECRET_KEY_BASE=generate_with_mix_phx_gen_secret
-PHX_HOST=localhost
-PORT=4000
-PHX_SERVER=true
+# Optional dedicated soundscape paths
+SUPABASE_SOUNDSCAPE_BUCKET=storia-storage
+SUPABASE_SOUNDSCAPE_BASE_PATH=audio/curated
+NEXT_PUBLIC_SUPABASE_SOUNDSCAPE_BUCKET=storia-storage
+NEXT_PUBLIC_SUPABASE_SOUNDSCAPE_BASE_PATH=audio/curated
 
-# Replicate API Configuration (for AI audio generation)
-REPLICATE_API_KEY=your_replicate_api_key
+# Narration / AI
+REPLICATE_API_TOKEN=<replicate-token>
+# Optional fallback key name used in some routes
+REPLICATE_KEY=<replicate-token>
 
-# Stripe Configuration (optional - for payments)
-STRIPE_API_KEY=your_stripe_api_key
-STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+# Auth / email
+RESEND_API_KEY=<resend-key>
+RESEND_FROM_EMAIL=Storia <onboarding@resend.dev>
+GOOGLE_CLIENT_ID=<google-client-id>
+GOOGLE_CLIENT_SECRET=<google-client-secret>
+
+# Optional analytics
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=<website-id>
+NEXT_PUBLIC_UMAMI_URL=https://cloud.umami.is/script.js
 ```
 
-**Generate a secret key base:**
-```bash
-mix phx.gen.secret
-```
-
-### 4. Set Up Database
-
-```bash
-# Run migrations
-mix ecto.migrate
-
-# Seed test users and data
-mix run priv/repo/seeds.exs
-```
-
-### 5. Start the Server
+### Database Setup
 
 ```bash
-mix phx.server
+npx prisma generate
+npx prisma migrate dev
+npm run db:seed
 ```
 
-Visit http://localhost:4000 in your browser.
-
-### 6. Test Login
-
-The seed script creates test accounts:
-- **Admin**: `admin@storia.app` / `Admin123!`
-- **Free tier**: `free@storia.app` / `FreeUser123!`
-- **Reader tier**: `reader@storia.app` / `Reader123!`
-- **Bibliophile**: `bibliophile@storia.app` / `Bibliophile123!`
-
-## Configuration
-
-### Database Connection
-
-Storia uses **two connection modes** for Supabase PostgreSQL:
-
-1. **Transaction Mode** (port 6543) - `DATABASE_URL`
-   - Used for general application queries
-   - Connection pooling optimized for serverless/short-lived connections
-   - **Important**: Prepared statements are disabled (`prepare: :unnamed`)
-
-2. **Session Mode** (port 5432) - `DIRECT_URL`
-   - Used for migrations and long-running transactions
-   - Direct connection to the database
-
-### Environment Loading
-
-The application uses **dotenvy** to automatically load `.env` files in development and test environments. This means:
-- ✅ No need to manually export environment variables
-- ✅ `.env` file is automatically loaded when running `mix` commands
-- ✅ Works seamlessly with `mix phx.server`, `mix ecto.migrate`, etc.
-
-### Storage Architecture
-
-Files are organized in Supabase Storage:
-
-```
-storia-storage/ (bucket)
-├── pdfs/
-│   └── {book_id}.pdf
-└── audio/
-    ├── curated/
-    │   └── {scene_id}.mp3
-    └── generated/
-        └── {scene_id}.mp3
-```
-
-See [`lib/storia/storage/README.md`](lib/storia/storage/README.md) for detailed storage API documentation.
-
-## Architecture
-
-### Core Components
-
-- **Phoenix LiveView** - Real-time UI without JavaScript complexity
-- **Ecto** - Database wrapper and query interface
-- **Oban** - Background job processing for PDF analysis and AI generation
-- **Supabase** - PostgreSQL database and file storage
-- **Replicate** - AI audio generation API
-
-### Key Modules
-
-- `Storia.Content` - Book, page, scene management
-- `Storia.Accounts` - User authentication and authorization
-- `Storia.Storage` - File upload/download with Supabase
-- `Storia.AI.Workers` - Background jobs for PDF processing and audio generation
-- `StoriaWeb.LiveViews` - User-facing reading and admin interfaces
-
-### Processing Pipeline
-
-1. **Upload** - Admin uploads PDF via web interface
-2. **Extract** - PDF is parsed into pages and text content
-3. **Analyze** - AI analyzes text to identify scenes and classify content
-4. **Generate** - AI generates ambient soundscapes for each scene
-5. **Review** - Admin reviews and adjusts soundscapes
-6. **Publish** - Book becomes available to users
-
-## Development
-
-### Common Commands
+### Run the App
 
 ```bash
-# Install dependencies
-mix deps.get
-
-# Run database migrations
-mix ecto.migrate
-
-# Reset database
-mix ecto.reset
-
-# Run tests
-mix test
-
-# Start server
-mix phx.server
-
-# Start server with IEx console
-iex -S mix phx.server
-
-# Check migration status
-mix ecto.migrations
-
-# Seed database
-mix run priv/repo/seeds.exs
+npm run dev
 ```
 
-### Database Management
+Open `http://localhost:3000`.
+
+## Common Commands
 
 ```bash
-# Create a new migration
-mix ecto.gen.migration migration_name
+# Development
+npm run dev
 
-# Rollback last migration
-mix ecto.rollback
+# Production build
+npm run build
+npm run start
 
-# Rollback multiple steps
-mix ecto.rollback --step 3
+# Linting
+npm run lint
+
+# Testing
+npm run test
+npm run test:watch
+
+# Database seed
+npm run db:seed
 ```
 
-### Background Jobs
+## Background Worker (Audio Preprocessing)
 
-Storia uses Oban for background processing. Monitor jobs in IEx:
-
-```elixir
-# Start IEx
-iex -S mix
-
-# Check pending jobs
-Storia.Repo.all(Oban.Job) |> length()
-
-# View job details
-import Ecto.Query
-Storia.Repo.all(from j in Oban.Job, select: {j.worker, j.state})
-
-# Cancel all pending jobs
-Oban.cancel_all_jobs(Storia.Repo)
-```
-
-### Testing
+For long-running narration/audio jobs, run the worker separately:
 
 ```bash
-# Run all tests
-mix test
-
-# Run specific test file
-mix test test/storia/storage_test.exs
-
-# Run with coverage
-mix test --cover
-
-# Run tests matching a pattern
-mix test --only integration
+API_BASE_URL=http://localhost:3000 \
+WORKER_SECRET_TOKEN=dev-secret \
+node worker/audio-worker.js
 ```
 
-## Deployment
+Docker-based local setup is available in `worker/docker-compose.yml`.
 
-Storia is configured for deployment on Fly.io. See [`docs/deployment.md`](docs/deployment.md) for detailed instructions.
+## Project Structure
 
-### Quick Deploy
+- `src/app` - App Router pages and API routes
+- `src/components` - Shared UI components
+- `src/lib` - Server/client utilities (auth, Prisma, Supabase, storage)
+- `prisma` - Prisma schema, migrations, and seed scripts
+- `worker` - Background audio preprocessing worker
+- `docs` - Product, architecture, and implementation docs
 
-```bash
-# Install Fly CLI
-brew install flyctl  # macOS
-# or visit: https://fly.io/docs/hands-on/install-flyctl/
+## Docs
 
-# Login to Fly
-fly auth login
+- `docs/IMPLEMENTATION_QUICKSTART.md`
+- `docs/AUDIO_PREPROCESSING_ARCHITECTURE.md`
+- `docs/TEXT_OVERLAY_SETUP.md`
+- `docs/front-end-spec.md`
+- `docs/prd.md`
 
-# Launch app (first time)
-fly launch
+## Notes
 
-# Set secrets
-fly secrets set DATABASE_URL=your_database_url
-fly secrets set SUPABASE_URL=your_supabase_url
-fly secrets set SUPABASE_ANON_KEY=your_anon_key
-fly secrets set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-fly secrets set REPLICATE_API_KEY=your_replicate_key
-fly secrets set SECRET_KEY_BASE=$(mix phx.gen.secret)
-
-# Deploy
-fly deploy
-```
-
-## Documentation
-
-- [**Quick Start: Seeding Content**](SEEDING_QUICKSTART.md) - Getting started with uploading books
-- [**Supabase Migration Guide**](docs/supabase_migration_guide.md) - Detailed Supabase setup
-- [**Storage Module**](lib/storia/storage/README.md) - File storage API documentation
-- [**Content Seeding Guide**](docs/seeding_content_library.md) - Comprehensive guide to building your library
-- [**Migration Summary**](MIGRATION_SUMMARY.md) - Recent architecture changes
-
-## Learn More
-
-- **Phoenix Framework**: https://www.phoenixframework.org/
-- **Phoenix Guides**: https://hexdocs.pm/phoenix/overview.html
-- **Supabase Docs**: https://supabase.com/docs
-- **Oban Documentation**: https://hexdocs.pm/oban/Oban.html
-
-## Support
-
-For issues and questions:
-- Check existing documentation in `/docs`
-- Review troubleshooting sections in relevant READMEs
-- Open an issue on GitHub
-
----
-
-Built with Phoenix, LiveView, and Supabase. Licensed under MIT.
+- This repository currently contains legacy docs that reference previous architecture choices; prefer the docs linked above for the current Next.js stack.
+- Keep secrets in local/hosted environment variables and never commit them to git.
