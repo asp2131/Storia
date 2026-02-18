@@ -218,8 +218,6 @@ export default function BookReader() {
 
       pagesRef.current = pagesRef.current.slice(0, pages.length);
 
-      const isMobile = window.matchMedia("(max-width: 768px)").matches;
-
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: container,
@@ -284,41 +282,23 @@ export default function BookReader() {
         const prevEl = pagesRef.current[i - 1];
         if (!pageEl) return;
 
-        if (isMobile) {
-          // Mobile: vertical clip-path reveal from bottom
-          tl.fromTo(
-            pageEl,
-            { clipPath: "inset(100% 0% 0% 0%)" },
-            { clipPath: "inset(0% 0% 0% 0%)", duration: 1, ease: "none" },
+        // Unified transition for desktop + mobile: horizontal fade + slide
+        tl.fromTo(
+          pageEl,
+          { clipPath: "inset(0% 0% 0% 0%)", xPercent: 100, opacity: 0 },
+          { xPercent: 0, opacity: 1, duration: 1, ease: "none" },
+          i - 1
+        );
+
+        if (prevEl) {
+          tl.to(
+            prevEl,
+            { xPercent: -30, opacity: 0, duration: 1, ease: "none" },
             i - 1
           );
-
-          if (prevEl) {
-            tl.to(
-              prevEl,
-              { yPercent: -20, opacity: 0, duration: 1, ease: "none" },
-              i - 1
-            );
-          }
-        } else {
-          // Desktop: horizontal fade + slide
-          tl.fromTo(
-            pageEl,
-            { clipPath: "inset(0% 0% 0% 0%)", xPercent: 100, opacity: 0 },
-            { xPercent: 0, opacity: 1, duration: 1, ease: "none" },
-            i - 1
-          );
-
-          if (prevEl) {
-            tl.to(
-              prevEl,
-              { xPercent: -30, opacity: 0, duration: 1, ease: "none" },
-              i - 1
-            );
-          }
         }
 
-        // Illustration scale-in (both mobile & desktop)
+        // Illustration scale-in for each page transition
         const illustration = pageEl.querySelector("[data-illustration]");
         if (illustration) {
           tl.fromTo(
