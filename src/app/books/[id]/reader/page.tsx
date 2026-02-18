@@ -81,6 +81,7 @@ export default function BookReader() {
   const lastSnapProgressRef = useRef(0);
   const isNarrationPlayingRef = useRef(false);
   const pageLoadTimeRef = useRef<number>(0);
+  const scrollActiveIndexRef = useRef(0);
 
   // ─── UI state ──────────────────────────────────────────────────
   const [activeIndex, setActiveIndex] = useState(0);
@@ -150,6 +151,10 @@ export default function BookReader() {
     isNarrationPlayingRef.current = isNarrationPlaying;
   }, [isNarrationPlaying]);
 
+  useEffect(() => {
+    scrollActiveIndexRef.current = activeIndex;
+  }, [activeIndex]);
+
   // ═══════════════════════════════════════════════════════════════
   // OVERSCROLL FIX & SCROLL RESTORATION
   // ═══════════════════════════════════════════════════════════════
@@ -217,14 +222,53 @@ export default function BookReader() {
       if (!container || pages.length < 2) return;
 
       pagesRef.current = pagesRef.current.slice(0, pages.length);
+      const transitionDefaults = { duration: 1, ease: "none" as const };
+
+      const addPageTransition = (
+        timeline: gsap.core.Timeline,
+        pageEl: HTMLDivElement,
+        prevEl: HTMLDivElement | null,
+        position: number
+      ) => {
+        const segment = gsap.timeline();
+
+        segment.fromTo(
+          pageEl,
+          { clipPath: "inset(0% 0% 0% 0%)", xPercent: 100, opacity: 0 },
+          { xPercent: 0, opacity: 1, ...transitionDefaults },
+          0
+        );
+
+        if (prevEl) {
+          segment.to(
+            prevEl,
+            { xPercent: -30, opacity: 0, ...transitionDefaults },
+            0
+          );
+        }
+
+        const illustration = pageEl.querySelector("[data-illustration]");
+        if (illustration) {
+          segment.fromTo(
+            illustration,
+            { scale: 1.12 },
+            { scale: 1, ...transitionDefaults },
+            0
+          );
+        }
+
+        timeline.add(segment, position);
+      };
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: container,
           start: "top top",
-          end: `+=${(pages.length - 1) * 100}%`,
+          end: () => `+=${(pages.length - 1) * window.innerHeight}`,
           pin: true,
           scrub: true, // instant — Lenis lerp handles all smoothing
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
           snap: {
             // Custom snap: require ≥18% scroll into the next page before
             // committing. Below that threshold, rubber-band back to current page.
@@ -261,20 +305,31 @@ export default function BookReader() {
 
             const idx = Math.round(self.progress * (pages.length - 1));
 
+            // Counter + React state update only when index actually changes.
+            // This avoids avoidable work on every scroll tick.
+            if (idx === scrollActiveIndexRef.current) return;
+            scrollActiveIndexRef.current = idx;
+
             if (pageCounterRef.current) {
               const pNum = pages[idx]?.pageNumber ?? idx + 1;
               pageCounterRef.current.textContent = `${pNum}/${pages.length}`;
             }
 
-            // Only trigger React re-render when the active page actually changes
-            setActiveIndex((prev) => (prev !== idx ? idx : prev));
+            setActiveIndex(idx);
+          },
+          onRefresh: (self) => {
+            const steps = pages.length - 1;
+            if (steps <= 0) return;
+            const step = 1 / steps;
+            const snapped = Math.round(self.progress / step) * step;
+            lastSnapProgressRef.current = gsap.utils.clamp(0, 1, snapped);
           },
         },
       });
 
       scrollTriggerRef.current = tl.scrollTrigger!;
 
-      // ── Choreograph each page transition ─────────────────────
+      // ── Choreograph each page transition as independent segments ───────────
       pages.forEach((_, i) => {
         if (i === 0) return;
 
@@ -282,32 +337,7 @@ export default function BookReader() {
         const prevEl = pagesRef.current[i - 1];
         if (!pageEl) return;
 
-        // Unified transition for desktop + mobile: horizontal fade + slide
-        tl.fromTo(
-          pageEl,
-          { clipPath: "inset(0% 0% 0% 0%)", xPercent: 100, opacity: 0 },
-          { xPercent: 0, opacity: 1, duration: 1, ease: "none" },
-          i - 1
-        );
-
-        if (prevEl) {
-          tl.to(
-            prevEl,
-            { xPercent: -30, opacity: 0, duration: 1, ease: "none" },
-            i - 1
-          );
-        }
-
-        // Illustration scale-in for each page transition
-        const illustration = pageEl.querySelector("[data-illustration]");
-        if (illustration) {
-          tl.fromTo(
-            illustration,
-            { scale: 1.12 },
-            { scale: 1, duration: 1, ease: "none" },
-            i - 1
-          );
-        }
+        addPageTransition(tl, pageEl, prevEl, i - 1);
       });
 
       return () => {
