@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { authClient, useSession } from "@/lib/auth-client";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 interface Book {
   id: string;
@@ -29,48 +31,25 @@ interface UserWithRole {
   emailVerified?: boolean;
 }
 
-interface Pagination {
-  page: number;
-  perPage: number;
-  total: number;
-  totalPages: number;
-}
-
-const GENRES = [
-  { value: "", label: "All Genres" },
-  { value: "fiction", label: "Fiction" },
-  { value: "mystery", label: "Mystery" },
-  { value: "fantasy", label: "Fantasy" },
-  { value: "science-fiction", label: "Science Fiction" },
-  { value: "romance", label: "Romance" },
-  { value: "thriller", label: "Thriller" },
-];
-
-const SORT_OPTIONS = [
-  { value: "recent", label: "Recently Added" },
-  { value: "title_asc", label: "Title (A-Z)" },
-  { value: "title_desc", label: "Title (Z-A)" },
-  { value: "author_asc", label: "Author (A-Z)" },
-];
-
 interface LibraryClientProps {
   initialBooks: Book[];
 }
 
-export default function LibraryPage({ initialBooks }: LibraryClientProps) {
+const COLORS = [
+  "#FF6B6B", "#4ECDC4", "#45B7D1", "#FDCB6E", "#6C5CE7", "#A8E6CF", "#FD79A8", "#FF9F43"
+];
+
+export default function LibraryClient({ initialBooks }: LibraryClientProps) {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [books, setBooks] = useState<Book[]>(initialBooks);
-  const [continueReadingBooks, setContinueReadingBooks] = useState<Book[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [genre, setGenre] = useState("");
-  const [sort, setSort] = useState("recent");
-  const [page, setPage] = useState(1);
+  const [activeIndex, setActiveIndex] = useState(Math.max(0, Math.floor(initialBooks.length / 2)));
+  const [loading, setLoading] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const desktopMenuRef = useRef<HTMLDivElement>(null);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const backgroundRef = useRef<HTMLDivElement>(null);
 
   const user = session?.user as UserWithRole | undefined;
   const userId = user?.id;
@@ -79,12 +58,10 @@ export default function LibraryPage({ initialBooks }: LibraryClientProps) {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        page: page.toString(),
-        perPage: "10",
-        sort,
+        page: "1",
+        perPage: "50", // Fetch a large batch for the toy box canvas
+        sort: "recent",
       });
-      if (search) params.set("search", search);
-      if (genre) params.set("genre", genre);
       if (userId) params.set("userId", userId);
 
       const res = await fetch(`/api/books?${params}`);
@@ -92,626 +69,333 @@ export default function LibraryPage({ initialBooks }: LibraryClientProps) {
 
       if (!res.ok) {
         console.error("API error:", data.error || "Unknown error");
-        setBooks([]);
-        setPagination(null);
         return;
       }
-
-      setBooks(data.books || []);
-      setPagination(data.pagination || null);
-
-      // Filter and sort continue reading books (only on first page, no filters)
-      if (userId && page === 1 && !search && !genre) {
-        const inProgressBooks = data.books
-          .filter((book: Book) =>
-            book.progressPercent !== null &&
-            book.progressPercent !== undefined &&
-            book.progressPercent > 0 &&
-            book.progressPercent < 100
-          )
-          .sort((a: Book, b: Book) => {
-            const dateA = a.lastReadAt ? new Date(a.lastReadAt).getTime() : 0;
-            const dateB = b.lastReadAt ? new Date(b.lastReadAt).getTime() : 0;
-            return dateB - dateA;
-          })
-          .slice(0, 6);
-        setContinueReadingBooks(inProgressBooks);
-      } else {
-        setContinueReadingBooks([]);
+      
+      const fetchedBooks = data.books || [];
+      if (fetchedBooks.length > 0) {
+        setBooks(fetchedBooks);
+        // Reset active index towards the middle of the new batch
+        if (activeIndex >= fetchedBooks.length) {
+          setActiveIndex(Math.max(0, Math.floor(fetchedBooks.length / 2)));
+        }
       }
     } catch (error) {
       console.error("Failed to fetch books:", error);
     } finally {
       setLoading(false);
     }
-  }, [page, search, genre, sort, userId]);
+  }, [userId, activeIndex]);
 
   useEffect(() => {
     fetchBooks();
   }, [fetchBooks]);
-
-  // Close user menu on outside click
+  
+  // Close menu logic
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      const isOutsideMobile = userMenuRef.current && !userMenuRef.current.contains(target);
-      const isOutsideDesktop = desktopMenuRef.current && !desktopMenuRef.current.contains(target);
-
-      // Close if click is outside both menu refs
-      if (isOutsideMobile && isOutsideDesktop) {
-        setUserMenuOpen(false);
-      }
+      const isOutside = userMenuRef.current && !userMenuRef.current.contains(target);
+      if (isOutside) setUserMenuOpen(false);
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
-
-  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setGenre(e.target.value);
-    setPage(1);
-  };
-
-  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSort(e.target.value);
-    setPage(1);
-  };
-
-  const clearFilters = () => {
-    setSearch("");
-    setGenre("");
-    setSort("recent");
-    setPage(1);
-  };
 
   const handleSignOut = async () => {
     await authClient.signOut();
     router.push("/");
   };
 
-  const hasActiveFilters = search || genre;
+  // GSAP Animation orchestration based on activeIndex
+  useGSAP(() => {
+    if (!books.length) return;
 
-  if (isPending) {
+    // Animate ambient background color
+    const activeColor = COLORS[activeIndex % COLORS.length];
+    gsap.to(backgroundRef.current, {
+      backgroundColor: activeColor,
+      duration: 0.8,
+      ease: "power2.out"
+    });
+
+    // Animate covers 
+    cardsRef.current.forEach((card, index) => {
+      if (!card) return;
+      
+      const offset = index - activeIndex;
+      const isActive = offset === 0;
+      const distance = Math.abs(offset);
+      
+      // Calculate 3D position
+      // Reduce spacing drastically on mobile
+      const spacingUnit = window.innerWidth < 640 ? 180 : 350;
+      const xPos = offset * spacingUnit; 
+      
+      // Cards shrink as they get further from center
+      const scale = isActive ? 1 : Math.max(0.6, 1 - distance * 0.15);
+      const zIndex = 100 - distance;
+      
+      // Cards further than 3 spaces fade out entirely
+      const opacity = distance > 3 ? 0 : (isActive ? 1 : 0.4);
+      
+      // Cards tilt subtly inward
+      const rotateY = offset * -15; 
+      
+      gsap.to(card, {
+        x: xPos,
+        scale: scale,
+        opacity: opacity,
+        zIndex: zIndex,
+        rotationY: rotateY,
+        duration: 0.6,
+        ease: "back.out(1.2)"
+      });
+      
+      // Animate the play button inside the card independently
+      const playBtn = card.querySelector('.play-btn');
+      if (playBtn) {
+        gsap.to(playBtn, {
+          opacity: isActive ? 1 : 0,
+          scale: isActive ? 1 : 0.5,
+          pointerEvents: isActive ? 'auto' : 'none',
+          duration: 0.4,
+          delay: isActive ? 0.2 : 0,
+          ease: "back.out(1.5)"
+        });
+      }
+    });
+  }, { dependencies: [activeIndex, books.length], scope: containerRef });
+
+  // Navigation handlers
+  const handlePrev = () => setActiveIndex(prev => Math.max(0, prev - 1));
+  const handleNext = () => setActiveIndex(prev => Math.min(books.length - 1, prev + 1));
+  const handleCardClick = (index: number) => {
+    if (index !== activeIndex) {
+      setActiveIndex(index);
+    }
+  };
+
+  // Touch/Drag handling for carousel
+  const touchStartRef = useRef<{x: number, time: number} | null>(null);
+  
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    touchStartRef.current = { x: clientX, time: Date.now() };
+  };
+  
+  const handleTouchEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!touchStartRef.current) return;
+    
+    const clientX = 'changedTouches' in e ? e.changedTouches[0].clientX : (e as React.MouseEvent).clientX;
+    const { x: startX, time: startTime } = touchStartRef.current;
+    
+    const deltaX = startX - clientX;
+    const deltaTime = Date.now() - startTime;
+    
+    // Register as a swipe if dragged more than 50px within 500ms
+    if (Math.abs(deltaX) > 50 && deltaTime < 500) {
+      if (deltaX > 0) handleNext();
+      else handlePrev();
+    }
+    
+    touchStartRef.current = null;
+  };
+
+  if (isPending || (loading && books.length === 0)) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--reader-bg)' }}>
-        <div className="animate-spin w-8 h-8 border-2 rounded-full" style={{ borderColor: 'var(--storia-border)', borderTopColor: 'var(--storia-primary)' }} />
+      <div className="min-h-screen flex items-center justify-center bg-zinc-900">
+        <div className="animate-spin w-12 h-12 border-4 rounded-full border-zinc-700 border-t-white" />
       </div>
     );
   }
 
   const isAdmin = user?.role === "admin";
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--reader-bg)' }}>
+    <div 
+      ref={containerRef} 
+      className="min-h-screen relative overflow-hidden bg-zinc-900 select-none touch-none"
+      style={{ perspective: '1200px' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onMouseDown={handleTouchStart}
+      onMouseUp={handleTouchEnd}
+      onMouseLeave={handleTouchEnd}
+    >
+      {/* Dynamic Ambient Background */}
+      <div 
+        ref={backgroundRef} 
+        className="absolute inset-0 opacity-40 transition-colors duration-700"
+        style={{ 
+          background: 'radial-gradient(circle at center, currentColor 0%, transparent 80%)',
+          color: COLORS[activeIndex % COLORS.length] 
+        }}
+      />
+      
+      {/* Interactive Background Glow layer */}
+      <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay pointer-events-none" />
+      
       {/* Navigation Bar */}
-      <nav className="sticky top-0 z-40 w-full backdrop-blur-md" style={{ backgroundColor: 'var(--storia-nav-bg)', borderBottom: '1px solid var(--storia-border)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row md:items-center md:h-16 gap-4 py-4 md:py-0">
-            {/* Top row / Left section: Logo & Mobile User Menu */}
-            <div className="flex items-center justify-between md:w-auto">
-              <div className="flex items-center gap-8">
-                <Link
-                  href="/"
-                  className="flex items-center gap-2 font-bold text-lg"
-                  style={{ color: 'var(--reader-text)' }}
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    style={{ color: 'var(--storia-primary)' }}
-                  >
-                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                  </svg>
-                  <span className="truncate">Storia</span>
-                </Link>
-
-                <div className="hidden md:flex items-center gap-6">
-                  <Link
-                    href="/library"
-                    className="font-medium text-sm py-5"
-                    style={{ color: 'var(--reader-text)', borderBottom: '2px solid var(--storia-primary)' }}
-                  >
-                    Library
-                  </Link>
-                </div>
-              </div>
-
-              {/* Mobile User Menu Toggle (moved here for mobile layout) */}
-              <div className="md:hidden relative" ref={userMenuRef}>
-                {session ? (
-                  <>
-                    <button
-                      onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="w-9 h-9 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: 'var(--storia-surface)', color: 'var(--reader-text)' }}
-                    >
-                      <span className="font-bold text-sm">
-                        {user?.email?.charAt(0).toUpperCase()}
-                      </span>
-                    </button>
-                    {userMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-1 z-50" style={{ backgroundColor: 'var(--storia-surface)', border: '1px solid var(--storia-border)' }}>
-                        {isAdmin && (
-                          <Link
-                            href="/admin"
-                            className="flex items-center gap-3 px-4 py-2 text-sm transition"
-                            style={{ color: 'var(--reader-text-secondary)' }}
-                            onMouseEnter={e => e.currentTarget.style.color = 'var(--reader-text)'}
-                            onMouseLeave={e => e.currentTarget.style.color = 'var(--reader-text-secondary)'}
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
-                            </svg>
-                            Admin Dashboard
-                          </Link>
-                        )}
-                        <button
-                          onClick={handleSignOut}
-                          className="flex items-center gap-3 px-4 py-2 text-sm transition w-full"
-                          style={{ color: 'var(--reader-text-secondary)' }}
-                          onMouseEnter={e => e.currentTarget.style.color = 'var(--reader-text)'}
-                          onMouseLeave={e => e.currentTarget.style.color = 'var(--reader-text-secondary)'}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          Log out
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href="/"
-                    className="h-9 px-4 text-white text-sm font-medium rounded-lg flex items-center justify-center transition"
-                    style={{ backgroundColor: 'var(--storia-primary)' }}
-                  >
-                    Login
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* Search Bar (Center on Desktop, Full on Mobile) */}
-            <div className="flex-1 max-w-2xl mx-auto w-full md:px-8">
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Search title, author, or keyword..."
-                  value={search}
-                  onChange={handleSearch}
-                  className="w-full h-10 pl-11 pr-4 text-sm rounded-full transition-all"
-                  style={{
-                    backgroundColor: 'var(--storia-input-bg)',
-                    color: 'var(--reader-text)',
-                    border: '1px solid var(--storia-border)',
-                  }}
-                  onFocus={e => e.currentTarget.style.borderColor = 'var(--storia-primary)'}
-                  onBlur={e => e.currentTarget.style.borderColor = 'var(--storia-border)'}
-                />
-                <svg
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  style={{ color: 'var(--reader-text-secondary)' }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Desktop User Menu (Right) */}
-            <div className="hidden md:flex items-center justify-end md:w-auto relative" ref={desktopMenuRef}>
-              {session ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-3 hover:opacity-80 transition focus:outline-none"
-                  >
-                    <span className="text-sm font-medium mr-2" style={{ color: 'var(--reader-text-secondary)' }}>
-                      {user?.email}
-                    </span>
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(to bottom right, var(--storia-primary), var(--storia-primary-dark))', border: '1px solid var(--storia-border)' }}>
-                      <span className="text-white font-bold text-sm">
-                        {user?.email?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  </button>
-
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl py-2 z-50 overflow-hidden ring-1 ring-black ring-opacity-5" style={{ backgroundColor: 'var(--storia-input-bg)', border: '1px solid var(--storia-border)' }}>
-                      {isAdmin && (
-                        <Link
-                          href="/admin"
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm transition w-full text-left"
-                          style={{ color: 'var(--reader-text-secondary)' }}
-                          onClick={() => setUserMenuOpen(false)}
-                          onMouseEnter={e => e.currentTarget.style.color = 'var(--reader-text)'}
-                          onMouseLeave={e => e.currentTarget.style.color = 'var(--reader-text-secondary)'}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18M3 12h18M3 17h18" />
-                          </svg>
-                          Admin Dashboard
-                        </Link>
-                      )}
-                      <button
-                        onClick={handleSignOut}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm transition w-full text-left"
-                        style={{ color: 'var(--reader-text-secondary)' }}
-                        onMouseEnter={e => e.currentTarget.style.color = 'var(--reader-text)'}
-                        onMouseLeave={e => e.currentTarget.style.color = 'var(--reader-text-secondary)'}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Sign out
-                      </button>
-                    </div>
+      <nav className="absolute top-0 z-50 w-full p-6 sm:p-8 flex justify-between items-center pointer-events-none">
+        <Link href="/" className="flex items-center gap-3 pointer-events-auto group">
+           <svg className="w-10 h-10 text-white drop-shadow-lg group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+             <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+           </svg>
+           <span className="text-white font-black text-2xl tracking-tight drop-shadow-lg">Storia</span>
+        </Link>
+        
+        <div className="relative pointer-events-auto" ref={userMenuRef}>
+          {session ? (
+            <>
+              <button 
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white font-black text-lg hover:bg-white/30 hover:scale-105 active:scale-95 transition-all shadow-xl"
+              >
+                {user?.email?.charAt(0).toUpperCase()}
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-4 w-56 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-white/10 backdrop-blur-2xl border border-white/20 overflow-hidden py-2 z-50">
+                  {isAdmin && (
+                    <Link href="/admin" className="block px-6 py-4 text-base text-white hover:bg-white/20 font-bold transition-colors">
+                      Admin Dashboard
+                    </Link>
                   )}
+                  <button onClick={handleSignOut} className="w-full text-left px-6 py-4 text-base text-white hover:bg-white/20 font-bold transition-colors">
+                    Log out
+                  </button>
                 </div>
-              ) : (
-                <Link
-                  href="/"
-                  className="h-9 px-4 text-white text-sm font-medium rounded-lg flex items-center justify-center transition"
-                  style={{ backgroundColor: 'var(--storia-primary)' }}
-                >
-                  Login
-                </Link>
               )}
-            </div>
-          </div>
+            </>
+          ) : (
+             <Link href="/" className="px-8 py-4 bg-white text-zinc-900 rounded-full font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all">
+               Login
+             </Link>
+          )}
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Hero Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-black leading-tight tracking-[-0.033em] mb-2 font-serif" style={{ color: 'var(--reader-text)' }}>
-            Discover Your Next Read
-          </h1>
-          <p className="text-sm sm:text-base font-normal leading-normal" style={{ color: 'var(--reader-text-secondary)' }}>
-            Browse, search, and select a book to begin your immersive reading
-            experience.
-          </p>
-        </div>
-
-        {/* Continue Reading Section - Only show for authenticated users with progress */}
-        {session && continueReadingBooks.length > 0 && (
-          <div className="mb-10">
-            <div className="flex items-center gap-3 mb-5">
-              <svg
-                className="w-6 h-6"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                style={{ color: 'var(--storia-primary)' }}
-              >
-                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-              </svg>
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color: 'var(--reader-text)' }}>
-                Continue Reading
-              </h2>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-track-transparent">
-              {continueReadingBooks.map((book) => (
-                <Link
-                  key={book.id}
-                  href={`/books/${book.id}/reader`}
-                  className="group cursor-pointer flex-shrink-0 w-36 sm:w-40"
-                >
-                  {/* Book Cover with Progress Bar */}
-                  <div className="w-full aspect-2/3 rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl group-hover:scale-105 transition-all duration-300 relative" style={{ backgroundColor: 'var(--storia-surface)' }}>
-                    {book.coverUrl ? (
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={book.coverUrl}
-                          alt={`Book cover for ${book.title}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 144px, 160px"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--reader-text-secondary)', background: 'linear-gradient(to bottom right, var(--storia-surface), var(--storia-input-bg))' }}>
-                        <svg
-                          className="w-16 h-16"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                        </svg>
-                      </div>
-                    )}
-
-                    {/* Progress Bar at bottom of cover */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
-                      <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--storia-border)' }}>
-                        <div
-                          className="h-full rounded-full transition-all duration-300"
-                          style={{ width: `${book.progressPercent || 0}%`, backgroundColor: 'var(--reader-progress-bar-fill)' }}
-                        />
-                      </div>
-                      <p className="text-white/80 text-xs mt-1 text-center">
-                        {book.progressPercent}% complete
-                      </p>
-                    </div>
-
-                    {/* Soundscape Badge */}
-                    {book.hasSoundscape && (
-                      <div className="absolute top-2 right-2 px-2 py-1 text-white text-xs font-bold rounded flex items-center gap-1" style={{ backgroundColor: 'var(--storia-primary)' }}>
-                        <span>🔊</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Book Info */}
-                  <div className="mt-3">
-                    <h3 className="text-sm font-semibold leading-tight line-clamp-2 mb-1" style={{ color: 'var(--reader-text)' }}>
-                      {book.title}
-                    </h3>
-                    <p className="text-xs font-normal" style={{ color: 'var(--reader-text-secondary)' }}>
-                      {book.author}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Filters Row */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-8">
-          {/* Filter by Genre */}
-          <div className="relative w-full sm:w-auto">
-            <select
-              value={genre}
-              onChange={handleGenreChange}
-              className="appearance-none h-10 w-full sm:w-auto pl-4 pr-10 text-sm font-medium rounded-lg border-none cursor-pointer sm:min-w-[160px]"
-              style={{ backgroundColor: 'var(--storia-surface)', color: 'var(--reader-text)' }}
-            >
-              {GENRES.map((g) => (
-                <option key={g.value} value={g.value}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              style={{ color: 'var(--reader-text-secondary)' }}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-
-          {/* Sort */}
-          <div className="relative w-full sm:w-auto">
-            <select
-              value={sort}
-              onChange={handleSortChange}
-              className="appearance-none h-10 w-full sm:w-auto pl-4 pr-10 text-sm font-medium rounded-lg border-none cursor-pointer sm:min-w-[160px]"
-              style={{ backgroundColor: 'var(--storia-surface)', color: 'var(--reader-text)' }}
-            >
-              {SORT_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              style={{ color: 'var(--reader-text-secondary)' }}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </div>
-
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="h-10 px-4 text-sm font-medium transition w-full sm:w-auto text-left sm:text-center"
-              style={{ color: 'var(--storia-primary)' }}
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
-
-        {/* Books Grid */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin w-8 h-8 border-2 rounded-full" style={{ borderColor: 'var(--storia-border)', borderTopColor: 'var(--storia-primary)' }} />
-          </div>
-        ) : books.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-lg mb-4" style={{ color: 'var(--reader-text-secondary)' }}>
-              No books found matching your filters.
-            </p>
-            <button
-              onClick={clearFilters}
-              className="font-medium"
-              style={{ color: 'var(--storia-primary)' }}
-            >
-              Clear filters
-            </button>
+      {/* Infinite Canvas Carousel */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {books.length === 0 ? (
+          <div className="text-white font-black text-3xl sm:text-4xl bg-black/40 px-10 py-6 rounded-[2rem] backdrop-blur-md pointer-events-auto border border-white/10 shadow-2xl">
+            Your Toy Box is Empty!
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-              {books.map((book) => (
-                <Link
-                  key={book.id}
-                  href={`/books/${book.id}/reader`}
-                  className="group cursor-pointer relative"
-                >
-                    {/* Book Cover */}
-                  <div className="w-full aspect-2/3 rounded-xl overflow-hidden shadow-lg group-hover:shadow-2xl group-hover:scale-105 transition-all duration-300 relative" style={{ backgroundColor: 'var(--storia-surface)' }}>
-                    {book.coverUrl ? (
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={book.coverUrl}
-                          alt={`Book cover for ${book.title}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--reader-text-secondary)', background: 'linear-gradient(to bottom right, var(--storia-surface), var(--storia-input-bg))' }}>
-                        <svg
-                          className="w-20 h-20"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                        </svg>
-                      </div>
-                    )}
+          books.map((book, i) => (
+            <div
+              key={book.id}
+              ref={el => { cardsRef.current[i] = el; }}
+              onClick={(e) => {
+                if (i !== activeIndex) {
+                  e.stopPropagation();
+                  handleCardClick(i);
+                }
+              }}
+              className="absolute pointer-events-auto cursor-pointer group"
+              style={{
+                width: 'min(65vw, min(420px, 35vh))', // Scaled relative to height to avoid overlapping nav/bottom controls
+                aspectRatio: '2/3',
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              {/* Context Above Card */}
+              <div 
+                className="context-above absolute bottom-full left-0 right-0 mb-4 sm:mb-6 flex flex-col items-center justify-end text-center pointer-events-none opacity-0 transition-opacity duration-300 w-[140%] -ml-[20%]"
+                style={{ opacity: i === activeIndex ? 1 : 0 }}
+              >
+                 <h3 className="text-white font-black text-xl sm:text-4xl mb-1 sm:mb-2 drop-shadow-xl leading-tight line-clamp-2 px-2">
+                   {book.title}
+                 </h3>
+                 <p className="text-white/80 font-bold text-sm sm:text-xl mb-3 sm:mb-4 drop-shadow-lg">
+                   By {book.author}
+                 </p>
+                 {book.currentPage && book.currentPage > 1 ? (
+                   <span className="text-white font-bold text-xs sm:text-base bg-black/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
+                     Continue reading from page {book.currentPage}
+                   </span>
+                 ) : (
+                   <span className="text-white font-bold text-xs sm:text-base bg-black/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
+                     Start Reading
+                   </span>
+                 )}
+              </div>
 
-                    {/* Soundscape Badge */}
-                    {book.hasSoundscape && (
-                      <div className="absolute top-2 right-2 px-2 py-1 text-white text-xs font-bold rounded flex items-center gap-1" style={{ backgroundColor: 'var(--storia-primary)' }}>
-                        <span>🔊</span>
-                      </div>
-                    )}
-
-                    {/* Progress Bar for books with reading progress */}
-                    {book.progressPercent !== null &&
-                      book.progressPercent !== undefined &&
-                      book.progressPercent > 0 && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2">
-                          <div className="w-full h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--storia-border)' }}>
-                            <div
-                              className="h-full rounded-full transition-all duration-300"
-                              style={{ width: `${book.progressPercent}%`, backgroundColor: 'var(--reader-progress-bar-fill)' }}
-                            />
-                          </div>
-                          <p className="text-white/80 text-xs mt-1 text-center">
-                            {book.progressPercent}% complete
-                          </p>
-                        </div>
-                      )}
-                  </div>
-
-                  {/* Book Info */}
-                  <div className="mt-3">
-                    <h3 className="text-sm font-semibold leading-tight line-clamp-2 mb-1" style={{ color: 'var(--reader-text)' }}>
-                      {book.title}
-                    </h3>
-                    <p className="text-xs font-normal" style={{ color: 'var(--reader-text-secondary)' }}>
-                      {book.author}
-                    </p>
-                    {book.hasSoundscape && (
-                      <p className="text-xs font-medium mt-1" style={{ color: 'var(--storia-primary)' }}>
-                        Soundscape Available
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {pagination && pagination.totalPages > 1 && (
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-10 sm:mt-12">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="w-8 h-8 flex items-center justify-center rounded disabled:opacity-30 disabled:cursor-not-allowed transition"
-                  style={{ color: 'var(--reader-text)' }}
-                >
-                  ‹
-                </button>
-
-                {generatePaginationRange(page, pagination.totalPages).map(
-                  (pageNum, idx) =>
-                    pageNum === "..." ? (
-                      <span
-                        key={`ellipsis-${idx}`}
-                        className="w-8 h-8 flex items-center justify-center"
-                        style={{ color: 'var(--reader-text-secondary)' }}
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={pageNum}
-                        onClick={() => setPage(pageNum as number)}
-                        className="w-8 h-8 flex items-center justify-center rounded text-sm font-medium transition"
-                        style={
-                          pageNum === page
-                            ? { backgroundColor: 'var(--storia-primary)', color: '#ffffff' }
-                            : { color: 'var(--reader-text)' }
-                        }
-                      >
-                        {pageNum}
-                      </button>
-                    )
+              <div className="w-full h-full rounded-[2rem] sm:rounded-[3rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] relative bg-zinc-800 border-4 border-white/10 transition-colors group-hover:border-white/30 mt-auto">
+                {book.coverUrl ? (
+                  <Image
+                    src={book.coverUrl}
+                    alt={book.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 75vw, 420px"
+                    priority={Math.abs(i - activeIndex) <= 2}
+                    draggable={false}
+                  />
+                ) : (
+                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-700 to-zinc-900 text-white pb-10">
+                     <span className="text-4xl font-black text-center px-6 leading-tight opacity-40">{book.title}</span>
+                   </div>
                 )}
 
-                <button
-                  onClick={() =>
-                    setPage((p) => Math.min(pagination.totalPages, p + 1))
-                  }
-                  disabled={page === pagination.totalPages}
-                  className="w-8 h-8 flex items-center justify-center rounded disabled:opacity-30 disabled:cursor-not-allowed transition"
-                  style={{ color: 'var(--reader-text)' }}
-                >
-                  ›
-                </button>
+                {/* Overlays */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-8 sm:p-10 pointer-events-none">
+                  {/* Keep progress bar at bottom of card, remove redundant title/author */}
+                  {book.progressPercent != null && book.progressPercent > 0 && (
+                    <div className="w-full bg-white/20 rounded-full h-3 mb-2 overflow-hidden shadow-inner">
+                       <div className="bg-white h-full rounded-full" style={{ width: `${book.progressPercent}%` }} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Play/Open Button (Center) */}
+                <div className="play-btn absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none">
+                   <Link 
+                     href={`/books/${book.id}/reader`}
+                     className="w-20 h-20 sm:w-28 sm:h-28 bg-white text-zinc-900 rounded-full flex items-center justify-center shadow-[0_15px_30px_rgba(0,0,0,0.5)] hover:scale-110 hover:bg-zinc-100 active:scale-95 transition-all disabled:opacity-50"
+                     onClick={(e) => e.stopPropagation()}
+                     draggable={false}
+                   >
+                     <svg className="w-10 h-10 sm:w-14 sm:h-14 ml-1 sm:ml-2" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M8 5v14l11-7z" />
+                     </svg>
+                   </Link>
+                </div>
+
+                {/* Badges */}
+                {book.hasSoundscape && (
+                  <div className="absolute top-6 right-6 sm:top-8 sm:right-8 w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-2xl text-2xl z-10 pointer-events-none">
+                    🔊
+                  </div>
+                )}
               </div>
-            )}
-          </>
+            </div>
+          ))
         )}
       </div>
+
+      {/* Manual Navigation Controls */}
+      {books.length > 0 && (
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-12 px-6 pointer-events-auto sm:bottom-12">
+          <button 
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+            disabled={activeIndex === 0}
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 backdrop-blur-xl border-2 border-white/20 text-white flex items-center justify-center shadow-2xl hover:bg-white/30 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:hover:scale-100 disabled:cursor-not-allowed"
+          >
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            disabled={activeIndex === books.length - 1}
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 backdrop-blur-xl border-2 border-white/20 text-white flex items-center justify-center shadow-2xl hover:bg-white/30 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:hover:scale-100 disabled:cursor-not-allowed"
+          >
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+      )}
     </div>
   );
-}
-
-function generatePaginationRange(
-  current: number,
-  total: number
-): (number | string)[] {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-
-  if (current <= 4) {
-    return [1, 2, 3, 4, 5, "...", total];
-  }
-
-  if (current >= total - 3) {
-    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
-  }
-
-  return [1, "...", current - 1, current, current + 1, "...", total];
 }
