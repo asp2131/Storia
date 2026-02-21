@@ -124,14 +124,6 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
   useGSAP(() => {
     if (!books.length) return;
 
-    // Animate ambient background color
-    const activeColor = COLORS[activeIndex % COLORS.length];
-    gsap.to(backgroundRef.current, {
-      backgroundColor: activeColor,
-      duration: 0.8,
-      ease: "power2.out"
-    });
-
     // Animate covers
     cardsRef.current.forEach((card, index) => {
       if (!card) return;
@@ -158,9 +150,6 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
       // Cards further than 3 spaces fade out entirely
       const opacity = distance > 3 ? 0 : (isActive ? 1 : 0.4);
 
-      // Cards tilt subtly inward
-      const rotateY = offset * -15;
-
       // Fix 2: Set zIndex instantly — not GPU-composited, don't tween it
       gsap.set(card, { zIndex: zIndex });
 
@@ -168,10 +157,9 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
         x: xPos,
         scale: scale,
         opacity: opacity,
-        rotationY: rotateY,
         duration: 0.6,
         ease: "back.out(1.2)",
-        force3D: true, // Fix 6: Promote elements to GPU layers
+        force3D: true,
       });
 
       // Animate the play button inside the card independently
@@ -250,7 +238,6 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
     <div
       ref={containerRef}
       className="min-h-screen relative overflow-hidden bg-zinc-900 select-none touch-none"
-      style={{ perspective: '1200px' }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleTouchStart}
@@ -264,12 +251,11 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
         className="absolute inset-0 opacity-40"
         style={{
           background: 'radial-gradient(circle at center, currentColor 0%, transparent 80%)',
-          color: COLORS[activeIndex % COLORS.length]
+          color: COLORS[activeIndex % COLORS.length],
+          transition: 'color 0.8s ease',
         }}
       />
 
-      {/* Interactive Background Glow layer */}
-      <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay pointer-events-none" />
 
       {/* Navigation Bar */}
       <nav className="absolute top-0 z-[200] w-full p-6 sm:p-8 flex justify-between items-center pointer-events-none">
@@ -285,12 +271,12 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
             <>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white font-black text-lg hover:bg-white/30 hover:scale-105 active:scale-95 transition-all shadow-xl"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/25 border border-white/30 flex items-center justify-center text-white font-black text-lg hover:bg-white/35 hover:scale-105 active:scale-95 transition-all shadow-xl"
               >
                 {user?.email?.charAt(0).toUpperCase()}
               </button>
               {userMenuOpen && (
-                <div className="absolute right-0 mt-4 w-56 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-white/10 backdrop-blur-2xl border border-white/20 overflow-hidden py-2 z-50">
+                <div className="absolute right-0 mt-4 w-56 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-800/95 border border-white/10 overflow-hidden py-2 z-50">
                   {isAdmin && (
                     <Link href="/admin" className="block px-6 py-4 text-base text-white hover:bg-white/20 font-bold transition-colors">
                       Admin Dashboard
@@ -313,7 +299,7 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
       {/* Infinite Canvas Carousel */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {books.length === 0 ? (
-          <div className="text-white font-black text-3xl sm:text-4xl bg-black/40 px-10 py-6 rounded-[2rem] backdrop-blur-md pointer-events-auto border border-white/10 shadow-2xl">
+          <div className="text-white font-black text-3xl sm:text-4xl bg-zinc-800/90 px-10 py-6 rounded-[2rem] pointer-events-auto border border-white/10 shadow-2xl">
             Your Toy Box is Empty!
           </div>
         ) : (
@@ -343,7 +329,6 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
                 style={{
                   width: 'min(65vw, min(420px, 35vh))',
                   aspectRatio: '2/3',
-                  transformStyle: 'preserve-3d',
                 }}
               >
                 {/* Context Above Card */}
@@ -358,11 +343,11 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
                      By {book.author}
                    </p>
                    {(book.progressPercent && book.progressPercent > 0) || (book.currentPage && book.currentPage > 1) ? (
-                     <span className="text-white font-bold text-xs sm:text-base bg-black/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
+                     <span className="text-white font-bold text-xs sm:text-base bg-black/60 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10 shadow-xl">
                        Continue reading{book.currentPage ? ` from page ${book.currentPage}` : ''}
                      </span>
                    ) : (
-                     <span className="text-white font-bold text-xs sm:text-base bg-black/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
+                     <span className="text-white font-bold text-xs sm:text-base bg-black/60 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10 shadow-xl">
                        Start Reading
                      </span>
                    )}
@@ -421,25 +406,25 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
         )}
       </div>
 
-      {/* Manual Navigation Controls */}
+      {/* Manual Navigation Controls — flanking the carousel */}
       {books.length > 0 && (
-        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-12 px-6 pointer-events-auto sm:bottom-12">
+        <>
           <button
             onClick={(e) => { e.stopPropagation(); handlePrev(); }}
             disabled={activeIndex === 0}
-            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 backdrop-blur-xl border-2 border-white/20 text-white flex items-center justify-center shadow-2xl hover:bg-white/30 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:hover:scale-100 disabled:cursor-not-allowed"
+            className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-[150] pointer-events-auto w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/50 border border-white/20 text-white flex items-center justify-center shadow-xl active:scale-90 transition-all disabled:opacity-0 disabled:pointer-events-none"
           >
-            <svg className="w-10 h-10 sm:w-12 sm:h-12 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" /></svg>
+            <svg className="w-6 h-6 sm:w-8 sm:h-8 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
           </button>
 
           <button
             onClick={(e) => { e.stopPropagation(); handleNext(); }}
             disabled={activeIndex === books.length - 1}
-            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/10 backdrop-blur-xl border-2 border-white/20 text-white flex items-center justify-center shadow-2xl hover:bg-white/30 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:hover:scale-100 disabled:cursor-not-allowed"
+            className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-[150] pointer-events-auto w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/50 border border-white/20 text-white flex items-center justify-center shadow-xl active:scale-90 transition-all disabled:opacity-0 disabled:pointer-events-none"
           >
-            <svg className="w-10 h-10 sm:w-12 sm:h-12 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
+            <svg className="w-6 h-6 sm:w-8 sm:h-8 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
           </button>
-        </div>
+        </>
       )}
     </div>
   );
