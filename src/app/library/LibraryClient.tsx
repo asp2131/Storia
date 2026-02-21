@@ -239,7 +239,7 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
       <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay pointer-events-none" />
       
       {/* Navigation Bar */}
-      <nav className="absolute top-0 z-50 w-full p-6 sm:p-8 flex justify-between items-center pointer-events-none">
+      <nav className="absolute top-0 z-[200] w-full p-6 sm:p-8 flex justify-between items-center pointer-events-none">
         <Link href="/" className="flex items-center gap-3 pointer-events-auto group">
            <svg className="w-10 h-10 text-white drop-shadow-lg group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 20 20">
              <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
@@ -312,9 +312,9 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
                  <p className="text-white/80 font-bold text-sm sm:text-xl mb-3 sm:mb-4 drop-shadow-lg">
                    By {book.author}
                  </p>
-                 {book.currentPage && book.currentPage > 1 ? (
+                 {(book.progressPercent && book.progressPercent > 0) || (book.currentPage && book.currentPage > 1) ? (
                    <span className="text-white font-bold text-xs sm:text-base bg-black/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
-                     Continue reading from page {book.currentPage}
+                     Continue reading{book.currentPage ? ` from page ${book.currentPage}` : ''}
                    </span>
                  ) : (
                    <span className="text-white font-bold text-xs sm:text-base bg-black/40 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-white/20 shadow-xl">
