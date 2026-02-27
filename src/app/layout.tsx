@@ -37,12 +37,12 @@ export const metadata: Metadata = {
     template: "%s | Storia",
   },
   description:
-    "Interactive children's books with AI-generated soundscapes and narration that adapt to every scene. Read, listen, and explore stories like never before.",
+    "Interactive children's books with immersive soundscapes and expressive narration tailored to every scene. Read, listen, and explore stories like never before.",
   keywords: [
     "children's books",
     "interactive books",
     "audio books",
-    "AI soundscapes",
+    "immersive soundscapes",
     "kids reading",
     "narrated stories",
     "read aloud",
@@ -55,14 +55,14 @@ export const metadata: Metadata = {
     siteName: "Storia",
     title: "Storia - Books That Sound Amazing",
     description:
-      "Interactive children's books with AI-generated soundscapes and narration that adapt to every scene.",
+      "Interactive children's books with immersive soundscapes and expressive narration tailored to every scene.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Storia - Books That Sound Amazing" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Storia - Books That Sound Amazing",
     description:
-      "Interactive children's books with AI-generated soundscapes and narration.",
+      "Interactive children's books with immersive soundscapes and expressive narration.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -88,7 +88,7 @@ export default function RootLayout({
               name: "Storia",
               url: "https://storia.kids",
               description:
-                "Interactive children's books with AI-generated soundscapes and narration that adapt to every scene.",
+                "Interactive children's books with immersive soundscapes and expressive narration tailored to every scene.",
             }),
           }}
         />

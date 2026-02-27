@@ -10,11 +10,11 @@ export default function Home() {
       <section className="relative z-10 bg-[#0a0a0a] px-6 py-20 sm:py-28">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl font-serif font-black tracking-tight text-amber-100/90 mb-6">
-            Interactive Children&apos;s Books with AI Soundscapes
+            Interactive Children&apos;s Books with Immersive Soundscapes
           </h1>
           <p className="text-base sm:text-lg text-white/60 leading-relaxed mb-10">
-            Storia brings stories to life with AI-generated narration and ambient soundscapes
-            that adapt to every scene. Children swipe through beautifully illustrated pages,
+            Storia brings stories to life with expressive narration and ambient soundscapes
+            tailored to every scene. Children swipe through beautifully illustrated pages,
             tap to hear words read aloud with word-by-word highlighting, and immerse themselves
             in soundscapes — from rustling forests to crashing waves — that match each moment
             of the story.
@@ -26,8 +26,8 @@ export default function Home() {
                 Read Aloud
               </h2>
               <p className="text-sm text-white/50 leading-relaxed">
-                AI-powered narration reads each page with natural expression while highlighting
-                words in real time, helping kids follow along and build reading skills.
+                Expressive read-aloud narration guides each page while highlighting words
+                in real time, helping kids follow along and build reading skills.
               </p>
             </div>
             <div>
@@ -41,11 +41,12 @@ export default function Home() {
             </div>
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-widest text-amber-200/70 mb-2">
-                Beautiful Illustrations
+                Why We Built Storia
               </h2>
               <p className="text-sm text-white/50 leading-relaxed">
-                Full-page illustrated artwork with text woven directly into the scene,
-                creating a seamless visual reading experience on any device.
+                We built Storia to redefine what a book can be. Our immersive sensory audiobooks
+                strengthen foundational reading through orthographic, phonological, and semantic
+                representation—helping children build literacy with confidence.
               </p>
             </div>
           </div>

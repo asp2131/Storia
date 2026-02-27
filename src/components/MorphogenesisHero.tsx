@@ -429,23 +429,25 @@ export default function MorphogenesisHero({
         <div className="row flex flex-col md:flex-row justify-center gap-8 relative z-10">
           <div className="col flex-1 flex flex-col justify-center">
             <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
-              <div className="font-mono text-xs opacity-40">01 / Analysis</div>
+              <div className="font-mono text-xs opacity-40">01 / Founder</div>
               <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
-                AI Scene Analysis
+                Shivang Thakor
               </h2>
               <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
-                Our AI identifies scenes, moods, settings, and emotions —
-                understanding the context just like a human reader would.
+                Shivang&apos;s placeholder background reflects a product-focused builder who loves
+                crafting intuitive experiences from complex systems. He brings the execution mindset
+                that helps turn big creative ideas into something families can actually use and love.
               </p>
             </div>
           </div>
           <div className="col flex-1 flex items-center justify-center">
             <Image
-              src="/landing/MagicalCreature.svg"
+              src="https://media.licdn.com/dms/image/v2/D4D03AQEo4pnSxy68Sw/profile-displayphoto-crop_800_800/B4DZhR7V6XH4AM-/0/1753721168705?e=1773878400&v=beta&t=nosQgcuiiijpr272bCzuMoCOlL9vI_WL1HCV1uAC-LE"
               alt="Magical creature emerging"
               width={500}
               height={500}
-              className="w-full md:w-3/4 h-auto"
+              className="w-full md:w-3/4 h-auto "
+              style={{ borderRadius: "50%", objectFit: "contain", scale: 0.75, border: "1px solid #0a0a0a" }}
             />
           </div>
         </div>
@@ -454,23 +456,26 @@ export default function MorphogenesisHero({
         <div className="row flex flex-col md:flex-row-reverse justify-center gap-8 relative z-10">
           <div className="col flex-1 flex flex-col justify-center">
             <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
-              <div className="font-mono text-xs opacity-40">02 / Generation</div>
+              <div className="font-mono text-xs opacity-40">02 / Founder + Software Architect</div>
               <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
-                Sonic Immersion
+                Akintunde Pounds
               </h2>
               <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
-                Enjoy seamlessly generated soundscapes that crossfade between
-                scenes, adapting to the story&apos;s mood in real-time.
+                As a parent to a daughter with autism, Akintunde is on a mission to bridge literacy
+                gaps for all kids—especially children with disabilities. He and his brother come from
+                a third-generation family of educators, and with 5+ years teaching computer science,
+                he brings both lived empathy and classroom experience to how Storia is built.
               </p>
             </div>
           </div>
           <div className="col flex-1 flex items-center justify-center">
             <Image
-              src="/landing/Floating:Emerging.svg"
+              src="https://avatars.githubusercontent.com/u/42776703?v=4"
               alt="Elements floating from book"
               width={500}
               height={500}
-              className="w-full md:w-3/4 h-auto"
+              className="w-full md:w-3/4 h-auto "
+              style={{ borderRadius: "50%", objectFit: "contain", scale: 0.75, border: "1px solid #0a0a0a" }}
             />
           </div>
         </div>
@@ -479,13 +484,14 @@ export default function MorphogenesisHero({
         <div className="row flex flex-col md:flex-row justify-center gap-8 relative z-10">
           <div className="col flex-1 flex flex-col justify-center">
             <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
-              <div className="font-mono text-xs opacity-40">03 / Experience</div>
+              <div className="font-mono text-xs opacity-40">03 / Motivation</div>
               <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
-                The Living Text
+                Why We Built Storia
               </h2>
               <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
-                Every word resonates with meaning. Experience your library as a
-                multi-sensory journey through sound and light.
+                We built Storia to redefine what a book can be. Our immersive sensory audiobooks are
+                designed to strengthen foundational reading skills in children by supporting orthographic
+                representation, phonological representation, and semantic representation in every story.
               </p>
             </div>
           </div>
