@@ -17,6 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: "https://storia.kids", changeFrequency: "weekly", priority: 1.0 },
     { url: "https://storia.kids/library", changeFrequency: "daily", priority: 0.9 },
+    { url: "https://storia.kids/privacy-policy", changeFrequency: "monthly", priority: 0.4 },
     ...bookEntries,
   ];
 }
