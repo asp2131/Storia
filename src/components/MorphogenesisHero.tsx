@@ -394,7 +394,7 @@ export default function MorphogenesisHero({
           style={{ height: "150svh", zIndex: 10 }}
         >
           <h2 className="max-w-4xl text-3xl md:text-5xl lg:text-6xl font-serif font-black leading-tight text-[#0a0a0a]">
-            <a href="https://brighterly.com/blog/literacy-statistics/" target="_blank" rel="noopener noreferrer" className="hover:text-amber-700 transition-colors">67% of fourth-graders aren't reading at grade level</a>. We're actively combating this crisis—because every story deserves to be heard, felt, and experienced through an immersive, relatable vibe kids can enjoy.
+            <a href="https://brighterly.com/blog/literacy-statistics/" target="_blank" rel="noopener noreferrer" className="hover:text-amber-700 transition-colors">67% of fourth-graders aren't reading at grade level.</a> We're actively combating this crisis—because every story deserves to be heard, felt, and experienced through an immersive, relatable vibe kids can enjoy.
           </h2>
         </div>
       </section>
