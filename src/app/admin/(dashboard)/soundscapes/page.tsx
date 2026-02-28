@@ -1,9 +1,8 @@
 "use client";
 
-// Disable prerendering for admin pages
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type SoundscapeAsset = {
   name: string;
@@ -15,10 +14,14 @@ type SoundscapeAsset = {
 export default function AdminSoundscapesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Record<string, SoundscapeAsset[]>>(
-    {}
-  );
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Record<string, SoundscapeAsset[]>>({});
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadDragging, setUploadDragging] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   const bucket = useMemo(
     () => process.env.NEXT_PUBLIC_SUPABASE_SOUNDSCAPE_BUCKET || "storia-storage",
@@ -29,50 +32,136 @@ export default function AdminSoundscapesPage() {
     []
   );
 
-  useEffect(() => {
-    let active = true;
-    const loadSoundscapes = async () => {
-      setLoading(true);
-      setError(null);
+  const loadSoundscapes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const response = await fetch(
+      `/api/soundscapes?bucket=${encodeURIComponent(bucket)}&basePath=${encodeURIComponent(basePath)}`
+    );
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setError(payload?.error || "Failed to load soundscapes.");
+      setLoading(false);
+      return;
+    }
+    const payload = await response.json();
+    const categoriesMap = payload?.categories ?? {};
+    const categoryNames = Object.keys(categoriesMap);
+    setCategories(categoriesMap);
+    setSelectedCategory((prev) =>
+      prev && categoryNames.includes(prev) ? prev : categoryNames[0] ?? null
+    );
+    setLoading(false);
+  }, [bucket, basePath]);
 
-      const response = await fetch(
-        `/api/soundscapes?bucket=${encodeURIComponent(bucket)}&basePath=${encodeURIComponent(basePath)}`
-      );
+  useEffect(() => {
+    loadSoundscapes();
+  }, [loadSoundscapes]);
+
+  const handleUpload = async (file: File) => {
+    if (!file.type.startsWith("audio/") && !file.name.match(/\.(mp3|wav|ogg|flac|aac|m4a|webm)$/i)) {
+      setUploadError("Please upload a valid audio file.");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError("File too large. Maximum size is 50MB.");
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/audio-uploads", {
+        method: "POST",
+        body: formData,
+      });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        if (!active) return;
-        setError(payload?.error || "Failed to load soundscapes.");
-        setLoading(false);
-        return;
+        throw new Error(payload?.error || "Failed to upload audio.");
       }
+      await loadSoundscapes();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to upload audio.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
-      const payload = await response.json();
-      if (!active) return;
+  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setUploadDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleUpload(file);
+  };
 
-      const categoriesMap = payload?.categories ?? {};
-      const categoryNames = Object.keys(categoriesMap);
-      setCategories(categoriesMap);
-      setSelectedCategory((prev) =>
-        prev && categoryNames.includes(prev) ? prev : categoryNames[0] ?? null
-      );
-      setLoading(false);
-    };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleUpload(file);
+  };
 
-    loadSoundscapes();
-    return () => {
-      active = false;
-    };
-  }, [basePath, bucket]);
+  const copyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(url);
+    setTimeout(() => setCopiedUrl(null), 2000);
+  };
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-black font-serif">Soundscapes</h1>
         <p className="text-[#929bc9] text-sm">
-          Manage curated and generated soundscapes stored in Supabase.
+          Manage curated and uploaded soundscapes stored in Supabase.
         </p>
       </div>
 
+      {/* Upload Section */}
+      <section className="bg-[#101322] border border-[#232948] rounded-2xl p-6 space-y-4">
+        <h2 className="text-white text-sm font-bold">Upload Audio</h2>
+        <input
+          ref={audioInputRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <div
+          onDragOver={(e) => { e.preventDefault(); setUploadDragging(true); }}
+          onDragLeave={() => setUploadDragging(false)}
+          onDrop={handleFileDrop}
+          onClick={() => audioInputRef.current?.click()}
+          className={`rounded-xl border-2 border-dashed p-8 flex flex-col items-center gap-3 cursor-pointer transition-all ${
+            uploadDragging
+              ? "border-[#1337ec] bg-[#1337ec]/10"
+              : "border-[#232948] hover:border-[#2f3761] hover:bg-[#0f1419]"
+          }`}
+        >
+          {uploading ? (
+            <div className="flex items-center gap-3">
+              <svg className="animate-spin h-5 w-5 text-[#1337ec]" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span className="text-[#929bc9] text-sm">Uploading...</span>
+            </div>
+          ) : (
+            <>
+              <div className="w-10 h-10 rounded-full bg-[#1337ec]/10 flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#1337ec]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <p className="text-white text-sm font-medium">Drop audio files or click to browse</p>
+              <p className="text-[#929bc9] text-xs">MP3, WAV, OGG, FLAC, AAC, M4A, WebM &bull; Max 50MB</p>
+            </>
+          )}
+        </div>
+        {uploadError && (
+          <p className="text-red-400 text-xs">{uploadError}</p>
+        )}
+      </section>
+
+      {/* Library Section */}
       <section className="bg-[#101322] border border-[#232948] rounded-2xl p-6">
         {loading && <p className="text-[#929bc9] text-sm">Loading soundscapes...</p>}
         {error && (
@@ -98,7 +187,7 @@ export default function AdminSoundscapesPage() {
                       : "bg-[#0f1419] text-[#929bc9] border-[#232948] hover:text-white hover:border-[#2f3761]"
                   }`}
                 >
-                  {category}
+                  {category} ({categories[category].length})
                 </button>
               ))}
             </div>
@@ -110,8 +199,8 @@ export default function AdminSoundscapesPage() {
                     key={`${selectedCategory}-${asset.name}`}
                     className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-[#232948] bg-[#0f1419] p-4"
                   >
-                    <div className="space-y-1">
-                      <p className="text-white text-sm font-semibold">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <p className="text-white text-sm font-semibold truncate">
                         {asset.name.replace(/_/g, " ")}
                       </p>
                       <p className="text-[#929bc9] text-xs">
@@ -124,10 +213,23 @@ export default function AdminSoundscapesPage() {
                           : ""}
                       </p>
                     </div>
-                    <audio controls className="w-full sm:w-72">
-                      <source src={asset.url} />
-                      Your browser does not support the audio element.
-                    </audio>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <audio controls className="w-full sm:w-56">
+                        <source src={asset.url} />
+                        Your browser does not support the audio element.
+                      </audio>
+                      <button
+                        type="button"
+                        onClick={() => copyUrl(asset.url)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+                          copiedUrl === asset.url
+                            ? "bg-green-600 text-white border-green-600"
+                            : "bg-[#0f1419] text-[#929bc9] border-[#232948] hover:text-white hover:border-[#2f3761]"
+                        }`}
+                      >
+                        {copiedUrl === asset.url ? "Copied!" : "Copy URL"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
