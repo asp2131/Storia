@@ -16,25 +16,23 @@ import {
   CheckCircle2,
   ArrowLeft,
   ArrowRight,
-  Settings,
   Headphones,
   X,
   Pause,
-  Volume2,
-  Layers,
-  Info,
-  Mic,
-  ArrowLeftRight,
   Play,
-  Volume1,
-  ChevronRight,
-  CloudRain,
-  Music,
-  Upload,
   Loader2,
   Wand2,
   Sparkles,
   Type,
+  Music,
+  Mic,
+  Upload,
+  FolderOpen,
+  ChevronDown,
+  ChevronRight,
+  GripHorizontal,
+  FileAudio,
+  Settings,
 } from "lucide-react";
 import {
   useBookDetails,
@@ -47,6 +45,7 @@ import {
   useUpdateBook,
   WordTimestamp,
 } from "@/hooks/useBookData";
+import { useSoundLibrary, useUploadAudio, SoundAsset } from "@/hooks/useSoundLibrary";
 import type { TextOverlayConfig } from "@/types/text-overlay";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
 
@@ -60,6 +59,12 @@ type LocalPageData = {
   narrationTimestamps?: WordTimestamp[];
 };
 
+type DropAssignment = {
+  audioUrl: string;
+  audioName: string;
+  targetPage: number;
+};
+
 export default function BookEditor() {
   const router = useRouter();
   const params = useParams();
@@ -68,6 +73,10 @@ export default function BookEditor() {
   // React Query hooks
   const { data: bookDetails, isLoading: bookLoading } = useBookDetails(bookIdParam);
   const { data: serverPages, isLoading: pagesLoading } = useEditorPages(bookIdParam);
+
+  // Sound library
+  const { data: soundLibrary, isLoading: libraryLoading } = useSoundLibrary();
+  const uploadAudioMutation = useUploadAudio(bookIdParam);
 
   // Local state for edits (not yet saved to server)
   const [localPages, setLocalPages] = useState<LocalPageData[]>([]);
@@ -108,13 +117,9 @@ export default function BookEditor() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Audio URL inputs
-  const [narrationUrlInput, setNarrationUrlInput] = useState("");
+  // Audio state
   const [soundscapeUrlInput, setSoundscapeUrlInput] = useState("");
-  const [narrationScope, setNarrationScope] = useState<"current" | "range">("current");
   const [soundscapeScope, setSoundscapeScope] = useState<"current" | "range">("current");
-  const [narrationRangeStart, setNarrationRangeStart] = useState(1);
-  const [narrationRangeEnd, setNarrationRangeEnd] = useState(1);
   const [soundscapeRangeStart, setSoundscapeRangeStart] = useState(1);
   const [soundscapeRangeEnd, setSoundscapeRangeEnd] = useState(1);
 
@@ -131,10 +136,29 @@ export default function BookEditor() {
   const [narrationProgress, setNarrationProgress] = useState(0);
   const [showSyncPreview, setShowSyncPreview] = useState(false);
 
+  // Sound library state
+  const [libraryOpen, setLibraryOpen] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [libraryPreviewUrl, setLibraryPreviewUrl] = useState<string | null>(null);
+  const [librarySearch, setLibrarySearch] = useState("");
+
+  // Drag-and-drop state
+  const [draggedSound, setDraggedSound] = useState<SoundAsset | null>(null);
+  const [dropTargetPage, setDropTargetPage] = useState<number | null>(null);
+  const [dropAssignment, setDropAssignment] = useState<DropAssignment | null>(null);
+  const [dropRangeStart, setDropRangeStart] = useState(1);
+  const [dropRangeEnd, setDropRangeEnd] = useState(1);
+  const [dropScope, setDropScope] = useState<"single" | "range">("single");
+
+  // Audio upload state
+  const [audioUploadDragging, setAudioUploadDragging] = useState(false);
+
   // Refs
   const soundscapeRef = useRef<HTMLAudioElement>(null);
   const narrationRef = useRef<HTMLAudioElement>(null);
+  const libraryPreviewRef = useRef<HTMLAudioElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   // Mutations
   const generateNarrationMutation = useGenerateNarration(bookIdParam);
@@ -170,24 +194,55 @@ export default function BookEditor() {
     serverPages?.find(p => p.pageNumber === activePage)?.narrationUrl || "" : "";
   const soundscapeActiveUrl = soundscapeAssignment?.audioUrl || soundscapeUrlInput;
 
+  // Build a map of all page audio assignments for badges
+  const pageAudioMap = useMemo(() => {
+    const map: Record<number, { hasNarration: boolean; hasSoundscape: boolean }> = {};
+    if (!serverPages) return map;
+    for (const p of serverPages) {
+      map[p.pageNumber] = {
+        hasNarration: !!p.narrationUrl || !!(p.assignments?.some(a => a.audioType === "narration")),
+        hasSoundscape: !!(p.assignments?.some(a => a.audioType === "soundscape")),
+      };
+    }
+    return map;
+  }, [serverPages]);
+
+  // Filtered library sounds
+  const filteredLibrarySounds = useMemo(() => {
+    if (!soundLibrary?.categories) return {};
+    if (!librarySearch.trim()) return soundLibrary.categories;
+
+    const query = librarySearch.toLowerCase();
+    const filtered: Record<string, SoundAsset[]> = {};
+    for (const [category, sounds] of Object.entries(soundLibrary.categories)) {
+      const matches = sounds.filter(s =>
+        s.name.toLowerCase().includes(query) || category.toLowerCase().includes(query)
+      );
+      if (matches.length > 0) filtered[category] = matches;
+    }
+    return filtered;
+  }, [soundLibrary, librarySearch]);
+
+  // Auto-select first category
+  useEffect(() => {
+    if (soundLibrary?.categories && !selectedCategory) {
+      const cats = Object.keys(soundLibrary.categories);
+      if (cats.length > 0) setSelectedCategory(cats[0]);
+    }
+  }, [soundLibrary, selectedCategory]);
+
   // Update range defaults when active page changes
   useEffect(() => {
-    setNarrationRangeStart(activePage);
-    setNarrationRangeEnd(activePage);
     setSoundscapeRangeStart(activePage);
     setSoundscapeRangeEnd(activePage);
   }, [activePage]);
 
   useEffect(() => {
-    if (soundscapeRef.current) {
-      soundscapeRef.current.volume = soundscapeVolume;
-    }
+    if (soundscapeRef.current) soundscapeRef.current.volume = soundscapeVolume;
   }, [soundscapeVolume]);
 
   useEffect(() => {
-    if (narrationRef.current) {
-      narrationRef.current.volume = narrationVolume;
-    }
+    if (narrationRef.current) narrationRef.current.volume = narrationVolume;
   }, [narrationVolume]);
 
   // Calculate active word based on narration progress
@@ -196,19 +251,45 @@ export default function BookEditor() {
       if (!isNarrationPlaying) setActiveWordIndex(-1);
       return;
     }
-
     const currentTime = narrationProgress;
     let foundIndex = -1;
-
     for (let i = 0; i < wordTimestamps.length; i++) {
-      const wordData = wordTimestamps[i];
-      if (currentTime < wordData.start) break;
+      if (currentTime < wordTimestamps[i].start) break;
       foundIndex = i;
     }
-
     setActiveWordIndex(foundIndex);
   }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
 
+  // ─── Keyboard Shortcuts ─────────────────────────────────────────
+  const handleSaveRef = useRef<() => Promise<void>>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveRef.current?.();
+        return;
+      }
+
+      if (isInput) return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setActivePage((prev) => Math.max(1, prev - 1));
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setActivePage((prev) => Math.min(localPages.length, prev + 1));
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [localPages.length]);
+
+  // ─── Audio Controls ─────────────────────────────────────────────
   const toggleSoundscape = async () => {
     if (!soundscapeActiveUrl) {
       setError("Please provide a soundscape URL.");
@@ -245,6 +326,7 @@ export default function BookEditor() {
     }
   };
 
+  // ─── Page Actions ───────────────────────────────────────────────
   const handleAddPage = () => {
     setLocalPages((prev) => [
       ...prev,
@@ -257,16 +339,11 @@ export default function BookEditor() {
     if (localPages.length <= 1) return;
     const updated = localPages
       .filter((page) => page.number !== pageNumber)
-      .map((page, index) => ({
-        ...page,
-        number: index + 1,
-      }));
+      .map((page, index) => ({ ...page, number: index + 1 }));
     setLocalPages(updated);
     setHasLocalChanges(true);
     setActivePage((prev) => {
-      if (prev === pageNumber) {
-        return Math.max(1, pageNumber - 1);
-      }
+      if (prev === pageNumber) return Math.max(1, pageNumber - 1);
       return prev > pageNumber ? prev - 1 : prev;
     });
   };
@@ -285,15 +362,12 @@ export default function BookEditor() {
       setError("Please upload a valid image file.");
       return;
     }
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > 10 * 1024 * 1024) {
       setError("File too large. Maximum size is 10MB.");
       return;
     }
-
     setUploading(true);
     setError(null);
-
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -301,17 +375,14 @@ export default function BookEditor() {
         formData.append("bookId", bookIdParam);
         formData.append("pageNumber", activePage.toString());
       }
-
       const response = await fetch("/api/admin/uploads", {
         method: "POST",
         body: formData,
       });
-
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         throw new Error(payload?.error || "Failed to upload image.");
       }
-
       const data = await response.json();
       setActiveImage(data.url);
     } catch (err) {
@@ -336,7 +407,32 @@ export default function BookEditor() {
     imageInputRef.current?.click();
   };
 
-  // Helper to get page ID
+  // ─── Audio Upload ───────────────────────────────────────────────
+  const handleAudioUpload = async (file: File) => {
+    setError(null);
+    try {
+      const result = await uploadAudioMutation.mutateAsync(file);
+      setSoundscapeUrlInput(result.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload audio.");
+    }
+  };
+
+  const handleAudioFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) handleAudioUpload(file);
+  };
+
+  const handleAudioDropZone = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setAudioUploadDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file && (file.type.startsWith("audio/") || file.name.match(/\.(mp3|wav|ogg|flac|aac|m4a|webm)$/i))) {
+      handleAudioUpload(file);
+    }
+  };
+
+  // ─── Audio Assignment ───────────────────────────────────────────
   const getPageId = useCallback((pageNumber: number): string | undefined => {
     return pageIdMap[pageNumber];
   }, [pageIdMap]);
@@ -352,13 +448,11 @@ export default function BookEditor() {
       setError("Please provide an audio URL.");
       return;
     }
-
     const pageId = getPageId(activePage);
     if (!pageId) {
       setError("Page not saved yet. Save the book first.");
       return;
     }
-
     try {
       const normalizedScope = scope === "current" ? "single" : "range";
       await assignAudioMutation.mutateAsync({
@@ -374,23 +468,84 @@ export default function BookEditor() {
     }
   };
 
+  // ─── Drag-and-Drop Assignment ───────────────────────────────────
+  const handleDragStart = (sound: SoundAsset) => {
+    setDraggedSound(sound);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedSound(null);
+    setDropTargetPage(null);
+  };
+
+  const handlePageDragOver = (e: React.DragEvent, pageNumber: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setDropTargetPage(pageNumber);
+  };
+
+  const handlePageDragLeave = () => {
+    setDropTargetPage(null);
+  };
+
+  const handlePageDrop = (e: React.DragEvent, pageNumber: number) => {
+    e.preventDefault();
+    setDropTargetPage(null);
+
+    if (draggedSound) {
+      setDropAssignment({
+        audioUrl: draggedSound.url,
+        audioName: draggedSound.name.replace(/_/g, " ").replace(/\.[^.]+$/, ""),
+        targetPage: pageNumber,
+      });
+      setDropRangeStart(pageNumber);
+      setDropRangeEnd(pageNumber);
+      setDropScope("single");
+    }
+
+    setDraggedSound(null);
+  };
+
+  const confirmDropAssignment = async () => {
+    if (!dropAssignment) return;
+
+    const pageId = getPageId(dropAssignment.targetPage);
+    if (!pageId) {
+      setError("Page not saved yet. Save the book first.");
+      setDropAssignment(null);
+      return;
+    }
+
+    try {
+      await assignAudioMutation.mutateAsync({
+        pageId,
+        audioUrl: dropAssignment.audioUrl,
+        audioType: "soundscape",
+        scope: dropScope,
+        rangeStart: dropScope === "range" ? dropRangeStart : null,
+        rangeEnd: dropScope === "range" ? dropRangeEnd : null,
+      });
+      setDropAssignment(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign audio.");
+      setDropAssignment(null);
+    }
+  };
+
+  // ─── Narration Generation ──────────────────────────────────────
   const handleGenerateNarration = async (pageNumber?: number) => {
     const targetPage = pageNumber ?? activePage;
     const pageData = localPages.find((p) => p.number === targetPage);
-
     if (!pageData?.text?.trim()) {
       setError("No text content to generate narration from. Add text via the overlay editor first.");
       return;
     }
-
     setError(null);
-
     try {
       const data = await generateNarrationMutation.mutateAsync({
         text: pageData.text,
         pageNumber: targetPage,
       });
-
       if (data.wordTimestamps && data.wordTimestamps.length > 0) {
         setLocalPages((prev) =>
           prev.map((p) =>
@@ -400,7 +555,6 @@ export default function BookEditor() {
           )
         );
       }
-
       const pageId = getPageId(targetPage);
       if (pageId) {
         await assignAudioMutation.mutateAsync({
@@ -423,21 +577,17 @@ export default function BookEditor() {
       setError("No pages with text content. Add text via the overlay editor first.");
       return;
     }
-
     setGeneratingAllNarration(true);
     setGenerationProgress({ current: 0, total: pagesWithText.length });
     setError(null);
-
     try {
       for (let i = 0; i < pagesWithText.length; i++) {
         const page = pagesWithText[i];
         setGenerationProgress({ current: i + 1, total: pagesWithText.length });
-
         const data = await generateNarrationMutation.mutateAsync({
           text: page.text,
           pageNumber: page.number,
         });
-
         if (data.wordTimestamps && data.wordTimestamps.length > 0) {
           setLocalPages((prev) =>
             prev.map((p) =>
@@ -447,7 +597,6 @@ export default function BookEditor() {
             )
           );
         }
-
         const pageId = getPageId(page.number);
         if (pageId) {
           await assignAudioMutation.mutateAsync({
@@ -468,15 +617,14 @@ export default function BookEditor() {
     }
   };
 
+  // ─── Save / Publish ─────────────────────────────────────────────
   const handleSave = async () => {
     setError(null);
-
     try {
       await updateBookMutation.mutateAsync({
         title: localTitle.trim() || "Untitled Book",
         author: localAuthor,
       });
-
       await savePagesMutation.mutateAsync(
         localPages.map((page) => ({
           pageNumber: page.number,
@@ -484,16 +632,15 @@ export default function BookEditor() {
           imageUrl: page.imageUrl || null,
         }))
       );
-
       setHasLocalChanges(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save.");
     }
   };
+  handleSaveRef.current = handleSave;
 
   const handlePublish = async () => {
     setError(null);
-
     try {
       await savePagesMutation.mutateAsync(
         localPages.map((page) => ({
@@ -502,14 +649,12 @@ export default function BookEditor() {
           imageUrl: page.imageUrl || null,
         }))
       );
-
       await updateBookMutation.mutateAsync({
         title: localTitle.trim() || "Untitled Book",
         author: localAuthor,
         isPublished: true,
         processingStatus: "published",
       });
-
       setHasLocalChanges(false);
       router.push("/admin/books");
     } catch (err) {
@@ -518,11 +663,9 @@ export default function BookEditor() {
   };
 
   // ─── Overlay Modal Handlers ──────────────────────────────────────
-
   const handleOverlaySave = async (overlayConfig: TextOverlayConfig) => {
     setOverlayEditorSaving(true);
     try {
-      // 1. Save overlay config + derive textContent
       const res = await fetch(
         `/api/admin/books/${bookIdParam}/pages/${activePage}/overlay`,
         {
@@ -536,8 +679,6 @@ export default function BookEditor() {
         throw new Error(errorData.error || "Failed to save overlay");
       }
       const data = await res.json();
-
-      // Update local state with overlay + derived text (composited cleared by API)
       setLocalPages((prev) =>
         prev.map((p) =>
           p.number === activePage
@@ -545,8 +686,6 @@ export default function BookEditor() {
             : p
         )
       );
-
-      // 2. Auto-composite: bake the text into the image immediately
       if (overlayConfig.elements.length > 0) {
         setOverlayEditorCompositing(true);
         const compRes = await fetch(
@@ -624,6 +763,19 @@ export default function BookEditor() {
 
   const hasImage = !!(activePageData?.imageUrl || activePageData?.compositedImageUrl);
 
+  // ─── Library Preview Player ─────────────────────────────────────
+  const toggleLibraryPreview = (url: string) => {
+    if (libraryPreviewUrl === url && libraryPreviewRef.current && !libraryPreviewRef.current.paused) {
+      libraryPreviewRef.current.pause();
+      setLibraryPreviewUrl(null);
+    } else {
+      setLibraryPreviewUrl(url);
+      setTimeout(() => {
+        libraryPreviewRef.current?.play();
+      }, 50);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -648,8 +800,15 @@ export default function BookEditor() {
         onTimeUpdate={(e) => setNarrationProgress(e.currentTarget.currentTime)}
         onEnded={() => { setIsNarrationPlaying(false); setActiveWordIndex(-1); }}
       />
+      {libraryPreviewUrl && (
+        <audio
+          ref={libraryPreviewRef}
+          src={libraryPreviewUrl}
+          onEnded={() => setLibraryPreviewUrl(null)}
+        />
+      )}
 
-      {/* LEFT SIDEBAR: Page Navigator */}
+      {/* ─── LEFT SIDEBAR: Page Navigator ─────────────────────────── */}
       <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
         <div className="h-16 flex items-center px-5 border-b border-slate-100">
           <a href="/admin/books" className="flex items-center gap-2 text-teal-600 hover:text-teal-700">
@@ -660,11 +819,21 @@ export default function BookEditor() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Pages</div>
+          <div className="flex items-center justify-between mb-2 px-1">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pages</div>
+            {draggedSound && (
+              <span className="text-[10px] text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full font-medium animate-pulse">
+                Drop on a page
+              </span>
+            )}
+          </div>
 
           {localPages.map((page) => {
             const isActive = page.number === activePage;
             const pageHasOverlay = page.overlay && page.overlay.elements.length > 0;
+            const audioStatus = pageAudioMap[page.number];
+            const isDropTarget = dropTargetPage === page.number;
+
             return (
               <div
                 key={page.number}
@@ -672,6 +841,9 @@ export default function BookEditor() {
                 tabIndex={0}
                 onClick={() => setActivePage(page.number)}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActivePage(page.number); } }}
+                onDragOver={(e) => handlePageDragOver(e, page.number)}
+                onDragLeave={handlePageDragLeave}
+                onDrop={(e) => handlePageDrop(e, page.number)}
                 className="group relative block text-left w-full cursor-pointer"
               >
                 <div className={`absolute -left-2 top-1/2 -translate-y-1/2 ${isActive ? "opacity-100 text-teal-400" : "opacity-0 text-slate-400"} group-hover:opacity-100`}>
@@ -683,7 +855,7 @@ export default function BookEditor() {
                     tabIndex={0}
                     onClick={(e) => { e.stopPropagation(); handleDeletePage(page.number); }}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); handleDeletePage(page.number); } }}
-                    className={`absolute right-0 top-1/2 -translate-y-1/2 p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"} z-10`}
                     aria-label="Delete page"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -693,7 +865,13 @@ export default function BookEditor() {
                   <span className={`text-xs w-4 pt-1 ${isActive ? "font-bold text-teal-600" : "font-medium text-slate-400"}`}>
                     {page.number}
                   </span>
-                  <div className={`w-full aspect-3/4 bg-white rounded-md overflow-hidden transition-all relative ${isActive ? "border-2 border-teal-500 ring-2 ring-teal-100 shadow-md" : "border border-slate-200 shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5"}`}>
+                  <div className={`w-full aspect-3/4 bg-white rounded-md overflow-hidden transition-all relative ${
+                    isDropTarget
+                      ? "border-2 border-teal-400 ring-2 ring-teal-200 shadow-lg scale-[1.02] bg-teal-50/30"
+                      : isActive
+                        ? "border-2 border-teal-500 ring-2 ring-teal-100 shadow-md"
+                        : "border border-slate-200 shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5"
+                  }`}>
                     {page.compositedImageUrl || page.imageUrl ? (
                       <img
                         src={page.compositedImageUrl || page.imageUrl}
@@ -711,12 +889,40 @@ export default function BookEditor() {
                         </div>
                       </div>
                     )}
-                    {/* Badges */}
-                    {page.compositedImageUrl ? (
-                      <div className="absolute top-1 right-1 bg-teal-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">Overlay</div>
-                    ) : pageHasOverlay ? (
-                      <div className="absolute top-1 right-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">Text</div>
-                    ) : null}
+
+                    {/* Drop target overlay */}
+                    {isDropTarget && (
+                      <div className="absolute inset-0 bg-teal-500/10 flex items-center justify-center pointer-events-none">
+                        <div className="bg-teal-600 text-white text-[9px] px-2 py-1 rounded-full font-bold shadow-sm">
+                          Drop here
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Badges row */}
+                    <div className="absolute top-1 right-1 flex items-center gap-0.5">
+                      {page.compositedImageUrl ? (
+                        <div className="bg-teal-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">Overlay</div>
+                      ) : pageHasOverlay ? (
+                        <div className="bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium">Text</div>
+                      ) : null}
+                    </div>
+
+                    {/* Audio badges at bottom */}
+                    {(audioStatus?.hasNarration || audioStatus?.hasSoundscape) && (
+                      <div className="absolute bottom-1 left-1 flex items-center gap-0.5">
+                        {audioStatus.hasNarration && (
+                          <div className="bg-orange-500 text-white rounded-full w-4 h-4 flex items-center justify-center" title="Has narration">
+                            <Mic className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                        {audioStatus.hasSoundscape && (
+                          <div className="bg-amber-500 text-white rounded-full w-4 h-4 flex items-center justify-center" title="Has soundscape">
+                            <Music className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -736,7 +942,7 @@ export default function BookEditor() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* ─── MAIN CONTENT ─────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* HEADER */}
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
@@ -763,6 +969,7 @@ export default function BookEditor() {
               className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save Draft"}
+              <span className="text-xs text-slate-300 font-normal hidden lg:inline">{navigator.platform?.includes("Mac") ? "⌘S" : "Ctrl+S"}</span>
             </button>
             <button
               type="button"
@@ -783,15 +990,10 @@ export default function BookEditor() {
           </div>
         )}
 
-        {/* CANVAS AREA - Full-bleed page preview */}
+        {/* CANVAS AREA */}
         <div className="flex-1 bg-slate-100/80 overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-8">
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageChange}
-          />
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+          <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioFileChange} />
 
           {uploading ? (
             <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-12 flex flex-col items-center text-center">
@@ -853,7 +1055,6 @@ export default function BookEditor() {
               </div>
             </div>
           ) : (
-            /* Empty state: no image */
             <div
               onClick={triggerImagePicker}
               onDragOver={(e) => e.preventDefault()}
@@ -909,22 +1110,22 @@ export default function BookEditor() {
         </div>
       </main>
 
-      {/* RIGHT SIDEBAR: Audio & Enhancements */}
+      {/* ─── RIGHT SIDEBAR: Audio & Sound Library ─────────────────── */}
       <aside className="w-80 bg-white border-l border-slate-200 flex flex-col shadow-[-4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
           <div className="flex items-center gap-2.5 text-slate-800">
             <Headphones className="w-6 h-6 text-amber-500" />
-            <span className="font-bold tracking-tight">Page Audio</span>
+            <span className="font-bold tracking-tight">Audio</span>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Narration Section */}
+
+          {/* ── Voice Narration ──────────────────────────────────── */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Narration</h4>
 
             <div className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-200 shadow-sm space-y-4">
-              {/* Current status */}
               {(activeAssignments?.narration?.url || narrationActiveUrl) ? (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -957,19 +1158,13 @@ export default function BookEditor() {
                 </div>
               )}
 
-              {/* Playback */}
               {narrationActiveUrl && (
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={toggleNarration}
-                    className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-sm"
-                  >
+                  <button type="button" onClick={toggleNarration} className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-sm">
                     {isNarrationPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                   </button>
                   <input
-                    type="range"
-                    min="0" max="100"
+                    type="range" min="0" max="100"
                     value={Math.round(narrationVolume * 100)}
                     onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
                     className="flex-1 h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
@@ -1053,17 +1248,21 @@ export default function BookEditor() {
 
           <hr className="border-slate-100" />
 
-          {/* Soundscape Section */}
+          {/* ── Ambient Soundscape ───────────────────────────────── */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ambient Soundscape</h4>
 
             <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 shadow-sm space-y-4">
-              {/* Active soundscape */}
               {activeAssignments?.soundscape ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     <span className="text-xs font-semibold text-green-700">Assigned</span>
+                    {activeAssignments.soundscape.scope === "range" && (
+                      <span className="text-[10px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">
+                        Pages {activeAssignments.soundscape.range}
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={async () => {
@@ -1083,7 +1282,6 @@ export default function BookEditor() {
                 </div>
               ) : null}
 
-              {/* Playback */}
               {soundscapeActiveUrl && (
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={toggleSoundscape} className="w-8 h-8 flex items-center justify-center bg-amber-500 text-white rounded-full hover:bg-amber-600 shadow-sm">
@@ -1098,9 +1296,45 @@ export default function BookEditor() {
                 </div>
               )}
 
+              {/* Upload Audio */}
+              <div
+                className={`border-t border-amber-100 pt-3 space-y-3`}
+              >
+                <span className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload Audio
+                </span>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setAudioUploadDragging(true); }}
+                  onDragLeave={() => setAudioUploadDragging(false)}
+                  onDrop={handleAudioDropZone}
+                  onClick={() => audioInputRef.current?.click()}
+                  className={`rounded-lg border-2 border-dashed p-4 flex flex-col items-center gap-2 cursor-pointer transition-all ${
+                    audioUploadDragging
+                      ? "border-amber-400 bg-amber-50"
+                      : "border-amber-200 hover:border-amber-400 hover:bg-amber-50/50"
+                  }`}
+                >
+                  {uploadAudioMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                      <span className="text-[10px] text-amber-600">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileAudio className="w-5 h-5 text-amber-400" />
+                      <span className="text-[10px] text-amber-600 text-center">
+                        Drop audio file or click to browse
+                      </span>
+                      <span className="text-[9px] text-amber-400">MP3, WAV, OGG, FLAC &bull; Max 50MB</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* URL input */}
               <div className="space-y-3 border-t border-amber-100 pt-3">
-                <span className="text-xs font-semibold text-amber-700">Assign Soundscape</span>
+                <span className="text-xs font-semibold text-amber-700">Or Paste URL</span>
                 <input
                   value={soundscapeUrlInput}
                   onChange={(e) => setSoundscapeUrlInput(e.target.value)}
@@ -1132,9 +1366,209 @@ export default function BookEditor() {
               </div>
             </div>
           </div>
+
+          <hr className="border-slate-100" />
+
+          {/* ── Sound Library ────────────────────────────────────── */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setLibraryOpen(!libraryOpen)}
+              className="flex items-center justify-between w-full group"
+            >
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <FolderOpen className="w-3.5 h-3.5" />
+                Sound Library
+              </h4>
+              {libraryOpen ? (
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              )}
+            </button>
+
+            {libraryOpen && (
+              <div className="bg-linear-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
+                {/* Search */}
+                <input
+                  value={librarySearch}
+                  onChange={(e) => setLibrarySearch(e.target.value)}
+                  placeholder="Search sounds..."
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+
+                {libraryLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                  </div>
+                ) : Object.keys(filteredLibrarySounds).length === 0 ? (
+                  <div className="text-center py-6 text-xs text-slate-400">
+                    {librarySearch ? "No sounds match your search" : "No sounds in library"}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {/* Category pills */}
+                    <div className="flex flex-wrap gap-1">
+                      {Object.keys(filteredLibrarySounds).map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition border ${
+                            selectedCategory === cat
+                              ? "bg-teal-600 text-white border-teal-600"
+                              : "bg-white text-slate-500 border-slate-200 hover:border-teal-300"
+                          }`}
+                        >
+                          {cat} ({filteredLibrarySounds[cat].length})
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Sound list */}
+                    {selectedCategory && filteredLibrarySounds[selectedCategory] && (
+                      <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                        <p className="text-[10px] text-slate-400 italic">Drag a sound onto a page thumbnail to assign it</p>
+                        {filteredLibrarySounds[selectedCategory].map((sound) => (
+                          <div
+                            key={`${selectedCategory}-${sound.name}`}
+                            draggable
+                            onDragStart={() => handleDragStart({ ...sound, category: selectedCategory! })}
+                            onDragEnd={handleDragEnd}
+                            className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-white hover:border-teal-300 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all group"
+                          >
+                            <GripHorizontal className="w-3 h-3 text-slate-300 group-hover:text-teal-400 shrink-0" />
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); toggleLibraryPreview(sound.url); }}
+                              className="w-6 h-6 flex items-center justify-center bg-teal-50 text-teal-600 rounded-full hover:bg-teal-100 shrink-0"
+                            >
+                              {libraryPreviewUrl === sound.url ? (
+                                <Pause className="w-3 h-3" />
+                              ) : (
+                                <Play className="w-3 h-3 ml-0.5" />
+                              )}
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[11px] font-medium text-slate-700 truncate">
+                                {sound.name.replace(/_/g, " ").replace(/\.[^.]+$/, "")}
+                              </div>
+                              {sound.size && (
+                                <div className="text-[9px] text-slate-400">
+                                  {(sound.size / 1024 / 1024).toFixed(1)} MB
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSoundscapeUrlInput(sound.url);
+                              }}
+                              className="text-[9px] text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-1.5 py-0.5 rounded font-semibold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Use this URL in the assignment field"
+                            >
+                              Use
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
+      {/* ─── Drop Assignment Dialog (overlay) ─────────────────────── */}
+      {dropAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-96 space-y-5">
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Music className="w-5 h-5 text-teal-500" />
+                Assign Soundscape
+              </h3>
+              <p className="text-sm text-slate-500">
+                <span className="font-medium text-slate-700">{dropAssignment.audioName}</span>
+                {" → "}
+                Page {dropAssignment.targetPage}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-xs font-semibold text-slate-600">Scope</label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDropScope("single")}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
+                    dropScope === "single"
+                      ? "bg-teal-600 text-white border-teal-600"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                  }`}
+                >
+                  This Page Only
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDropScope("range")}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
+                    dropScope === "range"
+                      ? "bg-teal-600 text-white border-teal-600"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                  }`}
+                >
+                  Page Range
+                </button>
+              </div>
+
+              {dropScope === "range" && (
+                <div className="flex items-center gap-3 pt-1">
+                  <label className="text-xs text-slate-500">From</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={localPages.length}
+                    value={dropRangeStart}
+                    onChange={(e) => setDropRangeStart(Number(e.target.value))}
+                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                  />
+                  <label className="text-xs text-slate-500">to</label>
+                  <input
+                    type="number"
+                    min={dropRangeStart}
+                    max={localPages.length}
+                    value={dropRangeEnd}
+                    onChange={(e) => setDropRangeEnd(Number(e.target.value))}
+                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDropAssignment(null)}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDropAssignment}
+                disabled={assignAudioMutation.isPending}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 shadow-sm disabled:opacity-60"
+              >
+                {assignAudioMutation.isPending ? "Assigning..." : "Assign"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
