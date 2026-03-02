@@ -8,6 +8,8 @@ import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { createBookDraft } from "@/app/admin/actions";
+import { useTransition } from "react";
 
 export default function AdminLayout({
   children,
@@ -18,6 +20,7 @@ export default function AdminLayout({
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isPendingCreation, startTransition] = useTransition();
 
   useEffect(() => {
     if (!isPending && (!session || session.user.role !== "admin")) {
@@ -84,7 +87,7 @@ export default function AdminLayout({
     },
     {
       name: "Create Book",
-      href: "/admin/books/new",
+      action: true,
       icon: (
         <svg
           className="w-5 h-5"
@@ -102,6 +105,12 @@ export default function AdminLayout({
       ),
     },
   ];
+
+  const handleCreateBook = () => {
+    startTransition(async () => {
+      await createBookDraft();
+    });
+  };
 
   const SidebarContent = () => (
     <>
@@ -121,11 +130,29 @@ export default function AdminLayout({
       {/* Navigation */}
       <nav className="flex flex-col gap-1 flex-1">
         {tabs.map((tab) => {
+          if (tab.action) {
+            return (
+              <button
+                key={tab.name}
+                onClick={handleCreateBook}
+                disabled={isPendingCreation}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-[#929bc9] hover:bg-[#1a1f2e] hover:text-white w-full text-left disabled:opacity-50"
+              >
+                {isPendingCreation ? (
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-[#929bc9] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : tab.icon}
+                <span className="text-sm font-medium">{tab.name}</span>
+              </button>
+            );
+          }
+          
           const isActive = pathname === tab.href;
           return (
             <Link
               key={tab.name}
-              href={tab.href}
+              href={tab.href!}
               onClick={() => setMobileMenuOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                 isActive

@@ -3,7 +3,8 @@
 // Disable prerendering for admin pages
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { createBookDraft } from "@/app/admin/actions";
 
 type AdminBook = {
   id: string;
@@ -53,10 +54,17 @@ export default function AdminBooksPage() {
   const [loading, setLoading] = useState(true);
   const [books, setBooks] = useState<AdminBook[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingBook, setEditingBook] = useState<AdminBook | null>(null);
+  const [isPendingCreation, startTransition] = useTransition();
+
+  const handleCreateBookDraft = () => {
+    startTransition(async () => {
+      await createBookDraft();
+    });
+  };
+
   const [formState, setFormState] = useState({
     title: "",
     author: "",
@@ -98,22 +106,6 @@ export default function AdminBooksPage() {
     };
   }, [searchQuery]);
 
-  const resetForm = () => {
-    setFormState({
-      title: "",
-      author: "",
-      coverUrl: "",
-      description: "",
-      isPublished: false,
-      processingStatus: "pending",
-    });
-  };
-
-  const openCreateModal = () => {
-    resetForm();
-    setCreateOpen(true);
-  };
-
   const openEditModal = (book: AdminBook) => {
     setEditingBook(book);
     setFormState({
@@ -125,36 +117,6 @@ export default function AdminBooksPage() {
       processingStatus: book.processingStatus ?? "pending",
     });
     setEditOpen(true);
-  };
-
-  const handleCreate = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSaving(true);
-    setError(null);
-
-    const response = await fetch("/api/admin/books", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: formState.title,
-        author: formState.author,
-        coverUrl: formState.coverUrl || null,
-        description: formState.description || null,
-        isPublished: formState.isPublished,
-        processingStatus: formState.processingStatus,
-      }),
-    });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      setError(payload?.error || "Failed to create book.");
-      setSaving(false);
-      return;
-    }
-
-    setCreateOpen(false);
-    setSaving(false);
-    await loadBooks();
   };
 
   const handleUpdate = async (event: React.FormEvent) => {
@@ -226,11 +188,18 @@ export default function AdminBooksPage() {
         </div>
         <button
           type="button"
-          onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-[#1337ec] text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#1337ec]/90 transition-colors"
+          onClick={handleCreateBookDraft}
+          disabled={isPendingCreation}
+          className="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-[#1337ec] text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#1337ec]/90 transition-colors disabled:opacity-50"
         >
-          <span className="text-lg leading-none">+</span>
-          <span className="truncate">Add New Book</span>
+          {isPendingCreation ? (
+            <div className="w-5 h-5 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <span className="text-lg leading-none">+</span>
+          )}
+          <span className="truncate">{isPendingCreation ? "Creating..." : "Add New Book"}</span>
         </button>
       </div>
 
@@ -374,17 +343,16 @@ export default function AdminBooksPage() {
         </div>
       </div>
 
-      {(createOpen || editOpen) && (
+      {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-xl rounded-2xl border border-[#232948] bg-[#0f1419] p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">
-                {editOpen ? "Edit Book" : "Add New Book"}
+                Edit Book
               </h2>
               <button
                 type="button"
                 onClick={() => {
-                  setCreateOpen(false);
                   setEditOpen(false);
                   setEditingBook(null);
                 }}
@@ -394,7 +362,7 @@ export default function AdminBooksPage() {
               </button>
             </div>
             <form
-              onSubmit={editOpen ? handleUpdate : handleCreate}
+              onSubmit={handleUpdate}
               className="space-y-4"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -495,7 +463,6 @@ export default function AdminBooksPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setCreateOpen(false);
                     setEditOpen(false);
                     setEditingBook(null);
                   }}
@@ -508,7 +475,7 @@ export default function AdminBooksPage() {
                   disabled={saving}
                   className="px-4 py-2 text-sm font-bold text-white bg-[#1337ec] rounded-lg hover:bg-[#1337ec]/90 disabled:opacity-50"
                 >
-                  {saving ? "Saving..." : editOpen ? "Save Changes" : "Create Book"}
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>
