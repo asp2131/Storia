@@ -6,7 +6,8 @@ import { Pool } from "pg";
 import { Resend } from "resend";
 
 // Lazy-loaded auth instance to avoid database connection during build
-let authInstance: ReturnType<typeof betterAuth> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let authInstance: any = null;
 
 function createAuth() {
   if (authInstance) {
