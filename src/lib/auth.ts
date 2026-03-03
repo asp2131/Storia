@@ -6,9 +6,10 @@ import { Pool } from "pg";
 import { Resend } from "resend";
 
 // Lazy-loaded auth instance to avoid database connection during build
-let authInstance: ReturnType<typeof betterAuth> | null = null;
+type Auth = ReturnType<typeof betterAuth>;
+let authInstance: Auth | null = null;
 
-function createAuth() {
+function createAuth(): Auth {
   if (authInstance) {
     return authInstance;
   }
