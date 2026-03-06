@@ -31,7 +31,7 @@ function createAuth() {
       connectionString: databaseUrl,
     }),
     trustedOrigins: [
-      "http://localhost:3000",
+      "http://localhost:*",
       "https://storia.kids",
       "https://www.storia.kids",
       "https://storia-gray.vercel.app",
