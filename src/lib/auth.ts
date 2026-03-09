@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { expo } from "@better-auth/expo";
 import { emailOTP } from "better-auth/plugins";
 import { Pool } from "pg";
 import { Resend } from "resend";
@@ -37,9 +36,6 @@ function createAuth() {
       "https://storia-gray.vercel.app",
       "storia://",
       "storia://*",
-      ...(process.env.NODE_ENV === "development"
-        ? ["exp://", "exp://**", "exp://192.168.*.*:*/**"]
-        : []),
     ],
     user: {
       additionalFields: {
@@ -104,7 +100,6 @@ function createAuth() {
         expiresIn: 300,
       }),
       nextCookies(),
-      expo(),
     ],
     session: {
       expiresIn: 60 * 60 * 24 * 7,
