@@ -35,6 +35,7 @@ function createAuth() {
       "https://storia.kids",
       "https://www.storia.kids",
       "https://storia-gray.vercel.app",
+      "https://*.vercel.app",           // all Vercel preview deployments
       "storia://",
       "storia://*",
       ...(process.env.NODE_ENV === "development"
