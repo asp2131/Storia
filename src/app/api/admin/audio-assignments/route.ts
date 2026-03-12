@@ -1,5 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
+import { extractStoragePath } from "@/lib/elevenlabs";
+
+const supabaseUrl =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
+  "";
+const bucket =
+  process.env.SUPABASE_STORAGE_BUCKET ||
+  process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ||
+  "storia-storage";
+
+function buildSupabaseClient() {
+  if (!supabaseUrl || !serviceRoleKey) return null;
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -171,6 +191,44 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * Delete Storage files from their public URLs (best-effort, won't fail the request).
+ */
+async function deleteStorageFiles(urls: string[]) {
+  const supabase = buildSupabaseClient();
+  if (!supabase) return;
+
+  const paths = urls
+    .map((u) => extractStoragePath(u, bucket))
+    .filter((p): p is string => !!p);
+
+  if (paths.length > 0) {
+    const { error } = await supabase.storage.from(bucket).remove(paths);
+    if (error) {
+      console.warn(`[audio assignments] Storage cleanup warning: ${error.message}`);
+    } else {
+      console.log(`[audio assignments] Deleted ${paths.length} file(s) from storage`);
+    }
+  }
+}
+
+/**
+ * Delete overlay narration DB rows + Storage files for a given page.
+ */
+async function deleteOverlayNarrations(pageId: bigint) {
+  const rows = await prisma.$queryRaw<Array<{ audio_url: string }>>`
+    SELECT audio_url FROM page_overlay_narrations WHERE page_id = ${pageId}
+  `;
+
+  if (rows.length > 0) {
+    await deleteStorageFiles(rows.map((r) => r.audio_url));
+    await prisma.$executeRaw`
+      DELETE FROM page_overlay_narrations WHERE page_id = ${pageId}
+    `;
+    console.log(`[audio assignments] Deleted ${rows.length} overlay narration(s) for page ${pageId}`);
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const client = prisma as typeof prisma & {
@@ -178,6 +236,7 @@ export async function DELETE(request: NextRequest) {
         delete: (args: unknown) => Promise<any>;
         deleteMany: (args: unknown) => Promise<any>;
         findUnique: (args: unknown) => Promise<any | null>;
+        findMany: (args: unknown) => Promise<any[]>;
       };
       pages?: {
         findFirst: (args: unknown) => Promise<any | null>;
@@ -198,7 +257,6 @@ export async function DELETE(request: NextRequest) {
 
     // Delete by assignment ID
     if (assignmentId) {
-      // Get the assignment first to check if it's narration
       const assignment = await client.page_audio_assignments.findUnique({
         where: { id: BigInt(assignmentId) },
       });
@@ -207,17 +265,23 @@ export async function DELETE(request: NextRequest) {
         where: { id: BigInt(assignmentId) },
       });
 
-      // If it was a narration assignment, also clear the page's narration fields
-      if (assignment?.audio_type === "narration") {
-        await client.pages.update({
-          where: { id: assignment.page_id },
-          data: {
-            narration_url: null,
-            narration_timestamps: null,
-            updated_at: new Date(),
-          },
-        });
-        console.log(`[audio assignments] Also cleared narration from page ${assignment.page_id}`);
+      if (assignment) {
+        // Clean up the Storage file for this assignment
+        await deleteStorageFiles([assignment.audio_url]);
+
+        if (assignment.audio_type === "narration") {
+          await client.pages.update({
+            where: { id: assignment.page_id },
+            data: {
+              narration_url: null,
+              narration_timestamps: null,
+              updated_at: new Date(),
+            },
+          });
+          // Also delete overlay narrations for this page
+          await deleteOverlayNarrations(assignment.page_id);
+          console.log(`[audio assignments] Cleared narration + overlays for page ${assignment.page_id}`);
+        }
       }
 
       console.log(`[audio assignments] Deleted assignment ${assignmentId}`);
@@ -226,6 +290,15 @@ export async function DELETE(request: NextRequest) {
 
     // Delete by pageId and audioType
     if (pageId && audioType) {
+      // Collect audio URLs before deleting so we can clean up Storage
+      const toDelete = await client.page_audio_assignments.findMany({
+        where: {
+          page_id: BigInt(pageId),
+          audio_type: audioType,
+        },
+        select: { audio_url: true },
+      });
+
       const result = await client.page_audio_assignments.deleteMany({
         where: {
           page_id: BigInt(pageId),
@@ -233,7 +306,9 @@ export async function DELETE(request: NextRequest) {
         },
       });
 
-      // If deleting narration, also clear the page's narration fields
+      // Clean up Storage files
+      await deleteStorageFiles(toDelete.map((a: any) => a.audio_url));
+
       if (audioType === "narration") {
         await client.pages.update({
           where: { id: BigInt(pageId) },
@@ -243,7 +318,9 @@ export async function DELETE(request: NextRequest) {
             updated_at: new Date(),
           },
         });
-        console.log(`[audio assignments] Also cleared narration from page ${pageId}`);
+        // Also delete overlay narrations for this page
+        await deleteOverlayNarrations(BigInt(pageId));
+        console.log(`[audio assignments] Cleared narration + overlays for page ${pageId}`);
       }
 
       console.log(`[audio assignments] Deleted ${result.count} assignments for page ${pageId}, type ${audioType}`);

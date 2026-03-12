@@ -28,6 +28,42 @@ export type WordTimestamp = {
 
 const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
+/**
+ * Extract the storage file path from a Supabase public URL.
+ * e.g. "https://x.supabase.co/storage/v1/object/public/storia-storage/books/1/foo.mp3"
+ *   → "books/1/foo.mp3"
+ */
+export function extractStoragePath(publicUrl: string, bucket: string): string | null {
+  const marker = `/storage/v1/object/public/${bucket}/`;
+  const idx = publicUrl.indexOf(marker);
+  if (idx === -1) return null;
+  return publicUrl.slice(idx + marker.length);
+}
+
+export function normalizeVoiceSettings(input: unknown) {
+  const raw = (input || {}) as {
+    speed?: unknown;
+    style?: unknown;
+    useSpeakerBoost?: unknown;
+  };
+
+  const speedNum = Number(raw.speed);
+  const styleNum = Number(raw.style);
+
+  return {
+    speed:
+      Number.isFinite(speedNum) && speedNum >= 0.7 && speedNum <= 1.2
+        ? speedNum
+        : 0.75,
+    style:
+      Number.isFinite(styleNum) && styleNum >= 0 && styleNum <= 1
+        ? styleNum
+        : 0.76,
+    useSpeakerBoost:
+      typeof raw.useSpeakerBoost === "boolean" ? raw.useSpeakerBoost : true,
+  };
+}
+
 export function getElevenLabsApiKey() {
   return process.env.ELEVENLABS_API_KEY || "";
 }
@@ -103,6 +139,8 @@ export async function synthesizeSpeech(params: {
   text: string;
   voiceId: string;
   speed?: number;
+  style?: number;
+  useSpeakerBoost?: boolean;
 }): Promise<{ audioBuffer: Buffer; contentType: string }> {
   const apiKey = ensureApiKey();
   const response = await fetch(`${ELEVENLABS_BASE_URL}/text-to-speech/${params.voiceId}`, {
@@ -118,8 +156,9 @@ export async function synthesizeSpeech(params: {
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.75,
-        style: 0.76,
+        style: params.style ?? 0.76,
         speed: params.speed ?? 1,
+        use_speaker_boost: params.useSpeakerBoost ?? true,
       },
     }),
   });
@@ -194,6 +233,8 @@ export async function synthesizeSpeechWithTimestamps(params: {
   text: string;
   voiceId: string;
   speed?: number;
+  style?: number;
+  useSpeakerBoost?: boolean;
 }): Promise<{ audioBuffer: Buffer; contentType: string; wordTimestamps: WordTimestamp[] }> {
   const apiKey = ensureApiKey();
   const response = await fetch(
@@ -211,8 +252,9 @@ export async function synthesizeSpeechWithTimestamps(params: {
         voice_settings: {
           stability: 0.5,
           similarity_boost: 0.75,
-          style: 0.76,
+          style: params.style ?? 0.76,
           speed: params.speed ?? 1,
+          use_speaker_boost: params.useSpeakerBoost ?? true,
         },
       }),
     }

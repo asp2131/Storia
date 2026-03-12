@@ -44,6 +44,7 @@ import {
   useSavePages,
   useUpdateBook,
   WordTimestamp,
+  VoiceSettings,
 } from "@/hooks/useBookData";
 import { useSoundLibrary, useUploadAudio, SoundAsset } from "@/hooks/useSoundLibrary";
 import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
@@ -155,6 +156,11 @@ export default function BookEditor() {
   const [selectedOverlayElement, setSelectedOverlayElement] = useState<TextElement | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
   const [voicesLoading, setVoicesLoading] = useState(false);
+  const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>({
+    speed: 0.75,
+    style: 0.76,
+    useSpeakerBoost: true,
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -647,6 +653,7 @@ export default function BookEditor() {
             bookId: bookIdParam,
             pageNumber: page.number,
             items,
+            voiceSettings,
           }),
         });
 
@@ -692,7 +699,13 @@ export default function BookEditor() {
         setGeneratingOverlayNarration(false);
       }
     },
-    [assignAudioMutation, bookIdParam, getPageId, getVoicedOverlayItems]
+    [
+      assignAudioMutation,
+      bookIdParam,
+      getPageId,
+      getVoicedOverlayItems,
+      voiceSettings,
+    ]
   );
 
   const handleGenerateNarration = async (pageNumber?: number) => {
@@ -713,6 +726,7 @@ export default function BookEditor() {
         text: pageData.text,
         pageNumber: targetPage,
         voice: selectedVoiceId || undefined,
+        voiceSettings,
       });
       if (data.wordTimestamps && data.wordTimestamps.length > 0) {
         setLocalPages((prev) =>
@@ -772,6 +786,7 @@ export default function BookEditor() {
               sortOrder: 0,
             },
           ],
+          voiceSettings,
         }),
       });
 
@@ -1438,6 +1453,77 @@ export default function BookEditor() {
                     </select>
                   </div>
                 )}
+                <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
+                  <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
+                    Voice settings
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-slate-600">
+                      <span>Speed</span>
+                      <span>{voiceSettings.speed.toFixed(2)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.7"
+                      max="1.2"
+                      step="0.01"
+                      value={voiceSettings.speed}
+                      onChange={(e) =>
+                        setVoiceSettings((prev) => ({
+                          ...prev,
+                          speed: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full h-1.5 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[10px] text-slate-600">
+                      <span>Style exaggeration</span>
+                      <span>{voiceSettings.style.toFixed(2)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={voiceSettings.style}
+                      onChange={(e) =>
+                        setVoiceSettings((prev) => ({
+                          ...prev,
+                          style: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full h-1.5 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                    />
+                  </div>
+
+                  <label className="flex items-center justify-between text-[11px] text-slate-700">
+                    <span>Speaker boost</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVoiceSettings((prev) => ({
+                          ...prev,
+                          useSpeakerBoost: !prev.useSpeakerBoost,
+                        }))
+                      }
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        voiceSettings.useSpeakerBoost ? "bg-orange-500" : "bg-slate-300"
+                      }`}
+                      aria-pressed={voiceSettings.useSpeakerBoost}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          voiceSettings.useSpeakerBoost ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </label>
+                </div>
+
                 {!activePageData?.text?.trim() && (
                   <p className="text-[10px] text-orange-600/70 italic">
                     Add text overlay first to generate narration.

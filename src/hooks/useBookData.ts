@@ -18,6 +18,12 @@ export type AudioAssignment = {
   volume: number | null;
 };
 
+export type VoiceSettings = {
+  speed: number;
+  style: number;
+  useSpeakerBoost: boolean;
+};
+
 export type OverlayNarrationTrack = {
   id: string;
   overlayElementId: string;
@@ -116,17 +122,19 @@ export function useGenerateNarration(bookId: string | null) {
       text,
       pageNumber,
       voice,
+      voiceSettings,
     }: {
       text: string;
       pageNumber: number;
       voice?: string;
+      voiceSettings?: VoiceSettings;
     }) => {
       if (!bookId) throw new Error("No book ID");
 
       const response = await fetch("/api/admin/generate-narration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, bookId, pageNumber, voice }),
+        body: JSON.stringify({ text, bookId, pageNumber, voice, voiceSettings }),
       });
 
       if (!response.ok) {

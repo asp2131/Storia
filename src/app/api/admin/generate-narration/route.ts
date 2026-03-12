@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import {
+  normalizeVoiceSettings,
   resolveElevenLabsVoice,
   synthesizeSpeech,
   synthesizeSpeechWithTimestamps,
@@ -29,6 +30,7 @@ function buildSupabaseClient() {
   });
 }
 
+
 export async function POST(request: NextRequest) {
   const supabase = buildSupabaseClient();
   if (!supabase) {
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { text, bookId, pageNumber, voice } = body;
+    const { text, bookId, pageNumber, voice, voiceSettings } = body;
 
     if (!text || typeof text !== "string") {
       return NextResponse.json(
@@ -96,10 +98,14 @@ export async function POST(request: NextRequest) {
       typeof voice === "string" ? voice : undefined
     );
 
+    const normalizedVoiceSettings = normalizeVoiceSettings(voiceSettings);
+
     const narrationResult = await synthesizeSpeechWithTimestamps({
       text: trimmedText,
       voiceId,
-      speed: 0.75,
+      speed: normalizedVoiceSettings.speed,
+      style: normalizedVoiceSettings.style,
+      useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
     });
 
     const audioBuffer = narrationResult.audioBuffer;
@@ -231,7 +237,9 @@ export async function POST(request: NextRequest) {
               const wordAudio = await synthesizeSpeech({
                 text: wordValue,
                 voiceId,
-                speed: 0.9,
+                speed: normalizedVoiceSettings.speed,
+                style: normalizedVoiceSettings.style,
+                useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
               });
 
               let wordExt = "mp3";
