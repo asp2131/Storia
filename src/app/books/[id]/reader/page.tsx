@@ -122,14 +122,72 @@ export default function BookReader() {
   const soundscapeAssignment = pageData?.assignments?.find(
     (a) => a.audioType === "soundscape"
   );
-  const narrationUrl =
-    narrationAssignment?.audioUrl || pageData?.narrationUrl;
   const soundscapeUrl = soundscapeAssignment?.audioUrl;
 
+  const overlayWordStartByElement = useMemo(() => {
+    const starts = new Map<string, number>();
+    const elements = pageData?.overlay?.elements || [];
+    let runningIndex = 0;
+
+    for (const element of elements) {
+      starts.set(element.id, runningIndex);
+      const count = element.text
+        .trim()
+        .split(/\s+/)
+        .filter((token) => token.length > 0).length;
+      runningIndex += count;
+    }
+
+    return starts;
+  }, [pageData?.overlay?.elements]);
+
+  const narrationTracks = useMemo(() => {
+    const overlayTracks = (pageData?.overlayNarrations || [])
+      .slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .filter((t) => !!t.audioUrl);
+
+    if (overlayTracks.length > 0) {
+      return overlayTracks.map((track, idx) => ({
+        url: track.audioUrl,
+        wordTimestamps: (track.wordTimestamps as WordTimestamp[] | null) || [],
+        wordStartIndex:
+          overlayWordStartByElement.get(track.overlayElementId) ??
+          overlayTracks
+            .slice(0, idx)
+            .reduce(
+              (sum, prev) =>
+                sum + (((prev.wordTimestamps as WordTimestamp[] | null) || []).length),
+              0
+            ),
+      }));
+    }
+
+    const singleUrl = narrationAssignment?.audioUrl || pageData?.narrationUrl;
+    if (!singleUrl) return [];
+
+    return [
+      {
+        url: singleUrl,
+        wordTimestamps:
+          (pageData?.narrationTimestamps as WordTimestamp[] | null) || [],
+        wordStartIndex: 0,
+      },
+    ];
+  }, [
+    narrationAssignment?.audioUrl,
+    overlayWordStartByElement,
+    pageData?.narrationUrl,
+    pageData?.narrationTimestamps,
+    pageData?.overlayNarrations,
+  ]);
+
+  const [narrationTrackIndex, setNarrationTrackIndex] = useState(0);
+  const narrationUrl = narrationTracks[narrationTrackIndex]?.url;
+
   const wordTimestamps = useMemo(
-    () =>
-      (pageData?.narrationTimestamps as WordTimestamp[] | null) || [],
-    [pageData?.narrationTimestamps]
+    () => narrationTracks[narrationTrackIndex]?.wordTimestamps || [],
+    [narrationTracks, narrationTrackIndex]
   );
 
   const nextPageData = pages[activeIndex + 1] ?? null;
@@ -146,6 +204,12 @@ export default function BookReader() {
   useEffect(() => {
     isNarrationPlayingRef.current = isNarrationPlaying;
   }, [isNarrationPlaying]);
+
+  useEffect(() => {
+    setNarrationTrackIndex(0);
+    setNarrationProgress(0);
+    setActiveWordIndex(-1);
+  }, [activeIndex, narrationTracks.length]);
 
   useEffect(() => {
     scrollActiveIndexRef.current = activeIndex;
@@ -511,8 +575,21 @@ export default function BookReader() {
       if (ct >= wordTimestamps[i].start) found = i;
       else break;
     }
-    setActiveWordIndex(found);
-  }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
+
+    if (found === -1) {
+      setActiveWordIndex(-1);
+      return;
+    }
+
+    const trackStart = narrationTracks[narrationTrackIndex]?.wordStartIndex || 0;
+    setActiveWordIndex(trackStart + found);
+  }, [
+    narrationProgress,
+    wordTimestamps,
+    isNarrationPlaying,
+    narrationTracks,
+    narrationTrackIndex,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════
   // FEEDBACK ELIGIBILITY
@@ -647,14 +724,34 @@ export default function BookReader() {
 
   const toggleNarration = useCallback(() => {
     if (!narrationRef.current || !narrationUrl) return;
+
     if (isNarrationPlaying) {
       narrationRef.current.pause();
-    } else {
-      narrationRef.current.play();
-      window.umami?.track("audio-play", { bookId, type: "narration", page: currentPage });
+      setIsNarrationPlaying(false);
+      return;
     }
-    setIsNarrationPlaying(!isNarrationPlaying);
-  }, [isNarrationPlaying, narrationUrl, bookId, currentPage]);
+
+    const isAtEnd =
+      narrationRef.current.duration > 0 &&
+      narrationRef.current.currentTime >= narrationRef.current.duration - 0.05;
+
+    if (isAtEnd && narrationTrackIndex === narrationTracks.length - 1) {
+      setNarrationTrackIndex(0);
+      setNarrationProgress(0);
+      setActiveWordIndex(-1);
+    }
+
+    narrationRef.current.play();
+    window.umami?.track("audio-play", { bookId, type: "narration", page: currentPage });
+    setIsNarrationPlaying(true);
+  }, [
+    isNarrationPlaying,
+    narrationUrl,
+    narrationTrackIndex,
+    narrationTracks.length,
+    bookId,
+    currentPage,
+  ]);
 
   const toggleSoundscape = useCallback(() => {
     if (!soundscapeRef.current || !soundscapeUrl) return;
@@ -845,6 +942,13 @@ export default function BookReader() {
           soundscapeMode={preferences.soundscapeMode}
           onNarrationTimeUpdate={setNarrationProgress}
           onNarrationEnded={() => {
+            const hasNextTrack = narrationTrackIndex < narrationTracks.length - 1;
+            if (hasNextTrack) {
+              setNarrationTrackIndex((prev) => prev + 1);
+              setNarrationProgress(0);
+              setActiveWordIndex(-1);
+              return;
+            }
             setIsNarrationPlaying(false);
             setActiveWordIndex(-1);
           }}

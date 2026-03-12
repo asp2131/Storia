@@ -18,6 +18,16 @@ export type AudioAssignment = {
   volume: number | null;
 };
 
+export type OverlayNarrationTrack = {
+  id: string;
+  overlayElementId: string;
+  voiceId: string;
+  voiceName: string | null;
+  audioUrl: string;
+  sortOrder: number;
+  wordTimestamps: WordTimestamp[] | null;
+};
+
 export type PageData = {
   id: string;
   pageNumber: number;
@@ -29,6 +39,7 @@ export type PageData = {
   compositedImageUrl: string | null;
   overlay: TextOverlayConfig | null;
   assignments?: AudioAssignment[];
+  overlayNarrations?: OverlayNarrationTrack[];
 };
 
 export type BookData = {

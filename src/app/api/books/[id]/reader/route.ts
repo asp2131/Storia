@@ -29,6 +29,58 @@ export async function GET(_request: NextRequest, { params }: Params) {
       },
     });
 
+    const overlayNarrationRows = await prisma.$queryRaw<Array<{
+      id: bigint;
+      page_id: bigint;
+      overlay_element_id: string;
+      voice_id: string;
+      voice_name: string | null;
+      audio_url: string;
+      sort_order: number;
+      word_timestamps: unknown;
+      inserted_at: Date;
+    }>>`
+      SELECT
+        por.id,
+        por.page_id,
+        por.overlay_element_id,
+        por.voice_id,
+        por.voice_name,
+        por.audio_url,
+        por.sort_order,
+        por.word_timestamps,
+        por.inserted_at
+      FROM page_overlay_narrations por
+      JOIN pages p ON p.id = por.page_id
+      WHERE p.book_id = ${bookId}
+      ORDER BY por.page_id ASC, por.sort_order ASC, por.inserted_at ASC
+    `;
+
+    const overlayNarrationsByPageId = new Map<string, Array<{
+      id: string;
+      overlayElementId: string;
+      voiceId: string;
+      voiceName: string | null;
+      audioUrl: string;
+      sortOrder: number;
+      wordTimestamps: unknown;
+    }>>();
+
+    for (const row of overlayNarrationRows) {
+      const key = row.page_id.toString();
+      const current = overlayNarrationsByPageId.get(key) || [];
+      current.push({
+        id: row.id.toString(),
+        overlayElementId: row.overlay_element_id,
+        voiceId: row.voice_id,
+        voiceName: row.voice_name,
+        audioUrl: row.audio_url,
+        sortOrder: row.sort_order,
+        wordTimestamps: row.word_timestamps,
+      });
+      overlayNarrationsByPageId.set(key, current);
+    }
+
     // Get all audio assignments for this book (including range-based ones)
     const allAssignments = await prisma.page_audio_assignments.findMany({
       where: {
@@ -93,6 +145,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
             rangeEnd: assignment.range_end,
             volume: assignment.volume,
           })),
+          overlayNarrations: overlayNarrationsByPageId.get(page.id.toString()) || [],
         };
       }),
     });
