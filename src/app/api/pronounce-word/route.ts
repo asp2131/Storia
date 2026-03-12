@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import Replicate from "replicate";
+import {
+  resolveElevenLabsVoice,
+  synthesizeSpeech,
+} from "@/lib/elevenlabs";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { word } = body;
 
-    // Validate input
     if (!word || typeof word !== "string") {
       return NextResponse.json(
         { error: "Word is required and must be a string" },
@@ -23,75 +25,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Replicate client
-    const apiToken = process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_KEY;
-
-    if (!apiToken) {
-      return NextResponse.json(
-        { error: "Replicate API token not configured" },
-        { status: 500 }
-      );
-    }
-
-    const replicate = new Replicate({ auth: apiToken });
-
-    // Call ElevenLabs v3 on Replicate
-    const output = await replicate.run("elevenlabs/v3", {
-      input: {
-        text: trimmedWord,
-        prompt: trimmedWord,
-        voice: "Reginald",
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: 0.76,
-        speed: 0.90,
-      },
+    const { voiceId } = await resolveElevenLabsVoice();
+    const { audioBuffer, contentType } = await synthesizeSpeech({
+      text: trimmedWord,
+      voiceId,
+      speed: 0.9,
     });
 
-    // Extract audio URL from output — handle various output formats
-    let audioUrl: string | null = null;
-
-    if (typeof output === "string") {
-      audioUrl = output;
-    } else if (output instanceof URL) {
-      audioUrl = output.href;
-    } else if (
-      output &&
-      typeof output === "object" &&
-      "url" in output &&
-      typeof (output as { url: unknown }).url === "function"
-    ) {
-      // FileOutput object — call .url() to get the string
-      audioUrl = String((output as { url: () => string }).url());
-    } else if (
-      output &&
-      typeof output === "object" &&
-      "url" in output &&
-      typeof (output as { url: unknown }).url === "string"
-    ) {
-      audioUrl = (output as { url: string }).url;
-    } else if (output && typeof output === "object" && "href" in output) {
-      audioUrl = String((output as { href: string }).href);
-    } else if (typeof output === "object" && output !== null) {
-      // Last resort: try to convert to string
-      const str = String(output);
-      if (str.startsWith("http")) {
-        audioUrl = str;
-      }
-    }
-
-    if (!audioUrl) {
-      return NextResponse.json(
-        { error: "Failed to extract audio URL from Replicate output" },
-        { status: 500 }
-      );
-    }
+    const base64 = audioBuffer.toString("base64");
+    const audioUrl = `data:${contentType};base64,${base64}`;
 
     return NextResponse.json({ url: audioUrl });
   } catch (error) {
     console.error("Error in pronounce-word API:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

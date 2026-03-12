@@ -66,6 +66,12 @@ type DropAssignment = {
   targetPage: number;
 };
 
+type VoiceOption = {
+  id: string;
+  name: string;
+  category?: string | null;
+};
+
 export default function BookEditor() {
   const router = useRouter();
   const params = useParams();
@@ -145,6 +151,44 @@ export default function BookEditor() {
   const [activePage, setActivePage] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
+  const [voicesLoading, setVoicesLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadVoices = async () => {
+      setVoicesLoading(true);
+      try {
+        const res = await fetch("/api/elevenlabs/voices");
+        if (!res.ok) {
+          throw new Error("Failed to load ElevenLabs voices");
+        }
+        const data = (await res.json()) as { voices?: VoiceOption[] };
+        const voices = Array.isArray(data.voices) ? data.voices : [];
+        if (!mounted) return;
+        setVoiceOptions(voices);
+        if (voices.length > 0) {
+          setSelectedVoiceId((current) => current || voices[0].id);
+        }
+      } catch (voiceError) {
+        if (mounted) {
+          console.warn("[book-editor] Failed to load voices:", voiceError);
+        }
+      } finally {
+        if (mounted) {
+          setVoicesLoading(false);
+        }
+      }
+    };
+
+    loadVoices();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Audio state
   const [soundscapeUrlInput, setSoundscapeUrlInput] = useState("");
@@ -574,6 +618,7 @@ export default function BookEditor() {
       const data = await generateNarrationMutation.mutateAsync({
         text: pageData.text,
         pageNumber: targetPage,
+        voice: selectedVoiceId || undefined,
       });
       if (data.wordTimestamps && data.wordTimestamps.length > 0) {
         setLocalPages((prev) =>
@@ -616,6 +661,7 @@ export default function BookEditor() {
         const data = await generateNarrationMutation.mutateAsync({
           text: page.text,
           pageNumber: page.number,
+          voice: selectedVoiceId || undefined,
         });
         if (data.wordTimestamps && data.wordTimestamps.length > 0) {
           setLocalPages((prev) =>
@@ -1232,6 +1278,27 @@ export default function BookEditor() {
                   <Wand2 className="w-3.5 h-3.5" />
                   Generate with AI
                 </span>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
+                    Voice
+                  </label>
+                  <select
+                    value={selectedVoiceId}
+                    onChange={(e) => setSelectedVoiceId(e.target.value)}
+                    disabled={voicesLoading || voiceOptions.length === 0}
+                    className="w-full rounded-md border border-orange-200 bg-white px-2 py-1.5 text-xs text-slate-700 disabled:opacity-60"
+                  >
+                    {voiceOptions.length === 0 ? (
+                      <option value="">{voicesLoading ? "Loading voices..." : "Default voice"}</option>
+                    ) : (
+                      voiceOptions.map((voice) => (
+                        <option key={voice.id} value={voice.id}>
+                          {voice.name}{voice.category ? ` (${voice.category})` : ""}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
                 {!activePageData?.text?.trim() && (
                   <p className="text-[10px] text-orange-600/70 italic">
                     Add text overlay first to generate narration.

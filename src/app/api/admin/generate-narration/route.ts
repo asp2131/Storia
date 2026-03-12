@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import Replicate from "replicate";
+import {
+  resolveElevenLabsVoice,
+  synthesizeSpeech,
+  synthesizeSpeechWithTimestamps,
+} from "@/lib/elevenlabs";
 import {
   alignWordsWithTimestamps,
   alignedWordsToTimestamps,
@@ -25,14 +29,6 @@ function buildSupabaseClient() {
   });
 }
 
-function buildReplicateClient() {
-  const apiToken = process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_KEY;
-  if (!apiToken) {
-    return null;
-  }
-  return new Replicate({ auth: apiToken });
-}
-
 export async function POST(request: NextRequest) {
   const supabase = buildSupabaseClient();
   if (!supabase) {
@@ -42,10 +38,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const replicate = buildReplicateClient();
-  if (!replicate) {
+  if (!process.env.ELEVENLABS_API_KEY) {
     return NextResponse.json(
-      { error: "Missing Replicate API token. Please set REPLICATE_API_TOKEN in your environment." },
+      {
+        error:
+          "Missing ElevenLabs API key. Please set ELEVENLABS_API_KEY in your environment.",
+      },
       { status: 500 }
     );
   }
@@ -75,7 +73,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Trim and validate text length
     const trimmedText = text.trim();
     if (trimmedText.length === 0) {
       return NextResponse.json(
@@ -91,75 +88,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[generate-narration] Generating for book ${bookId}, page ${pageNumber}`);
-
-    // Call ElevenLabs v3 TTS model on Replicate
-    // Voice options: Aria, Rachel, Domi, Bella, Antoni, Elli, Josh, Arnold, Adam, Sam
-    const output = await replicate.run(
-      "elevenlabs/v3",
-      {
-        input: {
-          prompt: trimmedText,
-          voice: voice || "Reginald",
-          stability: 0.5,
-          similarity_boost: 0.75,
-          style: 0.76,
-          speed: 0.75,
-        },
-      }
+    console.log(
+      `[generate-narration] Generating for book ${bookId}, page ${pageNumber}`
     );
 
-    // The output should be a URL to the generated audio
-    if (!output) {
-      return NextResponse.json(
-        { error: "Failed to generate audio - no output from model." },
-        { status: 500 }
-      );
-    }
+    const { voiceId, voiceName } = await resolveElevenLabsVoice(
+      typeof voice === "string" ? voice : undefined
+    );
 
-    // ElevenLabs v3 returns a FileOutput object with a url() method or href property
-    let audioUrl: string;
-    if (typeof output === "string") {
-      audioUrl = output;
-    } else if (output instanceof URL) {
-      audioUrl = output.href;
-    } else if (typeof output === "object" && output !== null) {
-      // Handle FileOutput object - it has href property
-      const fileOutput = output as { href?: string; url?: () => URL };
-      if (fileOutput.href) {
-        audioUrl = fileOutput.href;
-      } else if (typeof fileOutput.url === "function") {
-        audioUrl = fileOutput.url().href;
-      } else {
-        audioUrl = String(output);
-      }
-    } else {
-      audioUrl = String(output);
-    }
+    const narrationResult = await synthesizeSpeechWithTimestamps({
+      text: trimmedText,
+      voiceId,
+      speed: 0.75,
+    });
 
-    console.log(`[generate-narration] Got audio URL from Replicate: ${audioUrl}`);
+    const audioBuffer = narrationResult.audioBuffer;
+    const contentType = narrationResult.contentType || "audio/mpeg";
 
-    // Download the audio file from Replicate
-    const audioResponse = await fetch(audioUrl);
-    if (!audioResponse.ok) {
-      return NextResponse.json(
-        { error: "Failed to download generated audio." },
-        { status: 500 }
-      );
-    }
-
-    const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
-    const contentType = audioResponse.headers.get("content-type") || "audio/wav";
-
-    // Determine file extension
-    let ext = "wav";
-    if (contentType.includes("mp3") || contentType.includes("mpeg")) {
-      ext = "mp3";
-    } else if (contentType.includes("ogg")) {
+    let ext = "mp3";
+    if (contentType.includes("ogg")) {
       ext = "ogg";
+    } else if (contentType.includes("wav")) {
+      ext = "wav";
     }
 
-    // Upload to Supabase storage
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     const filePath = `books/${bookId}/narration/page_${pageNumber}_${timestamp}_${random}.${ext}`;
@@ -184,330 +136,227 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
     console.log(`[generate-narration] Uploaded to: ${urlData.publicUrl}`);
 
-    // Step 2: Run Whisper for word-level timestamps
-    console.log(`[generate-narration] Running Whisper for word timestamps...`);
-    console.log(`[generate-narration] Audio URL for Whisper: ${urlData.publicUrl}`);
+    const generatedWordTimestamps = narrationResult.wordTimestamps || [];
+    console.log(
+      `[generate-narration] Got ${generatedWordTimestamps.length} word timestamps from ElevenLabs`
+    );
 
-    const wordTimestamps: Array<{ word: string; start: number; end: number }> = [];
+    let finalTimestamps = generatedWordTimestamps;
+    let alignmentQuality: number | undefined;
 
-    try {
-      // Use incredibly-fast-whisper which has proper word timestamp support
-      const whisperOutput = await replicate.run(
-        "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c",
-        {
-          input: {
-            audio: urlData.publicUrl,
-            task: "transcribe",
-            language: "english",
-            timestamp: "word",
-            batch_size: 64,
-          },
-        }
-      );
+    if (generatedWordTimestamps.length > 0) {
+      const validation = validateTimestamps(trimmedText, generatedWordTimestamps);
 
-      console.log(`[generate-narration] Whisper raw output:`, JSON.stringify(whisperOutput, null, 2));
+      if (validation.valid) {
+        const aligned = alignWordsWithTimestamps(trimmedText, generatedWordTimestamps);
 
-      // Parse Whisper output for word timestamps
-      // incredibly-fast-whisper returns { text, chunks } where chunks have timestamp and text
-      if (whisperOutput && typeof whisperOutput === "object") {
-        const output = whisperOutput as {
-          text?: string;
-          chunks?: Array<{ timestamp: [number, number]; text: string }>;
-          // Alternative structures
-          segments?: Array<{
-            words?: Array<{ word: string; start: number; end: number }>;
-            start?: number;
-            end?: number;
-            text?: string;
-          }>;
-          words?: Array<{ word: string; start: number; end: number }>;
-        };
-
-        // Try chunks format (incredibly-fast-whisper with word timestamps)
-        if (output.chunks && Array.isArray(output.chunks)) {
-          console.log(`[generate-narration] Found ${output.chunks.length} chunks in Whisper output`);
-          for (const chunk of output.chunks) {
-            if (chunk.timestamp && chunk.text) {
-              const [start, end] = chunk.timestamp;
-              const word = chunk.text.trim();
-              if (word && typeof start === "number" && typeof end === "number") {
-                wordTimestamps.push({ word, start, end });
-              }
-            }
-          }
-          console.log(`[generate-narration] Parsed ${wordTimestamps.length} words from chunks`);
-        }
-
-        // Try segments.words (standard Whisper structure)
-        if (wordTimestamps.length === 0 && output.segments) {
-          for (const segment of output.segments) {
-            if (segment.words) {
-              for (const wordData of segment.words) {
-                wordTimestamps.push({
-                  word: wordData.word.trim(),
-                  start: wordData.start,
-                  end: wordData.end,
-                });
-              }
-            }
-          }
-        }
-
-        // Try top-level words array
-        if (wordTimestamps.length === 0 && output.words) {
-          for (const wordData of output.words) {
-            wordTimestamps.push({
-              word: wordData.word.trim(),
-              start: wordData.start,
-              end: wordData.end,
-            });
-          }
-        }
-      }
-
-      console.log(`[generate-narration] Got ${wordTimestamps.length} word timestamps from Whisper`);
-
-      // Validate and align timestamps with source text
-      let finalTimestamps = wordTimestamps;
-      let alignmentQuality: number | undefined;
-
-      if (wordTimestamps.length > 0) {
-        const validation = validateTimestamps(trimmedText, wordTimestamps);
-
-        if (validation.valid) {
-          // Attempt word alignment
-          const aligned = alignWordsWithTimestamps(trimmedText, wordTimestamps);
-
-          if (aligned) {
-            finalTimestamps = alignedWordsToTimestamps(aligned);
-            alignmentQuality =
-              aligned.reduce((sum, w) => sum + w.confidence, 0) / aligned.length;
-            console.log(
-              `[generate-narration] Word alignment successful. Quality: ${(
-                (alignmentQuality || 0) * 100
-              ).toFixed(1)}%`
-            );
-          } else {
-            console.warn(
-              `[generate-narration] Word alignment failed, using raw Whisper output`
-            );
-          }
+        if (aligned) {
+          finalTimestamps = alignedWordsToTimestamps(aligned);
+          alignmentQuality =
+            aligned.reduce((sum, w) => sum + w.confidence, 0) / aligned.length;
+          console.log(
+            `[generate-narration] Word alignment successful. Quality: ${(
+              (alignmentQuality || 0) * 100
+            ).toFixed(1)}%`
+          );
         } else {
           console.warn(
-            `[generate-narration] Timestamp validation failed: ${validation.reason}`
+            `[generate-narration] Word alignment failed, using raw ElevenLabs output`
           );
-        }
-      }
-
-      // Upload timestamps as JSON file to storage (backup)
-      let timestampsUrl: string | undefined;
-      if (finalTimestamps.length > 0) {
-        const timestampsPath = filePath.replace(`.${ext}`, "_timestamps.json");
-        const timestampsBuffer = Buffer.from(JSON.stringify(finalTimestamps));
-
-        const { error: timestampsUploadError } = await supabase.storage.from(bucket).upload(timestampsPath, timestampsBuffer, {
-          contentType: "application/json",
-          upsert: true, // Allow overwriting if regenerating
-        });
-
-        if (timestampsUploadError) {
-          console.error(`[generate-narration] Failed to upload timestamps to storage:`, timestampsUploadError);
-          // Continue anyway - we'll save to database
-        } else {
-          const { data: timestampsUrlData } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(timestampsPath);
-
-          timestampsUrl = timestampsUrlData.publicUrl;
-          console.log(`[generate-narration] Timestamps uploaded to storage: ${timestampsUrl}`);
         }
       } else {
-        console.warn(`[generate-narration] No timestamps to upload (finalTimestamps is empty)`);
+        console.warn(
+          `[generate-narration] Timestamp validation failed: ${validation.reason}`
+        );
       }
+    }
 
-      // Step 3: Pre-generate individual word pronunciations
-      let pronunciationMap: Record<string, string> = {};
-      try {
-        // Extract unique words from the text
-        const allWords = trimmedText.split(/\s+/);
-        const cleanedWords = allWords
-          .map((w) => w.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").toLowerCase())
-          .filter((w) => w.length > 0);
-        const uniqueWords = Array.from(new Set(cleanedWords));
+    let timestampsUrl: string | undefined;
+    if (finalTimestamps.length > 0) {
+      const timestampsPath = filePath.replace(`.${ext}`, "_timestamps.json");
+      const timestampsBuffer = Buffer.from(JSON.stringify(finalTimestamps));
 
-        console.log(`[generate-narration] Generating pronunciations for ${uniqueWords.length} unique words`);
+      const { error: timestampsUploadError } = await supabase.storage
+        .from(bucket)
+        .upload(timestampsPath, timestampsBuffer, {
+          contentType: "application/json",
+          upsert: true,
+        });
 
-        // Process in batches of 5
-        const batchSize = 5;
-        for (let i = 0; i < uniqueWords.length; i += batchSize) {
-          const batch = uniqueWords.slice(i, i + batchSize);
-          console.log(`[generate-narration] Processing pronunciation batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(uniqueWords.length / batchSize)}`);
+      if (timestampsUploadError) {
+        console.error(
+          `[generate-narration] Failed to upload timestamps to storage:`,
+          timestampsUploadError
+        );
+      } else {
+        const { data: timestampsUrlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(timestampsPath);
 
-          const results = await Promise.all(
-            batch.map(async (word) => {
-              try {
-                const wordOutput = await replicate.run("elevenlabs/v3", {
-                  input: {
-                    text: word,
-                    prompt: word,
-                    voice: voice || "Reginald",
-                    stability: 0.5,
-                    similarity_boost: 0.75,
-                    style: 0.76,
-                    speed: 0.90,
-                  },
+        timestampsUrl = timestampsUrlData.publicUrl;
+        console.log(
+          `[generate-narration] Timestamps uploaded to storage: ${timestampsUrl}`
+        );
+      }
+    }
+
+    let pronunciationMap: Record<string, string> = {};
+    try {
+      const allWords = trimmedText.split(/\s+/);
+      const cleanedWords = allWords
+        .map((w) => w.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").toLowerCase())
+        .filter((w) => w.length > 0);
+      const uniqueWords = Array.from(new Set(cleanedWords));
+
+      console.log(
+        `[generate-narration] Generating pronunciations for ${uniqueWords.length} unique words`
+      );
+
+      const batchSize = 5;
+      for (let i = 0; i < uniqueWords.length; i += batchSize) {
+        const batch = uniqueWords.slice(i, i + batchSize);
+        console.log(
+          `[generate-narration] Processing pronunciation batch ${
+            Math.floor(i / batchSize) + 1
+          }/${Math.ceil(uniqueWords.length / batchSize)}`
+        );
+
+        const results = await Promise.all(
+          batch.map(async (wordValue) => {
+            try {
+              const wordAudio = await synthesizeSpeech({
+                text: wordValue,
+                voiceId,
+                speed: 0.9,
+              });
+
+              let wordExt = "mp3";
+              if (wordAudio.contentType.includes("ogg")) {
+                wordExt = "ogg";
+              } else if (wordAudio.contentType.includes("wav")) {
+                wordExt = "wav";
+              }
+
+              const wordTimestamp = Date.now();
+              const wordPath = `books/${bookId}/pronunciations/word_${wordValue}_${wordTimestamp}.${wordExt}`;
+
+              const { error: wordUploadError } = await supabase.storage
+                .from(bucket)
+                .upload(wordPath, wordAudio.audioBuffer, {
+                  contentType: wordAudio.contentType,
+                  upsert: false,
                 });
 
-                if (!wordOutput) return { word, url: null };
-
-                // Extract audio URL from output (same pattern as main narration)
-                let wordAudioUrl: string;
-                if (typeof wordOutput === "string") {
-                  wordAudioUrl = wordOutput;
-                } else if (wordOutput instanceof URL) {
-                  wordAudioUrl = wordOutput.href;
-                } else if (typeof wordOutput === "object" && wordOutput !== null) {
-                  const fileOut = wordOutput as { href?: string; url?: () => URL };
-                  if (fileOut.href) {
-                    wordAudioUrl = fileOut.href;
-                  } else if (typeof fileOut.url === "function") {
-                    wordAudioUrl = fileOut.url().href;
-                  } else {
-                    wordAudioUrl = String(wordOutput);
-                  }
-                } else {
-                  wordAudioUrl = String(wordOutput);
-                }
-
-                // Download the word audio from Replicate
-                const wordAudioResponse = await fetch(wordAudioUrl);
-                if (!wordAudioResponse.ok) {
-                  console.warn(`[generate-narration] Failed to download pronunciation for "${word}"`);
-                  return { word, url: null };
-                }
-
-                const wordAudioBuffer = Buffer.from(await wordAudioResponse.arrayBuffer());
-                const wordContentType = wordAudioResponse.headers.get("content-type") || "audio/wav";
-
-                let wordExt = "wav";
-                if (wordContentType.includes("mp3") || wordContentType.includes("mpeg")) {
-                  wordExt = "mp3";
-                } else if (wordContentType.includes("ogg")) {
-                  wordExt = "ogg";
-                }
-
-                // Upload to Supabase storage
-                const wordTimestamp = Date.now();
-                const wordPath = `books/${bookId}/pronunciations/word_${word}_${wordTimestamp}.${wordExt}`;
-
-                const { error: wordUploadError } = await supabase.storage
-                  .from(bucket)
-                  .upload(wordPath, wordAudioBuffer, {
-                    contentType: wordContentType,
-                    upsert: false,
-                  });
-
-                if (wordUploadError) {
-                  console.warn(`[generate-narration] Failed to upload pronunciation for "${word}":`, wordUploadError);
-                  return { word, url: null };
-                }
-
-                const { data: wordUrlData } = supabase.storage
-                  .from(bucket)
-                  .getPublicUrl(wordPath);
-
-                console.log(`[generate-narration] Pronunciation for "${word}" uploaded: ${wordUrlData.publicUrl}`);
-                return { word, url: wordUrlData.publicUrl };
-              } catch (wordError) {
-                console.warn(`[generate-narration] Error generating pronunciation for "${word}":`, wordError);
-                return { word, url: null };
+              if (wordUploadError) {
+                console.warn(
+                  `[generate-narration] Failed to upload pronunciation for "${wordValue}":`,
+                  wordUploadError
+                );
+                return { word: wordValue, url: null };
               }
-            })
-          );
 
-          for (const result of results) {
-            if (result.url) {
-              pronunciationMap[result.word] = result.url;
+              const { data: wordUrlData } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(wordPath);
+
+              console.log(
+                `[generate-narration] Pronunciation for "${wordValue}" uploaded: ${wordUrlData.publicUrl}`
+              );
+              return { word: wordValue, url: wordUrlData.publicUrl };
+            } catch (wordError) {
+              console.warn(
+                `[generate-narration] Error generating pronunciation for "${wordValue}":`,
+                wordError
+              );
+              return { word: wordValue, url: null };
             }
+          })
+        );
+
+        for (const result of results) {
+          if (result.url) {
+            pronunciationMap[result.word] = result.url;
           }
         }
-
-        console.log(`[generate-narration] Generated ${Object.keys(pronunciationMap).length} word pronunciations`);
-      } catch (pronError) {
-        console.error("[generate-narration] Word pronunciation generation failed (continuing):", pronError);
-        pronunciationMap = {};
       }
 
-      // Save timestamps to database for fast access
-      try {
-        const bookIdBigInt = BigInt(bookId);
-        const now = new Date();
+      console.log(
+        `[generate-narration] Generated ${
+          Object.keys(pronunciationMap).length
+        } word pronunciations`
+      );
+    } catch (pronError) {
+      console.error(
+        "[generate-narration] Word pronunciation generation failed (continuing):",
+        pronError
+      );
+      pronunciationMap = {};
+    }
 
-        console.log(`[generate-narration] Saving to database - bookId: ${bookId}, pageNumber: ${pageNumber}, timestamps count: ${finalTimestamps.length}`);
+    try {
+      const bookIdBigInt = BigInt(bookId);
+      const now = new Date();
 
-        const updateResult = await prisma.pages.updateMany({
-          where: {
+      console.log(
+        `[generate-narration] Saving to database - bookId: ${bookId}, pageNumber: ${pageNumber}, timestamps count: ${finalTimestamps.length}`
+      );
+
+      const updateResult = await prisma.pages.updateMany({
+        where: {
+          book_id: bookIdBigInt,
+          page_number: pageNumber,
+        },
+        data: {
+          narration_url: urlData.publicUrl,
+          narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
+          word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
+          updated_at: now,
+        },
+      });
+
+      console.log(
+        `[generate-narration] Database update result: ${updateResult.count} rows updated`
+      );
+
+      if (updateResult.count === 0) {
+        console.warn(
+          `[generate-narration] No page found to update! Creating page first...`
+        );
+        await prisma.pages.create({
+          data: {
             book_id: bookIdBigInt,
             page_number: pageNumber,
-          },
-          data: {
             narration_url: urlData.publicUrl,
             narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
             word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
+            inserted_at: now,
             updated_at: now,
           },
         });
-
-        console.log(`[generate-narration] Database update result: ${updateResult.count} rows updated`);
-
-        if (updateResult.count === 0) {
-          console.warn(`[generate-narration] No page found to update! Creating page first...`);
-          // Try to create the page if it doesn't exist
-          await prisma.pages.create({
-            data: {
-              book_id: bookIdBigInt,
-              page_number: pageNumber,
-              narration_url: urlData.publicUrl,
-              narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
-              word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
-              inserted_at: now,
-              updated_at: now,
-            },
-          });
-          console.log(`[generate-narration] Created new page with timestamps`);
-        }
-      } catch (dbError) {
-        console.error("[generate-narration] Failed to save timestamps to database:", dbError);
-        // Continue - storage backup exists
+        console.log(`[generate-narration] Created new page with timestamps`);
       }
-
-      if (finalTimestamps.length > 0) {
-        return NextResponse.json({
-          url: urlData.publicUrl,
-          path: filePath,
-          timestampsUrl,
-          wordTimestamps: finalTimestamps,
-          alignmentQuality,
-          wordPronunciations: pronunciationMap,
-        });
-      }
-    } catch (whisperError) {
-      console.error("[generate-narration] Whisper error (continuing without timestamps):", whisperError);
-      // Continue without timestamps - not a fatal error
+    } catch (dbError) {
+      console.error(
+        "[generate-narration] Failed to save timestamps to database:",
+        dbError
+      );
     }
 
     return NextResponse.json({
       url: urlData.publicUrl,
       path: filePath,
-      wordTimestamps: [],
-      wordPronunciations: {},
+      timestampsUrl,
+      wordTimestamps: finalTimestamps,
+      alignmentQuality,
+      wordPronunciations: pronunciationMap,
+      voice: {
+        id: voiceId,
+        name: voiceName,
+      },
     });
   } catch (error) {
     console.error("[generate-narration] Error:", error);
