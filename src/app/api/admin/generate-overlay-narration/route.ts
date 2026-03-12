@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 import {
+  extractStoragePath,
+  normalizeVoiceSettings,
   resolveElevenLabsVoice,
   synthesizeSpeechWithTimestamps,
 } from "@/lib/elevenlabs";
@@ -31,6 +33,7 @@ function buildSupabaseClient() {
   });
 }
 
+
 export async function POST(request: NextRequest) {
   const supabase = buildSupabaseClient();
   if (!supabase) {
@@ -52,10 +55,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { bookId, pageNumber, items } = body as {
+    const { bookId, pageNumber, items, voiceSettings } = body as {
       bookId?: string;
       pageNumber?: number;
       items?: OverlayNarrationItem[];
+      voiceSettings?: {
+        speed?: number;
+        style?: number;
+        useSpeakerBoost?: boolean;
+      };
     };
 
     if (!bookId) {
@@ -124,12 +132,33 @@ export async function POST(request: NextRequest) {
       sortOrder: number;
     }> = [];
 
+    const normalizedVoiceSettings = normalizeVoiceSettings(voiceSettings);
+
     for (const item of cleanedItems) {
       const resolvedVoice = await resolveElevenLabsVoice(item.voiceId || item.voiceName);
+
+      // Delete the old audio file from Storage before replacing
+      const existing = await prisma.$queryRaw<Array<{ audio_url: string }>>`
+        SELECT audio_url FROM page_overlay_narrations
+        WHERE page_id = ${page.id}
+          AND overlay_element_id = ${item.overlayElementId}
+          AND voice_id = ${resolvedVoice.voiceId}
+        LIMIT 1
+      `;
+      if (existing[0]?.audio_url) {
+        const oldPath = extractStoragePath(existing[0].audio_url, bucket);
+        if (oldPath) {
+          await supabase.storage.from(bucket).remove([oldPath]);
+          console.log(`[generate-overlay-narration] Deleted old file: ${oldPath}`);
+        }
+      }
+
       const generated = await synthesizeSpeechWithTimestamps({
         text: item.text,
         voiceId: resolvedVoice.voiceId,
-        speed: 0.75,
+        speed: normalizedVoiceSettings.speed,
+        style: normalizedVoiceSettings.style,
+        useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
       });
 
       const timestamp = Date.now();
