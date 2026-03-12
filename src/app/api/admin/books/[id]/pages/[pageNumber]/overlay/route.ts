@@ -127,23 +127,32 @@ export async function POST(
     // Derive text_content from overlay elements (mirrors overlay → textContent)
     const derivedText = deriveTextContent(validatedOverlay);
 
-    // Update the page with the new overlay config
+    // Upsert the page with overlay config (fixes first-save 404 when page row doesn't exist yet)
     // Clear composited fields to mark compositing as stale
-    const updatedPage = await prisma.pages.update({
+    const now = new Date();
+    const updatedPage = await prisma.pages.upsert({
       where: {
         book_id_page_number: {
           book_id: bookId,
           page_number: pageNum,
         },
       },
-      data: {
+      update: {
         text_overlay: validatedOverlay as unknown as Prisma.InputJsonValue,
         text_content: derivedText || null,
         composited_image_url: null,
         composited_image_path: null,
         composited_at: null,
         composited_by: null,
-        updated_at: new Date(),
+        updated_at: now,
+      },
+      create: {
+        book_id: bookId,
+        page_number: pageNum,
+        text_overlay: validatedOverlay as unknown as Prisma.InputJsonValue,
+        text_content: derivedText || null,
+        inserted_at: now,
+        updated_at: now,
       },
       select: {
         text_overlay: true,

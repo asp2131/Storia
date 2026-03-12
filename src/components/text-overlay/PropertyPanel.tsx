@@ -13,16 +13,26 @@ import {
   type OverlayFont,
 } from "@/types/text-overlay";
 
+type VoiceOption = {
+  id: string;
+  name: string;
+  category?: string | null;
+};
+
 interface PropertyPanelProps {
   selectedElement: TextElement | null;
   onUpdate: (element: TextElement) => void;
   onDelete: (elementId: string) => void;
+  voiceOptions?: VoiceOption[];
+  enableVoiceAssignment?: boolean;
 }
 
 export function PropertyPanel({
   selectedElement,
   onUpdate,
   onDelete,
+  voiceOptions = [],
+  enableVoiceAssignment = false,
 }: PropertyPanelProps) {
   const [isShadowExpanded, setIsShadowExpanded] = useState(false);
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
@@ -63,6 +73,23 @@ export function PropertyPanel({
 
   const handleRotationChange = (rotation: number) => {
     onUpdate({ ...selectedElement, rotation });
+  };
+
+  const handleVoiceChange = (voiceId: string) => {
+    if (!voiceId) {
+      const rest = { ...selectedElement };
+      delete rest.voiceId;
+      delete rest.voiceName;
+      onUpdate(rest);
+      return;
+    }
+
+    const selectedVoice = voiceOptions.find((voice) => voice.id === voiceId);
+    onUpdate({
+      ...selectedElement,
+      voiceId,
+      ...(selectedVoice ? { voiceName: selectedVoice.name } : {}),
+    });
   };
 
   const handleShadowToggle = (enabled: boolean) => {
@@ -126,6 +153,29 @@ export function PropertyPanel({
           rows={3}
         />
       </div>
+
+      {enableVoiceAssignment && (
+        <div className="mb-4">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Voice (new books)
+          </label>
+          <select
+            value={selectedElement.voiceId || ""}
+            onChange={(e) => handleVoiceChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">No voice (use legacy page voice)</option>
+            {voiceOptions.map((voice) => (
+              <option key={voice.id} value={voice.id}>
+                {voice.name}{voice.category ? ` (${voice.category})` : ""}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] text-gray-500">
+            Assign voices per text block for multi-voice narration.
+          </p>
+        </div>
+      )}
 
       {/* Font Family */}
       <div className="mb-4">
