@@ -46,7 +46,7 @@ import {
   WordTimestamp,
 } from "@/hooks/useBookData";
 import { useSoundLibrary, useUploadAudio, SoundAsset } from "@/hooks/useSoundLibrary";
-import type { TextOverlayConfig } from "@/types/text-overlay";
+import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
@@ -152,6 +152,7 @@ export default function BookEditor() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
+  const [selectedOverlayElement, setSelectedOverlayElement] = useState<TextElement | null>(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
   const [voicesLoading, setVoicesLoading] = useState(false);
 
@@ -201,8 +202,7 @@ export default function BookEditor() {
   const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationVolume, setNarrationVolume] = useState(0.85);
-  const [generatingAllNarration, setGeneratingAllNarration] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const [generatingOverlayNarration, setGeneratingOverlayNarration] = useState(false);
 
   // Sync preview state
   const [activeWordIndex, setActiveWordIndex] = useState(-1);
@@ -246,10 +246,14 @@ export default function BookEditor() {
   // Derived state
   const loading = bookLoading || pagesLoading;
   const saving = savePagesMutation.isPending || updateBookMutation.isPending;
-  const generatingNarration = generateNarrationMutation.isPending;
+  const generatingNarration =
+    generateNarrationMutation.isPending || generatingOverlayNarration;
 
   const activePageData = localPages.find((page) => page.number === activePage);
   const wordTimestamps = activePageData?.narrationTimestamps || [];
+  const activePageUsesOverlayVoices = activePageData
+    ? (activePageData.overlay?.elements || []).some((el) => !!el.voiceId && !!el.text?.trim())
+    : false;
 
   // Build page ID map from server pages
   const pageIdMap = useMemo(() => {
@@ -308,6 +312,7 @@ export default function BookEditor() {
   useEffect(() => {
     setSoundscapeRangeStart(activePage);
     setSoundscapeRangeEnd(activePage);
+    setSelectedOverlayElement(null);
   }, [activePage]);
 
   useEffect(() => {
@@ -606,6 +611,90 @@ export default function BookEditor() {
   };
 
   // ─── Narration Generation ──────────────────────────────────────
+  const getVoicedOverlayItems = useCallback((page: LocalPageData) => {
+    const elements = page.overlay?.elements || [];
+    return elements
+      .map((el, idx) => ({
+        overlayElementId: el.id,
+        text: el.text?.trim() || "",
+        voiceId: el.voiceId,
+        voiceName: el.voiceName,
+        sortOrder: idx,
+      }))
+      .filter((item) => item.text.length > 0 && !!item.voiceId);
+  }, []);
+
+  const isOverlayMultivoicePage = useCallback(
+    (page: LocalPageData) => getVoicedOverlayItems(page).length > 0,
+    [getVoicedOverlayItems]
+  );
+
+  const generateOverlayNarrationForPage = useCallback(
+    async (page: LocalPageData) => {
+      const items = getVoicedOverlayItems(page);
+      if (items.length === 0) {
+        throw new Error(
+          "No overlay elements have voices assigned. Set voices in overlay editor first."
+        );
+      }
+
+      setGeneratingOverlayNarration(true);
+      try {
+        const response = await fetch("/api/admin/generate-overlay-narration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookId: bookIdParam,
+            pageNumber: page.number,
+            items,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error || "Failed to generate multi-voice narration");
+        }
+
+        const payload = (await response.json()) as {
+          pageId?: string;
+          tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+        };
+
+        const firstTrack = payload.tracks?.[0];
+        if (!firstTrack?.audioUrl) {
+          throw new Error("No audio tracks returned from multi-voice narration generation.");
+        }
+
+        const pageId = getPageId(page.number) || payload.pageId;
+        if (pageId) {
+          await assignAudioMutation.mutateAsync({
+            pageId,
+            audioUrl: firstTrack.audioUrl,
+            audioType: "narration",
+            scope: "single",
+            rangeStart: null,
+            rangeEnd: null,
+          });
+        } else {
+          throw new Error("Narration was generated but page assignment could not be resolved.");
+        }
+
+        if (firstTrack.wordTimestamps?.length) {
+          setLocalPages((prev) =>
+            prev.map((p) =>
+              p.number === page.number
+                ? { ...p, narrationTimestamps: firstTrack.wordTimestamps }
+                : p
+            )
+          );
+        }
+      } finally {
+        setGeneratingOverlayNarration(false);
+      }
+    },
+    [assignAudioMutation, bookIdParam, getPageId, getVoicedOverlayItems]
+  );
+
   const handleGenerateNarration = async (pageNumber?: number) => {
     const targetPage = pageNumber ?? activePage;
     const pageData = localPages.find((p) => p.number === targetPage);
@@ -615,6 +704,11 @@ export default function BookEditor() {
     }
     setError(null);
     try {
+      if (isOverlayMultivoicePage(pageData)) {
+        await generateOverlayNarrationForPage(pageData);
+        return;
+      }
+
       const data = await generateNarrationMutation.mutateAsync({
         text: pageData.text,
         pageNumber: targetPage,
@@ -645,50 +739,86 @@ export default function BookEditor() {
     }
   };
 
-  const handleGenerateAllNarration = async () => {
-    const pagesWithText = localPages.filter((p) => p.text?.trim());
-    if (pagesWithText.length === 0) {
-      setError("No pages with text content. Add text via the overlay editor first.");
+  const handleGenerateSelectedTextNarration = async () => {
+    if (!activePageData) {
+      setError("No active page selected.");
       return;
     }
-    setGeneratingAllNarration(true);
-    setGenerationProgress({ current: 0, total: pagesWithText.length });
+
+    if (!selectedOverlayElement?.id || !selectedOverlayElement.text?.trim()) {
+      setError("Select a text instance in the overlay editor first.");
+      return;
+    }
+
     setError(null);
+
     try {
-      for (let i = 0; i < pagesWithText.length; i++) {
-        const page = pagesWithText[i];
-        setGenerationProgress({ current: i + 1, total: pagesWithText.length });
-        const data = await generateNarrationMutation.mutateAsync({
-          text: page.text,
-          pageNumber: page.number,
-          voice: selectedVoiceId || undefined,
+      const selectedVoice = voiceOptions.find(
+        (voice) => voice.id === selectedOverlayElement.voiceId
+      );
+
+      const response = await fetch("/api/admin/generate-overlay-narration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId: bookIdParam,
+          pageNumber: activePageData.number,
+          items: [
+            {
+              overlayElementId: selectedOverlayElement.id,
+              text: selectedOverlayElement.text,
+              voiceId: selectedOverlayElement.voiceId || selectedVoiceId || undefined,
+              voiceName: selectedOverlayElement.voiceName || selectedVoice?.name,
+              sortOrder: 0,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to generate narration for selected text.");
+      }
+
+      const payload = (await response.json()) as {
+        pageId?: string;
+        tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+      };
+
+      const firstTrack = payload.tracks?.[0];
+      if (!firstTrack?.audioUrl) {
+        throw new Error("No audio returned for selected text instance.");
+      }
+
+      const pageId = getPageId(activePageData.number) || payload.pageId;
+      if (pageId) {
+        await assignAudioMutation.mutateAsync({
+          pageId,
+          audioUrl: firstTrack.audioUrl,
+          audioType: "narration",
+          scope: "single",
+          rangeStart: null,
+          rangeEnd: null,
         });
-        if (data.wordTimestamps && data.wordTimestamps.length > 0) {
-          setLocalPages((prev) =>
-            prev.map((p) =>
-              p.number === page.number
-                ? { ...p, narrationTimestamps: data.wordTimestamps }
-                : p
-            )
-          );
-        }
-        const pageId = getPageId(page.number);
-        if (pageId) {
-          await assignAudioMutation.mutateAsync({
-            pageId,
-            audioUrl: data.url,
-            audioType: "narration",
-            scope: "single",
-            rangeStart: null,
-            rangeEnd: null,
-          });
-        }
+      } else {
+        throw new Error("Narration was generated but page assignment could not be resolved.");
+      }
+
+      if (firstTrack.wordTimestamps?.length) {
+        setLocalPages((prev) =>
+          prev.map((p) =>
+            p.number === activePageData.number
+              ? { ...p, narrationTimestamps: firstTrack.wordTimestamps }
+              : p
+          )
+        );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate narration.");
-    } finally {
-      setGeneratingAllNarration(false);
-      setGenerationProgress({ current: 0, total: 0 });
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to generate narration for selected text."
+      );
     }
   };
 
@@ -1151,6 +1281,9 @@ export default function BookEditor() {
                   onComposite={handleOverlayComposite}
                   isSaving={overlayEditorSaving}
                   isCompositing={overlayEditorCompositing}
+                  voiceOptions={voiceOptions}
+                  enableVoiceAssignment
+                  onSelectedElementChange={setSelectedOverlayElement}
                 />
               </div>
             </div>
@@ -1278,27 +1411,33 @@ export default function BookEditor() {
                   <Wand2 className="w-3.5 h-3.5" />
                   Generate with AI
                 </span>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
-                    Voice
-                  </label>
-                  <select
-                    value={selectedVoiceId}
-                    onChange={(e) => setSelectedVoiceId(e.target.value)}
-                    disabled={voicesLoading || voiceOptions.length === 0}
-                    className="w-full rounded-md border border-orange-200 bg-white px-2 py-1.5 text-xs text-slate-700 disabled:opacity-60"
-                  >
-                    {voiceOptions.length === 0 ? (
-                      <option value="">{voicesLoading ? "Loading voices..." : "Default voice"}</option>
-                    ) : (
-                      voiceOptions.map((voice) => (
-                        <option key={voice.id} value={voice.id}>
-                          {voice.name}{voice.category ? ` (${voice.category})` : ""}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
+                {activePageUsesOverlayVoices ? (
+                  <div className="rounded-md border border-orange-200 bg-orange-100/60 px-2.5 py-2 text-[11px] text-orange-800">
+                    Multi-voice mode is active for this page. Voices are taken from each overlay text block.
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
+                      Voice
+                    </label>
+                    <select
+                      value={selectedVoiceId}
+                      onChange={(e) => setSelectedVoiceId(e.target.value)}
+                      disabled={voicesLoading || voiceOptions.length === 0}
+                      className="w-full rounded-md border border-orange-200 bg-white px-2 py-1.5 text-xs text-slate-700 disabled:opacity-60"
+                    >
+                      {voiceOptions.length === 0 ? (
+                        <option value="">{voicesLoading ? "Loading voices..." : "Default voice"}</option>
+                      ) : (
+                        voiceOptions.map((voice) => (
+                          <option key={voice.id} value={voice.id}>
+                            {voice.name}{voice.category ? ` (${voice.category})` : ""}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                )}
                 {!activePageData?.text?.trim() && (
                   <p className="text-[10px] text-orange-600/70 italic">
                     Add text overlay first to generate narration.
@@ -1308,20 +1447,36 @@ export default function BookEditor() {
                   <button
                     type="button"
                     onClick={() => handleGenerateNarration()}
-                    disabled={generatingNarration || generatingAllNarration || !activePageData?.text?.trim()}
+                    disabled={generatingNarration || !activePageData?.text?.trim()}
                     className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
-                    {generatingNarration ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating...</> : <><Wand2 className="w-3.5 h-3.5" />This Page</>}
+                    {generatingNarration ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating...</>
+                    ) : (
+                      <>
+                        <Wand2 className="w-3.5 h-3.5" />
+                        This Page
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
-                    onClick={handleGenerateAllNarration}
-                    disabled={generatingNarration || generatingAllNarration}
+                    onClick={handleGenerateSelectedTextNarration}
+                    disabled={
+                      generatingNarration ||
+                      !selectedOverlayElement?.id ||
+                      !selectedOverlayElement.text?.trim()
+                    }
                     className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
-                    {generatingAllNarration ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{generationProgress.current}/{generationProgress.total}</> : <><Sparkles className="w-3.5 h-3.5" />All</>}
+                    <Sparkles className="w-3.5 h-3.5" />Selected text
                   </button>
                 </div>
+                {!selectedOverlayElement?.id && (
+                  <p className="text-[10px] text-orange-600/70 italic">
+                    Select a text instance in the overlay editor to enable “Selected text”.
+                  </p>
+                )}
               </div>
 
               {/* Sync preview */}

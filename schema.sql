@@ -56,3 +56,29 @@ CREATE TABLE IF NOT EXISTS "verification" (
 CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "session"("userId");
 CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account"("userId");
 CREATE INDEX IF NOT EXISTS "verification_identifier_idx" ON "verification"(identifier);
+
+-- Per-overlay narration tracks (supports multiple voices per page)
+-- Requires existing "pages" table from application schema.
+CREATE TABLE IF NOT EXISTS page_overlay_narrations (
+    id BIGSERIAL PRIMARY KEY,
+    page_id BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    overlay_element_id VARCHAR(255) NOT NULL,
+    voice_id VARCHAR(255) NOT NULL,
+    voice_name VARCHAR(255),
+    text_content TEXT NOT NULL,
+    audio_url VARCHAR(500) NOT NULL,
+    word_timestamps JSONB,
+    word_pronunciations JSONB,
+    sort_order INT NOT NULL DEFAULT 0,
+    inserted_at TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP(0) NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS page_overlay_narrations_page_element_voice_idx
+    ON page_overlay_narrations(page_id, overlay_element_id, voice_id);
+
+CREATE INDEX IF NOT EXISTS page_overlay_narrations_page_id_idx
+    ON page_overlay_narrations(page_id);
+
+CREATE INDEX IF NOT EXISTS page_overlay_narrations_voice_id_idx
+    ON page_overlay_narrations(voice_id);

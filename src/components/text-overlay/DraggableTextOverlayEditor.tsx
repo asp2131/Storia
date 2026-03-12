@@ -9,6 +9,12 @@ import {
 import { Toolbar } from "./Toolbar";
 import { PropertyPanel } from "./PropertyPanel";
 
+type VoiceOption = {
+  id: string;
+  name: string;
+  category?: string | null;
+};
+
 interface DraggableTextOverlayEditorProps {
   imageUrl: string;
   overlay: TextOverlayConfig | null;
@@ -16,6 +22,9 @@ interface DraggableTextOverlayEditorProps {
   onComposite: () => Promise<void>;
   isSaving?: boolean;
   isCompositing?: boolean;
+  voiceOptions?: VoiceOption[];
+  enableVoiceAssignment?: boolean;
+  onSelectedElementChange?: (element: TextElement | null) => void;
 }
 
 // ─── DraggableTextElement Sub-Component ────────────────────────────────────
@@ -223,6 +232,9 @@ export function DraggableTextOverlayEditor({
   onComposite,
   isSaving = false,
   isCompositing = false,
+  voiceOptions = [],
+  enableVoiceAssignment = false,
+  onSelectedElementChange,
 }: DraggableTextOverlayEditorProps) {
   // Initialize elements from overlay prop
   const [elements, setElements] = useState<TextElement[]>(
@@ -274,6 +286,10 @@ export function DraggableTextOverlayEditor({
     () => elements.find((el) => el.id === selectedElementId) ?? null,
     [elements, selectedElementId]
   );
+
+  useEffect(() => {
+    onSelectedElementChange?.(selectedElement);
+  }, [onSelectedElementChange, selectedElement]);
 
   // Compute isStale: overlay modified after last composite
   const isStale = useMemo(() => {
@@ -431,6 +447,8 @@ export function DraggableTextOverlayEditor({
           selectedElement={selectedElement}
           onUpdate={handlePropertyUpdate}
           onDelete={handleDeleteElement}
+          voiceOptions={voiceOptions}
+          enableVoiceAssignment={enableVoiceAssignment}
         />
       </div>
     </div>

@@ -67,6 +67,12 @@ export interface TextElement {
 
   /** Optional background box behind text. */
   background?: TextBackground;
+
+  /** Optional ElevenLabs voice id used for this overlay text block narration. */
+  voiceId?: string;
+
+  /** Optional human-readable voice name snapshot for editor display. */
+  voiceName?: string;
 }
 
 export interface TextShadow {
@@ -156,6 +162,12 @@ export function validateTextElement(el: unknown): TextElement {
     rotation: clamp(Number(e.rotation) || 0, -180, 180),
     ...(e.shadow ? { shadow: e.shadow as TextShadow } : {}),
     ...(e.background ? { background: e.background as TextBackground } : {}),
+    ...(typeof e.voiceId === "string" && e.voiceId.length > 0
+      ? { voiceId: e.voiceId }
+      : {}),
+    ...(typeof e.voiceName === "string" && e.voiceName.length > 0
+      ? { voiceName: e.voiceName }
+      : {}),
   };
 }
 

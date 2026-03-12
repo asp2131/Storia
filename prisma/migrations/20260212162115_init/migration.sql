@@ -1,3 +1,6 @@
+-- Enable extensions required by indexes
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- CreateEnum
 CREATE TYPE "oban_job_state" AS ENUM ('available', 'scheduled', 'executing', 'retryable', 'completed', 'discarded', 'cancelled');
 
