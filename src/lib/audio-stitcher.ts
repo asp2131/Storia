@@ -1,31 +1,44 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { toBlobURL } from "@ffmpeg/util";
 import type { WordTimestamp } from "./elevenlabs";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 const GAP_SECONDS = 0.75;
-const FFMPEG_CORE_VERSION = "0.12.9";
-const FFMPEG_CORE_BASE = `https://unpkg.com/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/esm`;
 
 let ffmpegInstance: FFmpeg | null = null;
+let loadingPromise: Promise<FFmpeg> | null = null;
 
 async function getFFmpeg(): Promise<FFmpeg> {
   if (ffmpegInstance) return ffmpegInstance;
+  if (loadingPromise) return loadingPromise;
 
-  const ffmpeg = new FFmpeg();
+  loadingPromise = (async () => {
+    const ffmpeg = new FFmpeg();
 
-  const coreURL = await toBlobURL(
-    `${FFMPEG_CORE_BASE}/ffmpeg-core.js`,
-    "text/javascript"
-  );
-  const wasmURL = await toBlobURL(
-    `${FFMPEG_CORE_BASE}/ffmpeg-core.wasm`,
-    "application/wasm"
-  );
+    // Load core from node_modules on the server
+    const corePath = join(
+      process.cwd(),
+      "node_modules/@ffmpeg/core/dist/esm"
+    );
+    const coreJS = await readFile(join(corePath, "ffmpeg-core.js"));
+    const coreWasm = await readFile(join(corePath, "ffmpeg-core.wasm"));
 
-  await ffmpeg.load({ coreURL, wasmURL });
-  ffmpegInstance = ffmpeg;
-  return ffmpeg;
+    const coreBlob = new Blob([coreJS], { type: "text/javascript" });
+    const wasmBlob = new Blob([coreWasm], { type: "application/wasm" });
+    const coreURL = URL.createObjectURL(coreBlob);
+    const wasmURL = URL.createObjectURL(wasmBlob);
+
+    await ffmpeg.load({ coreURL, wasmURL });
+    ffmpegInstance = ffmpeg;
+    loadingPromise = null;
+    return ffmpeg;
+  })();
+
+  return loadingPromise;
 }
+
+// Monotonic counter to namespace concurrent stitching operations in the virtual FS
+let stitchCounter = 0;
 
 /**
  * Concatenates multiple MP3 audio buffers with a silence gap between each,
@@ -56,13 +69,18 @@ export async function stitchAudioTracks(
   const sorted = [...tracks].sort((a, b) => a.sortOrder - b.sortOrder);
   const ffmpeg = await getFFmpeg();
 
+  // Namespace files to avoid collisions between concurrent requests
+  const ns = `job${++stitchCounter}`;
+
   // Write each track as a file
   const inputFiles: string[] = [];
   for (let i = 0; i < sorted.length; i++) {
-    const filename = `track_${i}.mp3`;
+    const filename = `${ns}_track_${i}.mp3`;
     await ffmpeg.writeFile(filename, new Uint8Array(sorted[i].audioBuffer));
     inputFiles.push(filename);
   }
+
+  const outputFile = `${ns}_output.mp3`;
 
   // Build input args for each track file
   const inputArgs: string[] = [];
@@ -89,36 +107,38 @@ export async function stitchAudioTracks(
 
   filterComplex += `${concatInputs.join("")}concat=n=${totalSegments}:v=0:a=1[out]`;
 
-  await ffmpeg.exec([
-    ...inputArgs,
-    "-filter_complex",
-    filterComplex,
-    "-map",
-    "[out]",
-    "-codec:a",
-    "libmp3lame",
-    "-b:a",
-    "192k",
-    "output.mp3",
-  ]);
+  try {
+    await ffmpeg.exec([
+      ...inputArgs,
+      "-filter_complex",
+      filterComplex,
+      "-map",
+      "[out]",
+      "-codec:a",
+      "libmp3lame",
+      "-b:a",
+      "192k",
+      outputFile,
+    ]);
 
-  const outputData = await ffmpeg.readFile("output.mp3");
-  const stitchedBuffer = Buffer.from(
-    outputData instanceof Uint8Array
-      ? outputData
-      : new TextEncoder().encode(outputData as string)
-  );
+    const outputData = await ffmpeg.readFile(outputFile);
+    const stitchedBuffer = Buffer.from(
+      outputData instanceof Uint8Array
+        ? outputData
+        : new TextEncoder().encode(outputData as string)
+    );
 
-  // Clean up files in ffmpeg virtual FS
-  for (const f of inputFiles) {
-    await ffmpeg.deleteFile(f);
+    // Build combined timestamps with offsets
+    const combinedTimestamps = combineWordTimestamps(sorted, GAP_SECONDS);
+
+    return { stitchedBuffer, combinedTimestamps };
+  } finally {
+    // Always clean up files in ffmpeg virtual FS
+    for (const f of inputFiles) {
+      await ffmpeg.deleteFile(f).catch(() => {});
+    }
+    await ffmpeg.deleteFile(outputFile).catch(() => {});
   }
-  await ffmpeg.deleteFile("output.mp3");
-
-  // Build combined timestamps with offsets
-  const combinedTimestamps = combineWordTimestamps(sorted, GAP_SECONDS);
-
-  return { stitchedBuffer, combinedTimestamps };
 }
 
 /**

@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
       voiceId: string;
       voiceName?: string;
       audioUrl: string;
+      audioBuffer: Buffer;
       wordTimestamps: Array<{ word: string; start: number; end: number }>;
       sortOrder: number;
     }> = [];
@@ -223,6 +224,7 @@ export async function POST(request: NextRequest) {
         voiceId: resolvedVoice.voiceId,
         voiceName: resolvedVoice.voiceName,
         audioUrl: urlData.publicUrl,
+        audioBuffer: generated.audioBuffer,
         wordTimestamps: generated.wordTimestamps,
         sortOrder: item.sortOrder,
       });
@@ -235,19 +237,11 @@ export async function POST(request: NextRequest) {
     let combinedTimestamps: Array<{ word: string; start: number; end: number }> = [];
 
     if (ordered.length > 0) {
-      // Download each track's audio buffer for stitching
-      const trackBuffers = await Promise.all(
-        ordered.map(async (track) => {
-          const res = await fetch(track.audioUrl);
-          if (!res.ok) throw new Error(`Failed to download track: ${track.audioUrl}`);
-          const arrayBuf = await res.arrayBuffer();
-          return {
-            audioBuffer: Buffer.from(arrayBuf),
-            wordTimestamps: track.wordTimestamps,
-            sortOrder: track.sortOrder,
-          };
-        })
-      );
+      const trackBuffers = ordered.map((track) => ({
+        audioBuffer: track.audioBuffer,
+        wordTimestamps: track.wordTimestamps,
+        sortOrder: track.sortOrder,
+      }));
 
       const { stitchedBuffer, combinedTimestamps: combined } =
         await stitchAudioTracks(trackBuffers);
@@ -294,10 +288,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Strip audioBuffer from response — client doesn't need raw bytes
+    const responseTracks = ordered.map(({ audioBuffer: _, ...rest }) => rest);
+
     return NextResponse.json({
       pageId: page.id.toString(),
-      tracks: ordered,
-      count: ordered.length,
+      tracks: responseTracks,
+      count: responseTracks.length,
       mode: "overlay-multivoice",
       stitchedUrl,
       combinedTimestamps,
