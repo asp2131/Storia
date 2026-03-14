@@ -209,6 +209,9 @@ export default function BookEditor() {
   const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
   const [narrationVolume, setNarrationVolume] = useState(0.85);
   const [generatingOverlayNarration, setGeneratingOverlayNarration] = useState(false);
+  const [overlayNarrationPhase, setOverlayNarrationPhase] = useState<
+    "idle" | "generating" | "stitching" | "saving"
+  >("idle");
 
   // Sync preview state
   const [activeWordIndex, setActiveWordIndex] = useState(-1);
@@ -645,7 +648,9 @@ export default function BookEditor() {
       }
 
       setGeneratingOverlayNarration(true);
+      setOverlayNarrationPhase("generating");
       try {
+        // Phase 1: Generate individual voice tracks + stitch on server
         const response = await fetch("/api/admin/generate-overlay-narration", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -662,21 +667,34 @@ export default function BookEditor() {
           throw new Error(payload?.error || "Failed to generate multi-voice narration");
         }
 
+        setOverlayNarrationPhase("stitching");
+
         const payload = (await response.json()) as {
           pageId?: string;
           tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+          stitchedUrl?: string;
+          combinedTimestamps?: WordTimestamp[];
         };
 
-        const firstTrack = payload.tracks?.[0];
-        if (!firstTrack?.audioUrl) {
+        // Use the stitched (combined) narration — this is also written to pages.narration_url
+        // for Flutter/v1 reader compatibility
+        const narrationUrl = payload.stitchedUrl || payload.tracks?.[0]?.audioUrl;
+        const narrationTimestamps = payload.combinedTimestamps?.length
+          ? payload.combinedTimestamps
+          : payload.tracks?.[0]?.wordTimestamps;
+
+        if (!narrationUrl) {
           throw new Error("No audio tracks returned from multi-voice narration generation.");
         }
+
+        // Phase 2: Save assignment
+        setOverlayNarrationPhase("saving");
 
         const pageId = getPageId(page.number) || payload.pageId;
         if (pageId) {
           await assignAudioMutation.mutateAsync({
             pageId,
-            audioUrl: firstTrack.audioUrl,
+            audioUrl: narrationUrl,
             audioType: "narration",
             scope: "single",
             rangeStart: null,
@@ -686,17 +704,18 @@ export default function BookEditor() {
           throw new Error("Narration was generated but page assignment could not be resolved.");
         }
 
-        if (firstTrack.wordTimestamps?.length) {
+        if (narrationTimestamps?.length) {
           setLocalPages((prev) =>
             prev.map((p) =>
               p.number === page.number
-                ? { ...p, narrationTimestamps: firstTrack.wordTimestamps }
+                ? { ...p, narrationTimestamps }
                 : p
             )
           );
         }
       } finally {
         setGeneratingOverlayNarration(false);
+        setOverlayNarrationPhase("idle");
       }
     },
     [
@@ -798,10 +817,16 @@ export default function BookEditor() {
       const payload = (await response.json()) as {
         pageId?: string;
         tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+        stitchedUrl?: string;
+        combinedTimestamps?: WordTimestamp[];
       };
 
-      const firstTrack = payload.tracks?.[0];
-      if (!firstTrack?.audioUrl) {
+      const narrationUrl = payload.stitchedUrl || payload.tracks?.[0]?.audioUrl;
+      const narrationTimestamps = payload.combinedTimestamps?.length
+        ? payload.combinedTimestamps
+        : payload.tracks?.[0]?.wordTimestamps;
+
+      if (!narrationUrl) {
         throw new Error("No audio returned for selected text instance.");
       }
 
@@ -809,7 +834,7 @@ export default function BookEditor() {
       if (pageId) {
         await assignAudioMutation.mutateAsync({
           pageId,
-          audioUrl: firstTrack.audioUrl,
+          audioUrl: narrationUrl,
           audioType: "narration",
           scope: "single",
           rangeStart: null,
@@ -819,11 +844,11 @@ export default function BookEditor() {
         throw new Error("Narration was generated but page assignment could not be resolved.");
       }
 
-      if (firstTrack.wordTimestamps?.length) {
+      if (narrationTimestamps?.length) {
         setLocalPages((prev) =>
           prev.map((p) =>
             p.number === activePageData.number
-              ? { ...p, narrationTimestamps: firstTrack.wordTimestamps }
+              ? { ...p, narrationTimestamps }
               : p
           )
         );
@@ -1537,7 +1562,11 @@ export default function BookEditor() {
                     className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
                     {generatingNarration ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating...</>
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" />{
+                        overlayNarrationPhase === "stitching" ? "Stitching audio..." :
+                        overlayNarrationPhase === "saving" ? "Saving..." :
+                        "Generating voices..."
+                      }</>
                     ) : (
                       <>
                         <Wand2 className="w-3.5 h-3.5" />
