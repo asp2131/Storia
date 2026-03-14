@@ -1,48 +1,18 @@
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import type { WordTimestamp } from "./elevenlabs";
-import { readFile } from "fs/promises";
+import { execFile } from "child_process";
+import { writeFile, readFile, unlink, mkdtemp } from "fs/promises";
 import { join } from "path";
+import { tmpdir } from "os";
+import { promisify } from "util";
+import type { WordTimestamp } from "./elevenlabs";
+
+const execFileAsync = promisify(execFile);
 
 const GAP_SECONDS = 0.75;
 
-let ffmpegInstance: FFmpeg | null = null;
-let loadingPromise: Promise<FFmpeg> | null = null;
-
-async function getFFmpeg(): Promise<FFmpeg> {
-  if (ffmpegInstance) return ffmpegInstance;
-  if (loadingPromise) return loadingPromise;
-
-  loadingPromise = (async () => {
-    const ffmpeg = new FFmpeg();
-
-    // Load core from node_modules on the server
-    const corePath = join(
-      process.cwd(),
-      "node_modules/@ffmpeg/core/dist/esm"
-    );
-    const coreJS = await readFile(join(corePath, "ffmpeg-core.js"));
-    const coreWasm = await readFile(join(corePath, "ffmpeg-core.wasm"));
-
-    const coreBlob = new Blob([coreJS], { type: "text/javascript" });
-    const wasmBlob = new Blob([coreWasm], { type: "application/wasm" });
-    const coreURL = URL.createObjectURL(coreBlob);
-    const wasmURL = URL.createObjectURL(wasmBlob);
-
-    await ffmpeg.load({ coreURL, wasmURL });
-    ffmpegInstance = ffmpeg;
-    loadingPromise = null;
-    return ffmpeg;
-  })();
-
-  return loadingPromise;
-}
-
-// Monotonic counter to namespace concurrent stitching operations in the virtual FS
-let stitchCounter = 0;
-
 /**
  * Concatenates multiple MP3 audio buffers with a silence gap between each,
- * and returns combined timestamps offset by cumulative duration + gaps.
+ * using the system ffmpeg binary. Returns the stitched buffer and combined
+ * word timestamps offset by cumulative duration + gaps.
  */
 export async function stitchAudioTracks(
   tracks: Array<{
@@ -67,48 +37,46 @@ export async function stitchAudioTracks(
   }
 
   const sorted = [...tracks].sort((a, b) => a.sortOrder - b.sortOrder);
-  const ffmpeg = await getFFmpeg();
 
-  // Namespace files to avoid collisions between concurrent requests
-  const ns = `job${++stitchCounter}`;
-
-  // Write each track as a file
+  // Create a temp directory for this stitching job
+  const tempDir = await mkdtemp(join(tmpdir(), "storia-stitch-"));
   const inputFiles: string[] = [];
-  for (let i = 0; i < sorted.length; i++) {
-    const filename = `${ns}_track_${i}.mp3`;
-    await ffmpeg.writeFile(filename, new Uint8Array(sorted[i].audioBuffer));
-    inputFiles.push(filename);
-  }
-
-  const outputFile = `${ns}_output.mp3`;
-
-  // Build input args for each track file
-  const inputArgs: string[] = [];
-  for (let i = 0; i < inputFiles.length; i++) {
-    inputArgs.push("-i", inputFiles[i]);
-  }
-
-  // Build complex filter: [0:a][silence][1:a][silence]...[N:a] concat
-  const totalSegments = inputFiles.length * 2 - 1; // tracks + silence gaps
-  let filterComplex = "";
-  const concatInputs: string[] = [];
-  let silenceIdx = 0;
-
-  for (let i = 0; i < inputFiles.length; i++) {
-    concatInputs.push(`[${i}:a]`);
-
-    if (i < inputFiles.length - 1) {
-      const silenceLabel = `s${silenceIdx}`;
-      filterComplex += `anullsrc=r=44100:cl=stereo[${silenceLabel}r];[${silenceLabel}r]atrim=0:${GAP_SECONDS},asetpts=PTS-STARTPTS[${silenceLabel}];`;
-      concatInputs.push(`[${silenceLabel}]`);
-      silenceIdx++;
-    }
-  }
-
-  filterComplex += `${concatInputs.join("")}concat=n=${totalSegments}:v=0:a=1[out]`;
+  const outputFile = join(tempDir, "output.mp3");
 
   try {
-    await ffmpeg.exec([
+    // Write each track to a temp file
+    for (let i = 0; i < sorted.length; i++) {
+      const filepath = join(tempDir, `track_${i}.mp3`);
+      await writeFile(filepath, sorted[i].audioBuffer);
+      inputFiles.push(filepath);
+    }
+
+    // Build ffmpeg args with complex filter for silence gaps
+    const inputArgs: string[] = [];
+    for (const f of inputFiles) {
+      inputArgs.push("-i", f);
+    }
+
+    const totalSegments = inputFiles.length * 2 - 1;
+    let filterComplex = "";
+    const concatInputs: string[] = [];
+    let silenceIdx = 0;
+
+    for (let i = 0; i < inputFiles.length; i++) {
+      concatInputs.push(`[${i}:a]`);
+
+      if (i < inputFiles.length - 1) {
+        const label = `s${silenceIdx}`;
+        filterComplex += `anullsrc=r=44100:cl=stereo[${label}r];[${label}r]atrim=0:${GAP_SECONDS},asetpts=PTS-STARTPTS[${label}];`;
+        concatInputs.push(`[${label}]`);
+        silenceIdx++;
+      }
+    }
+
+    filterComplex += `${concatInputs.join("")}concat=n=${totalSegments}:v=0:a=1[out]`;
+
+    await execFileAsync("ffmpeg", [
+      "-y",
       ...inputArgs,
       "-filter_complex",
       filterComplex,
@@ -121,23 +89,19 @@ export async function stitchAudioTracks(
       outputFile,
     ]);
 
-    const outputData = await ffmpeg.readFile(outputFile);
-    const stitchedBuffer = Buffer.from(
-      outputData instanceof Uint8Array
-        ? outputData
-        : new TextEncoder().encode(outputData as string)
-    );
-
-    // Build combined timestamps with offsets
+    const stitchedBuffer = await readFile(outputFile);
     const combinedTimestamps = combineWordTimestamps(sorted, GAP_SECONDS);
 
-    return { stitchedBuffer, combinedTimestamps };
+    return { stitchedBuffer: Buffer.from(stitchedBuffer), combinedTimestamps };
   } finally {
-    // Always clean up files in ffmpeg virtual FS
+    // Clean up temp files
     for (const f of inputFiles) {
-      await ffmpeg.deleteFile(f).catch(() => {});
+      await unlink(f).catch(() => {});
     }
-    await ffmpeg.deleteFile(outputFile).catch(() => {});
+    await unlink(outputFile).catch(() => {});
+    // Remove temp directory (will succeed since it's now empty)
+    const { rmdir } = await import("fs/promises");
+    await rmdir(tempDir).catch(() => {});
   }
 }
 
@@ -163,13 +127,11 @@ function combineWordTimestamps(
       });
     }
 
-    // Calculate track duration from last word's end time
     if (timestamps.length > 0) {
       const trackEnd = timestamps[timestamps.length - 1].end;
       cumulativeOffset += trackEnd;
     }
 
-    // Add gap offset (except after the last track)
     if (i < tracks.length - 1) {
       cumulativeOffset += gapSeconds;
     }
