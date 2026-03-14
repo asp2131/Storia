@@ -8,6 +8,7 @@ import {
   resolveElevenLabsVoice,
   synthesizeSpeechWithTimestamps,
 } from "@/lib/elevenlabs";
+import { stitchAudioTracks } from "@/lib/audio-stitcher";
 
 type OverlayNarrationItem = {
   overlayElementId: string;
@@ -229,11 +230,77 @@ export async function POST(request: NextRequest) {
 
     const ordered = [...results].sort((a, b) => a.sortOrder - b.sortOrder);
 
+    // ── Stitch all tracks into a single narration file for v1 readers (Flutter) ──
+    let stitchedUrl: string | null = null;
+    let combinedTimestamps: Array<{ word: string; start: number; end: number }> = [];
+
+    if (ordered.length > 0) {
+      // Download each track's audio buffer for stitching
+      const trackBuffers = await Promise.all(
+        ordered.map(async (track) => {
+          const res = await fetch(track.audioUrl);
+          if (!res.ok) throw new Error(`Failed to download track: ${track.audioUrl}`);
+          const arrayBuf = await res.arrayBuffer();
+          return {
+            audioBuffer: Buffer.from(arrayBuf),
+            wordTimestamps: track.wordTimestamps,
+            sortOrder: track.sortOrder,
+          };
+        })
+      );
+
+      const { stitchedBuffer, combinedTimestamps: combined } =
+        await stitchAudioTracks(trackBuffers);
+      combinedTimestamps = combined;
+
+      // Upload stitched file
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 8);
+      const stitchedPath = `books/${bookId}/narration/page_${pageNumber}_stitched_${timestamp}_${random}.mp3`;
+
+      // Delete old stitched narration file if it exists
+      const existingPage = await prisma.pages.findFirst({
+        where: { book_id: bookIdBigInt, page_number: pageNumber },
+        select: { narration_url: true },
+      });
+      if (existingPage?.narration_url) {
+        const oldPath = extractStoragePath(existingPage.narration_url, bucket);
+        if (oldPath && oldPath.includes("_stitched_")) {
+          await supabase.storage.from(bucket).remove([oldPath]);
+        }
+      }
+
+      const { error: stitchUploadError } = await supabase.storage
+        .from(bucket)
+        .upload(stitchedPath, stitchedBuffer, {
+          contentType: "audio/mpeg",
+          upsert: false,
+        });
+
+      if (stitchUploadError) {
+        console.error("[generate-overlay-narration] Failed to upload stitched file:", stitchUploadError);
+      } else {
+        const { data: stitchedUrlData } = supabase.storage.from(bucket).getPublicUrl(stitchedPath);
+        stitchedUrl = stitchedUrlData.publicUrl;
+
+        // Write stitched narration to pages table for v1 readers (Flutter)
+        await prisma.pages.update({
+          where: { id: page.id },
+          data: {
+            narration_url: stitchedUrl,
+            narration_timestamps: combinedTimestamps as any,
+          },
+        });
+      }
+    }
+
     return NextResponse.json({
       pageId: page.id.toString(),
       tracks: ordered,
       count: ordered.length,
       mode: "overlay-multivoice",
+      stitchedUrl,
+      combinedTimestamps,
     });
   } catch (error) {
     console.error("[generate-overlay-narration] Error:", error);

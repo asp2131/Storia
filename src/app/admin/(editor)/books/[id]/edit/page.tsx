@@ -665,10 +665,18 @@ export default function BookEditor() {
         const payload = (await response.json()) as {
           pageId?: string;
           tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+          stitchedUrl?: string;
+          combinedTimestamps?: WordTimestamp[];
         };
 
-        const firstTrack = payload.tracks?.[0];
-        if (!firstTrack?.audioUrl) {
+        // Use the stitched (combined) narration — this is also written to pages.narration_url
+        // for Flutter/v1 reader compatibility
+        const narrationUrl = payload.stitchedUrl || payload.tracks?.[0]?.audioUrl;
+        const narrationTimestamps = payload.combinedTimestamps?.length
+          ? payload.combinedTimestamps
+          : payload.tracks?.[0]?.wordTimestamps;
+
+        if (!narrationUrl) {
           throw new Error("No audio tracks returned from multi-voice narration generation.");
         }
 
@@ -676,7 +684,7 @@ export default function BookEditor() {
         if (pageId) {
           await assignAudioMutation.mutateAsync({
             pageId,
-            audioUrl: firstTrack.audioUrl,
+            audioUrl: narrationUrl,
             audioType: "narration",
             scope: "single",
             rangeStart: null,
@@ -686,11 +694,11 @@ export default function BookEditor() {
           throw new Error("Narration was generated but page assignment could not be resolved.");
         }
 
-        if (firstTrack.wordTimestamps?.length) {
+        if (narrationTimestamps?.length) {
           setLocalPages((prev) =>
             prev.map((p) =>
               p.number === page.number
-                ? { ...p, narrationTimestamps: firstTrack.wordTimestamps }
+                ? { ...p, narrationTimestamps }
                 : p
             )
           );
@@ -798,10 +806,16 @@ export default function BookEditor() {
       const payload = (await response.json()) as {
         pageId?: string;
         tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+        stitchedUrl?: string;
+        combinedTimestamps?: WordTimestamp[];
       };
 
-      const firstTrack = payload.tracks?.[0];
-      if (!firstTrack?.audioUrl) {
+      const narrationUrl = payload.stitchedUrl || payload.tracks?.[0]?.audioUrl;
+      const narrationTimestamps = payload.combinedTimestamps?.length
+        ? payload.combinedTimestamps
+        : payload.tracks?.[0]?.wordTimestamps;
+
+      if (!narrationUrl) {
         throw new Error("No audio returned for selected text instance.");
       }
 
@@ -809,7 +823,7 @@ export default function BookEditor() {
       if (pageId) {
         await assignAudioMutation.mutateAsync({
           pageId,
-          audioUrl: firstTrack.audioUrl,
+          audioUrl: narrationUrl,
           audioType: "narration",
           scope: "single",
           rangeStart: null,
@@ -819,11 +833,11 @@ export default function BookEditor() {
         throw new Error("Narration was generated but page assignment could not be resolved.");
       }
 
-      if (firstTrack.wordTimestamps?.length) {
+      if (narrationTimestamps?.length) {
         setLocalPages((prev) =>
           prev.map((p) =>
             p.number === activePageData.number
-              ? { ...p, narrationTimestamps: firstTrack.wordTimestamps }
+              ? { ...p, narrationTimestamps }
               : p
           )
         );
