@@ -20,6 +20,7 @@ const MorphogenesisHero = dynamic(
 
 export default function HomeClient() {
   const [authOpen, setAuthOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -328,13 +329,23 @@ export default function HomeClient() {
       )}
 
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 px-4 py-4 md:p-8 flex justify-between items-center z-[60]">
+      <header className="fixed top-0 left-0 right-0 px-4 py-4 md:px-8 md:py-6 flex justify-between items-center z-[60]">
         <div className="flex items-center gap-2">
           <span className="text-2xl font-serif font-black tracking-tighter text-white drop-shadow-md">
             Storia
           </span>
         </div>
-        <nav className="flex gap-8 text-sm font-mono tracking-widest uppercase">
+
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-4 text-sm font-mono tracking-widest uppercase">
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white/50 hover:text-white transition-colors duration-300 text-xs font-semibold tracking-wider"
+          >
+            For Authors
+          </a>
           {currentUser ? (
             <a
               href="/library"
@@ -364,7 +375,80 @@ export default function HomeClient() {
             </button>
           )}
         </nav>
+
+        {/* Mobile hamburger button */}
+        <button
+          className="md:hidden w-10 h-10 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+        >
+          {menuOpen ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6L6 18" />
+              <path d="M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 7h16" />
+              <path d="M4 12h16" />
+              <path d="M4 17h16" />
+            </svg>
+          )}
+        </button>
       </header>
+
+      {/* Mobile menu overlay */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 z-[55] bg-black/80 backdrop-blur-sm md:hidden"
+          onClick={() => setMenuOpen(false)}
+        >
+          <nav
+            className="absolute top-16 right-4 w-56 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-4 flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-all text-sm font-semibold tracking-wider"
+            >
+              For Authors
+            </a>
+            {currentUser ? (
+              <a
+                href="/library"
+                className="px-4 py-3 rounded-xl bg-white/10 text-white/90 hover:text-white hover:bg-white/20 transition-all text-sm font-semibold tracking-wider flex items-center justify-between"
+              >
+                Go to Library
+                <svg
+                  className="w-3.5 h-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14"/>
+                  <path d="m12 5 7 7-7 7"/>
+                </svg>
+              </a>
+            ) : (
+              <button
+                className="px-4 py-3 rounded-xl bg-white/10 text-white/90 hover:text-white hover:bg-white/20 transition-all text-sm font-semibold tracking-wider text-left"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setAuthOpen(true);
+                }}
+              >
+                Login / Register
+              </button>
+            )}
+          </nav>
+        </div>
+      )}
 
       {/* Music Toggle */}
       <button

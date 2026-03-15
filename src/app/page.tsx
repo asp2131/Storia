@@ -51,25 +51,35 @@ export default function Home() {
             </div>
           </div>
 
-          <Link
-            href="/library"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/90 hover:text-white text-sm font-semibold tracking-wider transition-all duration-300"
-          >
-            Browse the Library
-            <svg
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          <div className="flex flex-col items-center gap-4">
+            <Link
+              href="/library"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white/90 hover:text-white text-sm font-semibold tracking-wider transition-all duration-300"
             >
-              <path d="M5 12h14"/>
-              <path d="m12 5 7 7-7 7"/>
-            </svg>
-          </Link>
+              Browse the Library
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14"/>
+                <path d="m12 5 7 7-7 7"/>
+              </svg>
+            </Link>
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-white/40 hover:text-amber-200/70 transition-colors duration-300"
+            >
+              Are you an author? Apply to publish on Storia &rarr;
+            </a>
+          </div>
         </div>
       </section>
     </div>
