@@ -434,9 +434,9 @@ export default function MorphogenesisHero({
                 Shivang Thakor
               </h2>
               <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
-                Shivang&apos;s placeholder background reflects a product-focused builder who loves
-                crafting intuitive experiences from complex systems. He brings the execution mindset
-                that helps turn big creative ideas into something families can actually use and love.
+              For as long as Shivang can remember, he has read stories with sound by his side. 
+              When he was in middle school, he would not read Romeo and Juliet unless he was listening to a video of Pachabel's Canon in D with birds chirping in the background. 
+              Now, as the first in his family to graduate from college as a Posse Foundation Scholar, he seeks to serve other readers like him who may have just needed a little sound to go with their stories.
               </p>
             </div>
           </div>
