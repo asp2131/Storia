@@ -1,18 +1,42 @@
-import { execFile } from "child_process";
-import { writeFile, readFile, unlink, mkdtemp } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
-import { promisify } from "util";
 import type { WordTimestamp } from "./elevenlabs";
-
-const execFileAsync = promisify(execFile);
 
 const GAP_SECONDS = 0.75;
 
 /**
- * Concatenates multiple MP3 audio buffers with a silence gap between each,
- * using the system ffmpeg binary. Returns the stitched buffer and combined
- * word timestamps offset by cumulative duration + gaps.
+ * A minimal silent MP3 frame (MPEG1 Layer 3, 128kbps, 44100Hz, stereo).
+ * Each frame is 1152 samples at 44100Hz ≈ 26.122ms.
+ * The frame is valid but produces silence.
+ */
+const SILENT_MP3_FRAME = Buffer.from([
+  // MPEG1, Layer 3, 128kbps, 44100Hz, stereo – sync word + header
+  0xff, 0xfb, 0x90, 0x00,
+  // Side information (17 bytes for stereo MPEG1 Layer 3) – all zeros = silence
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00,
+  // Padding to reach frame size of 417 bytes (128kbps, 44100Hz)
+  ...new Array(417 - 4 - 17).fill(0x00),
+]);
+
+/** Duration of one silent MP3 frame in seconds */
+const FRAME_DURATION = 1152 / 44100;
+
+/**
+ * Generates a buffer of silent MP3 frames for the given duration.
+ */
+function generateSilence(durationSeconds: number): Buffer {
+  const frameCount = Math.max(1, Math.round(durationSeconds / FRAME_DURATION));
+  const frames: Buffer[] = [];
+  for (let i = 0; i < frameCount; i++) {
+    frames.push(SILENT_MP3_FRAME);
+  }
+  return Buffer.concat(frames);
+}
+
+/**
+ * Concatenates multiple MP3 audio buffers with a silence gap between each.
+ * Pure JS implementation — no ffmpeg required.
+ * Returns the stitched buffer and combined word timestamps offset by
+ * cumulative duration + gaps.
  */
 export async function stitchAudioTracks(
   tracks: Array<{
@@ -37,72 +61,21 @@ export async function stitchAudioTracks(
   }
 
   const sorted = [...tracks].sort((a, b) => a.sortOrder - b.sortOrder);
+  const silenceBuffer = generateSilence(GAP_SECONDS);
 
-  // Create a temp directory for this stitching job
-  const tempDir = await mkdtemp(join(tmpdir(), "storia-stitch-"));
-  const inputFiles: string[] = [];
-  const outputFile = join(tempDir, "output.mp3");
-
-  try {
-    // Write each track to a temp file
-    for (let i = 0; i < sorted.length; i++) {
-      const filepath = join(tempDir, `track_${i}.mp3`);
-      await writeFile(filepath, sorted[i].audioBuffer);
-      inputFiles.push(filepath);
+  // Concatenate MP3 buffers with silence gaps between them
+  const parts: Buffer[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    parts.push(sorted[i].audioBuffer);
+    if (i < sorted.length - 1) {
+      parts.push(silenceBuffer);
     }
-
-    // Build ffmpeg args with complex filter for silence gaps
-    const inputArgs: string[] = [];
-    for (const f of inputFiles) {
-      inputArgs.push("-i", f);
-    }
-
-    const totalSegments = inputFiles.length * 2 - 1;
-    let filterComplex = "";
-    const concatInputs: string[] = [];
-    let silenceIdx = 0;
-
-    for (let i = 0; i < inputFiles.length; i++) {
-      concatInputs.push(`[${i}:a]`);
-
-      if (i < inputFiles.length - 1) {
-        const label = `s${silenceIdx}`;
-        filterComplex += `anullsrc=r=44100:cl=stereo[${label}r];[${label}r]atrim=0:${GAP_SECONDS},asetpts=PTS-STARTPTS[${label}];`;
-        concatInputs.push(`[${label}]`);
-        silenceIdx++;
-      }
-    }
-
-    filterComplex += `${concatInputs.join("")}concat=n=${totalSegments}:v=0:a=1[out]`;
-
-    await execFileAsync("ffmpeg", [
-      "-y",
-      ...inputArgs,
-      "-filter_complex",
-      filterComplex,
-      "-map",
-      "[out]",
-      "-codec:a",
-      "libmp3lame",
-      "-b:a",
-      "192k",
-      outputFile,
-    ]);
-
-    const stitchedBuffer = await readFile(outputFile);
-    const combinedTimestamps = combineWordTimestamps(sorted, GAP_SECONDS);
-
-    return { stitchedBuffer: Buffer.from(stitchedBuffer), combinedTimestamps };
-  } finally {
-    // Clean up temp files
-    for (const f of inputFiles) {
-      await unlink(f).catch(() => {});
-    }
-    await unlink(outputFile).catch(() => {});
-    // Remove temp directory (will succeed since it's now empty)
-    const { rmdir } = await import("fs/promises");
-    await rmdir(tempDir).catch(() => {});
   }
+
+  const stitchedBuffer = Buffer.concat(parts);
+  const combinedTimestamps = combineWordTimestamps(sorted, GAP_SECONDS);
+
+  return { stitchedBuffer, combinedTimestamps };
 }
 
 /**
