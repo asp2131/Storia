@@ -236,6 +236,7 @@ export default function OverlayEditorPage() {
       {imageUrl && overlay && (
         <div className="flex-1 overflow-hidden">
           <DraggableTextOverlayEditor
+            key={`${pageNumber}-${JSON.stringify(overlay)}`}
             imageUrl={imageUrl}
             overlay={overlay}
             onSave={handleSave}
