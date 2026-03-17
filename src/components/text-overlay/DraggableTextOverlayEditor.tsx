@@ -6,6 +6,8 @@ import {
   TextOverlayConfig,
   TEXT_OVERLAY_VERSION,
 } from "@/types/text-overlay";
+import { Sheet } from "react-modal-sheet";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Toolbar } from "./Toolbar";
 import { PropertyPanel } from "./PropertyPanel";
 
@@ -236,6 +238,8 @@ export function DraggableTextOverlayEditor({
   enableVoiceAssignment = false,
   onSelectedElementChange,
 }: DraggableTextOverlayEditorProps) {
+  const isCompactLayout = useMediaQuery("(max-width: 1023px)");
+
   // Initialize elements from overlay prop
   const [elements, setElements] = useState<TextElement[]>(
     overlay?.elements ?? []
@@ -244,22 +248,12 @@ export function DraggableTextOverlayEditor({
     null
   );
   const [hasChanges, setHasChanges] = useState(false);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(0);
-  
-  // Store original elements to compute isStale
-  const originalElementsRef = useRef<TextElement[]>(
+  const [savedElements, setSavedElements] = useState<TextElement[]>(
     overlay?.elements ?? []
   );
-
-  // Reset state when overlay prop changes
-  useEffect(() => {
-    const newElements = overlay?.elements ?? [];
-    setElements(newElements);
-    originalElementsRef.current = newElements;
-    setHasChanges(false);
-    setSelectedElementId(null);
-  }, [overlay]);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
+  const [propertySheetDismissed, setPropertySheetDismissed] = useState(false);
 
   // Track container height using ResizeObserver
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -293,17 +287,15 @@ export function DraggableTextOverlayEditor({
 
   // Compute isStale: overlay modified after last composite
   const isStale = useMemo(() => {
-    if (!overlay || originalElementsRef.current === overlay.elements) {
-      return false;
-    }
-    // Compare current elements with original elements
     const currentJson = JSON.stringify(elements);
-    const originalJson = JSON.stringify(originalElementsRef.current);
+    const originalJson = JSON.stringify(savedElements);
     return currentJson !== originalJson;
-  }, [elements, overlay]);
+  }, [elements, savedElements]);
 
   // Compute hasOverlay for toolbar
   const hasOverlay = elements.length > 0;
+  const isPropertySheetOpen =
+    isCompactLayout && !!selectedElement && !propertySheetDismissed;
 
   // Get compositedAt from overlay metadata if available
   const compositedAt = (overlay as unknown as { compositedAt?: string | null })?.compositedAt ?? null;
@@ -338,8 +330,8 @@ export function DraggableTextOverlayEditor({
     
     await onSave(config);
     
-    // Update original elements reference after successful save
-    originalElementsRef.current = [...elements];
+    // Track the saved overlay snapshot after a successful save.
+    setSavedElements([...elements]);
     setHasChanges(false);
   }, [elements, onSave]);
 
@@ -371,6 +363,7 @@ export function DraggableTextOverlayEditor({
     (elementId: string) => {
       setElements((prev) => prev.filter((el) => el.id !== elementId));
       setSelectedElementId(null);
+      setPropertySheetDismissed(false);
       setHasChanges(true);
     },
     []
@@ -378,12 +371,14 @@ export function DraggableTextOverlayEditor({
 
   const handleSelectElement = useCallback((elementId: string) => {
     setSelectedElementId(elementId);
+    setPropertySheetDismissed(false);
   }, []);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
     // Deselect when clicking on the canvas background (not on an element)
     if (e.target === e.currentTarget) {
       setSelectedElementId(null);
+      setPropertySheetDismissed(false);
     }
   }, []);
 
@@ -396,6 +391,7 @@ export function DraggableTextOverlayEditor({
         onAddElement={handleAddElement}
         onSave={handleSave}
         onComposite={handleComposite}
+        onOpenProperties={() => setPropertySheetDismissed(false)}
         isSaving={isSaving}
         isCompositing={isCompositing}
         hasChanges={hasChanges}
@@ -403,18 +399,19 @@ export function DraggableTextOverlayEditor({
         hasOverlay={hasOverlay}
         hasBaseImage={!!imageUrl}
         compositedAt={compositedAt}
+        showPropertiesButton={isCompactLayout && !!selectedElement}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Image Canvas */}
         <div
-          className="flex-1 relative bg-gray-100 flex items-center justify-center p-8 overflow-auto"
+          className="flex-1 relative bg-gray-100 flex items-center justify-center p-3 sm:p-6 lg:p-8 overflow-auto min-h-0"
           onClick={handleCanvasClick}
         >
           <div
             ref={imageContainerRef}
-            className="relative inline-block"
+            className="relative inline-block max-w-full max-h-full"
             data-canvas-container
           >
             {/* Base Image */}
@@ -443,14 +440,45 @@ export function DraggableTextOverlayEditor({
         </div>
 
         {/* Property Panel */}
-        <PropertyPanel
-          selectedElement={selectedElement}
-          onUpdate={handlePropertyUpdate}
-          onDelete={handleDeleteElement}
-          voiceOptions={voiceOptions}
-          enableVoiceAssignment={enableVoiceAssignment}
-        />
+        {!isCompactLayout && (
+          <PropertyPanel
+            selectedElement={selectedElement}
+            onUpdate={handlePropertyUpdate}
+            onDelete={handleDeleteElement}
+            voiceOptions={voiceOptions}
+            enableVoiceAssignment={enableVoiceAssignment}
+          />
+        )}
       </div>
+
+      {isCompactLayout && !selectedElement && elements.length > 0 && (
+        <div className="border-t border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+          Tap a text block on the canvas to edit its properties.
+        </div>
+      )}
+
+      {isCompactLayout && (
+        <Sheet
+          isOpen={isPropertySheetOpen}
+          onClose={() => setPropertySheetDismissed(true)}
+          detent="content"
+        >
+          <Sheet.Backdrop />
+          <Sheet.Container>
+            <Sheet.Header />
+            <Sheet.Content>
+              <PropertyPanel
+                selectedElement={selectedElement}
+                onUpdate={handlePropertyUpdate}
+                onDelete={handleDeleteElement}
+                voiceOptions={voiceOptions}
+                enableVoiceAssignment={enableVoiceAssignment}
+                variant="drawer"
+              />
+            </Sheet.Content>
+          </Sheet.Container>
+        </Sheet>
+      )}
     </div>
   );
 }

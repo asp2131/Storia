@@ -33,7 +33,10 @@ import {
   GripHorizontal,
   FileAudio,
   Settings,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
+import { Sheet } from "react-modal-sheet";
 import {
   useBookDetails,
   useEditorPages,
@@ -47,6 +50,7 @@ import {
   VoiceSettings,
 } from "@/hooks/useBookData";
 import { useSoundLibrary, useUploadAudio, SoundAsset } from "@/hooks/useSoundLibrary";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
@@ -73,10 +77,13 @@ type VoiceOption = {
   category?: string | null;
 };
 
+type MobileEditorView = "pages" | "canvas" | "audio";
+
 export default function BookEditor() {
   const router = useRouter();
   const params = useParams();
   const bookIdParam = params.id as string;
+  const isCompactEditor = useMediaQuery("(max-width: 1023px)");
 
   // React Query hooks
   const { data: bookDetails, isLoading: bookLoading } = useBookDetails(bookIdParam);
@@ -150,6 +157,7 @@ export default function BookEditor() {
 
   // UI state
   const [activePage, setActivePage] = useState(1);
+  const [mobileView, setMobileView] = useState<MobileEditorView>("canvas");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
@@ -435,6 +443,39 @@ export default function BookEditor() {
     });
   };
 
+  const handleMovePage = useCallback((pageNumber: number, direction: "up" | "down") => {
+    setLocalPages((prev) => {
+      const sourceIndex = prev.findIndex((page) => page.number === pageNumber);
+      if (sourceIndex === -1) return prev;
+
+      const destinationIndex =
+        direction === "up" ? sourceIndex - 1 : sourceIndex + 1;
+
+      if (destinationIndex < 0 || destinationIndex >= prev.length) {
+        return prev;
+      }
+
+      const reordered = [...prev];
+      const [movedPage] = reordered.splice(sourceIndex, 1);
+      reordered.splice(destinationIndex, 0, movedPage);
+
+      const normalized = reordered.map((page, index) => ({
+        ...page,
+        number: index + 1,
+      }));
+
+      setHasLocalChanges(true);
+
+      setActivePage((currentPage) => {
+        if (currentPage === sourceIndex + 1) return destinationIndex + 1;
+        if (currentPage === destinationIndex + 1) return sourceIndex + 1;
+        return currentPage;
+      });
+
+      return normalized;
+    });
+  }, []);
+
   const setActiveImage = (imageUrl: string) => {
     setLocalPages((prev) =>
       prev.map((page) =>
@@ -555,6 +596,20 @@ export default function BookEditor() {
     }
   };
 
+  const openSoundAssignment = useCallback(
+    (sound: Pick<SoundAsset, "url" | "name">, targetPage = activePage) => {
+      setDropAssignment({
+        audioUrl: sound.url,
+        audioName: sound.name.replace(/_/g, " ").replace(/\.[^.]+$/, ""),
+        targetPage,
+      });
+      setDropRangeStart(targetPage);
+      setDropRangeEnd(targetPage);
+      setDropScope("single");
+    },
+    [activePage]
+  );
+
   // ─── Drag-and-Drop Assignment ───────────────────────────────────
   const handleDragStart = (sound: SoundAsset) => {
     setDraggedSound(sound);
@@ -580,15 +635,7 @@ export default function BookEditor() {
     if (!draggedSound) return;
     e.preventDefault();
     setDropTargetPage(null);
-
-    setDropAssignment({
-      audioUrl: draggedSound.url,
-      audioName: draggedSound.name.replace(/_/g, " ").replace(/\.[^.]+$/, ""),
-      targetPage: pageNumber,
-    });
-    setDropRangeStart(pageNumber);
-    setDropRangeEnd(pageNumber);
-    setDropScope("single");
+    openSoundAssignment(draggedSound, pageNumber);
 
     setDraggedSound(null);
   };
@@ -1021,6 +1068,764 @@ export default function BookEditor() {
     }
   };
 
+  const renderCanvasPanel = (compact = false) => (
+    <div
+      className={`flex-1 bg-slate-100/80 overflow-y-auto overflow-x-hidden flex flex-col items-center ${
+        compact ? "justify-start p-3 pb-6 sm:p-4" : "justify-center p-8"
+      }`}
+    >
+      {uploading ? (
+        <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-12 flex flex-col items-center text-center">
+          <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+          <h3 className="text-slate-700 font-medium text-lg mb-1">Uploading...</h3>
+          <p className="text-sm text-slate-400">Please wait while your image uploads</p>
+        </div>
+      ) : hasImage ? (
+        <div className={`flex flex-col gap-4 w-full ${compact ? "max-w-none" : "max-w-6xl"}`}>
+          <div
+            className={`w-full bg-white rounded-lg shadow-sm border border-slate-100 ${
+              compact
+                ? "px-4 py-3 flex flex-col items-start gap-3"
+                : "px-5 py-3 flex items-center justify-between"
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0 w-full">
+              {activePageData?.text ? (
+                <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
+                  <Type className="w-4 h-4 text-blue-500 shrink-0" />
+                  <span className="truncate">
+                    {activePageData.text.slice(0, 80)}
+                    {activePageData.text.length > 80 ? "..." : ""}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-sm text-slate-400 italic">No text overlay yet</span>
+              )}
+            </div>
+            <div className={`flex items-center gap-2 ${compact ? "w-full flex-wrap" : "shrink-0 ml-3"}`}>
+              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                Inline text editor
+              </span>
+              <button
+                type="button"
+                onClick={triggerImagePicker}
+                className="bg-white text-slate-700 hover:text-teal-600 px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-sm flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Change Image
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveImage("")}
+                className="bg-white text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 font-medium text-sm flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`w-full rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden ${
+              compact ? "h-[70svh] min-h-[28rem]" : "h-[70vh]"
+            }`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleImageDrop}
+          >
+            <DraggableTextOverlayEditor
+              key={`${activePage}-${JSON.stringify(activePageData?.overlay ?? null)}`}
+              imageUrl={activePageData!.imageUrl}
+              overlay={activePageData!.overlay || null}
+              onSave={handleOverlaySave}
+              onComposite={handleOverlayComposite}
+              isSaving={overlayEditorSaving}
+              isCompositing={overlayEditorCompositing}
+              voiceOptions={voiceOptions}
+              enableVoiceAssignment
+              onSelectedElementChange={setSelectedOverlayElement}
+            />
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={triggerImagePicker}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleImageDrop}
+          className={`w-full ${
+            compact ? "max-w-none min-h-[60svh]" : "max-w-md"
+          } aspect-3/4 bg-white rounded-xl shadow-lg border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-slate-400 cursor-pointer`}
+        >
+          <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
+            <ImagePlus className="w-8 h-8" />
+          </div>
+          <h3 className="text-slate-700 font-medium text-lg mb-1">Add an Illustration</h3>
+          <p className="text-sm text-slate-400 mb-4">Click to upload or drag & drop</p>
+          <span className="text-xs text-slate-300 px-2 py-1 bg-slate-100 rounded">Supports JPG, PNG, GIF</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderMobilePagesPanel = () => (
+    <div className="flex-1 overflow-y-auto bg-slate-100/80 p-4 pb-6">
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pages</div>
+            <p className="text-sm text-slate-500">Manage order, select a page, or add a new one.</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddPage}
+            className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm border border-slate-200"
+          >
+            <Plus className="w-4 h-4" />
+            Add page
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {localPages.map((page, index) => {
+            const isActive = page.number === activePage;
+            const pageHasOverlay = page.overlay && page.overlay.elements.length > 0;
+            const audioStatus = pageAudioMap[page.number];
+
+            return (
+              <div
+                key={`mobile-page-${page.id || page.number}`}
+                className={`rounded-2xl border bg-white p-3 shadow-sm transition ${
+                  isActive ? "border-teal-400 ring-2 ring-teal-100" : "border-slate-200"
+                }`}
+              >
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActivePage(page.number);
+                      setMobileView("canvas");
+                    }}
+                    className="w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 aspect-3/4"
+                  >
+                    {page.compositedImageUrl || page.imageUrl ? (
+                      <img
+                        src={page.compositedImageUrl || page.imageUrl}
+                        alt={`Page ${page.number}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-slate-300">
+                        <ImageIcon className="w-6 h-6" />
+                      </div>
+                    )}
+                  </button>
+
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-900">Page {page.number}</span>
+                          {isActive && (
+                            <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-700">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-slate-500 line-clamp-2">
+                          {page.text?.trim() || "No overlay text yet"}
+                        </p>
+                      </div>
+                      {localPages.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePage(page.number)}
+                          className="rounded-lg border border-red-200 p-2 text-red-500 hover:bg-red-50"
+                          aria-label={`Delete page ${page.number}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {page.compositedImageUrl ? (
+                        <span className="bg-teal-500 text-white text-[10px] px-2 py-1 rounded-full font-medium">Overlay</span>
+                      ) : pageHasOverlay ? (
+                        <span className="bg-blue-500 text-white text-[10px] px-2 py-1 rounded-full font-medium">Text</span>
+                      ) : null}
+                      {audioStatus?.hasNarration && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-1 text-[10px] font-medium text-orange-700">
+                          <Mic className="w-3 h-3" />
+                          Narration
+                        </span>
+                      )}
+                      {audioStatus?.hasSoundscape && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700">
+                          <Music className="w-3 h-3" />
+                          Soundscape
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleMovePage(page.number, "up")}
+                        disabled={index === 0}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 disabled:opacity-40"
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                        Move up
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMovePage(page.number, "down")}
+                        disabled={index === localPages.length - 1}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 disabled:opacity-40"
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                        Move down
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActivePage(page.number);
+                          setMobileView("canvas");
+                        }}
+                        className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+                      >
+                        Open canvas
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAudioPanel = (compact = false) => (
+    <div className={`flex-1 overflow-y-auto ${compact ? "p-4 pb-6" : "p-6"} space-y-6`}>
+      {compact && (
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Audio tools</div>
+          <p className="mt-1 text-sm text-slate-500">
+            Assign narration or soundscapes for page {activePage}. Tap a library sound to assign it.
+          </p>
+        </div>
+      )}
+
+      {/* ── Voice Narration ──────────────────────────────────── */}
+      <div className="space-y-3">
+        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Narration</h4>
+
+        <div className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-200 shadow-sm space-y-4">
+          {(activeAssignments?.narration?.url || narrationActiveUrl) ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-semibold text-green-700">Assigned</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const pageId = getPageId(activePage);
+                    if (pageId) {
+                      try {
+                        await deleteAudioMutation.mutateAsync({ pageId, audioType: "narration" });
+                        setLocalPages((prev) =>
+                          prev.map((p) =>
+                            p.number === activePage ? { ...p, narrationTimestamps: undefined } : p
+                          )
+                        );
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Failed to remove");
+                      }
+                    }
+                  }}
+                  disabled={deleteAudioMutation.isPending}
+                  className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-slate-300" />
+              <span className="text-xs text-slate-500">No narration for this page</span>
+            </div>
+          )}
+
+          {narrationActiveUrl && (
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={toggleNarration} className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-sm">
+                {isNarrationPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+              </button>
+              <input
+                type="range" min="0" max="100"
+                value={Math.round(narrationVolume * 100)}
+                onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
+                className="flex-1 h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+              />
+            </div>
+          )}
+
+          {/* AI Generate */}
+          <div className="border-t border-orange-200/60 pt-3 space-y-3">
+            <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
+              <Wand2 className="w-3.5 h-3.5" />
+              Generate with AI
+            </span>
+            {activePageUsesOverlayVoices ? (
+              <div className="rounded-md border border-orange-200 bg-orange-100/60 px-2.5 py-2 text-[11px] text-orange-800">
+                Multi-voice mode is active for this page. Voices are taken from each overlay text block.
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
+                  Voice
+                </label>
+                <select
+                  value={selectedVoiceId}
+                  onChange={(e) => setSelectedVoiceId(e.target.value)}
+                  disabled={voicesLoading || voiceOptions.length === 0}
+                  className="w-full rounded-md border border-orange-200 bg-white px-2 py-1.5 text-xs text-slate-700 disabled:opacity-60"
+                >
+                  {voiceOptions.length === 0 ? (
+                    <option value="">{voicesLoading ? "Loading voices..." : "Default voice"}</option>
+                  ) : (
+                    voiceOptions.map((voice) => (
+                      <option key={voice.id} value={voice.id}>
+                        {voice.name}{voice.category ? ` (${voice.category})` : ""}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            )}
+            <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
+              <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
+                Voice settings
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px] text-slate-600">
+                  <span>Speed</span>
+                  <span>{voiceSettings.speed.toFixed(2)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.7"
+                  max="1.2"
+                  step="0.01"
+                  value={voiceSettings.speed}
+                  onChange={(e) =>
+                    setVoiceSettings((prev) => ({
+                      ...prev,
+                      speed: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full h-1.5 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px] text-slate-600">
+                  <span>Style exaggeration</span>
+                  <span>{voiceSettings.style.toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={voiceSettings.style}
+                  onChange={(e) =>
+                    setVoiceSettings((prev) => ({
+                      ...prev,
+                      style: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full h-1.5 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                />
+              </div>
+
+              <label className="flex items-center justify-between text-[11px] text-slate-700">
+                <span>Speaker boost</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVoiceSettings((prev) => ({
+                      ...prev,
+                      useSpeakerBoost: !prev.useSpeakerBoost,
+                    }))
+                  }
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    voiceSettings.useSpeakerBoost ? "bg-orange-500" : "bg-slate-300"
+                  }`}
+                  aria-pressed={voiceSettings.useSpeakerBoost}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      voiceSettings.useSpeakerBoost ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </label>
+            </div>
+
+            {!activePageData?.text?.trim() && (
+              <p className="text-[10px] text-orange-600/70 italic">
+                Add text overlay first to generate narration.
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleGenerateNarration()}
+                disabled={generatingNarration || !activePageData?.text?.trim()}
+                className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              >
+                {generatingNarration ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" />{
+                    overlayNarrationPhase === "stitching" ? "Stitching audio..." :
+                    overlayNarrationPhase === "saving" ? "Saving..." :
+                    "Generating voices..."
+                  }</>
+                ) : (
+                  <>
+                    <Wand2 className="w-3.5 h-3.5" />
+                    This Page
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerateSelectedTextNarration}
+                disabled={
+                  generatingNarration ||
+                  !selectedOverlayElement?.id ||
+                  !selectedOverlayElement.text?.trim()
+                }
+                className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5" />Selected text
+              </button>
+            </div>
+            {!selectedOverlayElement?.id && (
+              <p className="text-[10px] text-orange-600/70 italic">
+                Select a text instance in the overlay editor to enable “Selected text”.
+              </p>
+            )}
+          </div>
+
+          {/* Sync preview */}
+          {wordTimestamps.length > 0 && (
+            <div className="border-t border-orange-200/60 pt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
+                  <PlayCircle className="w-3.5 h-3.5" /> Sync Preview
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSyncPreview(!showSyncPreview)}
+                  className="text-[10px] text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-200"
+                >
+                  {showSyncPreview ? "Hide" : "Show"}
+                </button>
+              </div>
+              {showSyncPreview && (
+                <div className="bg-white/70 rounded-lg p-3 border border-orange-200/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <button type="button" onClick={toggleNarration} className="w-7 h-7 flex items-center justify-center bg-orange-600 text-white rounded-full">
+                      {isNarrationPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                    </button>
+                    <span className="text-[10px] text-slate-500">{isNarrationPlaying ? "Playing..." : "Click to preview"}</span>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto">
+                    <p className="text-sm leading-relaxed text-slate-700 font-serif">
+                      {wordTimestamps.map((wd, i) => (
+                        <span
+                          key={i}
+                          className={`transition-all duration-150 ${i === activeWordIndex && isNarrationPlaying ? "bg-orange-300 text-orange-900 rounded px-0.5 font-semibold" : ""}`}
+                        >
+                          {wd.word}{" "}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                  <div className="mt-2 text-[10px] text-slate-500">{wordTimestamps.length} words synced</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <hr className="border-slate-100" />
+
+      {/* ── Ambient Soundscape ───────────────────────────────── */}
+      <div className="space-y-3">
+        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ambient Soundscape</h4>
+
+        <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 shadow-sm space-y-4">
+          {activeAssignments?.soundscape ? (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs font-semibold text-green-700">Assigned</span>
+                {activeAssignments.soundscape.scope === "range" && (
+                  <span className="text-[10px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">
+                    Pages {activeAssignments.soundscape.range}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const pageId = getPageId(activePage);
+                  if (pageId) {
+                    try {
+                      await deleteAudioMutation.mutateAsync({ pageId, audioType: "soundscape" });
+                      setSoundscapeUrlInput("");
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Failed to remove");
+                    }
+                  }
+                }}
+                disabled={deleteAudioMutation.isPending}
+                className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded"
+              >
+                Remove
+              </button>
+            </div>
+          ) : null}
+
+          {soundscapeActiveUrl && (
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={toggleSoundscape} className="w-8 h-8 flex items-center justify-center bg-amber-500 text-white rounded-full hover:bg-amber-600 shadow-sm">
+                {isSoundscapePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+              </button>
+              <input
+                type="range" min="0" max="100"
+                value={Math.round(soundscapeVolume * 100)}
+                onChange={(e) => setSoundscapeVolume(Number(e.target.value) / 100)}
+                className="flex-1 h-1 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+            </div>
+          )}
+
+          {/* Upload Audio */}
+          <div
+            className="border-t border-amber-100 pt-3 space-y-3"
+          >
+            <span className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+              <Upload className="w-3.5 h-3.5" />
+              Upload Audio
+            </span>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setAudioUploadDragging(true); }}
+              onDragLeave={() => setAudioUploadDragging(false)}
+              onDrop={handleAudioDropZone}
+              onClick={() => audioInputRef.current?.click()}
+              className={`rounded-lg border-2 border-dashed p-4 flex flex-col items-center gap-2 cursor-pointer transition-all ${
+                audioUploadDragging
+                  ? "border-amber-400 bg-amber-50"
+                  : "border-amber-200 hover:border-amber-400 hover:bg-amber-50/50"
+              }`}
+            >
+              {uploadAudioMutation.isPending ? (
+                <>
+                  <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                  <span className="text-[10px] text-amber-600">Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <FileAudio className="w-5 h-5 text-amber-400" />
+                  <span className="text-[10px] text-amber-600 text-center">
+                    Drop audio file or click to browse
+                  </span>
+                  <span className="text-[9px] text-amber-400">MP3, WAV, OGG, FLAC &bull; Max 50MB</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* URL input */}
+          <div className="space-y-3 border-t border-amber-100 pt-3">
+            <span className="text-xs font-semibold text-amber-700">Or Paste URL</span>
+            <input
+              value={soundscapeUrlInput}
+              onChange={(e) => setSoundscapeUrlInput(e.target.value)}
+              placeholder="Paste soundscape URL"
+              className="w-full rounded-md border border-amber-200 bg-white/70 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
+            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <button type="button" onClick={() => setSoundscapeScope("current")} className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${soundscapeScope === "current" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-amber-700 border-amber-200"}`}>
+                Current Page
+              </button>
+              <button type="button" onClick={() => setSoundscapeScope("range")} className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${soundscapeScope === "range" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-amber-700 border-amber-200"}`}>
+                Range
+              </button>
+              {soundscapeScope === "range" && (
+                <div className="flex items-center gap-2 text-[10px] text-amber-700">
+                  <input type="number" min={1} max={localPages.length} value={soundscapeRangeStart} onChange={(e) => setSoundscapeRangeStart(Number(e.target.value))} className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs" />
+                  <span>to</span>
+                  <input type="number" min={soundscapeRangeStart} max={localPages.length} value={soundscapeRangeEnd} onChange={(e) => setSoundscapeRangeEnd(Number(e.target.value))} className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs" />
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleAssignAudio("soundscape", soundscapeUrlInput, soundscapeScope, soundscapeRangeStart, soundscapeRangeEnd)}
+              className="w-full rounded-md bg-amber-500 text-white text-xs font-semibold py-2 hover:bg-amber-600"
+            >
+              Save Assignment
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <hr className="border-slate-100" />
+
+      {/* ── Sound Library ────────────────────────────────────── */}
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setLibraryOpen(!libraryOpen)}
+          className="flex items-center justify-between w-full group"
+        >
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+            <FolderOpen className="w-3.5 h-3.5" />
+            Sound Library
+          </h4>
+          {libraryOpen ? (
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+          )}
+        </button>
+
+        {libraryOpen && (
+          <div className="bg-linear-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
+            {/* Search */}
+            <input
+              value={librarySearch}
+              onChange={(e) => setLibrarySearch(e.target.value)}
+              placeholder="Search sounds..."
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+            />
+
+            {libraryLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+              </div>
+            ) : Object.keys(filteredLibrarySounds).length === 0 ? (
+              <div className="text-center py-6 text-xs text-slate-400">
+                {librarySearch ? "No sounds match your search" : "No sounds in library"}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Category pills */}
+                <div className="flex flex-wrap gap-1">
+                  {Object.keys(filteredLibrarySounds).map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition border ${
+                        selectedCategory === cat
+                          ? "bg-teal-600 text-white border-teal-600"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-teal-300"
+                      }`}
+                    >
+                      {cat} ({filteredLibrarySounds[cat].length})
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sound list */}
+                {selectedCategory && filteredLibrarySounds[selectedCategory] && (
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    <p className="text-[10px] text-slate-400 italic">
+                      {compact
+                        ? "Tap Assign to choose which page should receive the sound."
+                        : "Drag a sound onto a page thumbnail to assign it"}
+                    </p>
+                    {filteredLibrarySounds[selectedCategory].map((sound) => (
+                      <div
+                        key={`${selectedCategory}-${sound.name}`}
+                        draggable={!compact}
+                        onDragStart={!compact ? () => handleDragStart({ ...sound, category: selectedCategory! }) : undefined}
+                        onDragEnd={!compact ? handleDragEnd : undefined}
+                        className={`flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-white hover:border-teal-300 hover:shadow-sm transition-all group ${
+                          compact ? "cursor-default" : "cursor-grab active:cursor-grabbing"
+                        }`}
+                      >
+                        <GripHorizontal className={`w-3 h-3 shrink-0 ${compact ? "text-slate-200" : "text-slate-300 group-hover:text-teal-400"}`} />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleLibraryPreview(sound.url); }}
+                          className="w-6 h-6 flex items-center justify-center bg-teal-50 text-teal-600 rounded-full hover:bg-teal-100 shrink-0"
+                        >
+                          {libraryPreviewUrl === sound.url ? (
+                            <Pause className="w-3 h-3" />
+                          ) : (
+                            <Play className="w-3 h-3 ml-0.5" />
+                          )}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-medium text-slate-700 truncate">
+                            {sound.name.replace(/_/g, " ").replace(/\.[^.]+$/, "")}
+                          </div>
+                          {sound.size && (
+                            <div className="text-[9px] text-slate-400">
+                              {(sound.size / 1024 / 1024).toFixed(1)} MB
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {compact && (
+                            <button
+                              type="button"
+                              onClick={() => openSoundAssignment(sound)}
+                              className="text-[10px] text-white bg-teal-600 hover:bg-teal-700 px-2 py-1 rounded font-semibold"
+                            >
+                              Assign
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSoundscapeUrlInput(sound.url);
+                            }}
+                            className={`text-[9px] text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-1.5 py-0.5 rounded font-semibold shrink-0 ${
+                              compact ? "" : "opacity-0 group-hover:opacity-100 transition-opacity"
+                            }`}
+                            title="Use this URL in the assignment field"
+                          >
+                            Use
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -1052,9 +1857,11 @@ export default function BookEditor() {
           onEnded={() => setLibraryPreviewUrl(null)}
         />
       )}
+      <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+      <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioFileChange} />
 
       {/* ─── LEFT SIDEBAR: Page Navigator ─────────────────────────── */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
+      <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
         <div className="h-16 flex items-center px-5 border-b border-slate-100">
           <a href="/admin/books" className="flex items-center gap-2 text-teal-600 hover:text-teal-700">
             <ArrowLeft className="w-4 h-4" />
@@ -1215,41 +2022,51 @@ export default function BookEditor() {
       {/* ─── MAIN CONTENT ─────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* HEADER */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
-          <div className="flex-1 max-w-xl group relative">
-            <input
-              type="text"
-              value={localTitle}
-              onChange={(e) => { setLocalTitle(e.target.value); setHasLocalChanges(true); }}
-              className="w-full text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
-              placeholder="Untitled Book"
-            />
-            <Pencil className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">
-              Page {activePage} <span className="text-slate-300 mx-1">/</span> {localPages.length}
+        <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 z-10 sticky top-0">
+          <div className="px-4 py-4 lg:px-8 lg:py-3 space-y-3">
+            <div className="flex items-start gap-3">
+              <a
+                href="/admin/books"
+                className="lg:hidden inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600"
+                aria-label="Back to books"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </a>
+              <div className="flex-1 min-w-0 group relative">
+                <input
+                  type="text"
+                  value={localTitle}
+                  onChange={(e) => { setLocalTitle(e.target.value); setHasLocalChanges(true); }}
+                  className="w-full text-base lg:text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
+                  placeholder="Untitled Book"
+                />
+                <Pencil className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+              </div>
             </div>
-            <div className="h-6 w-px bg-slate-200"></div>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "Save Draft"}
-              <span className="text-xs text-slate-300 font-normal hidden lg:inline">{navigator.platform?.includes("Mac") ? "⌘S" : "Ctrl+S"}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={saving}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg font-medium shadow-sm shadow-teal-600/20 transition-all flex items-center gap-2 disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "Publish"}
-              <UploadCloud className="w-5 h-5" />
-            </button>
+
+            <div className="flex flex-wrap items-center gap-2 lg:gap-4 lg:justify-end">
+              <div className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">
+                Page {activePage} <span className="text-slate-300 mx-1">/</span> {localPages.length}
+              </div>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Save Draft"}
+                <span className="text-xs text-slate-300 font-normal hidden xl:inline">{navigator.platform?.includes("Mac") ? "⌘S" : "Ctrl+S"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={saving}
+                className="bg-teal-600 hover:bg-teal-700 text-white px-4 lg:px-5 py-2 rounded-lg font-medium shadow-sm shadow-teal-600/20 transition-all flex items-center gap-2 disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Publish"}
+                <UploadCloud className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -1260,92 +2077,23 @@ export default function BookEditor() {
           </div>
         )}
 
-        {/* CANVAS AREA */}
-        <div className="flex-1 bg-slate-100/80 overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-8">
-          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-          <input ref={audioInputRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioFileChange} />
-
-          {uploading ? (
-            <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-12 flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
-                <Loader2 className="w-8 h-8 animate-spin" />
-              </div>
-              <h3 className="text-slate-700 font-medium text-lg mb-1">Uploading...</h3>
-              <p className="text-sm text-slate-400">Please wait while your image uploads</p>
-            </div>
-          ) : hasImage ? (
-            <div className="flex flex-col gap-4 w-full max-w-6xl">
-              <div className="w-full bg-white rounded-lg shadow-sm border border-slate-100 px-5 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  {activePageData?.text ? (
-                    <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
-                      <Type className="w-4 h-4 text-blue-500 shrink-0" />
-                      <span className="truncate">{activePageData.text.slice(0, 80)}{activePageData.text.length > 80 ? "..." : ""}</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-slate-400 italic">No text overlay yet</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0 ml-3">
-                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                    Inline text editor
-                  </span>
-                  <button
-                    type="button"
-                    onClick={triggerImagePicker}
-                    className="bg-white text-slate-700 hover:text-teal-600 px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-sm flex items-center gap-2"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Change Image
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveImage("")}
-                    className="bg-white text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 font-medium text-sm flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Remove
-                  </button>
-                </div>
-              </div>
-
-              <div
-                className="w-full h-[70vh] rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleImageDrop}
-              >
-                <DraggableTextOverlayEditor
-                  imageUrl={activePageData!.imageUrl}
-                  overlay={activePageData!.overlay || null}
-                  onSave={handleOverlaySave}
-                  onComposite={handleOverlayComposite}
-                  isSaving={overlayEditorSaving}
-                  isCompositing={overlayEditorCompositing}
-                  voiceOptions={voiceOptions}
-                  enableVoiceAssignment
-                  onSelectedElementChange={setSelectedOverlayElement}
-                />
-              </div>
-            </div>
+        {/* CONTENT AREA */}
+        <div className="flex-1 min-h-0">
+          {isCompactEditor ? (
+            mobileView === "pages" ? (
+              renderMobilePagesPanel()
+            ) : mobileView === "audio" ? (
+              <div className="bg-slate-50 h-full">{renderAudioPanel(true)}</div>
+            ) : (
+              renderCanvasPanel(true)
+            )
           ) : (
-            <div
-              onClick={triggerImagePicker}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleImageDrop}
-              className="w-full max-w-md aspect-3/4 bg-white rounded-xl shadow-lg border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-slate-400 cursor-pointer"
-            >
-              <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
-                <ImagePlus className="w-8 h-8" />
-              </div>
-              <h3 className="text-slate-700 font-medium text-lg mb-1">Add an Illustration</h3>
-              <p className="text-sm text-slate-400 mb-4">Click to upload or drag & drop</p>
-              <span className="text-xs text-slate-300 px-2 py-1 bg-slate-100 rounded">Supports JPG, PNG, GIF</span>
-            </div>
+            renderCanvasPanel(false)
           )}
         </div>
 
         {/* FOOTER */}
-        <div className="h-20 bg-white border-t border-slate-200 flex items-center justify-between px-8 absolute bottom-0 w-full z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+        <div className="hidden lg:flex h-20 bg-white border-t border-slate-200 items-center justify-between px-8 w-full z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-2 w-1/3">
             <div className="flex items-center gap-1.5 text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full text-xs font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1381,584 +2129,298 @@ export default function BookEditor() {
             </button>
           </div>
         </div>
+
+        <div className="lg:hidden border-t border-slate-200 bg-white/95 backdrop-blur px-3 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1.5 text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full text-xs font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Editing
+              </div>
+              <span className="truncate text-xs text-slate-400">
+                {hasLocalChanges ? "Unsaved changes" : "All saved"}
+              </span>
+            </div>
+            <span className="text-xs font-medium text-slate-500">
+              {activePage} / {localPages.length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-5 gap-2">
+            <button
+              type="button"
+              onClick={() => setActivePage((prev) => Math.max(1, prev - 1))}
+              disabled={activePage === 1}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-slate-600 disabled:opacity-40"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView("pages")}
+              className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                mobileView === "pages"
+                  ? "bg-slate-900 text-white"
+                  : "border border-slate-200 bg-white text-slate-600"
+              }`}
+            >
+              Pages
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView("canvas")}
+              className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                mobileView === "canvas"
+                  ? "bg-teal-600 text-white"
+                  : "border border-slate-200 bg-white text-slate-600"
+              }`}
+            >
+              Canvas
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileView("audio")}
+              className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                mobileView === "audio"
+                  ? "bg-amber-500 text-white"
+                  : "border border-slate-200 bg-white text-slate-600"
+              }`}
+            >
+              Audio
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePage((prev) => Math.min(localPages.length, prev + 1))}
+              disabled={activePage === localPages.length}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-slate-600 disabled:opacity-40"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </main>
 
       {/* ─── RIGHT SIDEBAR: Audio & Sound Library ─────────────────── */}
-      <aside className="w-80 bg-white border-l border-slate-200 flex flex-col shadow-[-4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
+      <aside className="hidden lg:flex w-80 bg-white border-l border-slate-200 flex-col shadow-[-4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
           <div className="flex items-center gap-2.5 text-slate-800">
             <Headphones className="w-6 h-6 text-amber-500" />
             <span className="font-bold tracking-tight">Audio</span>
           </div>
         </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
-          {/* ── Voice Narration ──────────────────────────────────── */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Narration</h4>
-
-            <div className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-200 shadow-sm space-y-4">
-              {(activeAssignments?.narration?.url || narrationActiveUrl) ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-xs font-semibold text-green-700">Assigned</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const pageId = getPageId(activePage);
-                        if (pageId) {
-                          try {
-                            await deleteAudioMutation.mutateAsync({ pageId, audioType: "narration" });
-                            setLocalPages((prev) => prev.map((p) => p.number === activePage ? { ...p, narrationTimestamps: undefined } : p));
-                          } catch (err) { setError(err instanceof Error ? err.message : "Failed to remove"); }
-                        }
-                      }}
-                      disabled={deleteAudioMutation.isPending}
-                      className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded transition-colors disabled:opacity-50"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-300" />
-                  <span className="text-xs text-slate-500">No narration for this page</span>
-                </div>
-              )}
-
-              {narrationActiveUrl && (
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={toggleNarration} className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-sm">
-                    {isNarrationPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                  </button>
-                  <input
-                    type="range" min="0" max="100"
-                    value={Math.round(narrationVolume * 100)}
-                    onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
-                    className="flex-1 h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-                  />
-                </div>
-              )}
-
-              {/* AI Generate */}
-              <div className="border-t border-orange-200/60 pt-3 space-y-3">
-                <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
-                  <Wand2 className="w-3.5 h-3.5" />
-                  Generate with AI
-                </span>
-                {activePageUsesOverlayVoices ? (
-                  <div className="rounded-md border border-orange-200 bg-orange-100/60 px-2.5 py-2 text-[11px] text-orange-800">
-                    Multi-voice mode is active for this page. Voices are taken from each overlay text block.
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
-                      Voice
-                    </label>
-                    <select
-                      value={selectedVoiceId}
-                      onChange={(e) => setSelectedVoiceId(e.target.value)}
-                      disabled={voicesLoading || voiceOptions.length === 0}
-                      className="w-full rounded-md border border-orange-200 bg-white px-2 py-1.5 text-xs text-slate-700 disabled:opacity-60"
-                    >
-                      {voiceOptions.length === 0 ? (
-                        <option value="">{voicesLoading ? "Loading voices..." : "Default voice"}</option>
-                      ) : (
-                        voiceOptions.map((voice) => (
-                          <option key={voice.id} value={voice.id}>
-                            {voice.name}{voice.category ? ` (${voice.category})` : ""}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                )}
-                <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
-                  <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
-                    Voice settings
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-slate-600">
-                      <span>Speed</span>
-                      <span>{voiceSettings.speed.toFixed(2)}x</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.7"
-                      max="1.2"
-                      step="0.01"
-                      value={voiceSettings.speed}
-                      onChange={(e) =>
-                        setVoiceSettings((prev) => ({
-                          ...prev,
-                          speed: Number(e.target.value),
-                        }))
-                      }
-                      className="w-full h-1.5 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-slate-600">
-                      <span>Style exaggeration</span>
-                      <span>{voiceSettings.style.toFixed(2)}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={voiceSettings.style}
-                      onChange={(e) =>
-                        setVoiceSettings((prev) => ({
-                          ...prev,
-                          style: Number(e.target.value),
-                        }))
-                      }
-                      className="w-full h-1.5 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-                    />
-                  </div>
-
-                  <label className="flex items-center justify-between text-[11px] text-slate-700">
-                    <span>Speaker boost</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setVoiceSettings((prev) => ({
-                          ...prev,
-                          useSpeakerBoost: !prev.useSpeakerBoost,
-                        }))
-                      }
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        voiceSettings.useSpeakerBoost ? "bg-orange-500" : "bg-slate-300"
-                      }`}
-                      aria-pressed={voiceSettings.useSpeakerBoost}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          voiceSettings.useSpeakerBoost ? "translate-x-4" : "translate-x-0.5"
-                        }`}
-                      />
-                    </button>
-                  </label>
-                </div>
-
-                {!activePageData?.text?.trim() && (
-                  <p className="text-[10px] text-orange-600/70 italic">
-                    Add text overlay first to generate narration.
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleGenerateNarration()}
-                    disabled={generatingNarration || !activePageData?.text?.trim()}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                  >
-                    {generatingNarration ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" />{
-                        overlayNarrationPhase === "stitching" ? "Stitching audio..." :
-                        overlayNarrationPhase === "saving" ? "Saving..." :
-                        "Generating voices..."
-                      }</>
-                    ) : (
-                      <>
-                        <Wand2 className="w-3.5 h-3.5" />
-                        This Page
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleGenerateSelectedTextNarration}
-                    disabled={
-                      generatingNarration ||
-                      !selectedOverlayElement?.id ||
-                      !selectedOverlayElement.text?.trim()
-                    }
-                    className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />Selected text
-                  </button>
-                </div>
-                {!selectedOverlayElement?.id && (
-                  <p className="text-[10px] text-orange-600/70 italic">
-                    Select a text instance in the overlay editor to enable “Selected text”.
-                  </p>
-                )}
-              </div>
-
-              {/* Sync preview */}
-              {wordTimestamps.length > 0 && (
-                <div className="border-t border-orange-200/60 pt-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
-                      <PlayCircle className="w-3.5 h-3.5" /> Sync Preview
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowSyncPreview(!showSyncPreview)}
-                      className="text-[10px] text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-200"
-                    >
-                      {showSyncPreview ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  {showSyncPreview && (
-                    <div className="bg-white/70 rounded-lg p-3 border border-orange-200/50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <button type="button" onClick={toggleNarration} className="w-7 h-7 flex items-center justify-center bg-orange-600 text-white rounded-full">
-                          {isNarrationPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
-                        </button>
-                        <span className="text-[10px] text-slate-500">{isNarrationPlaying ? "Playing..." : "Click to preview"}</span>
-                      </div>
-                      <div className="max-h-32 overflow-y-auto">
-                        <p className="text-sm leading-relaxed text-slate-700 font-serif">
-                          {wordTimestamps.map((wd, i) => (
-                            <span
-                              key={i}
-                              className={`transition-all duration-150 ${i === activeWordIndex && isNarrationPlaying ? "bg-orange-300 text-orange-900 rounded px-0.5 font-semibold" : ""}`}
-                            >
-                              {wd.word}{" "}
-                            </span>
-                          ))}
-                        </p>
-                      </div>
-                      <div className="mt-2 text-[10px] text-slate-500">{wordTimestamps.length} words synced</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <hr className="border-slate-100" />
-
-          {/* ── Ambient Soundscape ───────────────────────────────── */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ambient Soundscape</h4>
-
-            <div className="bg-linear-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100 shadow-sm space-y-4">
-              {activeAssignments?.soundscape ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-xs font-semibold text-green-700">Assigned</span>
-                    {activeAssignments.soundscape.scope === "range" && (
-                      <span className="text-[10px] text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">
-                        Pages {activeAssignments.soundscape.range}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={async () => {
-                      const pageId = getPageId(activePage);
-                      if (pageId) {
-                        try {
-                          await deleteAudioMutation.mutateAsync({ pageId, audioType: "soundscape" });
-                          setSoundscapeUrlInput("");
-                        } catch (err) { setError(err instanceof Error ? err.message : "Failed to remove"); }
-                      }
-                    }}
-                    disabled={deleteAudioMutation.isPending}
-                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ) : null}
-
-              {soundscapeActiveUrl && (
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={toggleSoundscape} className="w-8 h-8 flex items-center justify-center bg-amber-500 text-white rounded-full hover:bg-amber-600 shadow-sm">
-                    {isSoundscapePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                  </button>
-                  <input
-                    type="range" min="0" max="100"
-                    value={Math.round(soundscapeVolume * 100)}
-                    onChange={(e) => setSoundscapeVolume(Number(e.target.value) / 100)}
-                    className="flex-1 h-1 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                  />
-                </div>
-              )}
-
-              {/* Upload Audio */}
-              <div
-                className={`border-t border-amber-100 pt-3 space-y-3`}
-              >
-                <span className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload Audio
-                </span>
-                <div
-                  onDragOver={(e) => { e.preventDefault(); setAudioUploadDragging(true); }}
-                  onDragLeave={() => setAudioUploadDragging(false)}
-                  onDrop={handleAudioDropZone}
-                  onClick={() => audioInputRef.current?.click()}
-                  className={`rounded-lg border-2 border-dashed p-4 flex flex-col items-center gap-2 cursor-pointer transition-all ${
-                    audioUploadDragging
-                      ? "border-amber-400 bg-amber-50"
-                      : "border-amber-200 hover:border-amber-400 hover:bg-amber-50/50"
-                  }`}
-                >
-                  {uploadAudioMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
-                      <span className="text-[10px] text-amber-600">Uploading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <FileAudio className="w-5 h-5 text-amber-400" />
-                      <span className="text-[10px] text-amber-600 text-center">
-                        Drop audio file or click to browse
-                      </span>
-                      <span className="text-[9px] text-amber-400">MP3, WAV, OGG, FLAC &bull; Max 50MB</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* URL input */}
-              <div className="space-y-3 border-t border-amber-100 pt-3">
-                <span className="text-xs font-semibold text-amber-700">Or Paste URL</span>
-                <input
-                  value={soundscapeUrlInput}
-                  onChange={(e) => setSoundscapeUrlInput(e.target.value)}
-                  placeholder="Paste soundscape URL"
-                  className="w-full rounded-md border border-amber-200 bg-white/70 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
-                />
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => setSoundscapeScope("current")} className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${soundscapeScope === "current" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-amber-700 border-amber-200"}`}>
-                    Current Page
-                  </button>
-                  <button type="button" onClick={() => setSoundscapeScope("range")} className={`px-2.5 py-1 rounded text-[10px] font-semibold border ${soundscapeScope === "range" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-amber-700 border-amber-200"}`}>
-                    Range
-                  </button>
-                  {soundscapeScope === "range" && (
-                    <div className="flex items-center gap-2 text-[10px] text-amber-700">
-                      <input type="number" min={1} max={localPages.length} value={soundscapeRangeStart} onChange={(e) => setSoundscapeRangeStart(Number(e.target.value))} className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs" />
-                      <span>to</span>
-                      <input type="number" min={soundscapeRangeStart} max={localPages.length} value={soundscapeRangeEnd} onChange={(e) => setSoundscapeRangeEnd(Number(e.target.value))} className="w-14 rounded border border-amber-200 bg-white px-2 py-1 text-xs" />
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleAssignAudio("soundscape", soundscapeUrlInput, soundscapeScope, soundscapeRangeStart, soundscapeRangeEnd)}
-                  className="w-full rounded-md bg-amber-500 text-white text-xs font-semibold py-2 hover:bg-amber-600"
-                >
-                  Save Assignment
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <hr className="border-slate-100" />
-
-          {/* ── Sound Library ────────────────────────────────────── */}
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setLibraryOpen(!libraryOpen)}
-              className="flex items-center justify-between w-full group"
-            >
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <FolderOpen className="w-3.5 h-3.5" />
-                Sound Library
-              </h4>
-              {libraryOpen ? (
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-slate-400" />
-              )}
-            </button>
-
-            {libraryOpen && (
-              <div className="bg-linear-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 border border-slate-200 shadow-sm space-y-3">
-                {/* Search */}
-                <input
-                  value={librarySearch}
-                  onChange={(e) => setLibrarySearch(e.target.value)}
-                  placeholder="Search sounds..."
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
-                />
-
-                {libraryLoading ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-                  </div>
-                ) : Object.keys(filteredLibrarySounds).length === 0 ? (
-                  <div className="text-center py-6 text-xs text-slate-400">
-                    {librarySearch ? "No sounds match your search" : "No sounds in library"}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Category pills */}
-                    <div className="flex flex-wrap gap-1">
-                      {Object.keys(filteredLibrarySounds).map((cat) => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition border ${
-                            selectedCategory === cat
-                              ? "bg-teal-600 text-white border-teal-600"
-                              : "bg-white text-slate-500 border-slate-200 hover:border-teal-300"
-                          }`}
-                        >
-                          {cat} ({filteredLibrarySounds[cat].length})
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Sound list */}
-                    {selectedCategory && filteredLibrarySounds[selectedCategory] && (
-                      <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                        <p className="text-[10px] text-slate-400 italic">Drag a sound onto a page thumbnail to assign it</p>
-                        {filteredLibrarySounds[selectedCategory].map((sound) => (
-                          <div
-                            key={`${selectedCategory}-${sound.name}`}
-                            draggable
-                            onDragStart={() => handleDragStart({ ...sound, category: selectedCategory! })}
-                            onDragEnd={handleDragEnd}
-                            className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-white hover:border-teal-300 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all group"
-                          >
-                            <GripHorizontal className="w-3 h-3 text-slate-300 group-hover:text-teal-400 shrink-0" />
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); toggleLibraryPreview(sound.url); }}
-                              className="w-6 h-6 flex items-center justify-center bg-teal-50 text-teal-600 rounded-full hover:bg-teal-100 shrink-0"
-                            >
-                              {libraryPreviewUrl === sound.url ? (
-                                <Pause className="w-3 h-3" />
-                              ) : (
-                                <Play className="w-3 h-3 ml-0.5" />
-                              )}
-                            </button>
-                            <div className="min-w-0 flex-1">
-                              <div className="text-[11px] font-medium text-slate-700 truncate">
-                                {sound.name.replace(/_/g, " ").replace(/\.[^.]+$/, "")}
-                              </div>
-                              {sound.size && (
-                                <div className="text-[9px] text-slate-400">
-                                  {(sound.size / 1024 / 1024).toFixed(1)} MB
-                                </div>
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSoundscapeUrlInput(sound.url);
-                              }}
-                              className="text-[9px] text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-1.5 py-0.5 rounded font-semibold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Use this URL in the assignment field"
-                            >
-                              Use
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        {renderAudioPanel(false)}
       </aside>
 
       {/* ─── Drop Assignment Dialog (overlay) ─────────────────────── */}
       {dropAssignment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-96 space-y-5">
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Music className="w-5 h-5 text-teal-500" />
-                Assign Soundscape
-              </h3>
-              <p className="text-sm text-slate-500">
-                <span className="font-medium text-slate-700">{dropAssignment.audioName}</span>
-                {" → "}
-                Page {dropAssignment.targetPage}
-              </p>
-            </div>
+        isCompactEditor ? (
+          <Sheet isOpen onClose={() => setDropAssignment(null)} detent="content">
+            <Sheet.Backdrop />
+            <Sheet.Container>
+              <Sheet.Header />
+              <Sheet.Content>
+                <div className="space-y-5 bg-white px-4 pb-8">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <Music className="w-5 h-5 text-teal-500" />
+                      Assign Soundscape
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      Choose the page or page range for{" "}
+                      <span className="font-medium text-slate-700">{dropAssignment.audioName}</span>.
+                    </p>
+                  </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-semibold text-slate-600">Scope</label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDropScope("single")}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
-                    dropScope === "single"
-                      ? "bg-teal-600 text-white border-teal-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
-                  }`}
-                >
-                  This Page Only
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDropScope("range")}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
-                    dropScope === "range"
-                      ? "bg-teal-600 text-white border-teal-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
-                  }`}
-                >
-                  Page Range
-                </button>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-600">Start page</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={localPages.length}
+                      value={dropAssignment.targetPage}
+                      onChange={(e) => {
+                        const targetPage = Number(e.target.value);
+                        setDropAssignment((current) =>
+                          current ? { ...current, targetPage } : current
+                        );
+                        if (dropScope === "single") {
+                          setDropRangeStart(targetPage);
+                          setDropRangeEnd(targetPage);
+                        }
+                      }}
+                      className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-xs font-semibold text-slate-600">Scope</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDropScope("single");
+                          setDropRangeStart(dropAssignment.targetPage);
+                          setDropRangeEnd(dropAssignment.targetPage);
+                        }}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
+                          dropScope === "single"
+                            ? "bg-teal-600 text-white border-teal-600"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                        }`}
+                      >
+                        This Page Only
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDropScope("range");
+                          setDropRangeStart(dropAssignment.targetPage);
+                        }}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
+                          dropScope === "range"
+                            ? "bg-teal-600 text-white border-teal-600"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                        }`}
+                      >
+                        Page Range
+                      </button>
+                    </div>
+
+                    {dropScope === "range" && (
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="space-y-1">
+                          <label className="text-xs text-slate-500">From</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={localPages.length}
+                            value={dropRangeStart}
+                            onChange={(e) => setDropRangeStart(Number(e.target.value))}
+                            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-slate-500">To</label>
+                          <input
+                            type="number"
+                            min={dropRangeStart}
+                            max={localPages.length}
+                            value={dropRangeEnd}
+                            onChange={(e) => setDropRangeEnd(Number(e.target.value))}
+                            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setDropAssignment(null)}
+                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmDropAssignment}
+                      disabled={assignAudioMutation.isPending}
+                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 shadow-sm disabled:opacity-60"
+                    >
+                      {assignAudioMutation.isPending ? "Assigning..." : "Assign"}
+                    </button>
+                  </div>
+                </div>
+              </Sheet.Content>
+            </Sheet.Container>
+          </Sheet>
+        ) : (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-96 space-y-5">
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Music className="w-5 h-5 text-teal-500" />
+                  Assign Soundscape
+                </h3>
+                <p className="text-sm text-slate-500">
+                  <span className="font-medium text-slate-700">{dropAssignment.audioName}</span>
+                  {" → "}
+                  Page {dropAssignment.targetPage}
+                </p>
               </div>
 
-              {dropScope === "range" && (
-                <div className="flex items-center gap-3 pt-1">
-                  <label className="text-xs text-slate-500">From</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={localPages.length}
-                    value={dropRangeStart}
-                    onChange={(e) => setDropRangeStart(Number(e.target.value))}
-                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
-                  />
-                  <label className="text-xs text-slate-500">to</label>
-                  <input
-                    type="number"
-                    min={dropRangeStart}
-                    max={localPages.length}
-                    value={dropRangeEnd}
-                    onChange={(e) => setDropRangeEnd(Number(e.target.value))}
-                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
-                  />
+              <div className="space-y-3">
+                <label className="text-xs font-semibold text-slate-600">Scope</label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDropScope("single")}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
+                      dropScope === "single"
+                        ? "bg-teal-600 text-white border-teal-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                    }`}
+                  >
+                    This Page Only
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDropScope("range")}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
+                      dropScope === "range"
+                        ? "bg-teal-600 text-white border-teal-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                    }`}
+                  >
+                    Page Range
+                  </button>
                 </div>
-              )}
-            </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setDropAssignment(null)}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDropAssignment}
-                disabled={assignAudioMutation.isPending}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 shadow-sm disabled:opacity-60"
-              >
-                {assignAudioMutation.isPending ? "Assigning..." : "Assign"}
-              </button>
+                {dropScope === "range" && (
+                  <div className="flex items-center gap-3 pt-1">
+                    <label className="text-xs text-slate-500">From</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={localPages.length}
+                      value={dropRangeStart}
+                      onChange={(e) => setDropRangeStart(Number(e.target.value))}
+                      className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                    />
+                    <label className="text-xs text-slate-500">to</label>
+                    <input
+                      type="number"
+                      min={dropRangeStart}
+                      max={localPages.length}
+                      value={dropRangeEnd}
+                      onChange={(e) => setDropRangeEnd(Number(e.target.value))}
+                      className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDropAssignment(null)}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDropAssignment}
+                  disabled={assignAudioMutation.isPending}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 shadow-sm disabled:opacity-60"
+                >
+                  {assignAudioMutation.isPending ? "Assigning..." : "Assign"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )
       )}
     </div>
   );

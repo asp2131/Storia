@@ -25,6 +25,8 @@ interface PropertyPanelProps {
   onDelete: (elementId: string) => void;
   voiceOptions?: VoiceOption[];
   enableVoiceAssignment?: boolean;
+  className?: string;
+  variant?: "sidebar" | "drawer";
 }
 
 export function PropertyPanel({
@@ -33,13 +35,19 @@ export function PropertyPanel({
   onDelete,
   voiceOptions = [],
   enableVoiceAssignment = false,
+  className = "",
+  variant = "sidebar",
 }: PropertyPanelProps) {
   const [isShadowExpanded, setIsShadowExpanded] = useState(false);
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
+  const containerClassName =
+    variant === "drawer"
+      ? `bg-white p-4 pb-8 overflow-y-auto ${className}`.trim()
+      : `w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto ${className}`.trim();
 
   if (!selectedElement) {
     return (
-      <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+      <div className={containerClassName}>
         <p className="text-gray-500 text-sm">
           Select a text element to edit its properties
         </p>
@@ -103,8 +111,9 @@ export function PropertyPanel({
       onUpdate({ ...selectedElement, shadow: defaultShadow });
       setIsShadowExpanded(true);
     } else {
-      const { shadow: _, ...elementWithoutShadow } = selectedElement;
-      onUpdate(elementWithoutShadow);
+      const nextElement = { ...selectedElement };
+      delete nextElement.shadow;
+      onUpdate(nextElement);
     }
   };
 
@@ -126,8 +135,9 @@ export function PropertyPanel({
       onUpdate({ ...selectedElement, background: defaultBackground });
       setIsBackgroundExpanded(true);
     } else {
-      const { background: _, ...elementWithoutBackground } = selectedElement;
-      onUpdate(elementWithoutBackground);
+      const nextElement = { ...selectedElement };
+      delete nextElement.background;
+      onUpdate(nextElement);
     }
   };
 
@@ -140,7 +150,15 @@ export function PropertyPanel({
   };
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
+    <div className={containerClassName}>
+      {variant === "drawer" && (
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-gray-900">Text properties</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Adjust the selected overlay block.
+          </p>
+        </div>
+      )}
       {/* Text Content */}
       <div className="mb-4">
         <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -260,6 +278,7 @@ export function PropertyPanel({
         <div className="flex rounded-lg border border-gray-300 overflow-hidden">
           {TEXT_ALIGN_OPTIONS.map((align) => (
             <button
+              type="button"
               key={align}
               onClick={() => handleTextAlignChange(align)}
               className={`
@@ -295,6 +314,7 @@ export function PropertyPanel({
       {/* Shadow Section */}
       <div className="mb-4 border border-gray-200 rounded-lg">
         <button
+          type="button"
           onClick={() => setIsShadowExpanded(!isShadowExpanded)}
           className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50"
         >
@@ -403,6 +423,7 @@ export function PropertyPanel({
       {/* Background Section */}
       <div className="mb-4 border border-gray-200 rounded-lg">
         <button
+          type="button"
           onClick={() => setIsBackgroundExpanded(!isBackgroundExpanded)}
           className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50"
         >
@@ -496,6 +517,7 @@ export function PropertyPanel({
 
       {/* Delete Button */}
       <button
+        type="button"
         onClick={() => onDelete(selectedElement.id)}
         className="w-full py-2 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
       >
