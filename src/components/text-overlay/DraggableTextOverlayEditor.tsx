@@ -244,13 +244,17 @@ export function DraggableTextOverlayEditor({
     null
   );
   const [hasChanges, setHasChanges] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
-  
+
   // Store original elements to compute isStale
   const originalElementsRef = useRef<TextElement[]>(
     overlay?.elements ?? []
   );
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSaveRef = useRef<(() => Promise<void>) | null>(null);
 
   // Reset state when overlay prop changes
   useEffect(() => {
@@ -258,7 +262,6 @@ export function DraggableTextOverlayEditor({
     setElements(newElements);
     originalElementsRef.current = newElements;
     setHasChanges(false);
-    setSelectedElementId(null);
   }, [overlay]);
 
   // Track container height using ResizeObserver
@@ -335,13 +338,35 @@ export function DraggableTextOverlayEditor({
       version: TEXT_OVERLAY_VERSION,
       elements,
     };
-    
+
     await onSave(config);
-    
+
     // Update original elements reference after successful save
     originalElementsRef.current = [...elements];
     setHasChanges(false);
   }, [elements, onSave]);
+  handleSaveRef.current = handleSave;
+
+  // ─── Auto-Save ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!hasChanges) return;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setIsAutoSaving(true);
+      try {
+        await handleSaveRef.current?.();
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, 3000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasChanges, elements]);
 
   const handleComposite = useCallback(async () => {
     await onComposite();
@@ -394,11 +419,11 @@ export function DraggableTextOverlayEditor({
       {/* Toolbar */}
       <Toolbar
         onAddElement={handleAddElement}
-        onSave={handleSave}
         onComposite={handleComposite}
-        isSaving={isSaving}
+        isSaving={isSaving || isAutoSaving}
         isCompositing={isCompositing}
         hasChanges={hasChanges}
+        isAutoSaving={isAutoSaving}
         isStale={isStale}
         hasOverlay={hasOverlay}
         hasBaseImage={!!imageUrl}

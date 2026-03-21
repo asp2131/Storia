@@ -91,6 +91,7 @@ export default function BookEditor() {
   const [localTitle, setLocalTitle] = useState("");
   const [localAuthor, setLocalAuthor] = useState("");
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
 
   // Overlay editor modal state
   const [overlayEditorSaving, setOverlayEditorSaving] = useState(false);
@@ -241,6 +242,7 @@ export default function BookEditor() {
   const libraryPreviewRef = useRef<HTMLAudioElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Mutations
   const generateNarrationMutation = useGenerateNarration(bookIdParam);
@@ -375,6 +377,27 @@ export default function BookEditor() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [localPages.length]);
+
+  // ─── Auto-Save ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!hasLocalChanges) return;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setAutoSaving(true);
+      try {
+        await handleSaveRef.current?.();
+      } finally {
+        setAutoSaving(false);
+      }
+    }, 2500);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasLocalChanges, localTitle, localAuthor, localPages]);
 
   // ─── Audio Controls ─────────────────────────────────────────────
   const toggleSoundscape = async () => {
@@ -927,33 +950,14 @@ export default function BookEditor() {
       setLocalPages((prev) =>
         prev.map((p) =>
           p.number === activePage
-            ? { ...p, overlay: data.overlay || overlayConfig, text: data.textContent || "", compositedImageUrl: undefined }
+            ? { ...p, overlay: data.overlay || overlayConfig, text: data.textContent || "" }
             : p
         )
       );
-      if (overlayConfig.elements.length > 0) {
-        setOverlayEditorCompositing(true);
-        const compRes = await fetch(
-          `/api/admin/books/${bookIdParam}/pages/${activePage}/composite`,
-          { method: "POST" }
-        );
-        if (compRes.ok) {
-          const compData = await compRes.json();
-          setLocalPages((prev) =>
-            prev.map((p) =>
-              p.number === activePage
-                ? { ...p, compositedImageUrl: compData.compositedImageUrl }
-                : p
-            )
-          );
-        }
-        setOverlayEditorCompositing(false);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save overlay");
     } finally {
       setOverlayEditorSaving(false);
-      setOverlayEditorCompositing(false);
     }
   };
 
@@ -1216,15 +1220,27 @@ export default function BookEditor() {
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* HEADER */}
         <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
-          <div className="flex-1 max-w-xl group relative">
-            <input
-              type="text"
-              value={localTitle}
-              onChange={(e) => { setLocalTitle(e.target.value); setHasLocalChanges(true); }}
-              className="w-full text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
-              placeholder="Untitled Book"
-            />
-            <Pencil className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+          <div className="flex items-center gap-3 flex-1 max-w-xl">
+            <div className="group relative flex-1">
+              <input
+                type="text"
+                value={localTitle}
+                onChange={(e) => { setLocalTitle(e.target.value); setHasLocalChanges(true); }}
+                className="w-full text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
+                placeholder="Untitled Book"
+              />
+              <Pencil className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+            </div>
+            <div className="group relative w-40 shrink-0">
+              <input
+                type="text"
+                value={localAuthor}
+                onChange={(e) => { setLocalAuthor(e.target.value); setHasLocalChanges(true); }}
+                className="w-full text-sm text-slate-500 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
+                placeholder="Author"
+              />
+              <Pencil className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+            </div>
           </div>
 
           <div className="flex items-center gap-6">
@@ -1232,6 +1248,19 @@ export default function BookEditor() {
               Page {activePage} <span className="text-slate-300 mx-1">/</span> {localPages.length}
             </div>
             <div className="h-6 w-px bg-slate-200"></div>
+            {autoSaving ? (
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Auto-saving…
+              </span>
+            ) : hasLocalChanges ? (
+              <span className="text-xs text-amber-500">Unsaved changes</span>
+            ) : (
+              <span className="text-xs text-slate-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3 h-3" />
+                Saved
+              </span>
+            )}
             <button
               type="button"
               onClick={handleSave}

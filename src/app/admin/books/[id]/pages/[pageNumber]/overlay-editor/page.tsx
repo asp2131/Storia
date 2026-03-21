@@ -108,8 +108,12 @@ export default function OverlayEditorPage() {
         throw new Error(errorData.error || "Failed to save overlay");
       }
 
-      const data = await res.json();
-      setOverlay(data.overlay || updatedOverlay);
+      // Don't update overlay state after save — DraggableTextOverlayEditor
+      // manages its own element state internally. Setting overlay here would
+      // trigger the reset useEffect in the component, resetting hasChanges and
+      // potentially overwriting in-flight edits if the user is still editing
+      // while the autosave response arrives.
+      await res.json();
     } catch (err) {
       setSaveError(
         err instanceof Error ? err.message : "Failed to save overlay"
