@@ -9,10 +9,10 @@ export interface ToolbarProps {
   isCompositing: boolean;
   hasChanges: boolean;
   isAutoSaving?: boolean;
-  isStale: boolean; // overlay modified after last composite
+  isStale?: boolean; // overlay modified after last composite
   hasOverlay: boolean;
   hasBaseImage: boolean;
-  compositedAt: string | null;
+  compositedAt?: string | null;
 }
 
 /**
@@ -43,10 +43,10 @@ export function Toolbar({
   isCompositing,
   hasChanges,
   isAutoSaving = false,
-  isStale,
+  isStale = false,
   hasOverlay,
   hasBaseImage,
-  compositedAt,
+  compositedAt = null,
 }: ToolbarProps) {
   const canComposite = hasOverlay && hasBaseImage && !isCompositing;
 

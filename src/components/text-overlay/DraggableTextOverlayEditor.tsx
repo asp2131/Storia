@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import {
   TextElement,
   TextOverlayConfig,
-  TEXT_OVERLAY_VERSION,
 } from "@/types/text-overlay";
 import { Toolbar } from "./Toolbar";
 import { PropertyPanel } from "./PropertyPanel";
+import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
 
 type VoiceOption = {
   id: string;
@@ -16,6 +16,7 @@ type VoiceOption = {
 };
 
 interface DraggableTextOverlayEditorProps {
+  pageId: string;
   imageUrl: string;
   overlay: TextOverlayConfig | null;
   onSave: (overlay: TextOverlayConfig) => Promise<void>;
@@ -79,7 +80,7 @@ function DraggableTextElement({
     e.stopPropagation();
     e.preventDefault();
     onSelect();
-    
+
     isDraggingRef.current = true;
     dragStartRef.current = {
       x: e.clientX,
@@ -88,9 +89,9 @@ function DraggableTextElement({
       elementY: element.y,
       elementWidth: element.width,
     };
-    
+
     (e.target as Element).setPointerCapture(e.pointerId);
-    
+
     // Prevent text selection during drag
     document.body.style.userSelect = "none";
   };
@@ -98,7 +99,7 @@ function DraggableTextElement({
   const handleResizePointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     isResizingRef.current = true;
     dragStartRef.current = {
       x: e.clientX,
@@ -107,53 +108,53 @@ function DraggableTextElement({
       elementY: element.y,
       elementWidth: element.width,
     };
-    
+
     (e.target as Element).setPointerCapture(e.pointerId);
-    
+
     // Prevent text selection during resize
     document.body.style.userSelect = "none";
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDraggingRef.current && !isResizingRef.current) return;
-    
+
     e.preventDefault();
-    
+
     // Get the parent container for percentage calculations
     const parentElement = (e.target as Element).closest('[data-canvas-container]');
     if (!parentElement) return;
-    
+
     const rect = parentElement.getBoundingClientRect();
-    
+
     if (isDraggingRef.current) {
       const deltaXPixels = e.clientX - dragStartRef.current.x;
       const deltaYPixels = e.clientY - dragStartRef.current.y;
-      
+
       // Convert pixel delta to percentage
       const deltaXPercent = (deltaXPixels / rect.width) * 100;
       const deltaYPercent = (deltaYPixels / rect.height) * 100;
-      
+
       let newX = dragStartRef.current.elementX + deltaXPercent;
       let newY = dragStartRef.current.elementY + deltaYPercent;
-      
+
       // Clamp values to 0-100
       newX = Math.max(0, Math.min(100 - element.width, newX));
       newY = Math.max(0, Math.min(100, newY));
-      
+
       onUpdate({ x: newX, y: newY });
     }
-    
+
     if (isResizingRef.current) {
       const deltaXPixels = e.clientX - dragStartRef.current.x;
-      
+
       // Convert pixel delta to percentage
       const deltaXPercent = (deltaXPixels / rect.width) * 100;
-      
+
       let newWidth = dragStartRef.current.elementWidth + deltaXPercent;
-      
+
       // Clamp width to reasonable bounds
       newWidth = Math.max(5, Math.min(100 - element.x, newWidth));
-      
+
       onUpdate({ width: newWidth });
     }
   };
@@ -162,13 +163,13 @@ function DraggableTextElement({
     if (isDraggingRef.current || isResizingRef.current) {
       isDraggingRef.current = false;
       isResizingRef.current = false;
-      
+
       try {
         (e.target as Element).releasePointerCapture(e.pointerId);
       } catch {
         // Ignore if capture was already released
       }
-      
+
       // Restore text selection
       document.body.style.userSelect = "";
     }
@@ -204,7 +205,7 @@ function DraggableTextElement({
       onPointerCancel={handlePointerUp}
     >
       {element.text}
-      
+
       {/* Resize handle - only visible when selected */}
       {isSelected && (
         <div
@@ -226,6 +227,7 @@ function DraggableTextElement({
 // ─── Main Editor Component ────────────────────────────────────────────────
 
 export function DraggableTextOverlayEditor({
+  pageId,
   imageUrl,
   overlay,
   onSave,
@@ -236,80 +238,64 @@ export function DraggableTextOverlayEditor({
   enableVoiceAssignment = false,
   onSelectedElementChange,
 }: DraggableTextOverlayEditorProps) {
-  // Initialize elements from overlay prop
-  const [elements, setElements] = useState<TextElement[]>(
-    overlay?.elements ?? []
-  );
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(
-    null
-  );
-  const [hasChanges, setHasChanges] = useState(false);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(0);
+  const actions = useOverlayEditorActions(pageId);
 
-  // Store original elements to compute isStale
-  const originalElementsRef = useRef<TextElement[]>(
-    overlay?.elements ?? []
-  );
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSaveRef = useRef<(() => Promise<void>) | null>(null);
+  // State slices from store
+  const elements = useOverlayEditor(pageId, (s) => s.elements);
+  const selectedElementId = useOverlayEditor(pageId, (s) => s.selectedElementId);
+  const hasChanges = useOverlayEditor(pageId, (s) => s.hasChanges);
+  const autoSaveStatus = useOverlayEditor(pageId, (s) => s.autoSaveStatus);
+  const containerWidth = useOverlayEditor(pageId, (s) => s.containerWidth);
+  const containerHeight = useOverlayEditor(pageId, (s) => s.containerHeight);
 
-  // Reset state when overlay prop changes
+  const isAutoSaving = autoSaveStatus === "saving";
+
+  // Derived selected element
+  const selectedElement = useOverlayEditor(pageId, (s) => s.getSelectedElement());
+
+  // Init store when overlay prop changes
   useEffect(() => {
-    const newElements = overlay?.elements ?? [];
-    setElements(newElements);
-    originalElementsRef.current = newElements;
-    setHasChanges(false);
-  }, [overlay]);
+    actions.init(overlay?.elements ?? []);
+  }, [overlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track container height using ResizeObserver
+  // Track container dimensions using ResizeObserver
   const imageContainerRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     if (!imageContainerRef.current) return;
-    
+
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setContainerWidth(entry.contentRect.width);
-        setContainerHeight(entry.contentRect.height);
+        actions.setContainerDimensions(entry.contentRect.width, entry.contentRect.height);
       }
     });
-    
+
     resizeObserver.observe(imageContainerRef.current);
-    
+
     return () => {
       resizeObserver.disconnect();
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Compute derived state
-  const selectedElement = useMemo(
-    () => elements.find((el) => el.id === selectedElementId) ?? null,
-    [elements, selectedElementId]
-  );
+  // Autosave effect — triggered when autoSaveStatus transitions to "pending"
+  useEffect(() => {
+    if (autoSaveStatus !== "pending") return;
+    const timer = setTimeout(async () => {
+      actions.markSaving();
+      try {
+        await onSave(actions.buildConfig());
+        actions.markSaved();
+      } catch {
+        actions.markSaveError();
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [autoSaveStatus, onSave]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Notify parent when selected element changes
   useEffect(() => {
     onSelectedElementChange?.(selectedElement);
   }, [onSelectedElementChange, selectedElement]);
-
-  // Compute isStale: overlay modified after last composite
-  const isStale = useMemo(() => {
-    if (!overlay || originalElementsRef.current === overlay.elements) {
-      return false;
-    }
-    // Compare current elements with original elements
-    const currentJson = JSON.stringify(elements);
-    const originalJson = JSON.stringify(originalElementsRef.current);
-    return currentJson !== originalJson;
-  }, [elements, overlay]);
-
-  // Compute hasOverlay for toolbar
-  const hasOverlay = elements.length > 0;
-
-  // Get compositedAt from overlay metadata if available
-  const compositedAt = (overlay as unknown as { compositedAt?: string | null })?.compositedAt ?? null;
 
   // ─── Handlers ──────────────────────────────────────────────────────────
 
@@ -327,46 +313,9 @@ export function DraggableTextOverlayEditor({
       textAlign: "left",
       rotation: 0,
     };
-    
-    setElements((prev) => [...prev, newElement]);
-    setSelectedElementId(newElement.id);
-    setHasChanges(true);
-  }, []);
 
-  const handleSave = useCallback(async () => {
-    const config: TextOverlayConfig = {
-      version: TEXT_OVERLAY_VERSION,
-      elements,
-    };
-
-    await onSave(config);
-
-    // Update original elements reference after successful save
-    originalElementsRef.current = [...elements];
-    setHasChanges(false);
-  }, [elements, onSave]);
-  handleSaveRef.current = handleSave;
-
-  // ─── Auto-Save ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (!hasChanges) return;
-
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-
-    autoSaveTimerRef.current = setTimeout(async () => {
-      setIsAutoSaving(true);
-      try {
-        await handleSaveRef.current?.();
-      } finally {
-        setIsAutoSaving(false);
-      }
-    }, 3000);
-
-    return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasChanges, elements]);
+    actions.addElement(newElement);
+  }, [actions]);
 
   const handleComposite = useCallback(async () => {
     await onComposite();
@@ -374,43 +323,41 @@ export function DraggableTextOverlayEditor({
 
   const handleUpdateElement = useCallback(
     (elementId: string, updates: Partial<TextElement>) => {
-      setElements((prev) =>
-        prev.map((el) => (el.id === elementId ? { ...el, ...updates } : el))
-      );
-      setHasChanges(true);
+      actions.updateElement(elementId, updates);
     },
-    []
+    [actions]
   );
 
   const handlePropertyUpdate = useCallback(
     (updatedElement: TextElement) => {
-      setElements((prev) =>
-        prev.map((el) => (el.id === updatedElement.id ? updatedElement : el))
-      );
-      setHasChanges(true);
+      actions.updateElement(updatedElement.id, updatedElement);
     },
-    []
+    [actions]
   );
 
   const handleDeleteElement = useCallback(
     (elementId: string) => {
-      setElements((prev) => prev.filter((el) => el.id !== elementId));
-      setSelectedElementId(null);
-      setHasChanges(true);
+      actions.deleteElement(elementId);
     },
-    []
+    [actions]
   );
 
-  const handleSelectElement = useCallback((elementId: string) => {
-    setSelectedElementId(elementId);
-  }, []);
+  const handleSelectElement = useCallback(
+    (elementId: string) => {
+      actions.selectElement(elementId);
+    },
+    [actions]
+  );
 
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    // Deselect when clicking on the canvas background (not on an element)
-    if (e.target === e.currentTarget) {
-      setSelectedElementId(null);
-    }
-  }, []);
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Deselect when clicking on the canvas background (not on an element)
+      if (e.target === e.currentTarget) {
+        actions.selectElement(null);
+      }
+    },
+    [actions]
+  );
 
   // ─── Render ────────────────────────────────────────────────────────────
 
@@ -424,10 +371,8 @@ export function DraggableTextOverlayEditor({
         isCompositing={isCompositing}
         hasChanges={hasChanges}
         isAutoSaving={isAutoSaving}
-        isStale={isStale}
-        hasOverlay={hasOverlay}
+        hasOverlay={elements.length > 0}
         hasBaseImage={!!imageUrl}
-        compositedAt={compositedAt}
       />
 
       {/* Main Content Area */}

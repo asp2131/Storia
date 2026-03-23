@@ -11,6 +11,7 @@ import {
   TextOverlayConfig,
   emptyOverlayConfig,
 } from "@/types/text-overlay";
+import { destroyOverlayEditorStore } from "@/stores/overlayEditorRegistry";
 
 interface OverlayApiResponse {
   overlay: TextOverlayConfig | null;
@@ -28,6 +29,7 @@ export default function OverlayEditorPage() {
   const params = useParams();
   const id = params.id as string;
   const pageNumber = parseInt(params.pageNumber as string, 10);
+  const overlayPageId = `${id}-${pageNumber}`;
 
   // State
   const [overlay, setOverlay] = useState<TextOverlayConfig | null>(null);
@@ -43,6 +45,11 @@ export default function OverlayEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [compositeError, setCompositeError] = useState<string | null>(null);
+
+  // Cleanup overlay editor store on unmount
+  useEffect(() => {
+    return () => destroyOverlayEditorStore(overlayPageId);
+  }, [overlayPageId]);
 
   // Fetch data on mount
   useEffect(() => {
@@ -115,9 +122,8 @@ export default function OverlayEditorPage() {
       // while the autosave response arrives.
       await res.json();
     } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : "Failed to save overlay"
-      );
+      setSaveError(err instanceof Error ? err.message : "Failed to save overlay");
+      throw err;
     } finally {
       setIsSaving(false);
     }
@@ -240,6 +246,7 @@ export default function OverlayEditorPage() {
       {imageUrl && overlay && (
         <div className="flex-1 overflow-hidden">
           <DraggableTextOverlayEditor
+            pageId={overlayPageId}
             imageUrl={imageUrl}
             overlay={overlay}
             onSave={handleSave}

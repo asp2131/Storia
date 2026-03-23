@@ -1,0 +1,1551 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { useRouter } from "next/navigation";
+import {
+  useBookDetails,
+  useEditorPages,
+  useAudioAssignments,
+  useGenerateNarration,
+  useAssignAudio,
+  useDeleteAudioAssignment,
+  useSavePages,
+  useUpdateBook,
+  type WordTimestamp,
+  type VoiceSettings,
+  type AudioAssignment,
+} from "@/hooks/useBookData";
+import { useSoundLibrary, useUploadAudio, type SoundAsset } from "@/hooks/useSoundLibrary";
+import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
+import { destroyOverlayEditorStore } from "@/stores/overlayEditorRegistry";
+import { useOverlayEditor } from "@/hooks/useOverlayEditor";
+import type { DropResult } from "@hello-pangea/dnd";
+
+// ─── Local Types ───────────────────────────────────────────────────────────────
+
+export type LocalPageData = {
+  id?: string;
+  number: number;
+  text: string;
+  imageUrl: string;
+  compositedImageUrl?: string;
+  overlay?: TextOverlayConfig | null;
+  narrationTimestamps?: WordTimestamp[];
+};
+
+export type DropAssignment = {
+  audioUrl: string;
+  audioName: string;
+  targetPage: number;
+};
+
+export type VoiceOption = {
+  id: string;
+  name: string;
+  category?: string | null;
+};
+
+// ─── ActivePageView ────────────────────────────────────────────────────────────
+
+/**
+ * Pre-computed view of the currently active page.
+ * Replaces 6 separate derivations previously scattered through BookEditor.
+ */
+export type ActivePageView = {
+  data: LocalPageData | undefined;
+  pageId: string | undefined;        // server DB id, resolved from pageIdMap
+  overlayPageId: string;             // stable key for overlay store
+  narrationUrl: string;
+  soundscapeUrl: string;
+  assignments: { narration?: AudioAssignment; soundscape?: AudioAssignment };
+  hasImage: boolean;
+  usesOverlayVoices: boolean;        // true = multivoice narration path
+};
+
+// ─── Context Slice Types ───────────────────────────────────────────────────────
+
+export type PageManagerContext = {
+  localPages: LocalPageData[];
+  activePage: number;
+  setActivePage: (n: number) => void;
+  handleAddPage: () => void;
+  handleDeletePage: (pageNumber: number) => void;
+  handleDragEndPages: (result: DropResult) => void;
+  activeView: ActivePageView;
+  pageAudioMap: Record<number, { hasNarration: boolean; hasSoundscape: boolean }>;
+  draggedSound: SoundAsset | null;
+  dropTargetPage: number | null;
+  handlePageDragOver: (e: React.DragEvent, pageNumber: number) => void;
+  handlePageDragLeave: () => void;
+  handlePageDrop: (e: React.DragEvent, pageNumber: number) => void;
+  // Image upload — will move to PageManager panel in a later extraction step
+  uploading: boolean;
+  setActiveImage: (imageUrl: string) => void;
+  handleImageFile: (file: File) => Promise<void>;
+};
+
+export type NarrationContext = {
+  activeView: ActivePageView;
+  voiceOptions: VoiceOption[];
+  selectedVoiceId: string;
+  setSelectedVoiceId: (id: string) => void;
+  voicesLoading: boolean;
+  voiceSettings: VoiceSettings;
+  setVoiceSettings: React.Dispatch<React.SetStateAction<VoiceSettings>>;
+  generating: boolean;
+  generatingPhase: "idle" | "generating" | "stitching" | "saving";
+  generateNarration: (pageNumber?: number) => Promise<void>;
+  generateSelectedTextNarration: () => Promise<void>;
+  selectedOverlayElement: TextElement | null;
+  isNarrationPlaying: boolean;
+  setIsNarrationPlaying: (v: boolean) => void;
+  narrationVolume: number;
+  setNarrationVolume: (v: number) => void;
+  toggleNarration: () => Promise<void>;
+  wordTimestamps: WordTimestamp[];
+  activeWordIndex: number;
+  narrationProgress: number;
+  setNarrationProgress: (v: number) => void;
+  showSyncPreview: boolean;
+  setShowSyncPreview: (v: boolean) => void;
+};
+
+export type AudioLibraryContext = {
+  activeView: ActivePageView;
+  soundLibrary: ReturnType<typeof useSoundLibrary>["data"];
+  libraryLoading: boolean;
+  libraryOpen: boolean;
+  setLibraryOpen: (v: boolean) => void;
+  selectedCategory: string | null;
+  setSelectedCategory: (v: string | null) => void;
+  librarySearch: string;
+  setLibrarySearch: (v: string) => void;
+  filteredLibrarySounds: Record<string, SoundAsset[]>;
+  libraryPreviewUrl: string | null;
+  setLibraryPreviewUrl: (url: string | null) => void;
+  toggleLibraryPreview: (url: string) => void;
+  draggedSound: SoundAsset | null;
+  handleDragStart: (sound: SoundAsset) => void;
+  handleDragEnd: () => void;
+  dropAssignment: DropAssignment | null;
+  setDropAssignment: (v: DropAssignment | null) => void;
+  dropRangeStart: number;
+  setDropRangeStart: (v: number) => void;
+  dropRangeEnd: number;
+  setDropRangeEnd: (v: number) => void;
+  dropScope: "single" | "range";
+  setDropScope: (v: "single" | "range") => void;
+  confirmDropAssignment: () => Promise<void>;
+  assignAudioPending: boolean;
+  soundscapeUrlInput: string;
+  setSoundscapeUrlInput: (v: string) => void;
+  soundscapeScope: "current" | "range";
+  setSoundscapeScope: (v: "current" | "range") => void;
+  soundscapeRangeStart: number;
+  setSoundscapeRangeStart: (v: number) => void;
+  soundscapeRangeEnd: number;
+  setSoundscapeRangeEnd: (v: number) => void;
+  isSoundscapePlaying: boolean;
+  setIsSoundscapePlaying: (v: boolean) => void;
+  soundscapeVolume: number;
+  setSoundscapeVolume: (v: number) => void;
+  toggleSoundscape: () => Promise<void>;
+  handleAssignAudio: (
+    type: "narration" | "soundscape",
+    url: string,
+    scope: "current" | "range",
+    rangeStart: number,
+    rangeEnd: number
+  ) => Promise<void>;
+  handleDeleteAudio: (type: "narration" | "soundscape") => Promise<void>;
+  uploadAudioPending: boolean;
+  audioUploadDragging: boolean;
+  setAudioUploadDragging: (v: boolean) => void;
+  handleAudioUpload: (file: File) => Promise<void>;
+  handleAudioDropZone: (event: React.DragEvent<HTMLDivElement>) => void;
+  audioInputRef: React.RefObject<HTMLInputElement | null>;
+};
+
+export type OverlayEditorContext = {
+  activeView: ActivePageView;
+  overlayEditorCompositing: boolean;
+  handleOverlaySave: (overlayConfig: TextOverlayConfig) => Promise<void>;
+  handleOverlayComposite: () => Promise<void>;
+  selectedOverlayElement: TextElement | null;
+};
+
+export type BookMetaContext = {
+  localTitle: string;
+  setLocalTitle: (v: string) => void;
+  localAuthor: string;
+  setLocalAuthor: (v: string) => void;
+  hasLocalChanges: boolean;
+  markDirty: () => void;
+  autoSaving: boolean;
+  saving: boolean;
+  handleSave: () => Promise<void>;
+  handlePublish: () => Promise<void>;
+  activePage: number;
+  localPagesLength: number;
+};
+
+export type BookEditorContextValue = {
+  pageManager: PageManagerContext;
+  narration: NarrationContext;
+  audioLibrary: AudioLibraryContext;
+  overlayEditor: OverlayEditorContext;
+  bookMeta: BookMetaContext;
+  error: string | null;
+  clearError: () => void;
+  // Shared refs for audio elements — consumed by the JSX audio tags
+  soundscapeRef: React.RefObject<HTMLAudioElement | null>;
+  narrationRef: React.RefObject<HTMLAudioElement | null>;
+  libraryPreviewRef: React.RefObject<HTMLAudioElement | null>;
+  imageInputRef: React.RefObject<HTMLInputElement | null>;
+  // Loading state
+  loading: boolean;
+};
+
+// ─── Context ───────────────────────────────────────────────────────────────────
+
+const BookEditorCtx = createContext<BookEditorContextValue | null>(null);
+
+function useBookEditorCtx(): BookEditorContextValue {
+  const ctx = useContext(BookEditorCtx);
+  if (!ctx) throw new Error("useBookEditor must be used inside BookEditorProvider");
+  return ctx;
+}
+
+// Named slice selectors
+export const usePageManagerContext   = (): PageManagerContext   => useBookEditorCtx().pageManager;
+export const useNarrationContext     = (): NarrationContext     => useBookEditorCtx().narration;
+export const useAudioLibraryContext  = (): AudioLibraryContext  => useBookEditorCtx().audioLibrary;
+export const useOverlayEditorContext = (): OverlayEditorContext => useBookEditorCtx().overlayEditor;
+export const useBookMetaContext      = (): BookMetaContext      => useBookEditorCtx().bookMeta;
+export const useBookEditor           = (): BookEditorContextValue => useBookEditorCtx();
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
+export function BookEditorProvider({
+  bookId: bookIdParam,
+  children,
+}: {
+  bookId: string;
+  children: ReactNode;
+}) {
+  const router = useRouter();
+
+  // ─── React Query ──────────────────────────────────────────────────────────
+
+  const { data: bookDetails, isLoading: bookLoading } = useBookDetails(bookIdParam);
+  const { data: serverPages, isLoading: pagesLoading } = useEditorPages(bookIdParam);
+  const { data: soundLibrary, isLoading: libraryLoading } = useSoundLibrary();
+  const uploadAudioMutation = useUploadAudio(bookIdParam);
+
+  const generateNarrationMutation = useGenerateNarration(bookIdParam);
+  const assignAudioMutation = useAssignAudio(bookIdParam);
+  const deleteAudioMutation = useDeleteAudioAssignment(bookIdParam);
+  const savePagesMutation = useSavePages(bookIdParam);
+  const updateBookMutation = useUpdateBook(bookIdParam);
+
+  // ─── Core page state ──────────────────────────────────────────────────────
+
+  const [localPages, setLocalPages] = useState<LocalPageData[]>([]);
+  const [activePage, setActivePageState] = useState(1);
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+
+  // ─── Book meta state ──────────────────────────────────────────────────────
+
+  const [localTitle, setLocalTitle] = useState("");
+  const [localAuthor, setLocalAuthor] = useState("");
+
+  // ─── Narration state ──────────────────────────────────────────────────────
+
+  const [voiceOptions, setVoiceOptions] = useState<VoiceOption[]>([]);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
+  const [voicesLoading, setVoicesLoading] = useState(false);
+  const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>({
+    speed: 0.75,
+    style: 0.76,
+    useSpeakerBoost: true,
+  });
+  const [isNarrationPlaying, setIsNarrationPlaying] = useState(false);
+  const [narrationVolume, setNarrationVolume] = useState(0.85);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const [narrationProgress, setNarrationProgress] = useState(0);
+  const [showSyncPreview, setShowSyncPreview] = useState(false);
+  const [generatingOverlayNarration, setGeneratingOverlayNarration] = useState(false);
+  const [overlayNarrationPhase, setOverlayNarrationPhase] = useState<
+    "idle" | "generating" | "stitching" | "saving"
+  >("idle");
+
+  // ─── Audio library / soundscape state ────────────────────────────────────
+
+  const [soundscapeUrlInput, setSoundscapeUrlInput] = useState("");
+  const [soundscapeScope, setSoundscapeScope] = useState<"current" | "range">("current");
+  const [soundscapeRangeStart, setSoundscapeRangeStart] = useState(1);
+  const [soundscapeRangeEnd, setSoundscapeRangeEnd] = useState(1);
+  const [isSoundscapePlaying, setIsSoundscapePlaying] = useState(false);
+  const [soundscapeVolume, setSoundscapeVolume] = useState(0.6);
+  const [libraryOpen, setLibraryOpen] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [libraryPreviewUrl, setLibraryPreviewUrl] = useState<string | null>(null);
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [draggedSound, setDraggedSound] = useState<SoundAsset | null>(null);
+  const [dropTargetPage, setDropTargetPage] = useState<number | null>(null);
+  const [dropAssignment, setDropAssignment] = useState<DropAssignment | null>(null);
+  const [dropRangeStart, setDropRangeStart] = useState(1);
+  const [dropRangeEnd, setDropRangeEnd] = useState(1);
+  const [dropScope, setDropScope] = useState<"single" | "range">("single");
+  const [audioUploadDragging, setAudioUploadDragging] = useState(false);
+
+  // ─── Overlay state ────────────────────────────────────────────────────────
+
+  const [overlayEditorCompositing, setOverlayEditorCompositing] = useState(false);
+
+  // ─── Upload state ─────────────────────────────────────────────────────────
+
+  const [uploading, setUploading] = useState(false);
+
+  // ─── Error state ──────────────────────────────────────────────────────────
+
+  const [error, setError] = useState<string | null>(null);
+
+  // ─── Refs ─────────────────────────────────────────────────────────────────
+
+  const soundscapeRef = useRef<HTMLAudioElement>(null);
+  const narrationRef = useRef<HTMLAudioElement>(null);
+  const libraryPreviewRef = useRef<HTMLAudioElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const handleSaveRef = useRef<() => Promise<void>>(null);
+
+  // ─── Audio assignments for current page ───────────────────────────────────
+
+  const { data: currentAssignments } = useAudioAssignments(bookIdParam, activePage);
+
+  // ─── pageIdMap ────────────────────────────────────────────────────────────
+
+  const pageIdMap = useMemo(() => {
+    const map: Record<number, string> = {};
+    serverPages?.forEach((p) => {
+      map[p.pageNumber] = p.id;
+    });
+    return map;
+  }, [serverPages]);
+
+  const getPageId = useCallback(
+    (pageNumber: number): string | undefined => pageIdMap[pageNumber],
+    [pageIdMap]
+  );
+
+  // ─── ActivePageView — memoized derivation ─────────────────────────────────
+
+  const activePageData = useMemo(
+    () => localPages.find((page) => page.number === activePage),
+    [localPages, activePage]
+  );
+
+  const overlayPageId = activePageData?.id ?? `page-${activePage}`;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const selectedOverlayElement = useOverlayEditor(overlayPageId, (s) => s.getSelectedElement());
+
+  const narrationAssignment = currentAssignments?.find((a) => a.audioType === "narration");
+  const soundscapeAssignment = currentAssignments?.find((a) => a.audioType === "soundscape");
+
+  const narrationActiveUrl = useMemo(() => {
+    if (narrationAssignment?.audioUrl) return narrationAssignment.audioUrl;
+    if (activePageData?.narrationTimestamps) {
+      return serverPages?.find((p) => p.pageNumber === activePage)?.narrationUrl || "";
+    }
+    return "";
+  }, [narrationAssignment, activePageData, serverPages, activePage]);
+
+  const soundscapeActiveUrl = soundscapeAssignment?.audioUrl || soundscapeUrlInput;
+
+  const activePageUsesOverlayVoices = useMemo(() => {
+    if (!activePageData) return false;
+    return (activePageData.overlay?.elements || []).some(
+      (el) => !!el.voiceId && !!el.text?.trim()
+    );
+  }, [activePageData]);
+
+  const activeView: ActivePageView = useMemo(
+    () => ({
+      data: activePageData,
+      pageId: getPageId(activePage),
+      overlayPageId,
+      narrationUrl: narrationActiveUrl,
+      soundscapeUrl: soundscapeActiveUrl,
+      assignments: {
+        narration: narrationAssignment,
+        soundscape: soundscapeAssignment,
+      },
+      hasImage: !!(activePageData?.imageUrl || activePageData?.compositedImageUrl),
+      usesOverlayVoices: activePageUsesOverlayVoices,
+    }),
+    [
+      activePageData,
+      activePage,
+      getPageId,
+      overlayPageId,
+      narrationActiveUrl,
+      soundscapeActiveUrl,
+      narrationAssignment,
+      soundscapeAssignment,
+      activePageUsesOverlayVoices,
+    ]
+  );
+
+  // ─── pageAudioMap ─────────────────────────────────────────────────────────
+
+  const pageAudioMap = useMemo(() => {
+    const map: Record<number, { hasNarration: boolean; hasSoundscape: boolean }> = {};
+    if (!serverPages) return map;
+    for (const p of serverPages) {
+      map[p.pageNumber] = {
+        hasNarration:
+          !!p.narrationUrl || !!(p.assignments?.some((a) => a.audioType === "narration")),
+        hasSoundscape: !!(p.assignments?.some((a) => a.audioType === "soundscape")),
+      };
+    }
+    return map;
+  }, [serverPages]);
+
+  // ─── filteredLibrarySounds ────────────────────────────────────────────────
+
+  const filteredLibrarySounds = useMemo(() => {
+    if (!soundLibrary?.categories) return {};
+    if (!librarySearch.trim()) return soundLibrary.categories;
+
+    const query = librarySearch.toLowerCase();
+    const filtered: Record<string, SoundAsset[]> = {};
+    for (const [category, sounds] of Object.entries(soundLibrary.categories)) {
+      const matches = sounds.filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) || category.toLowerCase().includes(query)
+      );
+      if (matches.length > 0) filtered[category] = matches;
+    }
+    return filtered;
+  }, [soundLibrary, librarySearch]);
+
+  // ─── Word timestamps ──────────────────────────────────────────────────────
+
+  const wordTimestamps = activePageData?.narrationTimestamps || [];
+
+  // ─── Derived loading/saving flags ─────────────────────────────────────────
+
+  const loading = bookLoading || pagesLoading;
+  const saving = savePagesMutation.isPending || updateBookMutation.isPending;
+  const generatingNarration =
+    generateNarrationMutation.isPending || generatingOverlayNarration;
+
+  // ─── markDirty helper ─────────────────────────────────────────────────────
+
+  const markDirty = useCallback(() => setHasLocalChanges(true), []);
+
+  // ─── setActivePage — single choke-point for cross-cutting side effects ────
+
+  const setActivePage = useCallback(
+    (next: number) => {
+      // Stop audio
+      soundscapeRef.current?.pause();
+      narrationRef.current?.pause();
+      setIsSoundscapePlaying(false);
+      setIsNarrationPlaying(false);
+
+      // Destroy overlay store for the page we're leaving
+      const currentOverlayPageId =
+        localPages.find((p) => p.number === activePage)?.id ?? `page-${activePage}`;
+      destroyOverlayEditorStore(currentOverlayPageId);
+
+      // Reset soundscape range to new page
+      setSoundscapeRangeStart(next);
+      setSoundscapeRangeEnd(next);
+
+      setActivePageState(next);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activePage, localPages]
+  );
+
+  // ─── Sync server → local state ────────────────────────────────────────────
+
+  useEffect(() => {
+    if (serverPages && serverPages.length > 0 && !hasLocalChanges) {
+      setLocalPages(
+        serverPages.map((p) => ({
+          id: p.id,
+          number: p.pageNumber,
+          text: p.textContent || "",
+          imageUrl: p.imageUrl || "",
+          compositedImageUrl: p.compositedImageUrl || undefined,
+          overlay: p.overlay || undefined,
+          narrationTimestamps: p.narrationTimestamps || undefined,
+        }))
+      );
+    }
+  }, [serverPages, hasLocalChanges]);
+
+  useEffect(() => {
+    if (bookDetails && !hasLocalChanges) {
+      setLocalTitle(bookDetails.title || "Untitled Book");
+      setLocalAuthor(bookDetails.author || "Unknown");
+    }
+  }, [bookDetails, hasLocalChanges]);
+
+  // ─── Load voices ──────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadVoices = async () => {
+      setVoicesLoading(true);
+      try {
+        const res = await fetch("/api/elevenlabs/voices");
+        if (!res.ok) throw new Error("Failed to load ElevenLabs voices");
+        const data = (await res.json()) as { voices?: VoiceOption[] };
+        const voices = Array.isArray(data.voices) ? data.voices : [];
+        if (!mounted) return;
+        setVoiceOptions(voices);
+        if (voices.length > 0) {
+          setSelectedVoiceId((current) => current || voices[0].id);
+        }
+      } catch (voiceError) {
+        if (mounted) {
+          console.warn("[book-editor] Failed to load voices:", voiceError);
+        }
+      } finally {
+        if (mounted) setVoicesLoading(false);
+      }
+    };
+
+    loadVoices();
+    return () => { mounted = false; };
+  }, []);
+
+  // ─── Audio library — auto-select first category ───────────────────────────
+
+  useEffect(() => {
+    if (soundLibrary?.categories && !selectedCategory) {
+      const cats = Object.keys(soundLibrary.categories);
+      if (cats.length > 0) setSelectedCategory(cats[0]);
+    }
+  }, [soundLibrary, selectedCategory]);
+
+  // ─── Cleanup overlay store on unmount ─────────────────────────────────────
+
+  useEffect(() => {
+    return () => destroyOverlayEditorStore(overlayPageId);
+  }, [overlayPageId]);
+
+  // ─── Volume sync ──────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (soundscapeRef.current) soundscapeRef.current.volume = soundscapeVolume;
+  }, [soundscapeVolume]);
+
+  useEffect(() => {
+    if (narrationRef.current) narrationRef.current.volume = narrationVolume;
+  }, [narrationVolume]);
+
+  // ─── Active word index ────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!isNarrationPlaying || wordTimestamps.length === 0) {
+      if (!isNarrationPlaying) setActiveWordIndex(-1);
+      return;
+    }
+    const currentTime = narrationProgress;
+    let foundIndex = -1;
+    for (let i = 0; i < wordTimestamps.length; i++) {
+      if (currentTime < wordTimestamps[i].start) break;
+      foundIndex = i;
+    }
+    setActiveWordIndex(foundIndex);
+  }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
+
+  // ─── Keyboard shortcuts ───────────────────────────────────────────────────
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveRef.current?.();
+        return;
+      }
+
+      if (isInput) return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setActivePageState((prev) => Math.max(1, prev - 1));
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setActivePageState((prev) => Math.min(localPages.length, prev + 1));
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [localPages.length]);
+
+  // ─── Auto-save ────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!hasLocalChanges) return;
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setAutoSaving(true);
+      try {
+        await handleSaveRef.current?.();
+      } finally {
+        setAutoSaving(false);
+      }
+    }, 2500);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasLocalChanges, localTitle, localAuthor, localPages]);
+
+  // ─── Audio controls ───────────────────────────────────────────────────────
+
+  const toggleSoundscape = useCallback(async () => {
+    if (!soundscapeActiveUrl) {
+      setError("Please provide a soundscape URL.");
+      return;
+    }
+    if (!soundscapeRef.current) return;
+    if (soundscapeRef.current.src !== soundscapeActiveUrl) {
+      soundscapeRef.current.src = soundscapeActiveUrl;
+    }
+    if (isSoundscapePlaying) {
+      soundscapeRef.current.pause();
+      setIsSoundscapePlaying(false);
+    } else {
+      await soundscapeRef.current.play();
+      setIsSoundscapePlaying(true);
+    }
+  }, [soundscapeActiveUrl, isSoundscapePlaying]);
+
+  const toggleNarration = useCallback(async () => {
+    if (!narrationActiveUrl) {
+      setError("Please provide a narration URL.");
+      return;
+    }
+    if (!narrationRef.current) return;
+    if (narrationRef.current.src !== narrationActiveUrl) {
+      narrationRef.current.src = narrationActiveUrl;
+    }
+    if (isNarrationPlaying) {
+      narrationRef.current.pause();
+      setIsNarrationPlaying(false);
+    } else {
+      await narrationRef.current.play();
+      setIsNarrationPlaying(true);
+    }
+  }, [narrationActiveUrl, isNarrationPlaying]);
+
+  // ─── Library preview ──────────────────────────────────────────────────────
+
+  const toggleLibraryPreview = useCallback(
+    (url: string) => {
+      if (
+        libraryPreviewUrl === url &&
+        libraryPreviewRef.current &&
+        !libraryPreviewRef.current.paused
+      ) {
+        libraryPreviewRef.current.pause();
+        setLibraryPreviewUrl(null);
+      } else {
+        setLibraryPreviewUrl(url);
+        setTimeout(() => {
+          libraryPreviewRef.current?.play();
+        }, 50);
+      }
+    },
+    [libraryPreviewUrl]
+  );
+
+  // ─── Page actions ─────────────────────────────────────────────────────────
+
+  const handleAddPage = useCallback(() => {
+    setLocalPages((prev) => [
+      ...prev,
+      { number: prev.length + 1, text: "", imageUrl: "" },
+    ]);
+    setHasLocalChanges(true);
+  }, []);
+
+  const handleDeletePage = useCallback(
+    (pageNumber: number) => {
+      if (localPages.length <= 1) return;
+      const updated = localPages
+        .filter((page) => page.number !== pageNumber)
+        .map((page, index) => ({ ...page, number: index + 1 }));
+      setLocalPages(updated);
+      setHasLocalChanges(true);
+      setActivePageState((prev) => {
+        if (prev === pageNumber) return Math.max(1, pageNumber - 1);
+        return prev > pageNumber ? prev - 1 : prev;
+      });
+    },
+    [localPages]
+  );
+
+  const handleDragEndPages = useCallback(
+    (result: DropResult) => {
+      if (!result.destination) return;
+
+      const items = [...localPages];
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+
+      const updatedItems = items.map((item, index) => ({
+        ...item,
+        number: index + 1,
+      }));
+
+      setLocalPages(updatedItems);
+      setHasLocalChanges(true);
+
+      if (activePage === result.source.index + 1) {
+        setActivePage(result.destination.index + 1);
+      } else if (
+        activePage > result.source.index + 1 &&
+        activePage <= result.destination.index + 1
+      ) {
+        setActivePage(activePage - 1);
+      } else if (
+        activePage < result.source.index + 1 &&
+        activePage >= result.destination.index + 1
+      ) {
+        setActivePage(activePage + 1);
+      }
+    },
+    [localPages, activePage, setActivePage]
+  );
+
+  // ─── Image actions ────────────────────────────────────────────────────────
+
+  const setActiveImage = useCallback(
+    (imageUrl: string) => {
+      setLocalPages((prev) =>
+        prev.map((page) =>
+          page.number === activePage ? { ...page, imageUrl } : page
+        )
+      );
+      setHasLocalChanges(true);
+    },
+    [activePage]
+  );
+
+  const handleImageFile = useCallback(
+    async (file: File) => {
+      if (!file.type.startsWith("image/")) {
+        setError("Please upload a valid image file.");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setError("File too large. Maximum size is 10MB.");
+        return;
+      }
+      setUploading(true);
+      setError(null);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (bookIdParam) {
+          formData.append("bookId", bookIdParam);
+          formData.append("pageNumber", activePage.toString());
+        }
+        const response = await fetch("/api/admin/uploads", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error || "Failed to upload image.");
+        }
+        const data = await response.json();
+        setActiveImage(data.url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to upload image.");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [activePage, bookIdParam, setActiveImage]
+  );
+
+  // ─── Audio upload ─────────────────────────────────────────────────────────
+
+  const handleAudioUpload = useCallback(
+    async (file: File) => {
+      setError(null);
+      try {
+        const result = await uploadAudioMutation.mutateAsync(file);
+        setSoundscapeUrlInput(result.url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to upload audio.");
+      }
+    },
+    [uploadAudioMutation]
+  );
+
+  const handleAudioDropZone = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setAudioUploadDragging(false);
+      const file = event.dataTransfer.files?.[0];
+      if (
+        file &&
+        (file.type.startsWith("audio/") ||
+          file.name.match(/\.(mp3|wav|ogg|flac|aac|m4a|webm)$/i))
+      ) {
+        handleAudioUpload(file);
+      }
+    },
+    [handleAudioUpload]
+  );
+
+  // ─── Audio assignment ─────────────────────────────────────────────────────
+
+  const handleAssignAudio = useCallback(
+    async (
+      type: "narration" | "soundscape",
+      url: string,
+      scope: "current" | "range",
+      rangeStart: number,
+      rangeEnd: number
+    ) => {
+      if (!url) {
+        setError("Please provide an audio URL.");
+        return;
+      }
+      const pageId = getPageId(activePage);
+      if (!pageId) {
+        setError("Page not saved yet. Save the book first.");
+        return;
+      }
+      try {
+        const normalizedScope = scope === "current" ? "single" : "range";
+        await assignAudioMutation.mutateAsync({
+          pageId,
+          audioUrl: url,
+          audioType: type,
+          scope: normalizedScope,
+          rangeStart: normalizedScope === "range" ? rangeStart : null,
+          rangeEnd: normalizedScope === "range" ? rangeEnd : null,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to assign audio.");
+      }
+    },
+    [activePage, assignAudioMutation, getPageId]
+  );
+
+  const handleDeleteAudio = useCallback(
+    async (type: "narration" | "soundscape") => {
+      const pageId = getPageId(activePage);
+      if (!pageId) return;
+      try {
+        await deleteAudioMutation.mutateAsync({ pageId, audioType: type });
+        if (type === "narration") {
+          setLocalPages((prev) =>
+            prev.map((p) =>
+              p.number === activePage ? { ...p, narrationTimestamps: undefined } : p
+            )
+          );
+        } else {
+          setSoundscapeUrlInput("");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to remove");
+      }
+    },
+    [activePage, deleteAudioMutation, getPageId]
+  );
+
+  // ─── Drag-and-drop assignment ─────────────────────────────────────────────
+
+  const handleDragStart = useCallback((sound: SoundAsset) => {
+    setDraggedSound(sound);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedSound(null);
+    setDropTargetPage(null);
+  }, []);
+
+  const handlePageDragOver = useCallback(
+    (e: React.DragEvent, pageNumber: number) => {
+      if (!draggedSound) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setDropTargetPage(pageNumber);
+    },
+    [draggedSound]
+  );
+
+  const handlePageDragLeave = useCallback(() => {
+    setDropTargetPage(null);
+  }, []);
+
+  const handlePageDrop = useCallback(
+    (e: React.DragEvent, pageNumber: number) => {
+      if (!draggedSound) return;
+      e.preventDefault();
+      setDropTargetPage(null);
+      setDropAssignment({
+        audioUrl: draggedSound.url,
+        audioName: draggedSound.name.replace(/_/g, " ").replace(/\.[^.]+$/, ""),
+        targetPage: pageNumber,
+      });
+      setDropRangeStart(pageNumber);
+      setDropRangeEnd(pageNumber);
+      setDropScope("single");
+      setDraggedSound(null);
+    },
+    [draggedSound]
+  );
+
+  const confirmDropAssignment = useCallback(async () => {
+    if (!dropAssignment) return;
+
+    const pageId = getPageId(dropAssignment.targetPage);
+    if (!pageId) {
+      setError("Page not saved yet. Save the book first.");
+      setDropAssignment(null);
+      return;
+    }
+
+    try {
+      await assignAudioMutation.mutateAsync({
+        pageId,
+        audioUrl: dropAssignment.audioUrl,
+        audioType: "soundscape",
+        scope: dropScope,
+        rangeStart: dropScope === "range" ? dropRangeStart : null,
+        rangeEnd: dropScope === "range" ? dropRangeEnd : null,
+      });
+      setDropAssignment(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to assign audio.");
+      setDropAssignment(null);
+    }
+  }, [dropAssignment, dropRangeEnd, dropRangeStart, dropScope, assignAudioMutation, getPageId]);
+
+  // ─── Narration helpers ────────────────────────────────────────────────────
+
+  const getVoicedOverlayItems = useCallback((page: LocalPageData) => {
+    const elements = page.overlay?.elements || [];
+    return elements
+      .map((el, idx) => ({
+        overlayElementId: el.id,
+        text: el.text?.trim() || "",
+        voiceId: el.voiceId,
+        voiceName: el.voiceName,
+        sortOrder: idx,
+      }))
+      .filter((item) => item.text.length > 0 && !!item.voiceId);
+  }, []);
+
+  const isOverlayMultivoicePage = useCallback(
+    (page: LocalPageData) => getVoicedOverlayItems(page).length > 0,
+    [getVoicedOverlayItems]
+  );
+
+  const generateOverlayNarrationForPage = useCallback(
+    async (page: LocalPageData) => {
+      const items = getVoicedOverlayItems(page);
+      if (items.length === 0) {
+        throw new Error(
+          "No overlay elements have voices assigned. Set voices in overlay editor first."
+        );
+      }
+
+      setGeneratingOverlayNarration(true);
+      setOverlayNarrationPhase("generating");
+      try {
+        const response = await fetch("/api/admin/generate-overlay-narration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookId: bookIdParam,
+            pageNumber: page.number,
+            items,
+            voiceSettings,
+          }),
+        });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload?.error || "Failed to generate multi-voice narration");
+        }
+
+        setOverlayNarrationPhase("stitching");
+
+        const payload = (await response.json()) as {
+          pageId?: string;
+          tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+          stitchedUrl?: string;
+          combinedTimestamps?: WordTimestamp[];
+        };
+
+        const narrationUrl = payload.stitchedUrl || payload.tracks?.[0]?.audioUrl;
+        const narrationTimestamps = payload.combinedTimestamps?.length
+          ? payload.combinedTimestamps
+          : payload.tracks?.[0]?.wordTimestamps;
+
+        if (!narrationUrl) {
+          throw new Error("No audio tracks returned from multi-voice narration generation.");
+        }
+
+        setOverlayNarrationPhase("saving");
+
+        const pageId = getPageId(page.number) || payload.pageId;
+        if (pageId) {
+          await assignAudioMutation.mutateAsync({
+            pageId,
+            audioUrl: narrationUrl,
+            audioType: "narration",
+            scope: "single",
+            rangeStart: null,
+            rangeEnd: null,
+          });
+        } else {
+          throw new Error("Narration was generated but page assignment could not be resolved.");
+        }
+
+        if (narrationTimestamps?.length) {
+          setLocalPages((prev) =>
+            prev.map((p) =>
+              p.number === page.number ? { ...p, narrationTimestamps } : p
+            )
+          );
+        }
+      } finally {
+        setGeneratingOverlayNarration(false);
+        setOverlayNarrationPhase("idle");
+      }
+    },
+    [assignAudioMutation, bookIdParam, getPageId, getVoicedOverlayItems, voiceSettings]
+  );
+
+  const generateNarration = useCallback(
+    async (pageNumber?: number) => {
+      const targetPage = pageNumber ?? activePage;
+      const pageData = localPages.find((p) => p.number === targetPage);
+      if (!pageData?.text?.trim()) {
+        setError(
+          "No text content to generate narration from. Add text via the overlay editor first."
+        );
+        return;
+      }
+      setError(null);
+      try {
+        if (isOverlayMultivoicePage(pageData)) {
+          await generateOverlayNarrationForPage(pageData);
+          return;
+        }
+
+        const data = await generateNarrationMutation.mutateAsync({
+          text: pageData.text,
+          pageNumber: targetPage,
+          voice: selectedVoiceId || undefined,
+          voiceSettings,
+        });
+        if (data.wordTimestamps && data.wordTimestamps.length > 0) {
+          setLocalPages((prev) =>
+            prev.map((p) =>
+              p.number === targetPage
+                ? { ...p, narrationTimestamps: data.wordTimestamps }
+                : p
+            )
+          );
+        }
+        const pageId = getPageId(targetPage);
+        if (pageId) {
+          await assignAudioMutation.mutateAsync({
+            pageId,
+            audioUrl: data.url,
+            audioType: "narration",
+            scope: "single",
+            rangeStart: null,
+            rangeEnd: null,
+          });
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to generate narration.");
+      }
+    },
+    [
+      activePage,
+      assignAudioMutation,
+      generateNarrationMutation,
+      generateOverlayNarrationForPage,
+      getPageId,
+      isOverlayMultivoicePage,
+      localPages,
+      selectedVoiceId,
+      voiceSettings,
+    ]
+  );
+
+  const generateSelectedTextNarration = useCallback(async () => {
+    if (!activePageData) {
+      setError("No active page selected.");
+      return;
+    }
+
+    if (!selectedOverlayElement?.id || !selectedOverlayElement.text?.trim()) {
+      setError("Select a text instance in the overlay editor first.");
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const selectedVoice = voiceOptions.find(
+        (voice) => voice.id === selectedOverlayElement.voiceId
+      );
+
+      const response = await fetch("/api/admin/generate-overlay-narration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId: bookIdParam,
+          pageNumber: activePageData.number,
+          items: [
+            {
+              overlayElementId: selectedOverlayElement.id,
+              text: selectedOverlayElement.text,
+              voiceId: selectedOverlayElement.voiceId || selectedVoiceId || undefined,
+              voiceName: selectedOverlayElement.voiceName || selectedVoice?.name,
+              sortOrder: 0,
+            },
+          ],
+          voiceSettings,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(
+          payload?.error || "Failed to generate narration for selected text."
+        );
+      }
+
+      const payload = (await response.json()) as {
+        pageId?: string;
+        tracks?: Array<{ audioUrl: string; wordTimestamps: WordTimestamp[] }>;
+        stitchedUrl?: string;
+        combinedTimestamps?: WordTimestamp[];
+      };
+
+      const narrationUrl = payload.stitchedUrl || payload.tracks?.[0]?.audioUrl;
+      const narrationTimestamps = payload.combinedTimestamps?.length
+        ? payload.combinedTimestamps
+        : payload.tracks?.[0]?.wordTimestamps;
+
+      if (!narrationUrl) {
+        throw new Error("No audio returned for selected text instance.");
+      }
+
+      const pageId = getPageId(activePageData.number) || payload.pageId;
+      if (pageId) {
+        await assignAudioMutation.mutateAsync({
+          pageId,
+          audioUrl: narrationUrl,
+          audioType: "narration",
+          scope: "single",
+          rangeStart: null,
+          rangeEnd: null,
+        });
+      } else {
+        throw new Error(
+          "Narration was generated but page assignment could not be resolved."
+        );
+      }
+
+      if (narrationTimestamps?.length) {
+        setLocalPages((prev) =>
+          prev.map((p) =>
+            p.number === activePageData.number ? { ...p, narrationTimestamps } : p
+          )
+        );
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to generate narration for selected text."
+      );
+    }
+  }, [
+    activePageData,
+    assignAudioMutation,
+    bookIdParam,
+    getPageId,
+    selectedOverlayElement,
+    selectedVoiceId,
+    voiceOptions,
+    voiceSettings,
+  ]);
+
+  // ─── Save / Publish ───────────────────────────────────────────────────────
+
+  const handleSave = useCallback(async () => {
+    setError(null);
+    try {
+      await updateBookMutation.mutateAsync({
+        title: localTitle.trim() || "Untitled Book",
+        author: localAuthor,
+      });
+      await savePagesMutation.mutateAsync(
+        localPages.map((page) => ({
+          pageNumber: page.number,
+          textContent: page.text,
+          imageUrl: page.imageUrl || null,
+        }))
+      );
+      setHasLocalChanges(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save.");
+    }
+  }, [localAuthor, localPages, localTitle, savePagesMutation, updateBookMutation]);
+
+  // Keep the ref up-to-date so auto-save and keyboard shortcut can always call the latest version
+  handleSaveRef.current = handleSave;
+
+  const handlePublish = useCallback(async () => {
+    setError(null);
+    try {
+      await savePagesMutation.mutateAsync(
+        localPages.map((page) => ({
+          pageNumber: page.number,
+          textContent: page.text,
+          imageUrl: page.imageUrl || null,
+        }))
+      );
+      await updateBookMutation.mutateAsync({
+        title: localTitle.trim() || "Untitled Book",
+        author: localAuthor,
+        isPublished: true,
+        processingStatus: "published",
+      });
+      setHasLocalChanges(false);
+      router.push("/admin/books");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to publish.");
+    }
+  }, [localAuthor, localPages, localTitle, router, savePagesMutation, updateBookMutation]);
+
+  // ─── Overlay handlers ─────────────────────────────────────────────────────
+
+  const handleOverlaySave = useCallback(
+    async (overlayConfig: TextOverlayConfig) => {
+      try {
+        const res = await fetch(
+          `/api/admin/books/${bookIdParam}/pages/${activePage}/overlay`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ overlay: overlayConfig }),
+          }
+        );
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to save overlay");
+        }
+        const data = await res.json();
+        setLocalPages((prev) =>
+          prev.map((p) =>
+            p.number === activePage
+              ? {
+                  ...p,
+                  overlay: data.overlay || overlayConfig,
+                  text: data.textContent || "",
+                }
+              : p
+          )
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save overlay");
+        throw err; // re-throw so the store can call markSaveError()
+      }
+    },
+    [activePage, bookIdParam]
+  );
+
+  const handleOverlayComposite = useCallback(async () => {
+    setOverlayEditorCompositing(true);
+    try {
+      const res = await fetch(
+        `/api/admin/books/${bookIdParam}/pages/${activePage}/composite`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to composite image");
+      }
+      const data = await res.json();
+      setLocalPages((prev) =>
+        prev.map((p) =>
+          p.number === activePage
+            ? { ...p, compositedImageUrl: data.compositedImageUrl }
+            : p
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to composite image");
+    } finally {
+      setOverlayEditorCompositing(false);
+    }
+  }, [activePage, bookIdParam]);
+
+  // ─── activeAssignments (UI display helper) ────────────────────────────────
+
+  const activeAssignments = useMemo(() => {
+    if (!currentAssignments) return undefined;
+    const narration = currentAssignments.find((a) => a.audioType === "narration");
+    const soundscape = currentAssignments.find((a) => a.audioType === "soundscape");
+    return {
+      narration: narration
+        ? {
+            url: narration.audioUrl,
+            scope: narration.scope,
+            range:
+              narration.scope === "range" &&
+              narration.rangeStart &&
+              narration.rangeEnd
+                ? `${narration.rangeStart}-${narration.rangeEnd}`
+                : "current",
+          }
+        : undefined,
+      soundscape: soundscape
+        ? {
+            url: soundscape.audioUrl,
+            scope: soundscape.scope,
+            range:
+              soundscape.scope === "range" &&
+              soundscape.rangeStart &&
+              soundscape.rangeEnd
+                ? `${soundscape.rangeStart}-${soundscape.rangeEnd}`
+                : "current",
+          }
+        : undefined,
+    };
+  }, [currentAssignments]);
+
+  // ─── Expose uploading, hasImage, activeAssignments via context ────────────
+  // (consumed by existing JSX in page.tsx until panels are fully extracted)
+
+  // ─── Build context value ──────────────────────────────────────────────────
+
+  const contextValue: BookEditorContextValue = useMemo(
+    () => ({
+      pageManager: {
+        localPages,
+        activePage,
+        setActivePage,
+        handleAddPage,
+        handleDeletePage,
+        handleDragEndPages,
+        activeView,
+        pageAudioMap,
+        draggedSound,
+        dropTargetPage,
+        handlePageDragOver,
+        handlePageDragLeave,
+        handlePageDrop,
+        uploading,
+        setActiveImage,
+        handleImageFile,
+      },
+      narration: {
+        activeView,
+        voiceOptions,
+        selectedVoiceId,
+        setSelectedVoiceId,
+        voicesLoading,
+        voiceSettings,
+        setVoiceSettings,
+        generating: generatingNarration,
+        generatingPhase: overlayNarrationPhase,
+        generateNarration,
+        generateSelectedTextNarration,
+        selectedOverlayElement,
+        isNarrationPlaying,
+        setIsNarrationPlaying,
+        narrationVolume,
+        setNarrationVolume,
+        toggleNarration,
+        wordTimestamps,
+        activeWordIndex,
+        narrationProgress,
+        setNarrationProgress,
+        showSyncPreview,
+        setShowSyncPreview,
+      },
+      audioLibrary: {
+        activeView,
+        soundLibrary,
+        libraryLoading,
+        libraryOpen,
+        setLibraryOpen,
+        selectedCategory,
+        setSelectedCategory,
+        librarySearch,
+        setLibrarySearch,
+        filteredLibrarySounds,
+        libraryPreviewUrl,
+        setLibraryPreviewUrl,
+        toggleLibraryPreview,
+        draggedSound,
+        handleDragStart,
+        handleDragEnd,
+        dropAssignment,
+        setDropAssignment,
+        dropRangeStart,
+        setDropRangeStart,
+        dropRangeEnd,
+        setDropRangeEnd,
+        dropScope,
+        setDropScope,
+        confirmDropAssignment,
+        assignAudioPending: assignAudioMutation.isPending,
+        soundscapeUrlInput,
+        setSoundscapeUrlInput,
+        soundscapeScope,
+        setSoundscapeScope,
+        soundscapeRangeStart,
+        setSoundscapeRangeStart,
+        soundscapeRangeEnd,
+        setSoundscapeRangeEnd,
+        isSoundscapePlaying,
+        setIsSoundscapePlaying,
+        soundscapeVolume,
+        setSoundscapeVolume,
+        toggleSoundscape,
+        handleAssignAudio,
+        handleDeleteAudio,
+        uploadAudioPending: uploadAudioMutation.isPending,
+        audioUploadDragging,
+        setAudioUploadDragging,
+        handleAudioUpload,
+        handleAudioDropZone,
+        audioInputRef,
+      },
+      overlayEditor: {
+        activeView,
+        overlayEditorCompositing,
+        handleOverlaySave,
+        handleOverlayComposite,
+        selectedOverlayElement,
+      },
+      bookMeta: {
+        localTitle,
+        setLocalTitle: (v: string) => { setLocalTitle(v); markDirty(); },
+        localAuthor,
+        setLocalAuthor: (v: string) => { setLocalAuthor(v); markDirty(); },
+        hasLocalChanges,
+        markDirty,
+        autoSaving,
+        saving,
+        handleSave,
+        handlePublish,
+        activePage,
+        localPagesLength: localPages.length,
+      },
+      error,
+      clearError: () => setError(null),
+      soundscapeRef,
+      narrationRef,
+      libraryPreviewRef,
+      imageInputRef,
+      loading,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      localPages,
+      activePage,
+      activeView,
+      pageAudioMap,
+      draggedSound,
+      dropTargetPage,
+      voiceOptions,
+      selectedVoiceId,
+      voicesLoading,
+      voiceSettings,
+      generatingNarration,
+      overlayNarrationPhase,
+      selectedOverlayElement,
+      isNarrationPlaying,
+      narrationVolume,
+      wordTimestamps,
+      activeWordIndex,
+      narrationProgress,
+      showSyncPreview,
+      soundLibrary,
+      libraryLoading,
+      libraryOpen,
+      selectedCategory,
+      librarySearch,
+      filteredLibrarySounds,
+      libraryPreviewUrl,
+      dropAssignment,
+      dropRangeStart,
+      dropRangeEnd,
+      dropScope,
+      soundscapeUrlInput,
+      soundscapeScope,
+      soundscapeRangeStart,
+      soundscapeRangeEnd,
+      isSoundscapePlaying,
+      soundscapeVolume,
+      overlayEditorCompositing,
+      localTitle,
+      localAuthor,
+      hasLocalChanges,
+      autoSaving,
+      saving,
+      error,
+      loading,
+      activeAssignments,
+      assignAudioMutation.isPending,
+      uploadAudioMutation.isPending,
+      audioUploadDragging,
+      uploading,
+    ]
+  );
+
+  return (
+    <BookEditorCtx.Provider value={contextValue}>
+      {children}
+    </BookEditorCtx.Provider>
+  );
+}
