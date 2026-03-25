@@ -286,6 +286,7 @@ export function useSavePages(bookId: string | null) {
   return useMutation({
     mutationFn: async (
       pages: Array<{
+        id?: string;
         pageNumber: number;
         textContent?: string | null;
         imageUrl?: string | null;

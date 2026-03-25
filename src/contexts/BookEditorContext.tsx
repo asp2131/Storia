@@ -26,7 +26,7 @@ import {
 } from "@/hooks/useBookData";
 import { useSoundLibrary, useUploadAudio, type SoundAsset } from "@/hooks/useSoundLibrary";
 import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
-import { destroyOverlayEditorStore } from "@/stores/overlayEditorRegistry";
+import { destroyOverlayEditorStore, remapOverlayEditorStores } from "@/stores/overlayEditorRegistry";
 import { useOverlayEditor } from "@/hooks/useOverlayEditor";
 import type { DropResult } from "@hello-pangea/dnd";
 
@@ -458,18 +458,25 @@ export function BookEditorProvider({
 
   // ─── setActivePage — single choke-point for cross-cutting side effects ────
 
-  const setActivePage = useCallback(
-    (next: number) => {
+  const setActivePageInternal = useCallback(
+    (
+      next: number,
+      options?: { destroyKeyOverride?: string; preserveCurrentStore?: boolean }
+    ) => {
       // Stop audio
       soundscapeRef.current?.pause();
       narrationRef.current?.pause();
       setIsSoundscapePlaying(false);
       setIsNarrationPlaying(false);
 
-      // Destroy overlay store for the page we're leaving
-      const currentOverlayPageId =
-        localPages.find((p) => p.number === activePage)?.id ?? `page-${activePage}`;
-      destroyOverlayEditorStore(currentOverlayPageId);
+      if (!options?.preserveCurrentStore) {
+        // Destroy overlay store for the page we're leaving
+        const currentOverlayPageId =
+          options?.destroyKeyOverride ??
+          localPages.find((p) => p.number === activePage)?.id ??
+          `page-${activePage}`;
+        destroyOverlayEditorStore(currentOverlayPageId);
+      }
 
       // Reset soundscape range to new page
       setSoundscapeRangeStart(next);
@@ -479,6 +486,11 @@ export function BookEditorProvider({
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [activePage, localPages]
+  );
+
+  const setActivePage = useCallback(
+    (next: number) => setActivePageInternal(next),
+    [setActivePageInternal]
   );
 
   // ─── Sync server → local state ────────────────────────────────────────────
@@ -702,9 +714,20 @@ export function BookEditorProvider({
   const handleDeletePage = useCallback(
     (pageNumber: number) => {
       if (localPages.length <= 1) return;
-      const updated = localPages
-        .filter((page) => page.number !== pageNumber)
-        .map((page, index) => ({ ...page, number: index + 1 }));
+
+      // Always clean up the deleted page store (covers both id-based and page-N keys)
+      const deletedPageKey =
+        localPages.find((page) => page.number === pageNumber)?.id ?? `page-${pageNumber}`;
+      destroyOverlayEditorStore(deletedPageKey);
+
+      const remainingItems = localPages.filter((page) => page.number !== pageNumber);
+
+      // Remap unsaved page stores after renumbering
+      const oldKeys = remainingItems.map((item) => item.id ?? `page-${item.number}`);
+      const updated = remainingItems.map((page, index) => ({ ...page, number: index + 1 }));
+      const newKeys = updated.map((item) => item.id ?? `page-${item.number}`);
+      remapOverlayEditorStores(oldKeys, newKeys);
+
       setLocalPages(updated);
       setHasLocalChanges(true);
       setActivePageState((prev) => {
@@ -719,33 +742,39 @@ export function BookEditorProvider({
     (result: DropResult) => {
       if (!result.destination) return;
 
+      const sourcePageNumber = result.source.index + 1;
+      const destinationPageNumber = result.destination.index + 1;
+
       const items = [...localPages];
       const [reorderedItem] = items.splice(result.source.index, 1);
       items.splice(result.destination.index, 0, reorderedItem);
+
+      // Build old overlay keys BEFORE renumbering
+      const oldKeys = items.map((item) => item.id ?? `page-${item.number}`);
 
       const updatedItems = items.map((item, index) => ({
         ...item,
         number: index + 1,
       }));
 
+      // Build new overlay keys AFTER renumbering
+      const newKeys = updatedItems.map((item) => item.id ?? `page-${item.number}`);
+
+      // Remap overlay stores whose keys changed (pages without server IDs)
+      remapOverlayEditorStores(oldKeys, newKeys);
+
       setLocalPages(updatedItems);
       setHasLocalChanges(true);
 
-      if (activePage === result.source.index + 1) {
-        setActivePage(result.destination.index + 1);
-      } else if (
-        activePage > result.source.index + 1 &&
-        activePage <= result.destination.index + 1
-      ) {
-        setActivePage(activePage - 1);
-      } else if (
-        activePage < result.source.index + 1 &&
-        activePage >= result.destination.index + 1
-      ) {
-        setActivePage(activePage + 1);
+      if (activePage === sourcePageNumber) {
+        setActivePageInternal(destinationPageNumber, { preserveCurrentStore: true });
+      } else if (activePage > sourcePageNumber && activePage <= destinationPageNumber) {
+        setActivePageInternal(activePage - 1, { preserveCurrentStore: true });
+      } else if (activePage < sourcePageNumber && activePage >= destinationPageNumber) {
+        setActivePageInternal(activePage + 1, { preserveCurrentStore: true });
       }
     },
-    [localPages, activePage, setActivePage]
+    [localPages, activePage, setActivePageInternal]
   );
 
   // ─── Image actions ────────────────────────────────────────────────────────
@@ -1227,6 +1256,7 @@ export function BookEditorProvider({
       });
       await savePagesMutation.mutateAsync(
         localPages.map((page) => ({
+          id: page.id,
           pageNumber: page.number,
           textContent: page.text,
           imageUrl: page.imageUrl || null,
@@ -1246,6 +1276,7 @@ export function BookEditorProvider({
     try {
       await savePagesMutation.mutateAsync(
         localPages.map((page) => ({
+          id: page.id,
           pageNumber: page.number,
           textContent: page.text,
           imageUrl: page.imageUrl || null,

@@ -1,0 +1,192 @@
+import { useEffect } from "react";
+import { act, render, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BookEditorProvider, usePageManagerContext } from "@/contexts/BookEditorContext";
+import {
+  destroyOverlayEditorStore,
+  getOverlayEditorStore,
+} from "@/stores/overlayEditorRegistry";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useBookData", () => {
+  const basePage = {
+    id: "saved-1",
+    pageNumber: 1,
+    textContent: "",
+    imageUrl: "https://example.com/1.png",
+    narrationUrl: null,
+    narrationTimestamps: null,
+    wordPronunciations: null,
+    compositedImageUrl: null,
+    overlay: null,
+    assignments: [],
+  };
+
+  const bookDetailsResult = {
+    data: { id: "book-1", title: "Test Book", author: "Author", totalPages: 1 },
+    isLoading: false,
+  };
+  const editorPagesResult = { data: [basePage], isLoading: false };
+  const audioAssignmentsResult = { data: [] };
+
+  const mutationResult = { isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) };
+
+  return {
+    useBookDetails: () => bookDetailsResult,
+    useEditorPages: () => editorPagesResult,
+    useAudioAssignments: () => audioAssignmentsResult,
+    useGenerateNarration: () => mutationResult,
+    useAssignAudio: () => mutationResult,
+    useDeleteAudioAssignment: () => mutationResult,
+    useSavePages: () => mutationResult,
+    useUpdateBook: () => mutationResult,
+  };
+});
+
+vi.mock("@/hooks/useSoundLibrary", () => {
+  const soundLibraryResult = { data: { categories: {} }, isLoading: false };
+  const uploadMutationResult = {
+    isPending: false,
+    mutateAsync: vi.fn().mockResolvedValue({ url: "" }),
+  };
+
+  return {
+    useSoundLibrary: () => soundLibraryResult,
+    useUploadAudio: () => uploadMutationResult,
+  };
+});
+
+type PageManager = ReturnType<typeof usePageManagerContext>;
+
+type ProbeProps = {
+  onUpdate: (ctx: PageManager) => void;
+};
+
+function CapturePageManager({ onUpdate }: ProbeProps) {
+  const ctx = usePageManagerContext();
+
+  useEffect(() => {
+    onUpdate(ctx);
+  }, [ctx, onUpdate]);
+
+  return null;
+}
+
+function makeElement(id: string) {
+  return {
+    id,
+    text: id,
+    x: 10,
+    y: 10,
+    width: 30,
+    fontFamily: "Inter",
+    fontSize: 5,
+    fontWeight: 400,
+    color: "#000000",
+    textAlign: "left" as const,
+    rotation: 0,
+  };
+}
+
+describe("BookEditorContext overlay key regressions", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({ voices: [] }),
+      })) as unknown as typeof fetch
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    for (const key of ["saved-1", "page-1", "page-2", "page-3", "page-4"]) {
+      destroyOverlayEditorStore(key);
+    }
+  });
+
+  it("preserves moved active page overlay store after reorder", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager onUpdate={(ctx) => { pageManagerRef.current = ctx; }} />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
+
+    act(() => {
+      pageManagerRef.current!.handleAddPage();
+      pageManagerRef.current!.handleAddPage();
+    });
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(3));
+
+    act(() => {
+      pageManagerRef.current!.setActivePage(2);
+    });
+
+    await waitFor(() => expect(pageManagerRef.current?.activePage).toBe(2));
+
+    act(() => {
+      getOverlayEditorStore("page-2").getState().init([makeElement("moved-page")]);
+      getOverlayEditorStore("page-3").getState().init([makeElement("other-page")]);
+    });
+
+    act(() => {
+      pageManagerRef.current!.handleDragEndPages({
+        source: { index: 1, droppableId: "pages" },
+        destination: { index: 2, droppableId: "pages" },
+      } as never);
+    });
+
+    await waitFor(() => expect(pageManagerRef.current?.activePage).toBe(3));
+
+    const movedStoreElements = getOverlayEditorStore("page-3").getState().elements;
+    expect(movedStoreElements.map((el) => el.id)).toEqual(["moved-page"]);
+  });
+
+  it("remaps unsaved overlay stores when deleting and renumbering pages", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager onUpdate={(ctx) => { pageManagerRef.current = ctx; }} />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
+
+    act(() => {
+      pageManagerRef.current!.handleAddPage();
+      pageManagerRef.current!.handleAddPage();
+    });
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(3));
+
+    act(() => {
+      getOverlayEditorStore("saved-1").getState().init([makeElement("deleted-page")]);
+      getOverlayEditorStore("page-2").getState().init([makeElement("old-2")]);
+      getOverlayEditorStore("page-3").getState().init([makeElement("old-3")]);
+    });
+
+    act(() => {
+      pageManagerRef.current!.handleDeletePage(1);
+    });
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(2));
+
+    expect(getOverlayEditorStore("saved-1").getState().elements).toEqual([]);
+    expect(getOverlayEditorStore("page-1").getState().elements.map((el) => el.id)).toEqual([
+      "old-2",
+    ]);
+    expect(getOverlayEditorStore("page-2").getState().elements.map((el) => el.id)).toEqual([
+      "old-3",
+    ]);
+  });
+});
