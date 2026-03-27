@@ -258,9 +258,11 @@ export function DraggableTextOverlayEditor({
   const selectedElement = useOverlayEditor(pageId, (s) => s.getSelectedElement());
 
   // Init store when overlay prop or pageId changes
+  // Use actionsRef (not actions) to avoid re-triggering: getState() returns a
+  // new object after every set(), which would cause an infinite render loop.
   useEffect(() => {
-    actions.init(overlay?.elements ?? []);
-  }, [overlay, pageId, actions]);
+    actionsRef.current.init(overlay?.elements ?? []);
+  }, [overlay, pageId]);
 
   // Track container dimensions using ResizeObserver
   const imageContainerRef = useRef<HTMLDivElement>(null);
