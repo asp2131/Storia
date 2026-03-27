@@ -28,6 +28,7 @@ import {
   loadProgressFromLocalStorage,
 } from "@/hooks/useReadingProgress";
 import { useSession } from "@/lib/auth-client";
+import { computeActiveWordIndexMobileCompat } from "@/lib/mobile-compat/word-sync";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -569,12 +570,7 @@ export default function BookReader() {
       if (!isNarrationPlaying) setActiveWordIndex(-1);
       return;
     }
-    const ct = narrationProgress;
-    let found = -1;
-    for (let i = 0; i < wordTimestamps.length; i++) {
-      if (ct >= wordTimestamps[i].start) found = i;
-      else break;
-    }
+    const found = computeActiveWordIndexMobileCompat(wordTimestamps, narrationProgress);
 
     if (found === -1) {
       setActiveWordIndex(-1);

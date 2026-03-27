@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
         style?: number;
         useSpeakerBoost?: boolean;
       };
+      updatePageNarration?: boolean;
     };
 
     if (!bookId) {
@@ -101,6 +102,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const shouldUpdatePageNarration = body.updatePageNarration !== false;
 
     const bookIdBigInt = BigInt(bookId);
 
@@ -236,7 +239,7 @@ export async function POST(request: NextRequest) {
     let stitchedUrl: string | null = null;
     let combinedTimestamps: Array<{ word: string; start: number; end: number }> = [];
 
-    if (ordered.length > 0) {
+    if (ordered.length > 0 && shouldUpdatePageNarration) {
       const trackBuffers = ordered.map((track) => ({
         audioBuffer: track.audioBuffer,
         wordTimestamps: track.wordTimestamps,
@@ -282,14 +285,24 @@ export async function POST(request: NextRequest) {
           where: { id: page.id },
           data: {
             narration_url: stitchedUrl,
-            narration_timestamps: combinedTimestamps as any,
+            narration_timestamps:
+              combinedTimestamps as unknown as Prisma.InputJsonValue,
           },
         });
       }
+    } else if (ordered.length > 0) {
+      combinedTimestamps = ordered.flatMap((track) => track.wordTimestamps);
     }
 
     // Strip audioBuffer from response — client doesn't need raw bytes
-    const responseTracks = ordered.map(({ audioBuffer: _, ...rest }) => rest);
+    const responseTracks = ordered.map((track) => ({
+      overlayElementId: track.overlayElementId,
+      voiceId: track.voiceId,
+      voiceName: track.voiceName,
+      audioUrl: track.audioUrl,
+      wordTimestamps: track.wordTimestamps,
+      sortOrder: track.sortOrder,
+    }));
 
     return NextResponse.json({
       pageId: page.id.toString(),
