@@ -240,6 +240,10 @@ export function DraggableTextOverlayEditor({
 }: DraggableTextOverlayEditorProps) {
   const actions = useOverlayEditorActions(pageId);
 
+  // Keep a ref to actions so callbacks always use the current store
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
+
   // State slices from store
   const elements = useOverlayEditor(pageId, (s) => s.elements);
   const selectedElementId = useOverlayEditor(pageId, (s) => s.selectedElementId);
@@ -253,10 +257,10 @@ export function DraggableTextOverlayEditor({
   // Derived selected element
   const selectedElement = useOverlayEditor(pageId, (s) => s.getSelectedElement());
 
-  // Init store when overlay prop changes
+  // Init store when overlay prop or pageId changes
   useEffect(() => {
     actions.init(overlay?.elements ?? []);
-  }, [overlay]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [overlay, pageId, actions]);
 
   // Track container dimensions using ResizeObserver
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -266,7 +270,7 @@ export function DraggableTextOverlayEditor({
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        actions.setContainerDimensions(entry.contentRect.width, entry.contentRect.height);
+        actionsRef.current.setContainerDimensions(entry.contentRect.width, entry.contentRect.height);
       }
     });
 
@@ -275,22 +279,22 @@ export function DraggableTextOverlayEditor({
     return () => {
       resizeObserver.disconnect();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pageId]);
 
   // Autosave effect — triggered when autoSaveStatus transitions to "pending"
   useEffect(() => {
     if (autoSaveStatus !== "pending") return;
     const timer = setTimeout(async () => {
-      actions.markSaving();
+      actionsRef.current.markSaving();
       try {
-        await onSave(actions.buildConfig());
-        actions.markSaved();
+        await onSave(actionsRef.current.buildConfig());
+        actionsRef.current.markSaved();
       } catch {
-        actions.markSaveError();
+        actionsRef.current.markSaveError();
       }
     }, 3000);
     return () => clearTimeout(timer);
-  }, [autoSaveStatus, onSave]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoSaveStatus, onSave]);
 
   // Notify parent when selected element changes
   useEffect(() => {
