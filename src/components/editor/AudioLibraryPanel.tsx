@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Headphones,
   Pause,
@@ -40,7 +41,6 @@ export function AudioLibraryPanel() {
     generateSelectedTextNarration: handleGenerateSelectedTextNarration,
     selectedOverlayElement,
     isNarrationPlaying,
-    setIsNarrationPlaying,
     narrationVolume,
     setNarrationVolume,
     toggleNarration,
@@ -126,6 +126,56 @@ export function AudioLibraryPanel() {
       : undefined,
   };
   const activePageUsesOverlayVoices = activeView.usesOverlayVoices;
+  const [narrationTarget, setNarrationTarget] = useState<"page" | "selected">("page");
+
+  const selectedTextReady = Boolean(
+    selectedOverlayElement?.id && selectedOverlayElement.text?.trim()
+  );
+  const hasNarrationResult = Boolean(activeAssignments?.narration?.url || narrationActiveUrl);
+  const canGeneratePage = Boolean(activePageData?.text?.trim());
+  const canGenerateForTarget = narrationTarget === "page" ? canGeneratePage : selectedTextReady;
+  const currentStep = generatingNarration ? 3 : hasNarrationResult ? 4 : 1;
+
+  const generationPhaseLabel = useMemo(() => {
+    if (!generatingNarration) return hasNarrationResult ? "Done" : "Idle";
+
+    switch (overlayNarrationPhase) {
+      case "stitching":
+        return "Stitching audio";
+      case "saving":
+        return "Saving assignment";
+      case "generating":
+        return "Generating voices";
+      default:
+        return "Generating audio";
+    }
+  }, [generatingNarration, hasNarrationResult, overlayNarrationPhase]);
+
+  const generationStatusText = useMemo(() => {
+    if (!generatingNarration) {
+      return hasNarrationResult
+        ? "Narration ready for review."
+        : "Ready to generate narration.";
+    }
+
+    switch (overlayNarrationPhase) {
+      case "stitching":
+        return "Combining generated clips into one narration track.";
+      case "saving":
+        return "Attaching narration to the active page.";
+      case "generating":
+        return "Calling voice model and producing speech clips.";
+      default:
+        return "Preparing request and generating narration audio.";
+    }
+  }, [generatingNarration, hasNarrationResult, overlayNarrationPhase]);
+
+  const handleRunNarrationFlow = () => {
+    if (narrationTarget === "selected") {
+      return handleGenerateSelectedTextNarration();
+    }
+    return handleGenerateNarration();
+  };
 
   return (
     <>
@@ -145,49 +195,75 @@ export function AudioLibraryPanel() {
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Voice Narration</h4>
 
             <div className="bg-linear-to-br from-orange-50 to-yellow-50 rounded-xl p-4 border border-orange-200 shadow-sm space-y-4">
-              {(activeAssignments?.narration?.url || narrationActiveUrl) ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-xs font-semibold text-green-700">Assigned</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteAudio("narration")}
-                      className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded transition-colors disabled:opacity-50"
+              <div className="grid grid-cols-4 gap-1 text-[10px] font-semibold">
+                {[
+                  ["1", "Target"],
+                  ["2", "Voice"],
+                  ["3", "Generate"],
+                  ["4", "Review"],
+                ].map(([index, label]) => {
+                  const isActive = Number(index) === currentStep;
+                  return (
+                    <div
+                      key={label}
+                      aria-current={isActive ? "step" : undefined}
+                      className={`rounded-md border px-1.5 py-1 text-center ${
+                        isActive
+                          ? "bg-orange-500 text-white border-orange-500"
+                          : "bg-white/70 text-orange-700 border-orange-200"
+                      }`}
                     >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-300" />
-                  <span className="text-xs text-slate-500">No narration for this page</span>
-                </div>
-              )}
+                      <div className="text-[9px] leading-none">{index}</div>
+                      <div className="leading-none mt-1">{label}</div>
+                    </div>
+                  );
+                })}
+              </div>
 
-              {narrationActiveUrl && (
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={toggleNarration} className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-sm">
-                    {isNarrationPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+              <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
+                <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">Step 1 · Target</div>
+                <div className="flex gap-2" role="group" aria-label="Narration target">
+                  <button
+                    type="button"
+                    onClick={() => setNarrationTarget("page")}
+                    aria-label="Generate narration for this page"
+                    aria-pressed={narrationTarget === "page"}
+                    className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] font-semibold transition ${
+                      narrationTarget === "page"
+                        ? "bg-orange-500 text-white border-orange-500"
+                        : "bg-white text-orange-700 border-orange-200"
+                    }`}
+                  >
+                    This page
                   </button>
-                  <input
-                    type="range" min="0" max="100"
-                    value={Math.round(narrationVolume * 100)}
-                    onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
-                    className="flex-1 h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setNarrationTarget("selected")}
+                    aria-label="Generate narration for selected text"
+                    aria-pressed={narrationTarget === "selected"}
+                    className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] font-semibold transition ${
+                      narrationTarget === "selected"
+                        ? "bg-purple-500 text-white border-purple-500"
+                        : "bg-white text-purple-700 border-purple-200"
+                    }`}
+                  >
+                    Selected text
+                  </button>
                 </div>
-              )}
+                {narrationTarget === "selected" && !selectedTextReady && (
+                  <p className="text-[10px] text-orange-700/80 italic">
+                    Select a text instance in the overlay editor to generate selected narration.
+                  </p>
+                )}
+                {narrationTarget === "page" && !canGeneratePage && (
+                  <p className="text-[10px] text-orange-700/80 italic">
+                    Add overlay text first to generate page narration.
+                  </p>
+                )}
+              </div>
 
-              {/* AI Generate */}
-              <div className="border-t border-orange-200/60 pt-3 space-y-3">
-                <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
-                  <Wand2 className="w-3.5 h-3.5" />
-                  Generate with AI
-                </span>
+              <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
+                <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">Step 2 · Voice</div>
                 {activePageUsesOverlayVoices ? (
                   <div className="rounded-md border border-orange-200 bg-orange-100/60 px-2.5 py-2 text-[11px] text-orange-800">
                     Multi-voice mode is active for this page. Voices are taken from each overlay text block.
@@ -215,11 +291,11 @@ export function AudioLibraryPanel() {
                     </select>
                   </div>
                 )}
-                <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
+
+                <div className="space-y-2 rounded-md border border-orange-200/80 bg-white p-2.5">
                   <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">
                     Voice settings
                   </div>
-
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[10px] text-slate-600">
                       <span>Speed</span>
@@ -285,92 +361,146 @@ export function AudioLibraryPanel() {
                     </button>
                   </label>
                 </div>
+              </div>
 
-                {!activePageData?.text?.trim() && (
-                  <p className="text-[10px] text-orange-600/70 italic">
-                    Add text overlay first to generate narration.
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleGenerateNarration()}
-                    disabled={generatingNarration || !activePageData?.text?.trim()}
-                    className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                  >
-                    {generatingNarration ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" />{
-                        overlayNarrationPhase === "stitching" ? "Stitching audio..." :
-                        overlayNarrationPhase === "saving" ? "Saving..." :
-                        "Generating voices..."
-                      }</>
-                    ) : (
-                      <>
-                        <Wand2 className="w-3.5 h-3.5" />
-                        This Page
-                      </>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleGenerateSelectedTextNarration}
-                    disabled={
-                      generatingNarration ||
-                      !selectedOverlayElement?.id ||
-                      !selectedOverlayElement.text?.trim()
-                    }
-                    className="flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-purple-500 to-indigo-500 text-white text-xs font-semibold py-2.5 px-3 hover:from-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />Selected text
-                  </button>
+              <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
+                <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">Step 3 · Generate</div>
+                <button
+                  type="button"
+                  onClick={handleRunNarrationFlow}
+                  disabled={generatingNarration || !canGenerateForTarget}
+                  className="w-full flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {generatingNarration ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {generationPhaseLabel}...
+                    </>
+                  ) : narrationTarget === "selected" ? (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Generate selected text
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-3.5 h-3.5" />
+                      Generate this page
+                    </>
+                  )}
+                </button>
+                {(generatingNarration || hasNarrationResult) && (
+                <div className="rounded-md border border-orange-200 bg-orange-50 px-2.5 py-2">
+                  <div className="text-[10px] font-semibold text-orange-700">Status: {generationPhaseLabel}</div>
+                  <div className="text-[10px] text-orange-700/80">{generationStatusText}</div>
                 </div>
-                {!selectedOverlayElement?.id && (
-                  <p className="text-[10px] text-orange-600/70 italic">
-                    Select a text instance in the overlay editor to enable &quot;Selected text&quot;.
-                  </p>
                 )}
               </div>
 
-              {/* Sync preview */}
-              {wordTimestamps.length > 0 && (
-                <div className="border-t border-orange-200/60 pt-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
-                      <PlayCircle className="w-3.5 h-3.5" /> Sync Preview
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowSyncPreview(!showSyncPreview)}
-                      className="text-[10px] text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-200"
-                    >
-                      {showSyncPreview ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  {showSyncPreview && (
-                    <div className="bg-white/70 rounded-lg p-3 border border-orange-200/50">
-                      <div className="flex items-center gap-2 mb-3">
-                        <button type="button" onClick={toggleNarration} className="w-7 h-7 flex items-center justify-center bg-orange-600 text-white rounded-full">
-                          {isNarrationPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+              <div className="space-y-2 rounded-md border border-orange-200/80 bg-white/70 p-2.5">
+                <div className="text-[10px] font-semibold text-orange-700/90 uppercase tracking-wide">Step 4 · Review</div>
+                {hasNarrationResult ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-xs font-semibold text-green-700">Assigned</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleRunNarrationFlow()}
+                          disabled={generatingNarration || !canGenerateForTarget}
+                          className="text-[10px] text-orange-700 bg-orange-100 hover:bg-orange-200 px-2 py-1 rounded transition disabled:opacity-50"
+                        >
+                          Regenerate
                         </button>
-                        <span className="text-[10px] text-slate-500">{isNarrationPlaying ? "Playing..." : "Click to preview"}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAudio("narration")}
+                          className="text-[10px] text-red-600 hover:text-red-700 px-2 py-1 rounded transition-colors"
+                        >
+                          Remove
+                        </button>
                       </div>
-                      <div className="max-h-32 overflow-y-auto">
-                        <p className="text-sm leading-relaxed text-slate-700 font-serif">
-                          {wordTimestamps.map((wd, i) => (
-                            <span
-                              key={i}
-                              className={`transition-all duration-150 ${i === activeWordIndex && isNarrationPlaying ? "bg-orange-300 text-orange-900 rounded px-0.5 font-semibold" : ""}`}
-                            >
-                              {wd.word}{" "}
-                            </span>
-                          ))}
-                        </p>
-                      </div>
-                      <div className="mt-2 text-[10px] text-slate-500">{wordTimestamps.length} words synced</div>
                     </div>
-                  )}
-                </div>
-              )}
+
+                    {narrationActiveUrl && (
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={toggleNarration}
+                          className="w-8 h-8 flex items-center justify-center bg-orange-600 text-white rounded-full hover:bg-orange-700 shadow-sm"
+                        >
+                          {isNarrationPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                        </button>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={Math.round(narrationVolume * 100)}
+                          onChange={(e) => setNarrationVolume(Number(e.target.value) / 100)}
+                          className="flex-1 h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-300" />
+                    <span className="text-xs text-slate-500">No narration generated yet.</span>
+                  </div>
+                )}
+
+                {wordTimestamps.length > 0 && (
+                  <div className="pt-1 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-orange-700 flex items-center gap-1.5">
+                        <PlayCircle className="w-3.5 h-3.5" /> Sync Preview
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowSyncPreview(!showSyncPreview)}
+                        className="text-[10px] text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-1 rounded-full border border-orange-200"
+                      >
+                        {showSyncPreview ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                    {showSyncPreview && (
+                      <div className="bg-white rounded-lg p-3 border border-orange-200/70">
+                        <div className="flex items-center gap-2 mb-3">
+                          <button
+                            type="button"
+                            onClick={toggleNarration}
+                            className="w-7 h-7 flex items-center justify-center bg-orange-600 text-white rounded-full"
+                          >
+                            {isNarrationPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                          </button>
+                          <span className="text-[10px] text-slate-500">
+                            {isNarrationPlaying ? "Playing..." : "Click to preview"}
+                          </span>
+                        </div>
+                        <div className="max-h-32 overflow-y-auto">
+                          <p className="text-sm leading-relaxed text-slate-700 font-serif">
+                            {wordTimestamps.map((wd, i) => (
+                              <span
+                                key={i}
+                                className={`transition-all duration-150 ${
+                                  i === activeWordIndex && isNarrationPlaying
+                                    ? "bg-orange-300 text-orange-900 rounded px-0.5 font-semibold"
+                                    : ""
+                                }`}
+                              >
+                                {wd.word}{" "}
+                              </span>
+                            ))}
+                          </p>
+                        </div>
+                        <div className="mt-2 text-[10px] text-slate-500">{wordTimestamps.length} words synced</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

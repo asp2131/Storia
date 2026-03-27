@@ -901,7 +901,9 @@ export function BookEditorProvider({
         if (type === "narration") {
           setLocalPages((prev) =>
             prev.map((p) =>
-              p.number === activePage ? { ...p, narrationTimestamps: undefined } : p
+              p.number === activePage
+                ? { ...p, narrationTimestamps: undefined }
+                : p
             )
           );
         } else {

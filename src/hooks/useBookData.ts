@@ -264,12 +264,26 @@ export function useDeleteAudioAssignment(bookId: string | null) {
 
       return response.json();
     },
-    onSuccess: () => {
-      // Invalidate audio assignments to refetch
+    onMutate: async ({ pageId, audioType }) => {
+      await queryClient.cancelQueries({ queryKey: ["audio-assignments", bookId] });
+      const previous = queryClient.getQueryData<Array<{ pageId: string; audioType: string }>>(["audio-assignments", bookId]);
+      if (previous && pageId && audioType) {
+        queryClient.setQueryData(
+          ["audio-assignments", bookId],
+          previous.filter((a) => !(a.pageId === pageId && a.audioType === audioType))
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["audio-assignments", bookId], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["audio-assignments", bookId],
       });
-      // Also invalidate editor pages to update narration URL
       queryClient.invalidateQueries({
         queryKey: ["editor-pages", bookId],
       });
