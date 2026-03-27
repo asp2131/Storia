@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "storia-mobile-compat-contract",
+  "version": "1.0.0",
+  "lastUpdated": "2026-03-27",
+  "policy": {
+    "goal": "data_and_behavior_compatibility_first",
+    "publishGate": {
+      "blockOn": ["fail"],
+      "allow": ["warn"],
+      "enforcement": ["editor", "api"]
+    },
+    "normalization": {
+      "autoNormalizeOnRead": true,
+      "autoNormalizeOnWrite": true
+    },
+    "rollout": {
+      "strategy": "phased_with_feature_flags"
+    }
+  },
+  "audio": {
+    "channels": ["narration", "soundscape"],
+    "canonicalNarrationForOverlayTracks": "stitched_page_narration",
+    "soundscapeRangePrecedence": "newest_assignment_wins"
+  },
+  "highlight": {
+    "tokens": {
+      "tapped": "#8B5CF6",
+      "spoken": "#FFD54F",
+      "narrationActive": "#D4EDBC"
+    },
+    "precedence": ["tapped", "spoken", "narrationActive", "base"],
+    "parityScope": {
+      "tokenValuesLockedNow": true,
+      "fullInteractionParityDeferred": true
+    }
+  },
+  "fonts": {
+    "builtinSupported": [
+      "Inter",
+      "Lora",
+      "Playfair Display",
+      "JetBrains Mono",
+      "Gaegu"
+    ],
+    "customFonts": {
+      "allowed": true,
+      "requiresFlutterAssetRegistration": true,
+      "requiresFallbackMapping": true,
+      "missingMappingSeverity": "fail"
+    }
+  },
+  "overlay": {
+    "schema": {
+      "textOverlayVersion": 1,
+      "requiredTextElementFields": [
+        "id",
+        "text",
+        "x",
+        "y",
+        "width",
+        "fontFamily",
+        "fontSize",
+        "fontWeight",
+        "color",
+        "textAlign",
+        "rotation"
+      ],
+      "shadowCanonicalFields": ["x", "y", "blur", "color"],
+      "legacyShadowAliases": {
+        "offsetX": "x",
+        "offsetY": "y"
+      }
+    },
+    "geometry": {
+      "coordinateSystem": "percent_of_image",
+      "scaleBehavior": "contained_image_rect"
+    }
+  },
+  "timestamps": {
+    "shape": {
+      "requiredFields": ["word", "start", "end"],
+      "types": {
+        "word": "string",
+        "start": "number",
+        "end": "number"
+      }
+    },
+    "validation": {
+      "failRules": [
+        "negative_time",
+        "start_greater_than_end",
+        "non_monotonic_sequence",
+        "invalid_type_or_missing_field"
+      ],
+      "warnRules": [
+        "token_timestamp_count_drift",
+        "large_inter_word_gaps"
+      ]
+    },
+    "activeWordIndexAlgorithm": "flutter_text_overlay_utils_computeActiveWordIndex"
+  },
+  "preview": {
+    "flutterPreviewRequiredBeforePublish": true,
+    "trackConfirmationPerEditedPage": true,
+    "resetConfirmationOnSubsequentEdit": true
+  },
+  "readinessReport": {
+    "statusValues": ["pass", "warn", "fail"],
+    "issueShape": {
+      "requiredFields": ["code", "severity", "message", "pageNumber", "fieldPath"]
+    }
+  },
+  "governance": {
+    "primaryReference": "mobile-compat skill",
+    "secondaryReference": "specs/flutter-mobile-polish-compatibility-plan.md",
+    "contractFile": "specs/mobile-compat-contract.json"
+  }
+}

@@ -29,6 +29,8 @@ import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
 import { destroyOverlayEditorStore, remapOverlayEditorStores } from "@/stores/overlayEditorRegistry";
 import { useOverlayEditor } from "@/hooks/useOverlayEditor";
 import type { DropResult } from "@hello-pangea/dnd";
+import { computeActiveWordIndexMobileCompat } from "@/lib/mobile-compat/word-sync";
+import { normalizeOverlayForMobile } from "@/lib/mobile-compat/normalize";
 
 // ─── Local Types ───────────────────────────────────────────────────────────────
 
@@ -580,13 +582,7 @@ export function BookEditorProvider({
       if (!isNarrationPlaying) setActiveWordIndex(-1);
       return;
     }
-    const currentTime = narrationProgress;
-    let foundIndex = -1;
-    for (let i = 0; i < wordTimestamps.length; i++) {
-      if (currentTime < wordTimestamps[i].start) break;
-      foundIndex = i;
-    }
-    setActiveWordIndex(foundIndex);
+    setActiveWordIndex(computeActiveWordIndexMobileCompat(wordTimestamps, narrationProgress));
   }, [narrationProgress, wordTimestamps, isNarrationPlaying]);
 
   // ─── Keyboard shortcuts ───────────────────────────────────────────────────
@@ -905,7 +901,9 @@ export function BookEditorProvider({
         if (type === "narration") {
           setLocalPages((prev) =>
             prev.map((p) =>
-              p.number === activePage ? { ...p, narrationTimestamps: undefined } : p
+              p.number === activePage
+                ? { ...p, narrationTimestamps: undefined }
+                : p
             )
           );
         } else {
@@ -999,20 +997,20 @@ export function BookEditorProvider({
         voiceName: el.voiceName,
         sortOrder: idx,
       }))
-      .filter((item) => item.text.length > 0 && !!item.voiceId);
+      .filter((item) => item.text.length > 0);
   }, []);
 
-  const isOverlayMultivoicePage = useCallback(
-    (page: LocalPageData) => getVoicedOverlayItems(page).length > 0,
-    [getVoicedOverlayItems]
-  );
+  const isOverlayMultivoicePage = useCallback((page: LocalPageData) => {
+    const elements = page.overlay?.elements || [];
+    return elements.some((el) => !!el.voiceId && !!el.text?.trim());
+  }, []);
 
   const generateOverlayNarrationForPage = useCallback(
     async (page: LocalPageData) => {
       const items = getVoicedOverlayItems(page);
       if (items.length === 0) {
         throw new Error(
-          "No overlay elements have voices assigned. Set voices in overlay editor first."
+          "No overlay text found for this page. Add text in the overlay editor first."
         );
       }
 
@@ -1027,6 +1025,7 @@ export function BookEditorProvider({
             pageNumber: page.number,
             items,
             voiceSettings,
+            updatePageNarration: true,
           }),
         });
 
@@ -1157,6 +1156,10 @@ export function BookEditorProvider({
 
     setError(null);
 
+    const nonEmptyOverlayItems =
+      activePageData.overlay?.elements.filter((el) => !!el.text?.trim()) || [];
+    const shouldUpdatePageNarration = nonEmptyOverlayItems.length <= 1;
+
     try {
       const selectedVoice = voiceOptions.find(
         (voice) => voice.id === selectedOverlayElement.voiceId
@@ -1178,6 +1181,7 @@ export function BookEditorProvider({
             },
           ],
           voiceSettings,
+          updatePageNarration: shouldUpdatePageNarration,
         }),
       });
 
@@ -1204,28 +1208,30 @@ export function BookEditorProvider({
         throw new Error("No audio returned for selected text instance.");
       }
 
-      const pageId = getPageId(activePageData.number) || payload.pageId;
-      if (pageId) {
-        await assignAudioMutation.mutateAsync({
-          pageId,
-          audioUrl: narrationUrl,
-          audioType: "narration",
-          scope: "single",
-          rangeStart: null,
-          rangeEnd: null,
-        });
-      } else {
-        throw new Error(
-          "Narration was generated but page assignment could not be resolved."
-        );
-      }
+      if (shouldUpdatePageNarration) {
+        const pageId = getPageId(activePageData.number) || payload.pageId;
+        if (pageId) {
+          await assignAudioMutation.mutateAsync({
+            pageId,
+            audioUrl: narrationUrl,
+            audioType: "narration",
+            scope: "single",
+            rangeStart: null,
+            rangeEnd: null,
+          });
+        } else {
+          throw new Error(
+            "Narration was generated but page assignment could not be resolved."
+          );
+        }
 
-      if (narrationTimestamps?.length) {
-        setLocalPages((prev) =>
-          prev.map((p) =>
-            p.number === activePageData.number ? { ...p, narrationTimestamps } : p
-          )
-        );
+        if (narrationTimestamps?.length) {
+          setLocalPages((prev) =>
+            prev.map((p) =>
+              p.number === activePageData.number ? { ...p, narrationTimestamps } : p
+            )
+          );
+        }
       }
     } catch (err) {
       setError(
@@ -1305,7 +1311,7 @@ export function BookEditorProvider({
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ overlay: overlayConfig }),
+            body: JSON.stringify({ overlay: normalizeOverlayForMobile(overlayConfig as unknown as { version: number; elements: Array<Record<string, unknown>> }) }),
           }
         );
         if (!res.ok) {
