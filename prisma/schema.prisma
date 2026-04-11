@@ -243,6 +243,7 @@ model user {
   accounts              account[]
   reader_feedback       reader_feedback[]
   user_reading_progress user_reading_progress[]
+  child_profiles        child_profile[]
 }
 
 model session {
@@ -316,6 +317,117 @@ model user_reading_progress {
   @@index([userId])
   @@index([bookId])
   @@index([lastReadAt])
+}
+
+model child_profile {
+  id           String   @id @default(cuid())
+  userId       String
+  displayName  String
+  ageBand      String
+  readingLevel String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user              user                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookProgress      child_book_progress[]
+  readingSessions   reading_session[]
+  questionAttempts  question_attempt[]
+
+  @@index([userId])
+}
+
+model child_book_progress {
+  id              String    @id @default(cuid())
+  childProfileId  String
+  bookId          BigInt
+  currentPage     Int       @default(1)
+  totalPages      Int
+  lastReadAt      DateTime
+  completedAt     DateTime?
+  completionCount Int       @default(0)
+  lastSessionId   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  childProfile child_profile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([childProfileId, bookId])
+  @@index([childProfileId])
+  @@index([bookId])
+}
+
+model reading_session {
+  id               String   @id @default(cuid())
+  sessionId        String   @unique
+  userId           String
+  childProfileId   String
+  bookId           BigInt
+  startedAt        DateTime
+  endedAt          DateTime
+  durationSeconds  Int
+  startPage        Int
+  endPage          Int
+  entryIntent      String   @default("standard")
+  usedNarration    Boolean  @default(false)
+  usedPracticeMode Boolean  @default(false)
+  completedBook    Boolean  @default(false)
+  source           String   @default("mobile")
+  metadata         Json?    @default("{}")
+  createdAt        DateTime @default(now())
+
+  childProfile child_profile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+
+  @@index([childProfileId, startedAt])
+  @@index([bookId, startedAt])
+  @@index([userId])
+}
+
+model book_question {
+  id            String   @id @default(cuid())
+  bookId        BigInt
+  questionText  String
+  questionType  String   @default("multiple_choice")
+  sortOrder     Int
+  correctAnswer String
+  metadata      Json?    @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  options  book_question_option[]
+  attempts question_attempt[]
+
+  @@index([bookId, sortOrder])
+}
+
+model book_question_option {
+  id         String @id @default(cuid())
+  questionId String
+  optionKey  String
+  optionText String
+  sortOrder  Int    @default(0)
+
+  question book_question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model question_attempt {
+  id               String   @id @default(cuid())
+  userId           String
+  childProfileId   String
+  bookId           BigInt
+  questionId       String
+  readingSessionId String?
+  selectedAnswer   String
+  isCorrect        Boolean
+  answeredAt       DateTime @default(now())
+
+  childProfile child_profile @relation(fields: [childProfileId], references: [id], onDelete: Cascade)
+  question     book_question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([childProfileId, bookId, answeredAt])
+  @@index([questionId])
 }
 
 enum oban_job_state {

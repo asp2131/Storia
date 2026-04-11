@@ -5,6 +5,9 @@ import { emailOTP } from "better-auth/plugins";
 import { Pool } from "pg";
 import { Resend } from "resend";
 
+// DEBUG: Log the actual DATABASE_URL at import time
+console.error(`[DEBUG ENV] DATABASE_URL = ${process.env.DATABASE_URL?.replace(/\/\/[^@]+@/, "//***@")}`);
+
 // Lazy-loaded auth instance to avoid database connection during build
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let authInstance: any = null;
@@ -29,6 +32,8 @@ function createAuth() {
   authInstance = betterAuth({
     database: new Pool({
       connectionString: databaseUrl,
+      host: "127.0.0.1",
+      port: 5433,
     }),
     trustedOrigins: [
       "http://localhost:3000",

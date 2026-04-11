@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateChildAccess } from "@/lib/child-auth";
 import { prisma } from "@/lib/prisma";
+
+function computeStatus(currentPage: number, completedAt: Date | null): string {
+  if (completedAt) return "completed";
+  if (currentPage > 1) return "in_progress";
+  return "new";
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -9,6 +16,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const perPage = parseInt(searchParams.get("perPage") || "10");
   const userId = searchParams.get("userId");
+  const childProfileId = searchParams.get("childProfileId");
 
   const skip = (page - 1) * perPage;
 
@@ -50,6 +58,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Validate child access if childProfileId is provided
+    if (childProfileId) {
+      const result = await validateChildAccess(childProfileId);
+      if ("error" in result) return result.error;
+    }
+
     const [books, total] = await Promise.all([
       prisma.books.findMany({
         where,
@@ -65,16 +79,72 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+          pages: {
+            select: {
+              narration_url: true,
+            },
+          },
         },
       }),
       prisma.books.count({ where }),
     ]);
 
-    // Fetch user reading progress if userId is provided
-    let progressMap: Map<string, { currentPage: number; totalPages: number; lastReadAt: Date }> = new Map();
-    if (userId && books.length > 0) {
+    // Fetch book_question counts for all returned books
+    const bookIds = books.map((book) => book.id);
+
+    const questionCountsRaw = bookIds.length > 0
+      ? await prisma.book_question.groupBy({
+          by: ["bookId"],
+          where: { bookId: { in: bookIds } },
+          _count: { id: true },
+        })
+      : [];
+
+    const questionCountMap = new Map<string, number>();
+    questionCountsRaw.forEach((entry) => {
+      questionCountMap.set(entry.bookId.toString(), entry._count.id);
+    });
+
+    // Fetch child book progress if childProfileId is provided
+    let childProgressMap: Map<string, {
+      currentPage: number;
+      progressPercent: number;
+      lastReadAt: Date;
+      completedAt: Date | null;
+      completionCount: number;
+      status: string;
+    }> = new Map();
+
+    if (childProfileId && bookIds.length > 0) {
       try {
-        const bookIds = books.map((book) => book.id);
+        const progressRecords = await prisma.child_book_progress.findMany({
+          where: {
+            childProfileId,
+            bookId: { in: bookIds },
+          },
+        });
+        progressRecords.forEach((record) => {
+          const progressPercent = record.totalPages > 0
+            ? Math.round((record.currentPage / record.totalPages) * 100)
+            : 0;
+          childProgressMap.set(record.bookId.toString(), {
+            currentPage: record.currentPage,
+            progressPercent,
+            lastReadAt: record.lastReadAt,
+            completedAt: record.completedAt,
+            completionCount: record.completionCount,
+            status: computeStatus(record.currentPage, record.completedAt),
+          });
+        });
+      } catch (progressError) {
+        console.error("Error fetching child book progress:", progressError);
+      }
+    }
+
+    // Fetch user reading progress if userId is provided (legacy)
+    let userProgressMap: Map<string, { currentPage: number; totalPages: number; lastReadAt: Date }> = new Map();
+    if (userId && !childProfileId && bookIds.length > 0) {
+      try {
         const progressRecords = await prisma.user_reading_progress.findMany({
           where: {
             userId: userId,
@@ -88,7 +158,7 @@ export async function GET(request: NextRequest) {
           },
         });
         progressRecords.forEach((record) => {
-          progressMap.set(record.bookId.toString(), {
+          userProgressMap.set(record.bookId.toString(), {
             currentPage: record.currentPage,
             totalPages: record.totalPages,
             lastReadAt: record.lastReadAt,
@@ -96,14 +166,14 @@ export async function GET(request: NextRequest) {
         });
       } catch (progressError) {
         console.error("Error fetching reading progress:", progressError);
-        // Continue without progress data - don't fail the whole request
       }
     }
 
-    // Transform books to include hasSoundscape flag and progress data
+    // Transform books
     const transformedBooks = books.map((book) => {
       const bookIdStr = book.id.toString();
-      const progress = userId ? progressMap.get(bookIdStr) : undefined;
+      const hasNarration = book.pages.some((p) => p.narration_url != null);
+      const hasQuestions = (questionCountMap.get(bookIdStr) || 0) > 0;
 
       const baseBook = {
         id: bookIdStr,
@@ -114,10 +184,31 @@ export async function GET(request: NextRequest) {
         totalPages: book.total_pages,
         metadata: book.metadata,
         hasSoundscape: book.scenes.some((scene) => scene.soundscapes.length > 0),
+        hasNarration,
+        hasQuestions,
       };
 
-      // Only add progress fields when userId is provided
+      // Child-aware progress
+      if (childProfileId) {
+        const cp = childProgressMap.get(bookIdStr);
+        return {
+          ...baseBook,
+          progress: cp
+            ? {
+                currentPage: cp.currentPage,
+                progressPercent: cp.progressPercent,
+                lastReadAt: cp.lastReadAt.toISOString(),
+                completedAt: cp.completedAt ? cp.completedAt.toISOString() : null,
+                completionCount: cp.completionCount,
+                status: cp.status,
+              }
+            : null,
+        };
+      }
+
+      // Legacy user-based progress
       if (userId) {
+        const progress = userProgressMap.get(bookIdStr);
         return {
           ...baseBook,
           currentPage: progress ? progress.currentPage : null,
@@ -142,13 +233,12 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching books:", error);
-    // Log more details for debugging
     if (error instanceof Error) {
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
     }
     return NextResponse.json(
-      { error: "Failed to fetch books", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: { code: "internal_error", message: "Failed to fetch books", details: error instanceof Error ? error.message : "Unknown error" } },
       { status: 500 }
     );
   }
