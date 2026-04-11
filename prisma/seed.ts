@@ -154,6 +154,229 @@ async function main() {
   console.log(`- ${books.length} books`);
   console.log(`- ${littlePrincePages.length + alicePages.length + 2} pages`);
   console.log(`- 1 admin user (admin@storia.app)`);
+
+  // ============================================================
+  // PROOF-TEST SEED DATA: child profiles, progress, sessions,
+  // questions, and question attempts
+  // ============================================================
+
+  const existingChildProfiles = await prisma.child_profile.count();
+  if (existingChildProfiles > 0) {
+    console.log(
+      "\n⏭️  Skipping proof-test seed data (child_profile records already exist)"
+    );
+  } else {
+    console.log("\n🧪 Seeding proof-test data...");
+
+    // 1. Find or create a test user
+    let testUser = await prisma.user.findFirst();
+    if (!testUser) {
+      testUser = await prisma.user.create({
+        data: {
+          name: "Test User",
+          email: "test@storia.app",
+          emailVerified: true,
+        },
+      });
+      console.log("✅ Created test user: test@storia.app");
+    }
+
+    // 2. Create 2 child profiles
+    const ava = await prisma.child_profile.create({
+      data: {
+        userId: testUser.id,
+        displayName: "Ava",
+        ageBand: "7-9",
+        isDefault: true,
+      },
+    });
+
+    const leo = await prisma.child_profile.create({
+      data: {
+        userId: testUser.id,
+        displayName: "Leo",
+        ageBand: "5-7",
+        isDefault: false,
+      },
+    });
+
+    console.log("✅ Created 2 child profiles: Ava, Leo");
+
+    // 3. Get 2 published books for progress/session data
+    const publishedBooks = await prisma.books.findMany({
+      where: { is_published: true },
+      take: 2,
+      orderBy: { id: "asc" },
+    });
+
+    if (publishedBooks.length < 2) {
+      console.log(
+        "⚠️  Not enough published books for proof-test progress data"
+      );
+    } else {
+      const book1 = publishedBooks[0];
+      const book2 = publishedBooks[1];
+
+      // 4. Create child_book_progress entries
+      await prisma.child_book_progress.create({
+        data: {
+          childProfileId: ava.id,
+          bookId: book1.id,
+          currentPage: 7,
+          totalPages: 24,
+          lastReadAt: new Date(),
+        },
+      });
+
+      await prisma.child_book_progress.create({
+        data: {
+          childProfileId: ava.id,
+          bookId: book2.id,
+          currentPage: 24,
+          totalPages: 24,
+          lastReadAt: new Date(),
+          completedAt: new Date(),
+          completionCount: 1,
+        },
+      });
+
+      console.log("✅ Created 2 child_book_progress entries for Ava");
+
+      // 5. Create 3 reading sessions
+      const now = new Date();
+      const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000);
+      const thirtyMinAgo = new Date(now.getTime() - 30 * 60 * 1000);
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+      await prisma.reading_session.createMany({
+        data: [
+          {
+            sessionId: "rs_seed_001",
+            userId: testUser.id,
+            childProfileId: ava.id,
+            bookId: book1.id,
+            startedAt: thirtyMinAgo,
+            endedAt: fifteenMinAgo,
+            durationSeconds: 15 * 60,
+            startPage: 1,
+            endPage: 7,
+            entryIntent: "standard",
+          },
+          {
+            sessionId: "rs_seed_002",
+            userId: testUser.id,
+            childProfileId: ava.id,
+            bookId: book2.id,
+            startedAt: oneHourAgo,
+            endedAt: new Date(oneHourAgo.getTime() + 20 * 60 * 1000),
+            durationSeconds: 20 * 60,
+            startPage: 1,
+            endPage: 24,
+            entryIntent: "autoplay_narration",
+            usedNarration: true,
+            completedBook: true,
+          },
+          {
+            sessionId: "rs_seed_003",
+            userId: testUser.id,
+            childProfileId: leo.id,
+            bookId: book1.id,
+            startedAt: fifteenMinAgo,
+            endedAt: new Date(fifteenMinAgo.getTime() + 10 * 60 * 1000),
+            durationSeconds: 10 * 60,
+            startPage: 1,
+            endPage: 3,
+            entryIntent: "standard",
+          },
+        ],
+      });
+
+      console.log("✅ Created 3 reading sessions");
+
+      // 6. Create 3 book questions with options for book1
+      const q1 = await prisma.book_question.create({
+        data: {
+          bookId: book1.id,
+          questionText: "Where did the narrator have an accident?",
+          sortOrder: 1,
+          correctAnswer: "A",
+          options: {
+            create: [
+              { optionKey: "A", optionText: "The Desert of Sahara", sortOrder: 0 },
+              { optionKey: "B", optionText: "A tropical rainforest", sortOrder: 1 },
+              { optionKey: "C", optionText: "The Arctic tundra", sortOrder: 2 },
+            ],
+          },
+        },
+      });
+
+      const q2 = await prisma.book_question.create({
+        data: {
+          bookId: book1.id,
+          questionText: "What did the grown-ups advise the narrator to study?",
+          sortOrder: 2,
+          correctAnswer: "B",
+          options: {
+            create: [
+              { optionKey: "A", optionText: "Drawing and painting", sortOrder: 0 },
+              {
+                optionKey: "B",
+                optionText: "Geography, history, arithmetic and grammar",
+                sortOrder: 1,
+              },
+              { optionKey: "C", optionText: "Music and literature", sortOrder: 2 },
+            ],
+          },
+        },
+      });
+
+      const q3 = await prisma.book_question.create({
+        data: {
+          bookId: book1.id,
+          questionText: "What animal was in the picture the narrator saw at age six?",
+          sortOrder: 3,
+          correctAnswer: "C",
+          options: {
+            create: [
+              { optionKey: "A", optionText: "A lion", sortOrder: 0 },
+              { optionKey: "B", optionText: "An elephant", sortOrder: 1 },
+              { optionKey: "C", optionText: "A boa constrictor", sortOrder: 2 },
+            ],
+          },
+        },
+      });
+
+      console.log("✅ Created 3 book questions with options");
+
+      // 7. Create 2 question attempts for Ava (1 correct, 1 incorrect)
+      await prisma.question_attempt.createMany({
+        data: [
+          {
+            userId: testUser.id,
+            childProfileId: ava.id,
+            bookId: book1.id,
+            questionId: q1.id,
+            readingSessionId: "rs_seed_001",
+            selectedAnswer: "A",
+            isCorrect: true,
+          },
+          {
+            userId: testUser.id,
+            childProfileId: ava.id,
+            bookId: book1.id,
+            questionId: q2.id,
+            readingSessionId: "rs_seed_001",
+            selectedAnswer: "A",
+            isCorrect: false,
+          },
+        ],
+      });
+
+      console.log("✅ Created 2 question attempts for Ava (1 correct, 1 incorrect)");
+    }
+
+    console.log("\n🧪 Proof-test seed data complete!");
+  }
 }
 
 main()

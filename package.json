@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run db:prepare",
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "db:ensure": "./scripts/ensure-local-db.sh",
+    "db:prepare": "npm run db:ensure && prisma migrate deploy && prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest"

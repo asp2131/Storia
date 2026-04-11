@@ -17,7 +17,7 @@ Storia is an immersive reading platform that combines ebooks, narration, and sou
 
 - Node.js 20+
 - npm 10+
-- PostgreSQL database (or Supabase project)
+- Docker Desktop (for the local Postgres container) or a PostgreSQL database/Supabase project
 - Supabase storage bucket(s)
 - Replicate API token (for narration features)
 
@@ -69,6 +69,23 @@ NEXT_PUBLIC_UMAMI_URL=https://cloud.umami.is/script.js
 ```
 
 ### Database Setup
+
+For local development, `npm run dev` now auto-starts a Dockerized Postgres instance on `localhost:5433`, recreates the `storia_dev` database if it was deleted, and applies Prisma migrations.
+
+```bash
+npm run dev
+```
+
+Useful database commands:
+
+```bash
+npm run db:up      # start local Postgres only
+npm run db:down    # stop the local Postgres stack
+npm run db:logs    # tail Postgres logs
+npm run db:seed    # seed local data
+```
+
+If you prefer managing the database manually instead of Docker:
 
 ```bash
 npx prisma generate
