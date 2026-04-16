@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-07T15:58:22.778Z
-> Files: 545 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-16T21:55:44.946Z
+> Files: 546 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -714,7 +714,7 @@
 
 ## src/app/api/comprehension/
 
-- `route.ts` — Next.js API route: POST (~777 tok)
+- `route.ts` — Next.js API route: POST (~1569 tok)
 
 ## src/app/api/continue-reading/
 

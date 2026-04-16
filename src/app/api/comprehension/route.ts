@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await validateChildAccess(childProfileId.trim());
-    if ("error" in result) return result.error;
+    if (!("childProfile" in result)) return result.error;
 
     const questions = await prisma.book_question.findMany({
       where: {
