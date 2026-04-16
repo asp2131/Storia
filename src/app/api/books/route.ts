@@ -106,12 +106,16 @@ export async function GET(request: NextRequest) {
     });
 
     // Fetch child book progress if childProfileId is provided
-    let childProgressMap: Map<string, {
+    const childProgressMap: Map<string, {
+      childProfileId: string;
+      bookId: string;
       currentPage: number;
+      totalPages: number;
       progressPercent: number;
       lastReadAt: Date;
       completedAt: Date | null;
       completionCount: number;
+      lastSessionId: string | null;
       status: string;
     }> = new Map();
 
@@ -128,11 +132,15 @@ export async function GET(request: NextRequest) {
             ? Math.round((record.currentPage / record.totalPages) * 100)
             : 0;
           childProgressMap.set(record.bookId.toString(), {
+            childProfileId: record.childProfileId,
+            bookId: record.bookId.toString(),
             currentPage: record.currentPage,
+            totalPages: record.totalPages,
             progressPercent,
             lastReadAt: record.lastReadAt,
             completedAt: record.completedAt,
             completionCount: record.completionCount,
+            lastSessionId: record.lastSessionId,
             status: computeStatus(record.currentPage, record.completedAt),
           });
         });
@@ -142,7 +150,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user reading progress if userId is provided (legacy)
-    let userProgressMap: Map<string, { currentPage: number; totalPages: number; lastReadAt: Date }> = new Map();
+    const userProgressMap: Map<string, { currentPage: number; totalPages: number; lastReadAt: Date }> = new Map();
     if (userId && !childProfileId && bookIds.length > 0) {
       try {
         const progressRecords = await prisma.user_reading_progress.findMany({
@@ -195,11 +203,15 @@ export async function GET(request: NextRequest) {
           ...baseBook,
           progress: cp
             ? {
+                childProfileId: cp.childProfileId,
+                bookId: cp.bookId,
                 currentPage: cp.currentPage,
+                totalPages: cp.totalPages,
                 progressPercent: cp.progressPercent,
                 lastReadAt: cp.lastReadAt.toISOString(),
                 completedAt: cp.completedAt ? cp.completedAt.toISOString() : null,
                 completionCount: cp.completionCount,
+                lastSessionId: cp.lastSessionId,
                 status: cp.status,
               }
             : null,

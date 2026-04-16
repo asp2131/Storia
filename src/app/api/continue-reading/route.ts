@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateChildAccess } from "@/lib/child-auth";
 import { prisma } from "@/lib/prisma";
 
+function computeStatus(currentPage: number, completedAt: Date | null): string {
+  if (completedAt) return "completed";
+  if (currentPage > 1) return "in_progress";
+  return "new";
+}
+
 export async function GET(request: NextRequest) {
   const childProfileId = request.nextUrl.searchParams.get("childProfileId");
   if (!childProfileId) {
     return NextResponse.json(
-      { error: { code: "invalid_request", message: "childProfileId is required" } },
+      { error: { code: "invalid_request", message: "childProfileId is required", details: { field: "childProfileId" } } },
       { status: 400 }
     );
   }
@@ -54,12 +60,18 @@ export async function GET(request: NextRequest) {
           hasNarration: book.pages.length > 0,
         },
         progress: {
+          childProfileId: progress.childProfileId,
+          bookId: progress.bookId.toString(),
           currentPage: progress.currentPage,
+          totalPages: progress.totalPages,
           progressPercent: progress.totalPages > 0
             ? Math.round((progress.currentPage / progress.totalPages) * 100)
             : 0,
           lastReadAt: progress.lastReadAt.toISOString(),
-          status: "in_progress",
+          completedAt: progress.completedAt ? progress.completedAt.toISOString() : null,
+          completionCount: progress.completionCount,
+          lastSessionId: progress.lastSessionId,
+          status: computeStatus(progress.currentPage, progress.completedAt),
         },
       },
     });

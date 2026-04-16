@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-07T15:58:22.778Z
-> Files: 545 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-16T21:55:44.946Z
+> Files: 546 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -683,6 +683,7 @@
 
 ## specs/
 
+- `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
 
@@ -713,7 +714,7 @@
 
 ## src/app/api/comprehension/
 
-- `route.ts` — Next.js API route: POST (~777 tok)
+- `route.ts` — Next.js API route: POST (~1569 tok)
 
 ## src/app/api/continue-reading/
 

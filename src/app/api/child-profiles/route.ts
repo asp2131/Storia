@@ -37,15 +37,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!ageBand || typeof ageBand !== "string") {
+    if (!ageBand || typeof ageBand !== "string" || !ageBand.trim()) {
       return NextResponse.json(
         { error: { code: "invalid_request", message: "ageBand is required", details: { field: "ageBand" } } },
         { status: 400 }
       );
     }
 
-    // If this profile is default, unset others
-    if (isDefault) {
+    if (readingLevel != null && typeof readingLevel !== "string") {
+      return NextResponse.json(
+        { error: { code: "invalid_request", message: "readingLevel must be a string", details: { field: "readingLevel" } } },
+        { status: 400 }
+      );
+    }
+
+    const existingCount = await prisma.child_profile.count({
+      where: { userId: result.user.id },
+    });
+    const shouldBeDefault = Boolean(isDefault) || existingCount === 0;
+
+    if (shouldBeDefault) {
       await prisma.child_profile.updateMany({
         where: { userId: result.user.id, isDefault: true },
         data: { isDefault: false },
@@ -56,9 +67,9 @@ export async function POST(request: NextRequest) {
       data: {
         userId: result.user.id,
         displayName: displayName.trim(),
-        ageBand,
-        readingLevel: readingLevel || null,
-        isDefault: isDefault || false,
+        ageBand: ageBand.trim(),
+        readingLevel: typeof readingLevel === "string" && readingLevel.trim() ? readingLevel.trim() : null,
+        isDefault: shouldBeDefault,
       },
     });
 

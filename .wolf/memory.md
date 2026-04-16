@@ -282,3 +282,15 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 16:05 | Read OpenWolf instructions, mobile-compat skill, and proof-test mobile specs for question UX analysis | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md, .pi/skills/mobile-compat/SKILL.md, ../storia-mobile/specs/proof-test/backend-api-contracts.md, ../storia-mobile/specs/proof-test/flutter-milestone-1-scope.md, ../storia-mobile/specs/proof-test/library-preview-and-continue-reading-ux.md, ../storia-mobile/specs/proof-test/proof-test-backend-and-flutter-implementation-plan.md | gathered constraints and mobile UX implications | ~9000 |
+| 11:06 | Reviewed OpenWolf guidance, read proof-test specs, and launched squad to plan in-book questions + editor requirements | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md, specs/proof-test-schema-and-routes.md, ../storia-mobile/specs/proof-test/* | planning in progress | ~5000 |
+| 16:12 | Wrote phased in-book questions implementation plan; updated anatomy and cerebrum | specs/in-book-questions-phased-plan.md, .wolf/anatomy.md, .wolf/cerebrum.md | documented | ~4500 |
+
+## Session: 2026-04-16 16:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 16:53 | Edited tsconfig.json | inline fix | ~7 |
+| 16:53 | Session end: 1 writes across 1 files (tsconfig.json) | 1 reads | ~199 tok |
+| 16:55 | Edited src/app/api/comprehension/route.ts | 2→2 lines | ~36 |
+| 16:55 | Session end: 2 writes across 2 files (tsconfig.json, route.ts) | 3 reads | ~1315 tok |
