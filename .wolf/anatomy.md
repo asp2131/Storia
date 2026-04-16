@@ -683,6 +683,7 @@
 
 ## specs/
 
+- `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
 

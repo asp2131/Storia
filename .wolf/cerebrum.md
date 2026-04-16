@@ -17,6 +17,7 @@
 - Reorder flows that only change active page index to follow the same logical page should preserve the current overlay store (do not destroy on index-only navigation).
 - In Vitest React context tests, mocked hook return objects should be stable references across renders; recreating `data` arrays each render can trigger sync effects repeatedly and cause render-loop/OOM behavior.
 - Local dev now boots Prisma against a Dockerized Postgres on `localhost:5433`; `npm run dev` runs `db:prepare` first to ensure `storia_dev` exists and apply migrations before Next starts.
+- Proof-test comprehension is modeled as **book-level end-of-book questions**, not page-anchored inline prompts; editor UX should therefore use a dedicated Questions tab separate from page/audio editing.
 
 ## Do-Not-Repeat
 

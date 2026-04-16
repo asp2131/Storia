@@ -1,0 +1,559 @@
+{
+  "version": 1,
+  "bugs": [
+    {
+      "id": "bug-001",
+      "timestamp": "2026-03-25T00:15:00.968Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-25T00:15:00.968Z"
+    },
+    {
+      "id": "bug-002",
+      "timestamp": "2026-03-24T00:00:00.000Z",
+      "error_message": "Text overlays don't follow pages when reordered in editor - wrong page's text appears after drag-and-drop reorder",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "Two issues: (1) src/stores/overlayEditorRegistry.ts was missing entirely - the file that manages per-page Zustand overlay stores didn't exist. (2) handleDragEndPages renumbered pages but didn't remap overlay store keys in the registry. Stores keyed by page-${number} became stale after renumbering.",
+      "fix": "Created overlayEditorRegistry.ts with Map-based registry (getOverlayEditorStore, destroyOverlayEditorStore, remapOverlayEditorStores). Added remapOverlayEditorStores call in handleDragEndPages to move stores from old keys to new keys after renumbering.",
+      "tags": [
+        "reorder",
+        "drag-drop",
+        "overlay",
+        "zustand",
+        "registry",
+        "missing-file"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-24T00:00:00.000Z"
+    },
+    {
+      "id": "bug-003",
+      "timestamp": "2026-03-25T00:33:21.708637+00:00",
+      "error_message": "Overlay stores can still be lost/misassigned after page reorder/delete due to active-page store destruction timing and missing delete-path remap",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "After remapping page-${number} keys on reorder, setActivePage destroyed a numeric key that could now belong to a different page. Delete flow renumbered pages without remapping remaining overlay store keys.",
+      "fix": "Added remap on delete path, explicit deleted-page store cleanup, and introduced setActivePageInternal options so reorder-driven active-page index updates preserve current overlay store instead of destroying/removing remapped keys.",
+      "tags": [
+        "overlay",
+        "zustand",
+        "reorder",
+        "delete-page",
+        "key-remap"
+      ],
+      "related_bugs": [
+        "bug-002"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-03-25T00:33:21.708637+00:00"
+    },
+    {
+      "id": "bug-004",
+      "timestamp": "2026-03-25T00:44:18.938079+00:00",
+      "error_message": "Vitest worker OOM while running BookEditorContext regression test",
+      "file": "src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Mocked hook return values recreated new array/object references on every render (notably useEditorPages data), triggering repeated server->local sync state updates and runaway rerenders.",
+      "fix": "Made mocked hook results stable references within vi.mock factory and re-ran targeted tests successfully.",
+      "tags": [
+        "tests",
+        "vitest",
+        "oom",
+        "mocking",
+        "react-render-loop"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-25T00:44:18.938079+00:00"
+    },
+    {
+      "id": "bug-005",
+      "timestamp": "2026-03-27T16:54:28.211Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 13→7 lines (6 removed) | Also: const currentTime = narrationProgress;; let foundIndex = -1;",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-03-27T16:55:54.625Z"
+    },
+    {
+      "id": "bug-006",
+      "timestamp": "2026-03-27T16:55:07.770Z",
+      "error_message": "Incorrect value in code",
+      "file": ".claude/worktrees/agent-a3cc6296/src/contexts/BookEditorContext.tsx",
+      "root_cause": "Had \"@hello-pangea/dnd\"",
+      "fix": "Changed to \"@/lib/mobile-compat/normalize\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T16:55:07.770Z"
+    },
+    {
+      "id": "bug-007",
+      "timestamp": "2026-03-27T16:55:12.221Z",
+      "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
+      "file": ".claude/worktrees/agent-a3cc6296/src/contexts/BookEditorContext.tsx",
+      "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
+      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T16:55:12.221Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-03-27T16:56:58.689Z",
+      "error_message": "Missing guard clause",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "No early return/throw for edge case: !isNarrationPlaying || wordTimestamps.length === 0",
+      "fix": "Added guard clause: if (!isNarrationPlaying || wordTimestamps.le)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T16:56:58.689Z"
+    },
+    {
+      "id": "bug-009",
+      "timestamp": "2026-03-27T17:33:22.405Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "6 lines replaced/restructured",
+      "fix": "Rewrote 13→7 lines (6 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T17:33:22.405Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-03-27T17:33:23.726Z",
+      "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
+      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T17:33:23.726Z"
+    },
+    {
+      "id": "bug-011",
+      "timestamp": "2026-03-27T18:05:30.608Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/components/editor/AudioLibraryPanel.tsx",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 6→17 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T18:05:30.608Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-03-27T18:06:35.876Z",
+      "error_message": "CSS fix: narrationTimestamps",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "narrationTimestamps: undefined → undefined, narrationUrl: undefined",
+      "fix": "Changed narrationTimestamps: undefined → undefined, narrationUrl: undefined",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-03-27T18:07:38.852Z"
+    },
+    {
+      "id": "bug-013",
+      "timestamp": "2026-03-27T18:07:34.147Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/hooks/useBookData.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T18:07:34.147Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-03-27T22:18:31.018Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/lib/audio-stitcher.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T22:18:31.018Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-03-27T22:18:39.609Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/lib/audio-stitcher.ts",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 11→15 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T22:18:39.609Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-03-27T23:00:00.000Z",
+      "error_message": "Only first overlay text audible when playing back stitched narration in book editor",
+      "file": "src/lib/audio-stitcher.ts",
+      "root_cause": "Naive MP3 concatenation preserved the Xing/Info VBR header from the first ElevenLabs track. The browser audio decoder reads this header to determine total frame count and stops playback after the first track's worth of frames.",
+      "fix": "Added stripMp3Headers() that removes ID3v2 tags and Xing/Info/LAME header frames from each track buffer before concatenation in stitchAudioTracks().",
+      "tags": [
+        "audio",
+        "mp3",
+        "stitching",
+        "xing-header",
+        "elevenlabs",
+        "narration",
+        "overlay"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T23:00:00.000Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-03-27T22:27:07.691Z",
+      "error_message": "Missing error handling in getFfmpegPath",
+      "file": "src/lib/audio-stitcher.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block | Also: try {; await execFileAsync(ffmpeg, ffmpegArgs, {",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-03-27T22:27:22.038Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-03-27T23:30:00.000Z",
+      "error_message": "Only first overlay text audible when playing back stitched narration (Xing header stripping was insufficient)",
+      "file": "src/lib/audio-stitcher.ts",
+      "root_cause": "Naive JS MP3 buffer concatenation fails because: (1) Xing/LAME VBR headers declare total frame count causing browsers to stop early, (2) synthetic silence frames have different encoding parameters than ElevenLabs output causing decoder confusion at frame boundaries. Stripping headers alone was insufficient — the frame parameter mismatch between silence and real audio remained.",
+      "fix": "Replaced entire audio-stitcher with ffmpeg-static based implementation. Uses ffmpeg concat filter (decode + re-encode) with anullsrc for silence gaps. Produces a spec-compliant single MP3. Added ffmpeg-static to serverExternalPackages in next.config.ts.",
+      "tags": [
+        "audio",
+        "mp3",
+        "stitching",
+        "ffmpeg",
+        "elevenlabs",
+        "narration",
+        "overlay",
+        "vercel"
+      ],
+      "related_bugs": [
+        "bug-016"
+      ],
+      "occurrences": 2,
+      "last_seen": "2026-03-27T23:30:00.000Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-03-27T22:35:41.797Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 4→6 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-03-27T22:35:41.797Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-04-04T19:10:55.836Z",
+      "error_message": "CSS fix: https",
+      "file": "src/app/page.tsx",
+      "root_cause": "https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "fix": "Changed https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-04T19:10:55.836Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-04-04T19:14:20.118Z",
+      "error_message": "CSS fix: background",
+      "file": "src/components/MorphogenesisHero.tsx",
+      "root_cause": "background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "fix": "Changed background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-04T19:23:09.782Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-04-04T19:14:26.686Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/components/MorphogenesisHero.tsx",
+      "root_cause": "Had \"hue-rotate(30deg) saturate(0.6) brightness(0.7)\"",
+      "fix": "Changed to \"hue-rotate(-10deg) saturate(0.5) brightness(0.8)\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 5,
+      "last_seen": "2026-04-04T19:17:36.795Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-04-04T19:14:34.148Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/app/HomeClient.tsx",
+      "root_cause": "Had \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0",
+      "fix": "Changed to \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, ",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-04-04T19:16:24.914Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-04-04T19:19:27.991Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/components/MorphogenesisHero.tsx",
+      "root_cause": "10 lines replaced/restructured",
+      "fix": "Rewrote 11→4 lines (10 removed) | Also: {/* ── Top zone: Model + Title + Tagline ── */}; <div className=\"relative z-10 flex flex-col items-",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-04T19:22:55.695Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-04-04T19:27:27.748Z",
+      "error_message": "Wrong reference: remotePatterns should be dangerouslyAllowSVG",
+      "file": "next.config.ts",
+      "root_cause": "Used \"remotePatterns\" instead of \"dangerouslyAllowSVG\"",
+      "fix": "Changed remotePatterns → dangerouslyAllowSVG",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-04T19:27:27.748Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-04-04T19:30:54.849Z",
+      "error_message": "Type error",
+      "file": "src/components/MorphogenesisHero.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-04T19:30:54.849Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-04-07T13:05:26.706Z",
+      "error_message": "Missing await",
+      "file": "prisma/seed.ts",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T13:05:26.706Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-04-07T13:43:22Z",
+      "error_message": "database \"storia_dev\" does not exist",
+      "file": "package.json",
+      "root_cause": "Local development depended on an external Postgres instance, and the dev workflow did not recreate the dropped database or reapply Prisma migrations automatically.",
+      "fix": "Added root docker-compose Postgres service, scripts/ensure-local-db.sh, and a predev db:prepare step that starts Postgres, recreates storia_dev if missing, runs prisma migrate deploy, and regenerates the client.",
+      "tags": [
+        "database",
+        "postgres",
+        "docker",
+        "prisma",
+        "local-dev"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T13:43:22Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-04-07T13:43:22Z",
+      "error_message": "Bind for 0.0.0.0:5432 failed: port is already allocated",
+      "file": "docker-compose.yml",
+      "root_cause": "The machine already had something bound to host port 5432, so the new Dockerized Postgres container could not start on the default port.",
+      "fix": "Changed the local Postgres port mapping to localhost:5433 and updated DATABASE_URL/DIRECT_URL to point Prisma at the containerized database.",
+      "tags": [
+        "docker",
+        "postgres",
+        "port-conflict",
+        "prisma",
+        "local-dev"
+      ],
+      "related_bugs": [
+        "bug-028"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T13:43:22Z"
+    },
+    {
+      "id": "bug-030",
+      "timestamp": "2026-04-07T15:46:04.287Z",
+      "error_message": "Missing error handling in function",
+      "file": "src/lib/auth.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T15:46:04.287Z"
+    },
+    {
+      "id": "bug-031",
+      "timestamp": "2026-04-07T15:48:06.222Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/app/api/auth/[...all]/route.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T15:48:06.222Z"
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-04-07T15:49:42.621Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/lib/auth.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 13→15 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T15:49:42.621Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-04-07T15:55:49.300Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/lib/auth.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-07T15:55:49.300Z"
+    }
+  ]
+}
