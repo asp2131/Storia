@@ -81,19 +81,11 @@ export async function getAuthenticatedUser(): Promise<
   const emailVerified = Boolean(supaUser.email_confirmed_at);
 
   try {
-    const dbUser = await prisma.user.upsert({
-      where: { id: supaUser.id },
-      create: {
-        id: supaUser.id,
-        email,
-        name,
-        emailVerified,
-        role: "user",
-      },
-      update: {
-        email,
-        emailVerified,
-      },
+    const dbUser = await resolveUser({
+      supabaseId: supaUser.id,
+      email,
+      name,
+      emailVerified,
     });
 
     return {
@@ -105,8 +97,56 @@ export async function getAuthenticatedUser(): Promise<
       },
     };
   } catch (err) {
-    console.error("[child-auth] user upsert failed:", err);
-    return { error: unauthorized("user upsert failed") };
+    console.error("[child-auth] user resolve failed:", err);
+    return { error: unauthorized("user resolve failed") };
+  }
+}
+
+async function resolveUser(params: {
+  supabaseId: string;
+  email: string;
+  name: string;
+  emailVerified: boolean;
+}) {
+  const { supabaseId, email, name, emailVerified } = params;
+
+  const byId = await prisma.user.findUnique({ where: { id: supabaseId } });
+  if (byId) {
+    return prisma.user.update({
+      where: { id: byId.id },
+      data: { email, emailVerified },
+    });
+  }
+
+  const byEmail = await prisma.user.findUnique({ where: { email } });
+  if (byEmail) {
+    return prisma.user.update({
+      where: { id: byEmail.id },
+      data: { emailVerified },
+    });
+  }
+
+  try {
+    return await prisma.user.create({
+      data: {
+        id: supabaseId,
+        email,
+        name,
+        emailVerified,
+        role: "user",
+      },
+    });
+  } catch (err: unknown) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2002"
+    ) {
+      const racing = await prisma.user.findUnique({ where: { email } });
+      if (racing) return racing;
+    }
+    throw err;
   }
 }
 
