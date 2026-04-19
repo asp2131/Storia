@@ -74,25 +74,25 @@ model oban_peers {
 }
 
 model pages {
-  id                   BigInt   @id @default(autoincrement())
-  book_id              BigInt
-  page_number          Int
-  text_content         String?
-  inserted_at          DateTime @db.Timestamp(0)
-  updated_at           DateTime @db.Timestamp(0)
-  scene_id             BigInt?
-  image_url            String?  @db.VarChar(255)
-  narration_url        String?  @db.VarChar(255)
-  narration_timestamps  Json?
-  word_pronunciations   Json?
-  illustration_prompt   String?
-  text_overlay          Json?
-  composited_image_url  String?   @db.VarChar(500)
-  composited_image_path String?   @db.VarChar(500)
-  composited_at         DateTime? @db.Timestamp(0)
-  composited_by         String?   @db.VarChar(255)
-  books                   books                    @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  scenes                  scenes?                  @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
+  id                      BigInt                    @id @default(autoincrement())
+  book_id                 BigInt
+  page_number             Int
+  text_content            String?
+  inserted_at             DateTime                  @db.Timestamp(0)
+  updated_at              DateTime                  @db.Timestamp(0)
+  scene_id                BigInt?
+  image_url               String?                   @db.VarChar(255)
+  narration_url           String?                   @db.VarChar(255)
+  narration_timestamps    Json?
+  word_pronunciations     Json?
+  illustration_prompt     String?
+  text_overlay            Json?
+  composited_image_url    String?                   @db.VarChar(500)
+  composited_image_path   String?                   @db.VarChar(500)
+  composited_at           DateTime?                 @db.Timestamp(0)
+  composited_by           String?                   @db.VarChar(255)
+  books                   books                     @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  scenes                  scenes?                   @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
   page_audio_assignments  page_audio_assignments[]
   page_overlay_narrations page_overlay_narrations[]
 
@@ -103,16 +103,16 @@ model pages {
 }
 
 model page_audio_assignments {
-  id           BigInt   @id @default(autoincrement())
-  page_id      BigInt
-  audio_url    String   @db.VarChar(255)
-  audio_type   String   @db.VarChar(50)
-  scope        String   @db.VarChar(50)
-  range_start  Int?
-  range_end    Int?
-  volume       Float?
-  inserted_at  DateTime @db.Timestamp(0)
-  updated_at   DateTime @db.Timestamp(0)
+  id          BigInt   @id @default(autoincrement())
+  page_id     BigInt
+  audio_url   String   @db.VarChar(255)
+  audio_type  String   @db.VarChar(50)
+  scope       String   @db.VarChar(50)
+  range_start Int?
+  range_end   Int?
+  volume      Float?
+  inserted_at DateTime @db.Timestamp(0)
+  updated_at  DateTime @db.Timestamp(0)
 
   pages pages @relation(fields: [page_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -231,19 +231,20 @@ model users_tokens {
 
 // Better Auth Core Tables
 model user {
-  id                    String                  @id @default(cuid())
+  id                    String                    @id @default(cuid())
   name                  String
-  email                 String                  @unique
-  emailVerified         Boolean                 @default(false)
+  email                 String                    @unique
+  emailVerified         Boolean                   @default(false)
   image                 String?
-  role                  String                  @default("user")
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
+  role                  String                    @default("user")
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
   sessions              session[]
   accounts              account[]
   reader_feedback       reader_feedback[]
   user_reading_progress user_reading_progress[]
   child_profiles        child_profile[]
+  mobileAnalyticsEvents mobile_analytics_events[]
 }
 
 model session {
@@ -293,8 +294,8 @@ model verification {
 model reader_feedback {
   id        String   @id @default(cuid())
   userId    String
-  rating    Int      // 1-5 stars
-  feedback  String?  // Optional text feedback (max 200 chars)
+  rating    Int // 1-5 stars
+  feedback  String? // Optional text feedback (max 200 chars)
   createdAt DateTime @default(now())
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -329,10 +330,11 @@ model child_profile {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user              user                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookProgress      child_book_progress[]
-  readingSessions   reading_session[]
-  questionAttempts  question_attempt[]
+  user                  user                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookProgress          child_book_progress[]
+  readingSessions       reading_session[]
+  questionAttempts      question_attempt[]
+  mobileAnalyticsEvents mobile_analytics_events[]
 
   @@index([userId])
 }
@@ -428,6 +430,30 @@ model question_attempt {
 
   @@index([childProfileId, bookId, answeredAt])
   @@index([questionId])
+}
+
+model mobile_analytics_events {
+  id               String   @id
+  user_id          String
+  child_profile_id String
+  book_id          BigInt?
+  session_id       String?
+  event_name       String
+  source           String   @default("mobile")
+  properties       Json?    @default("{}")
+  occurred_at      DateTime @default(now())
+  created_at       DateTime @default(now())
+
+  user          user          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  child_profile child_profile @relation(fields: [child_profile_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id], map: "mobile_analytics_events_user_id_idx")
+  @@index([child_profile_id], map: "mobile_analytics_events_child_profile_id_idx")
+  @@index([book_id], map: "mobile_analytics_events_book_id_idx")
+  @@index([session_id], map: "mobile_analytics_events_session_id_idx")
+  @@index([event_name], map: "mobile_analytics_events_event_name_idx")
+  @@index([child_profile_id, occurred_at], map: "mobile_analytics_events_child_profile_id_occurred_at_idx")
+  @@index([user_id, occurred_at], map: "mobile_analytics_events_user_id_occurred_at_idx")
 }
 
 enum oban_job_state {
