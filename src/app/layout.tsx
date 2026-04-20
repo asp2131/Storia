@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, JetBrains_Mono, Lora, Inter, Gaegu } from "next/font/google";
+import { Playfair_Display, JetBrains_Mono, Lora, Inter, Gaegu, Nunito, Space_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
@@ -28,6 +28,18 @@ const gaegu = Gaegu({
   variable: "--font-gaegu",
   subsets: ["latin"],
   weight: ["300", "400", "700"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -78,7 +90,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} ${gaegu.variable} antialiased`}>
+      <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} ${gaegu.variable} ${spaceGrotesk.variable} ${nunito.variable} antialiased`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
