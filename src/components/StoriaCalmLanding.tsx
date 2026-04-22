@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
+import SplitType from "split-type";
 import "./StoriaCalmLanding.css";
+
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const MANIFESTO_WORDS = [
   "Every",
@@ -37,230 +43,395 @@ const BOOKS = [
 
 export default function StoriaCalmLanding() {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const heroTitleRef = useRef<HTMLHeadingElement | null>(null);
+  const primaryCtaRef = useRef<HTMLAnchorElement | null>(null);
+  const secondaryCtaRef = useRef<HTMLAnchorElement | null>(null);
 
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    const init = async () => {
-      const gsapModule = await import("gsap");
-      const scrollTriggerModule = await import("gsap/ScrollTrigger");
-      if (cancelled) return;
-
-      const gsap = gsapModule.default;
-      const ScrollTrigger = scrollTriggerModule.ScrollTrigger;
-      gsap.registerPlugin(ScrollTrigger);
+  useGSAP(
+    () => {
+      const root = rootRef.current;
+      const heroTitle = heroTitleRef.current;
+      if (!root || !heroTitle) return;
 
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const nav = root.querySelector<HTMLElement>(".storia-nav");
+      const hero = root.querySelector<HTMLElement>(".hero");
+      const heroInner = root.querySelector<HTMLElement>(".hero-inner");
+      const heroImage = root.querySelector<HTMLElement>(".hero-image");
+      const missionShell = root.querySelector<HTMLElement>(".mission-shell");
+      const magneticButtons = [primaryCtaRef.current, secondaryCtaRef.current].filter(
+        Boolean
+      ) as HTMLAnchorElement[];
+      const splitHeadline = reduceMotion
+        ? null
+        : new SplitType(heroTitle, {
+            types: "lines,chars",
+            lineClass: "hero-line",
+            charClass: "hero-char",
+          });
+
+      const lineTargets = splitHeadline?.lines ?? [];
+      const charTargets = splitHeadline?.chars ?? [];
+      const heroEyebrow = root.querySelector<HTMLElement>(".hero .eyebrow");
+      const heroLede = root.querySelector<HTMLElement>(".hero .lede");
+      const heroActions = root.querySelector<HTMLElement>(".hero .actions");
+      const heroActionItems = heroActions ? Array.from(heroActions.children) : [];
+
       const onScroll = () => {
         if (!nav) return;
         nav.classList.toggle("scrolled", window.scrollY > 40);
       };
+
       window.addEventListener("scroll", onScroll, { passive: true });
       onScroll();
 
-      const ctx = gsap.context(() => {
-        if (reduceMotion) {
-          gsap.set(".storia-calm .reveal, .storia-calm .reveal-image", {
+      gsap.set([heroEyebrow, heroLede, heroActionItems], { clearProps: "all" });
+
+      if (reduceMotion) {
+        gsap.set(
+          [
+            ".storia-calm .reveal",
+            ".storia-calm .reveal-image",
+            ".storia-calm .hero-line",
+            ".storia-calm .hero-char",
+          ],
+          {
             clearProps: "all",
             opacity: 1,
-          });
-          gsap.set(".storia-calm .reveal-lines span > span", { y: 0 });
-          return;
-        }
-
-        const lineSpans = root.querySelectorAll(".reveal-lines span > span");
-        const heroReveals = root.querySelectorAll(".hero .reveal");
-        const heroImg = root.querySelectorAll(".reveal-image");
-
-        if (lineSpans.length) {
-          gsap.to(lineSpans, {
-            y: 0,
-            duration: 1.1,
-            ease: "power4.out",
-            stagger: 0.12,
-            delay: 0.15,
-          });
-        }
-        if (heroReveals.length) {
-          gsap.to(heroReveals, {
-            opacity: 1,
-            y: 0,
-            duration: 0.9,
-            ease: "power3.out",
-            stagger: 0.1,
-            delay: 0.3,
-          });
-        }
-        if (heroImg.length) {
-          gsap.to(heroImg, {
-            opacity: 1,
+            x: 0,
             y: 0,
             scale: 1,
-            duration: 1.2,
-            ease: "power3.out",
-            delay: 0.2,
-          });
+            rotate: 0,
+            rotateX: 0,
+            rotateY: 0,
+            skewY: 0,
+          }
+        );
+      } else {
+        if (lineTargets.length) {
+          gsap.set(lineTargets, { overflow: "hidden" });
         }
 
-        gsap.to(".hero-image .hero-media", {
+        gsap.set(charTargets, {
+          yPercent: 110,
+          rotate: 2,
+          transformOrigin: "50% 100%",
+          willChange: "transform",
+        });
+        gsap.set([heroEyebrow, heroLede], {
+          y: 28,
+          opacity: 0,
+          willChange: "transform, opacity",
+        });
+        gsap.set(heroActionItems, {
+          y: 18,
+          opacity: 0,
+          willChange: "transform, opacity",
+        });
+        gsap.set(heroImage, {
+          opacity: 0,
+          y: 40,
+          scale: 1.06,
+          rotate: 0.8,
+          willChange: "transform, opacity",
+        });
+
+        gsap
+          .timeline({ defaults: { ease: "power3.out" } })
+          .addLabel("hero")
+          .to(heroEyebrow, { opacity: 1, y: 0, duration: 0.7 }, "hero")
+          .to(
+            charTargets,
+            {
+              yPercent: 0,
+              rotate: 0,
+              duration: 0.95,
+              ease: "power4.out",
+              stagger: { each: 0.018, from: "start" },
+            },
+            "hero+=0.08"
+          )
+          .to(heroLede, { opacity: 1, y: 0, duration: 0.8 }, "hero+=0.34")
+          .to(
+            heroActionItems,
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.65,
+              stagger: 0.08,
+            },
+            "hero+=0.42"
+          )
+          .to(
+            heroImage,
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              rotate: 0,
+              duration: 1.1,
+              ease: "power3.out",
+            },
+            "hero+=0.18"
+          );
+      }
+
+      if (!reduceMotion && heroImage) {
+        gsap.to(heroImage.querySelector(".hero-media"), {
           yPercent: 10,
+          ease: "none",
           scrollTrigger: {
-            trigger: ".hero",
+            trigger: hero,
             start: "top top",
             end: "bottom top",
             scrub: 1,
           },
         });
+      }
 
-        gsap.to(".manifesto .m-word", {
-          color: (_index: number, el: Element) =>
-            el.classList.contains("hl") ? "var(--sl-accent)" : "var(--sl-ink)",
-          stagger: 1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".manifesto",
-            start: "top 70%",
-            end: "bottom 70%",
-            scrub: true,
-          },
+      gsap.to(".manifesto .m-word", {
+        color: (_index: number, el: Element) =>
+          el.classList.contains("hl") ? "var(--sl-accent)" : "var(--sl-ink)",
+        stagger: 1,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".manifesto",
+          start: "top 70%",
+          end: "bottom 70%",
+          scrub: true,
+        },
+      });
+
+      const steps = gsap.utils.toArray<HTMLElement>(".pin-step");
+      const screens = gsap.utils.toArray<HTMLElement>(".phone-screen");
+      const setScreen = (activeIndex: number) => {
+        screens.forEach((screen, index) => {
+          screen.classList.toggle("active", index === activeIndex);
         });
+      };
+      setScreen(0);
 
-        const steps = gsap.utils.toArray<HTMLElement>(".pin-step");
-        const screens = gsap.utils.toArray<HTMLElement>(".phone-screen");
-        const setScreen = (activeIndex: number) => {
-          screens.forEach((screen, index) => {
-            screen.classList.toggle("active", index === activeIndex);
-          });
-        };
-        setScreen(0);
-
-        steps.forEach((step, index) => {
-          ScrollTrigger.create({
-            trigger: step,
-            start: "top 55%",
-            end: "bottom 55%",
-            onEnter: () => setScreen(index),
-            onEnterBack: () => setScreen(index),
-          });
-
-          gsap.fromTo(
-            step,
-            { opacity: 0.25 },
-            {
-              opacity: 1,
-              ease: "power2.out",
-              scrollTrigger: {
-                trigger: step,
-                start: "top 75%",
-                end: "top 45%",
-                scrub: true,
-              },
-            }
-          );
-
-          gsap.to(step, {
-            opacity: 0.25,
-            ease: "power2.in",
-            scrollTrigger: {
-              trigger: step,
-              start: "bottom 45%",
-              end: "bottom 15%",
-              scrub: true,
-            },
-          });
+      steps.forEach((step, index) => {
+        ScrollTrigger.create({
+          trigger: step,
+          start: "top 55%",
+          end: "bottom 55%",
+          onEnter: () => setScreen(index),
+          onEnterBack: () => setScreen(index),
         });
 
         gsap.fromTo(
-          ".bleed-img .bleed-media",
-          { scale: 1.1 },
+          step,
+          { opacity: 0.25 },
           {
-            scale: 1,
+            opacity: 1,
+            ease: "power2.out",
             scrollTrigger: {
-              trigger: ".bleed",
-              start: "top bottom",
-              end: "bottom top",
-              scrub: 1,
+              trigger: step,
+              start: "top 75%",
+              end: "top 45%",
+              scrub: true,
             },
           }
         );
 
-        gsap.from(".bleed-caption p, .bleed-caption cite", {
-          y: 30,
-          opacity: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.15,
-          scrollTrigger: { trigger: ".bleed-caption", start: "top 80%" },
+        gsap.to(step, {
+          opacity: 0.25,
+          ease: "power2.in",
+          scrollTrigger: {
+            trigger: step,
+            start: "bottom 45%",
+            end: "bottom 15%",
+            scrub: true,
+          },
         });
+      });
 
-        gsap.to(".mission-intro.reveal, .mission-card.reveal", {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.12,
-          scrollTrigger: { trigger: ".mission-section", start: "top 80%" },
-        });
+      gsap.fromTo(
+        ".bleed-img .bleed-media",
+        { scale: 1.1 },
+        {
+          scale: 1,
+          scrollTrigger: {
+            trigger: ".bleed",
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1,
+          },
+        }
+      );
 
-        gsap.to(".stories-head .reveal", {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.1,
-          scrollTrigger: { trigger: ".stories-head", start: "top 80%" },
-        });
+      gsap.from(".bleed-caption p, .bleed-caption cite", {
+        y: 30,
+        opacity: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.15,
+        scrollTrigger: { trigger: ".bleed-caption", start: "top 80%" },
+      });
 
-        gsap.from(".book-card", {
-          y: 40,
-          opacity: 0,
-          duration: 0.8,
-          ease: "power3.out",
-          stagger: 0.08,
-          scrollTrigger: { trigger: ".stories-rail", start: "top 85%" },
-        });
+      gsap.to(".mission-intro.reveal, .mission-card.reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.12,
+        scrollTrigger: { trigger: ".mission-section", start: "top 80%" },
+      });
 
-        gsap.to(".community-head .reveal", {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.1,
-          scrollTrigger: { trigger: ".community-head", start: "top 80%" },
-        });
+      gsap.to(".stories-head .reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.1,
+        scrollTrigger: { trigger: ".stories-head", start: "top 80%" },
+      });
 
-        gsap.to(".c-grid .reveal", {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.12,
-          scrollTrigger: { trigger: ".c-grid", start: "top 80%" },
-        });
+      gsap.from(".book-card", {
+        y: 40,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power3.out",
+        stagger: 0.08,
+        scrollTrigger: { trigger: ".stories-rail", start: "top 85%" },
+      });
 
-        gsap.to(".cta-section .reveal", {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          stagger: 0.1,
-          scrollTrigger: { trigger: ".cta-section", start: "top 75%" },
-        });
+      gsap.to(".community-head .reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.1,
+        scrollTrigger: { trigger: ".community-head", start: "top 80%" },
+      });
 
-        gsap.to(".cta-mascot", {
-          y: -8,
-          duration: 2.6,
-          ease: "sine.inOut",
-          yoyo: true,
-          repeat: -1,
-          delay: 1,
+      gsap.to(".c-grid .reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.12,
+        scrollTrigger: { trigger: ".c-grid", start: "top 80%" },
+      });
+
+      gsap.to(".cta-section .reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.1,
+        scrollTrigger: { trigger: ".cta-section", start: "top 75%" },
+      });
+
+      gsap.to(".cta-mascot", {
+        y: -8,
+        duration: 2.6,
+        ease: "sine.inOut",
+        yoyo: true,
+        repeat: -1,
+        delay: 1,
+      });
+
+      const magneticCleanups: Array<() => void> = [];
+
+      if (!reduceMotion) {
+        magneticButtons.forEach((button) => {
+          const xTo = gsap.quickTo(button, "x", { duration: 0.35, ease: "power3.out" });
+          const yTo = gsap.quickTo(button, "y", { duration: 0.35, ease: "power3.out" });
+          const rotateTo = gsap.quickTo(button, "rotate", {
+            duration: 0.35,
+            ease: "power3.out",
+          });
+
+          const onMove = (event: PointerEvent) => {
+            const bounds = button.getBoundingClientRect();
+            const offsetX = event.clientX - (bounds.left + bounds.width / 2);
+            const offsetY = event.clientY - (bounds.top + bounds.height / 2);
+            const magneticX = gsap.utils.clamp(-14, 14, offsetX * 0.18);
+            const magneticY = gsap.utils.clamp(-10, 10, offsetY * 0.22);
+            xTo(magneticX);
+            yTo(magneticY);
+            rotateTo(gsap.utils.clamp(-4, 4, offsetX * 0.03));
+          };
+
+          const resetMagnetic = () => {
+            xTo(0);
+            yTo(0);
+            rotateTo(0);
+          };
+
+          button.addEventListener("pointermove", onMove);
+          button.addEventListener("pointerleave", resetMagnetic);
+          button.addEventListener("blur", resetMagnetic);
+
+          magneticCleanups.push(() => {
+            button.removeEventListener("pointermove", onMove);
+            button.removeEventListener("pointerleave", resetMagnetic);
+            button.removeEventListener("blur", resetMagnetic);
+            resetMagnetic();
+          });
         });
-      }, root);
+      }
+
+      const velocityCleanups: Array<() => void> = [];
+
+      if (!reduceMotion) {
+        [heroInner, missionShell].forEach((element, index) => {
+          if (!element) return;
+
+          gsap.set(element, {
+            transformPerspective: 1000,
+            transformOrigin: "50% 50%",
+            willChange: "transform",
+          });
+
+          const skewTo = gsap.quickTo(element, "skewY", {
+            duration: 0.3,
+            ease: "power3.out",
+          });
+          const tiltTo = gsap.quickTo(element, "rotationX", {
+            duration: 0.35,
+            ease: "power3.out",
+          });
+          const panTo = gsap.quickTo(element, "rotationY", {
+            duration: 0.35,
+            ease: "power3.out",
+          });
+
+          const trigger = ScrollTrigger.create({
+            trigger: element,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: false,
+            onUpdate: (self) => {
+              const velocity = self.getVelocity();
+              const skew = gsap.utils.clamp(-3.2, 3.2, velocity / 900);
+              const tilt = gsap.utils.clamp(-2.4, 2.4, velocity / -1600);
+              skewTo(skew);
+              tiltTo(tilt);
+              panTo(index === 0 ? tilt * 0.45 : tilt * -0.3);
+            },
+            onLeave: () => {
+              skewTo(0);
+              tiltTo(0);
+              panTo(0);
+            },
+            onLeaveBack: () => {
+              skewTo(0);
+              tiltTo(0);
+              panTo(0);
+            },
+          });
+
+          velocityCleanups.push(() => {
+            trigger.kill();
+            skewTo(0);
+            tiltTo(0);
+            panTo(0);
+          });
+        });
+      }
 
       const fallbackTimer = window.setTimeout(() => {
         root.querySelectorAll<HTMLElement>(".hero .reveal, .reveal-image").forEach((el) => {
@@ -269,7 +440,7 @@ export default function StoriaCalmLanding() {
             el.style.transform = "none";
           }
         });
-        root.querySelectorAll<HTMLElement>(".reveal-lines span > span").forEach((el) => {
+        root.querySelectorAll<HTMLElement>(".hero-char").forEach((el) => {
           if (getComputedStyle(el).transform !== "none") {
             el.style.transform = "none";
           }
@@ -278,20 +449,16 @@ export default function StoriaCalmLanding() {
 
       ScrollTrigger.refresh();
 
-      cleanup = () => {
+      return () => {
         window.clearTimeout(fallbackTimer);
         window.removeEventListener("scroll", onScroll);
-        ctx.revert();
+        magneticCleanups.forEach((cleanup) => cleanup());
+        velocityCleanups.forEach((cleanup) => cleanup());
+        splitHeadline?.revert();
       };
-    };
-
-    void init();
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, []);
+    },
+    { scope: rootRef }
+  );
 
   return (
     <div ref={rootRef} className="storia-calm">
@@ -316,9 +483,10 @@ export default function StoriaCalmLanding() {
         <section className="hero">
           <div className="hero-inner">
             <p className="eyebrow reveal">For ages 4–10 · Made in New Orleans</p>
-            <h1 className="reveal-lines">
-              <span><span>A quiet place</span></span>
-              <span><span>for stories.</span></span>
+            <h1 ref={heroTitleRef} className="hero-title" aria-label="A quiet place for stories.">
+              A quiet place
+              <br />
+              for stories.
             </h1>
             <p className="lede reveal">
               Storia is a read-aloud storybook app for children — warm narration,
@@ -326,6 +494,7 @@ export default function StoriaCalmLanding() {
             </p>
             <div className="actions reveal">
               <a
+                ref={primaryCtaRef}
                 className="btn btn-primary"
                 href="https://apps.apple.com/us/app/storia-kids/id6759848322"
                 target="_blank"
@@ -333,7 +502,9 @@ export default function StoriaCalmLanding() {
               >
                 Download on iOS
               </a>
-              <a className="btn btn-ghost" href="#how">See how it works</a>
+              <a ref={secondaryCtaRef} className="btn btn-ghost" href="#how">
+                See how it works
+              </a>
             </div>
           </div>
           <div className="hero-image reveal-image">

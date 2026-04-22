@@ -294,3 +294,11 @@
 | 16:53 | Session end: 1 writes across 1 files (tsconfig.json) | 1 reads | ~199 tok |
 | 16:55 | Edited src/app/api/comprehension/route.ts | 2→2 lines | ~36 |
 | 16:55 | Session end: 2 writes across 2 files (tsconfig.json, route.ts) | 3 reads | ~1315 tok |
+| 12:02 | Read OpenWolf memory + QA skills for landing-page verification | .wolf/OPENWOLF.md,.wolf/cerebrum.md,.wolf/anatomy.md | done | ~1200 |
+| 12:02 | Ran targeted grep + initial file inspection for StoriaCalmLanding | src/components/StoriaCalmLanding.tsx,package.json | done | ~900 |
+| 12:02 | Inspected hero/magnetic/reduced-motion code paths and attempted package script introspection (1 shell quoting failure) | src/components/StoriaCalmLanding.tsx,package.json | partial | ~800 |
+| 12:02 | Ran focused lint/type sanity checks and logged shell command failure per OpenWolf buglog rule | src/components/StoriaCalmLanding.tsx,.wolf/buglog.json | done | ~1000 |
+| 12:03 | Captured explicit ESLint exit status and logged TS compile failure for landing page | src/components/StoriaCalmLanding.tsx,.wolf/buglog.json | done | ~700 |
+| 12:03 | Logged SplitType TS typing quirk discovered during QA | .wolf/cerebrum.md | done | ~300 |
+| 12:03 | Captured final verification grep for animation hooks and guards | src/components/StoriaCalmLanding.tsx | done | ~300 |
+| 12:04 | Fixed landing page SplitType type error after squad implementation; verified Path A code landed in StoriaCalmLanding.tsx | src/components/StoriaCalmLanding.tsx, .wolf/buglog.json, .wolf/cerebrum.md | success | ~350 |

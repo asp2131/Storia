@@ -11,6 +11,8 @@
 
 ## Key Learnings
 
+- SplitType `types` option is type-sensitive in this project; use comma-separated values without spaces (e.g. `"lines,chars"`), not `"lines, chars"`.
+- SplitType `types` option is type-checked strictly in this repo/build; use comma-separated values without spaces (e.g. `"lines,chars"`), not `"lines, chars"`.
 - **Project:** frontend
 - **Description:** Storia is an immersive reading platform that combines ebooks, narration, and soundscapes into a single reader experience.
 - Overlay editor state is keyed by `page.id` for saved pages and `page-${number}` for unsaved pages, so any renumber operation (reorder/delete) must remap registry keys for unsaved pages.
