@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 
 export type SoundscapeMode = 'continuous' | 'intro-only';
+export type PronunciationMode = 'tap-whole-word' | 'tap-breakdown';
 
 export interface ReaderPreferences {
   soundscapeMode: SoundscapeMode;
   soundscapeEnabled: boolean;
   hasSeenNavigationHint: boolean;
+  pronunciationMode: PronunciationMode;
 }
 
 const STORAGE_KEY = 'storia-reader-preferences';
@@ -14,6 +16,7 @@ const defaultPreferences: ReaderPreferences = {
   soundscapeMode: 'continuous',
   soundscapeEnabled: true,
   hasSeenNavigationHint: false,
+  pronunciationMode: 'tap-whole-word',
 };
 
 export function useLocalPreferences() {
@@ -59,11 +62,16 @@ export function useLocalPreferences() {
     savePreferences({ hasSeenNavigationHint: seen });
   }, [savePreferences]);
 
+  const setPronunciationMode = useCallback((mode: PronunciationMode) => {
+    savePreferences({ pronunciationMode: mode });
+  }, [savePreferences]);
+
   return {
     preferences,
     isLoaded,
     setSoundscapeMode,
     setSoundscapeEnabled,
     setHasSeenNavigationHint,
+    setPronunciationMode,
   };
 }

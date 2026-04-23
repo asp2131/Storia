@@ -686,6 +686,8 @@
 - `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
+- `web-reader-pronunciation-functional-requirements.md` — Web-specific phase-1 pronunciation requirements covering interactions, accessibility, loading/caching, playback state transitions, settings, fallback handling, and open gaps (~3600 tok)
+- `word-pronunciation-cross-platform-spec.md` — Product spec, phased engineering tickets, and schema/API proposal for cross-platform broken-down word pronunciation across Storia web and mobile (~5200 tok)
 
 ## src/app/
 
@@ -740,3 +742,4 @@
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
+- `pronunciation.ts` — Shared pronunciation normalization/token extraction helpers and compatible entry types for generation + reader playback (~220 tok)

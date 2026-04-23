@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { WordPronunciationEntry } from "@/lib/pronunciation";
 import type { TextOverlayConfig } from "@/types/text-overlay";
 
 // Types
@@ -41,7 +42,7 @@ export type PageData = {
   imageUrl: string | null;
   narrationUrl: string | null;
   narrationTimestamps: WordTimestamp[] | null;
-  wordPronunciations: Record<string, string> | null;
+  wordPronunciations: Record<string, WordPronunciationEntry> | null;
   compositedImageUrl: string | null;
   overlay: TextOverlayConfig | null;
   assignments?: AudioAssignment[];
@@ -148,6 +149,7 @@ export function useGenerateNarration(bookId: string | null) {
         wordTimestamps: WordTimestamp[];
         alignmentQuality?: number;
         timestampsUrl?: string;
+        wordPronunciations?: Record<string, WordPronunciationEntry>;
       }>;
     },
     onSuccess: (data, variables) => {

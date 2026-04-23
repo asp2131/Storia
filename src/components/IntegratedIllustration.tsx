@@ -3,28 +3,17 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
 
-// ─── Props ──────────────────────────────────────────────────────
-
 interface IntegratedIllustrationProps {
-  /** Original base illustration URL. */
   imageUrl: string;
-  /** Server-composited image URL (text baked in). */
   compositedImageUrl: string | null;
-  /** Overlay config for dynamic fallback rendering. */
   overlay: TextOverlayConfig | null;
-  /** Alt text for accessibility. */
   alt: string;
-  /** Prefer dynamic overlay rendering over pre-composited image. */
   preferDynamicOverlay?: boolean;
-  /** Global word index currently active from narration timestamps. */
   activeWordIndex?: number;
-  /** Global word index currently being pronounced from tap action. */
   pronouncingWordIndex?: number | null;
-  /** Callback for tap-to-pronounce interactions. */
-  onWordTap?: (word: string, index: number) => void;
+  onWordPrimaryAction?: (word: string, index: number) => void;
+  onWordSecondaryAction?: (word: string, index: number) => void;
 }
-
-// ─── Image Preload Hook ─────────────────────────────────────────
 
 function usePreloadImage(src: string | null): {
   loaded: boolean;
@@ -57,11 +46,7 @@ function usePreloadImage(src: string | null): {
   return { loaded, error };
 }
 
-// ─── Display Mode ───────────────────────────────────────────────
-
 type DisplayMode = "composited" | "dynamic-overlay" | "image-only" | "fallback";
-
-// ─── Component ──────────────────────────────────────────────────
 
 export default function IntegratedIllustration({
   imageUrl,
@@ -71,7 +56,8 @@ export default function IntegratedIllustration({
   preferDynamicOverlay = false,
   activeWordIndex,
   pronouncingWordIndex = null,
-  onWordTap,
+  onWordPrimaryAction,
+  onWordSecondaryAction,
 }: IntegratedIllustrationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -79,8 +65,10 @@ export default function IntegratedIllustration({
 
   const compositedPreload = usePreloadImage(compositedImageUrl);
   const basePreload = usePreloadImage(imageUrl);
+  const hasInteractiveOverlay =
+    typeof onWordPrimaryAction === "function" ||
+    typeof onWordSecondaryAction === "function";
 
-  // Track container height for font size calculations in dynamic overlay mode
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -99,35 +87,29 @@ export default function IntegratedIllustration({
   const displayMode = useMemo<DisplayMode>(() => {
     const hasOverlayElements = overlay && overlay.elements.length > 0;
 
-    // 1. Prefer dynamic overlay when requested and overlay is available.
     if (preferDynamicOverlay && hasOverlayElements && basePreload.loaded) {
       return "dynamic-overlay";
     }
 
-    // 1. Composited image available and loaded successfully
     if (compositedImageUrl && compositedPreload.loaded && !compositedPreload.error) {
       return "composited";
     }
 
-    // 2. Dynamic overlay: overlay config exists with elements, but no composited image
-    //    (or composited failed to load)
     if (hasOverlayElements && basePreload.loaded) {
       return "dynamic-overlay";
     }
 
-    // 3. Image only: base image loaded, no overlay data
     if (basePreload.loaded) {
       return "image-only";
     }
 
-    // 4. Fallback: nothing loaded yet (or everything failed)
     return "fallback";
   }, [
-    compositedImageUrl,
-    compositedPreload.loaded,
-    compositedPreload.error,
-    overlay,
     basePreload.loaded,
+    compositedImageUrl,
+    compositedPreload.error,
+    compositedPreload.loaded,
+    overlay,
     preferDynamicOverlay,
   ]);
 
@@ -149,8 +131,6 @@ export default function IntegratedIllustration({
     return starts;
   }, [overlay?.elements]);
 
-  // ─── Render: Composited ─────────────────────────────────────
-
   if (displayMode === "composited") {
     return (
       <div ref={containerRef} className="relative w-full">
@@ -165,22 +145,20 @@ export default function IntegratedIllustration({
     );
   }
 
-  // ─── Render: Dynamic Overlay ────────────────────────────────
-
   if (displayMode === "dynamic-overlay") {
     return (
-      <div
-        ref={containerRef}
-        className="relative w-full"
-        aria-label={alt}
-        role="img"
-      >
+      <div ref={containerRef} className="relative w-full">
+        {hasInteractiveOverlay ? <span className="sr-only">{alt}</span> : null}
         <img
           src={imageUrl}
-          alt={alt}
+          alt={hasInteractiveOverlay ? "" : alt}
+          aria-hidden={hasInteractiveOverlay ? true : undefined}
           className="w-full h-auto rounded-xl"
           draggable={false}
         />
+        {!hasInteractiveOverlay ? (
+          <div className="sr-only">{alt}</div>
+        ) : null}
         {overlay!.elements.map((element) => (
           <OverlayTextElement
             key={element.id}
@@ -190,14 +168,13 @@ export default function IntegratedIllustration({
             wordStartIndex={wordStartByElement.get(element.id) ?? 0}
             activeWordIndex={activeWordIndex}
             pronouncingWordIndex={pronouncingWordIndex}
-            onWordTap={onWordTap}
+            onWordPrimaryAction={onWordPrimaryAction}
+            onWordSecondaryAction={onWordSecondaryAction}
           />
         ))}
       </div>
     );
   }
-
-  // ─── Render: Image Only ─────────────────────────────────────
 
   if (displayMode === "image-only") {
     return (
@@ -212,8 +189,6 @@ export default function IntegratedIllustration({
       </div>
     );
   }
-
-  // ─── Render: Fallback (loading / error) ─────────────────────
 
   return (
     <div
@@ -238,8 +213,6 @@ export default function IntegratedIllustration({
   );
 }
 
-// ─── Dynamic Overlay Text Element ───────────────────────────────
-
 function OverlayTextElement({
   element,
   containerWidth,
@@ -247,7 +220,8 @@ function OverlayTextElement({
   wordStartIndex,
   activeWordIndex,
   pronouncingWordIndex,
-  onWordTap,
+  onWordPrimaryAction,
+  onWordSecondaryAction,
 }: {
   element: TextElement;
   containerWidth: number;
@@ -255,7 +229,8 @@ function OverlayTextElement({
   wordStartIndex: number;
   activeWordIndex?: number;
   pronouncingWordIndex?: number | null;
-  onWordTap?: (word: string, index: number) => void;
+  onWordPrimaryAction?: (word: string, index: number) => void;
+  onWordSecondaryAction?: (word: string, index: number) => void;
 }) {
   const fontSize = containerHeight > 0
     ? (element.fontSize / 100) * containerHeight
@@ -273,7 +248,21 @@ function OverlayTextElement({
       }
     : {};
 
-  const interactive = typeof onWordTap === "function";
+  const interactive =
+    typeof onWordPrimaryAction === "function" ||
+    typeof onWordSecondaryAction === "function";
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef(false);
+  const LONG_PRESS_MS = 450;
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => clearLongPress, []);
 
   const tokens = element.text.split(/(\s+)/);
   const wordPositions = tokens.reduce<{ positions: number[]; wordCount: number }>(
@@ -307,7 +296,7 @@ function OverlayTextElement({
         lineHeight: 1.3,
         ...backgroundStyle,
       }}
-      aria-hidden="true"
+      aria-hidden={interactive ? undefined : true}
     >
       {tokens.map((token, tokenIdx) => {
         if (token.trim().length === 0) {
@@ -317,10 +306,16 @@ function OverlayTextElement({
         const globalIndex = wordStartIndex + wordPositions[tokenIdx];
         const isActive = activeWordIndex === globalIndex;
         const isPronouncing = pronouncingWordIndex === globalIndex;
+        const sharedWordStyle = {
+          backgroundColor: isActive || isPronouncing ? "var(--reader-highlight-bg)" : undefined,
+          borderRadius: "4px",
+          textDecoration: isActive || isPronouncing ? "underline" : undefined,
+          textUnderlineOffset: isActive || isPronouncing ? "0.18em" : undefined,
+        };
 
         if (!interactive) {
           return (
-            <span key={`${element.id}-word-${tokenIdx}`}>
+            <span key={`${element.id}-word-${tokenIdx}`} style={sharedWordStyle}>
               {token}
             </span>
           );
@@ -330,23 +325,63 @@ function OverlayTextElement({
           <span
             key={`${element.id}-word-${tokenIdx}`}
             data-overlay-word="true"
-            className={isPronouncing ? "word-pronouncing" : "word-tappable"}
-            style={isActive ? { backgroundColor: "var(--reader-highlight-bg)", borderRadius: "4px" } : undefined}
-            onClick={(e) => {
-              e.stopPropagation();
-              onWordTap(token, globalIndex);
-            }}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                e.stopPropagation();
-                onWordTap(token, globalIndex);
-              }
-            }}
+            className="group/word relative inline-flex items-center align-baseline"
           >
-            {token}
+            <button
+              type="button"
+              className={isPronouncing ? "word-pronouncing" : "word-tappable"}
+              style={sharedWordStyle}
+              aria-label={`Hear ${token}`}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                longPressTriggeredRef.current = false;
+                clearLongPress();
+                if (!onWordSecondaryAction) {
+                  return;
+                }
+                longPressTimerRef.current = window.setTimeout(() => {
+                  longPressTriggeredRef.current = true;
+                  onWordSecondaryAction(token, globalIndex);
+                }, LONG_PRESS_MS);
+              }}
+              onPointerUp={() => {
+                clearLongPress();
+              }}
+              onPointerLeave={() => {
+                clearLongPress();
+              }}
+              onPointerCancel={() => {
+                clearLongPress();
+              }}
+              onContextMenu={(event) => {
+                event.preventDefault();
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+                clearLongPress();
+                if (longPressTriggeredRef.current) {
+                  longPressTriggeredRef.current = false;
+                  event.preventDefault();
+                  return;
+                }
+                onWordPrimaryAction?.(token, globalIndex);
+              }}
+            >
+              {token}
+            </button>
+            {onWordSecondaryAction ? (
+              <button
+                type="button"
+                className="sr-only rounded-full border border-white/20 bg-slate-900/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white shadow-lg focus:not-sr-only focus:absolute focus:left-1/2 focus:top-full focus:z-10 focus:mt-1 focus:-translate-x-1/2"
+                aria-label={`Sound out word ${token}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onWordSecondaryAction(token, globalIndex);
+                }}
+              >
+                Sound out
+              </button>
+            ) : null}
           </span>
         );
       })}

@@ -8,7 +8,8 @@ type ReaderStageProps = {
   activeIndex: number;
   activeWordIndex: number;
   pronouncingIndex: number | null;
-  onWordTap: (word: string, index: number) => void;
+  onWordPrimaryAction: (word: string, index: number) => void;
+  onWordSecondaryAction: (word: string, index: number) => void;
   setPageRef: (index: number, el: HTMLDivElement | null) => void;
 };
 
@@ -18,7 +19,8 @@ export default function ReaderStage({
   activeIndex,
   activeWordIndex,
   pronouncingIndex,
-  onWordTap,
+  onWordPrimaryAction,
+  onWordSecondaryAction,
   setPageRef,
 }: ReaderStageProps) {
   return (
@@ -63,7 +65,12 @@ export default function ReaderStage({
                           pronouncingWordIndex={
                             index === activeIndex ? pronouncingIndex : null
                           }
-                          onWordTap={index === activeIndex ? onWordTap : undefined}
+                          onWordPrimaryAction={
+                            index === activeIndex ? onWordPrimaryAction : undefined
+                          }
+                          onWordSecondaryAction={
+                            index === activeIndex ? onWordSecondaryAction : undefined
+                          }
                         />
                       </div>
                     </div>

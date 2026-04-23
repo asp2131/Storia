@@ -18,8 +18,15 @@ import ReaderProgressToast from "@/components/reader/ReaderProgressToast";
 import ReaderScrollHint from "@/components/reader/ReaderScrollHint";
 import ReaderSettingsPanel from "@/components/reader/ReaderSettingsPanel";
 import ReaderStage from "@/components/reader/ReaderStage";
-import { useWordPronunciation } from "@/hooks/useWordPronunciation";
-import { useLocalPreferences, SoundscapeMode } from "@/hooks/useLocalPreferences";
+import {
+  useWordPronunciation,
+  type PronunciationPlaybackMode,
+} from "@/hooks/useWordPronunciation";
+import {
+  useLocalPreferences,
+  type PronunciationMode,
+  SoundscapeMode,
+} from "@/hooks/useLocalPreferences";
 import { useAudioCrossFade } from "@/hooks/useAudioCrossFade";
 import { useReaderData, WordTimestamp } from "@/hooks/useBookData";
 import {
@@ -77,6 +84,7 @@ export default function BookReader() {
   const prevActiveIndexRef = useRef(0);
   const lastSnapProgressRef = useRef(0);
   const isNarrationPlayingRef = useRef(false);
+  const narrationIntentVersionRef = useRef(0);
   const pageLoadTimeRef = useRef<number>(0);
   const scrollActiveIndexRef = useRef(0);
 
@@ -109,9 +117,12 @@ export default function BookReader() {
   // ─── Settings ──────────────────────────────────────────────────
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
 
+  const pronunciationFeatureEnabled =
+    process.env.NEXT_PUBLIC_READER_PRONUNCIATION_ENABLED !== "false";
 
   // ─── Preferences & audio cross-fade ────────────────────────────
-  const { preferences, setSoundscapeMode } = useLocalPreferences();
+  const { preferences, setSoundscapeMode, setPronunciationMode } =
+    useLocalPreferences();
   const { initAudioContext, connectAudioElement, fadeIn, fadeOut } =
     useAudioCrossFade();
   const audioConnectedRef = useRef(false);
@@ -195,7 +206,81 @@ export default function BookReader() {
   const { pronounceWord, pronouncingIndex } = useWordPronunciation({
     wordPronunciations: pageData?.wordPronunciations || null,
     nextPagePronunciations: nextPageData?.wordPronunciations || null,
+    getNarrationPlaybackState: () => isNarrationPlayingRef.current,
+    pauseNarration: () => {
+      narrationRef.current?.pause();
+      setIsNarrationPlaying(false);
+    },
+    resumeNarration: () => {
+      if (!narrationRef.current || !narrationUrl) return;
+      narrationRef.current.play().catch(() => {});
+      setIsNarrationPlaying(true);
+    },
+    getNarrationIntentVersion: () => narrationIntentVersionRef.current,
   });
+
+  const resolvePrimaryPronunciationMode = useCallback((): PronunciationPlaybackMode => {
+    if (!pronunciationFeatureEnabled) {
+      return "whole-word";
+    }
+
+    return preferences.pronunciationMode === "tap-breakdown"
+      ? "breakdown"
+      : "whole-word";
+  }, [preferences.pronunciationMode, pronunciationFeatureEnabled]);
+
+  const handleWordPrimaryAction = useCallback(
+    (word: string, index: number) => {
+      const mode = resolvePrimaryPronunciationMode();
+      pronounceWord({
+        word,
+        index,
+        mode,
+        trigger: mode === "breakdown" ? "click" : "click",
+      });
+      window.umami?.track("reader-pronunciation", {
+        bookId,
+        pageId: pageData?.id,
+        page: currentPage,
+        word,
+        mode,
+        trigger: "click",
+      });
+    },
+    [bookId, currentPage, pageData?.id, pronounceWord, resolvePrimaryPronunciationMode]
+  );
+
+  const handleWordSecondaryAction = useCallback(
+    (word: string, index: number) => {
+      if (!pronunciationFeatureEnabled) {
+        handleWordPrimaryAction(word, index);
+        return;
+      }
+
+      pronounceWord({
+        word,
+        index,
+        mode: "breakdown",
+        trigger: "alternate-control",
+      });
+      window.umami?.track("reader-pronunciation", {
+        bookId,
+        pageId: pageData?.id,
+        page: currentPage,
+        word,
+        mode: "breakdown",
+        trigger: "alternate-control",
+      });
+    },
+    [
+      bookId,
+      currentPage,
+      handleWordPrimaryAction,
+      pageData?.id,
+      pronounceWord,
+      pronunciationFeatureEnabled,
+    ]
+  );
 
   // ─── Umami analytics refs ──────────────────────────────────────
   const pageEnteredAtRef = useRef<number>(Date.now());
@@ -207,6 +292,7 @@ export default function BookReader() {
   }, [isNarrationPlaying]);
 
   useEffect(() => {
+    narrationIntentVersionRef.current += 1;
     setNarrationTrackIndex(0);
     setNarrationProgress(0);
     setActiveWordIndex(-1);
@@ -721,6 +807,8 @@ export default function BookReader() {
   const toggleNarration = useCallback(() => {
     if (!narrationRef.current || !narrationUrl) return;
 
+    narrationIntentVersionRef.current += 1;
+
     if (isNarrationPlaying) {
       narrationRef.current.pause();
       setIsNarrationPlaying(false);
@@ -783,6 +871,10 @@ export default function BookReader() {
 
   const handleSoundscapeModeChange = (mode: SoundscapeMode) => {
     setSoundscapeMode(mode);
+  };
+
+  const handlePronunciationModeChange = (mode: PronunciationMode) => {
+    setPronunciationMode(mode);
   };
 
   // Narration source change — debounced play to avoid stutter during fast scroll
@@ -977,7 +1069,8 @@ export default function BookReader() {
           activeIndex={activeIndex}
           activeWordIndex={activeWordIndex}
           pronouncingIndex={pronouncingIndex}
-          onWordTap={pronounceWord}
+          onWordPrimaryAction={handleWordPrimaryAction}
+          onWordSecondaryAction={handleWordSecondaryAction}
           setPageRef={(index, el) => {
             pagesRef.current[index] = el;
           }}
@@ -1003,12 +1096,15 @@ export default function BookReader() {
           narrationVolume={narrationVolume}
           soundscapeVolume={soundscapeVolume}
           soundscapeMode={preferences.soundscapeMode}
+          pronunciationMode={preferences.pronunciationMode}
+          pronunciationEnabled={pronunciationFeatureEnabled}
           onClose={() => setShowSettingsPanel(false)}
           onToggleNarration={toggleNarration}
           onToggleSoundscape={toggleSoundscape}
           onNarrationVolumeChange={setNarrationVolume}
           onSoundscapeVolumeChange={setSoundscapeVolume}
           onChangeSoundscapeMode={handleSoundscapeModeChange}
+          onChangePronunciationMode={handlePronunciationModeChange}
         />
 
         {/* Feedback & Login */}

@@ -1,5 +1,5 @@
-import { Mic, Music, Pause, Play, Volume1, Volume2, X } from "lucide-react";
-import type { SoundscapeMode } from "@/hooks/useLocalPreferences";
+import { Mic, Music, Pause, Play, Volume1, Volume2, Wand2, X } from "lucide-react";
+import type { PronunciationMode, SoundscapeMode } from "@/hooks/useLocalPreferences";
 
 type ReaderSettingsPanelProps = {
   open: boolean;
@@ -10,12 +10,15 @@ type ReaderSettingsPanelProps = {
   narrationVolume: number;
   soundscapeVolume: number;
   soundscapeMode: SoundscapeMode;
+  pronunciationMode: PronunciationMode;
+  pronunciationEnabled: boolean;
   onClose: () => void;
   onToggleNarration: () => void;
   onToggleSoundscape: () => void;
   onNarrationVolumeChange: (volume: number) => void;
   onSoundscapeVolumeChange: (volume: number) => void;
   onChangeSoundscapeMode: (mode: SoundscapeMode) => void;
+  onChangePronunciationMode: (mode: PronunciationMode) => void;
 };
 
 export default function ReaderSettingsPanel({
@@ -27,12 +30,15 @@ export default function ReaderSettingsPanel({
   narrationVolume,
   soundscapeVolume,
   soundscapeMode,
+  pronunciationMode,
+  pronunciationEnabled,
   onClose,
   onToggleNarration,
   onToggleSoundscape,
   onNarrationVolumeChange,
   onSoundscapeVolumeChange,
   onChangeSoundscapeMode,
+  onChangePronunciationMode,
 }: ReaderSettingsPanelProps) {
   return (
     <div
@@ -45,23 +51,25 @@ export default function ReaderSettingsPanel({
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-slate-900/95 backdrop-blur-md border-l border-white/10 shadow-2xl flex flex-col transition-transform duration-300"
+        className="absolute right-0 top-0 bottom-0 flex w-full max-w-sm flex-col border-l border-white/10 bg-slate-900/95 shadow-2xl backdrop-blur-md transition-transform duration-300"
         style={{ transform: open ? "translateX(0)" : "translateX(100%)" }}
       >
-        <div className="flex items-center justify-between p-5 border-b border-white/10">
+        <div className="flex items-center justify-between border-b border-white/10 p-5">
           <h2 className="text-lg font-semibold text-white">Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="rounded-full p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="Close settings"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+
+        <div className="flex-1 space-y-6 overflow-y-auto p-5">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
-                <Mic className="w-5 h-5 text-orange-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/20">
+                <Mic className="h-5 w-5 text-orange-400" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white">Narration</h3>
@@ -70,11 +78,11 @@ export default function ReaderSettingsPanel({
             </div>
             {narrationUrl ? (
               <div className="space-y-3 pl-[52px]">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-300">Playback</span>
                   <button
                     onClick={onToggleNarration}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
                       isNarrationPlaying
                         ? "bg-orange-500 text-white"
                         : "bg-white/10 text-slate-300"
@@ -82,45 +90,92 @@ export default function ReaderSettingsPanel({
                   >
                     {isNarrationPlaying ? (
                       <>
-                        <Pause className="w-4 h-4" />
+                        <Pause className="h-4 w-4" />
                         Playing
                       </>
                     ) : (
                       <>
-                        <Play className="w-4 h-4" />
+                        <Play className="h-4 w-4" />
                         Play
                       </>
                     )}
                   </button>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Volume1 className="w-4 h-4 text-slate-400" />
+                  <Volume1 className="h-4 w-4 text-slate-400" />
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={Math.round(narrationVolume * 100)}
-                    onChange={(e) =>
-                      onNarrationVolumeChange(Number(e.target.value) / 100)
-                    }
-                    className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-orange-500"
+                    onChange={(e) => onNarrationVolumeChange(Number(e.target.value) / 100)}
+                    className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/10 accent-orange-500"
+                    aria-label="Narration volume"
                   />
-                  <Volume2 className="w-4 h-4 text-slate-400" />
+                  <Volume2 className="h-4 w-4 text-slate-400" />
                 </div>
               </div>
             ) : (
-              <p className="pl-[52px] text-sm text-slate-500 italic">
-                No narration for this page
-              </p>
+              <p className="pl-[52px] text-sm italic text-slate-500">No narration for this page</p>
             )}
           </div>
+
+          {pronunciationEnabled ? (
+            <>
+              <div className="border-t border-white/10" />
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/20">
+                    <Wand2 className="h-5 w-5 text-violet-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Word Help</h3>
+                    <p className="text-xs text-slate-400">Choose what a word tap does</p>
+                  </div>
+                </div>
+                <div className="space-y-3 pl-[52px]">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-slate-300">Tap behavior</span>
+                    <div className="flex items-center gap-1 rounded-full bg-white/10 p-1">
+                      <button
+                        onClick={() => onChangePronunciationMode("tap-whole-word")}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                          pronunciationMode === "tap-whole-word"
+                            ? "bg-violet-500 text-white"
+                            : "text-slate-400"
+                        }`}
+                        aria-pressed={pronunciationMode === "tap-whole-word"}
+                      >
+                        Whole word
+                      </button>
+                      <button
+                        onClick={() => onChangePronunciationMode("tap-breakdown")}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                          pronunciationMode === "tap-breakdown"
+                            ? "bg-violet-500 text-white"
+                            : "text-slate-400"
+                        }`}
+                        aria-pressed={pronunciationMode === "tap-breakdown"}
+                      >
+                        Sound out
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs leading-5 text-slate-400">
+                    Tap plays the selected word help. Long-press still sounds out a word,
+                    and each focused word exposes a secondary <span className="font-medium text-white">Sound out</span> control for keyboard and screen-reader access.
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : null}
 
           <div className="border-t border-white/10" />
 
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center">
-                <Music className="w-5 h-5 text-teal-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-500/20">
+                <Music className="h-5 w-5 text-teal-400" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-white">Soundscape</h3>
@@ -129,11 +184,11 @@ export default function ReaderSettingsPanel({
             </div>
             {soundscapeUrl ? (
               <div className="space-y-3 pl-[52px]">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-300">Playback</span>
                   <button
                     onClick={onToggleSoundscape}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
                       isSoundscapePlaying
                         ? "bg-teal-500 text-white"
                         : "bg-white/10 text-slate-300"
@@ -141,51 +196,52 @@ export default function ReaderSettingsPanel({
                   >
                     {isSoundscapePlaying ? (
                       <>
-                        <Pause className="w-4 h-4" />
+                        <Pause className="h-4 w-4" />
                         Playing
                       </>
                     ) : (
                       <>
-                        <Play className="w-4 h-4" />
+                        <Play className="h-4 w-4" />
                         Play
                       </>
                     )}
                   </button>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Volume1 className="w-4 h-4 text-slate-400" />
+                  <Volume1 className="h-4 w-4 text-slate-400" />
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={Math.round(soundscapeVolume * 100)}
-                    onChange={(e) =>
-                      onSoundscapeVolumeChange(Number(e.target.value) / 100)
-                    }
-                    className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-teal-500"
+                    onChange={(e) => onSoundscapeVolumeChange(Number(e.target.value) / 100)}
+                    className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/10 accent-teal-500"
+                    aria-label="Soundscape volume"
                   />
-                  <Volume2 className="w-4 h-4 text-slate-400" />
+                  <Volume2 className="h-4 w-4 text-slate-400" />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-300">Mode</span>
-                  <div className="flex items-center bg-white/10 rounded-full p-1 gap-1">
+                  <div className="flex items-center gap-1 rounded-full bg-white/10 p-1">
                     <button
                       onClick={() => onChangeSoundscapeMode("intro-only")}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                         soundscapeMode === "intro-only"
                           ? "bg-teal-500 text-white"
                           : "text-slate-400"
                       }`}
+                      aria-pressed={soundscapeMode === "intro-only"}
                     >
                       One-shot
                     </button>
                     <button
                       onClick={() => onChangeSoundscapeMode("continuous")}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium ${
                         soundscapeMode === "continuous"
                           ? "bg-teal-500 text-white"
                           : "text-slate-400"
                       }`}
+                      aria-pressed={soundscapeMode === "continuous"}
                     >
                       Loop
                     </button>
@@ -193,9 +249,7 @@ export default function ReaderSettingsPanel({
                 </div>
               </div>
             ) : (
-              <p className="pl-[52px] text-sm text-slate-500 italic">
-                No soundscape for this page
-              </p>
+              <p className="pl-[52px] text-sm italic text-slate-500">No soundscape for this page</p>
             )}
           </div>
         </div>

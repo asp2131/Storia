@@ -80,7 +80,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 13→7 lines (6 removed) | Also: const currentTime = narrationProgress;; let foundIndex = -1;",
+      "fix": "Rewrote 13\u21927 lines (6 removed) | Also: const currentTime = narrationProgress;; let foundIndex = -1;",
       "tags": [
         "auto-detected",
         "refactor",
@@ -112,7 +112,7 @@
       "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
       "file": ".claude/worktrees/agent-a3cc6296/src/contexts/BookEditorContext.tsx",
       "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
-      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
+      "fix": "Changed overlayConfig \u2192 normalizeOverlayForMobile",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -144,7 +144,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 13→7 lines (6 removed)",
+      "fix": "Rewrote 13\u21927 lines (6 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -160,7 +160,7 @@
       "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
-      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
+      "fix": "Changed overlayConfig \u2192 normalizeOverlayForMobile",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -176,7 +176,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/editor/AudioLibraryPanel.tsx",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 6→17 lines (3 removed)",
+      "fix": "Rewrote 6\u219217 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -191,8 +191,8 @@
       "timestamp": "2026-03-27T18:06:35.876Z",
       "error_message": "CSS fix: narrationTimestamps",
       "file": "src/contexts/BookEditorContext.tsx",
-      "root_cause": "narrationTimestamps: undefined → undefined, narrationUrl: undefined",
-      "fix": "Changed narrationTimestamps: undefined → undefined, narrationUrl: undefined",
+      "root_cause": "narrationTimestamps: undefined \u2192 undefined, narrationUrl: undefined",
+      "fix": "Changed narrationTimestamps: undefined \u2192 undefined, narrationUrl: undefined",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -240,7 +240,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/audio-stitcher.ts",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 11→15 lines (3 removed)",
+      "fix": "Rewrote 11\u219215 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -275,7 +275,7 @@
       "timestamp": "2026-03-27T22:27:07.691Z",
       "error_message": "Missing error handling in getFfmpegPath",
       "file": "src/lib/audio-stitcher.ts",
-      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
       "fix": "Added try/catch block | Also: try {; await execFileAsync(ffmpeg, ffmpegArgs, {",
       "tags": [
         "auto-detected",
@@ -291,7 +291,7 @@
       "timestamp": "2026-03-27T23:30:00.000Z",
       "error_message": "Only first overlay text audible when playing back stitched narration (Xing header stripping was insufficient)",
       "file": "src/lib/audio-stitcher.ts",
-      "root_cause": "Naive JS MP3 buffer concatenation fails because: (1) Xing/LAME VBR headers declare total frame count causing browsers to stop early, (2) synthetic silence frames have different encoding parameters than ElevenLabs output causing decoder confusion at frame boundaries. Stripping headers alone was insufficient — the frame parameter mismatch between silence and real audio remained.",
+      "root_cause": "Naive JS MP3 buffer concatenation fails because: (1) Xing/LAME VBR headers declare total frame count causing browsers to stop early, (2) synthetic silence frames have different encoding parameters than ElevenLabs output causing decoder confusion at frame boundaries. Stripping headers alone was insufficient \u2014 the frame parameter mismatch between silence and real audio remained.",
       "fix": "Replaced entire audio-stitcher with ffmpeg-static based implementation. Uses ffmpeg concat filter (decode + re-encode) with anullsrc for silence gaps. Produces a spec-compliant single MP3. Added ffmpeg-static to serverExternalPackages in next.config.ts.",
       "tags": [
         "audio",
@@ -315,7 +315,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 4→6 lines (2 removed)",
+      "fix": "Rewrote 4\u21926 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -330,8 +330,8 @@
       "timestamp": "2026-04-04T19:10:55.836Z",
       "error_message": "CSS fix: https",
       "file": "src/app/page.tsx",
-      "root_cause": "https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
-      "fix": "Changed https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "root_cause": "https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" \u2192 //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "fix": "Changed https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" \u2192 //apps.apple.com/us/app/storia-kids/id6759848322\"",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -346,8 +346,8 @@
       "timestamp": "2026-04-04T19:14:20.118Z",
       "error_message": "CSS fix: background",
       "file": "src/components/MorphogenesisHero.tsx",
-      "root_cause": "background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
-      "fix": "Changed background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "root_cause": "background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", \u2192 \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "fix": "Changed background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", \u2192 \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -395,7 +395,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/MorphogenesisHero.tsx",
       "root_cause": "10 lines replaced/restructured",
-      "fix": "Rewrote 11→4 lines (10 removed) | Also: {/* ── Top zone: Model + Title + Tagline ── */}; <div className=\"relative z-10 flex flex-col items-",
+      "fix": "Rewrote 11\u21924 lines (10 removed) | Also: {/* \u2500\u2500 Top zone: Model + Title + Tagline \u2500\u2500 */}; <div className=\"relative z-10 flex flex-col items-",
       "tags": [
         "auto-detected",
         "refactor",
@@ -411,7 +411,7 @@
       "error_message": "Wrong reference: remotePatterns should be dangerouslyAllowSVG",
       "file": "next.config.ts",
       "root_cause": "Used \"remotePatterns\" instead of \"dangerouslyAllowSVG\"",
-      "fix": "Changed remotePatterns → dangerouslyAllowSVG",
+      "fix": "Changed remotePatterns \u2192 dangerouslyAllowSVG",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -442,7 +442,7 @@
       "timestamp": "2026-04-07T13:05:26.706Z",
       "error_message": "Missing await",
       "file": "prisma/seed.ts",
-      "root_cause": "Async call without await — returned Promise instead of value",
+      "root_cause": "Async call without await \u2014 returned Promise instead of value",
       "fix": "Added await to async call",
       "tags": [
         "auto-detected",
@@ -496,7 +496,7 @@
       "timestamp": "2026-04-07T15:46:04.287Z",
       "error_message": "Missing error handling in function",
       "file": "src/lib/auth.ts",
-      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -512,7 +512,7 @@
       "timestamp": "2026-04-07T15:48:06.222Z",
       "error_message": "Missing error handling in unknown",
       "file": "src/app/api/auth/[...all]/route.ts",
-      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -529,7 +529,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/auth.ts",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 13→15 lines (2 removed)",
+      "fix": "Rewrote 13\u219215 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -554,6 +554,207 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-07T15:55:49.300Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-04-21T17:02:50.540761+00:00",
+      "error_message": "Shell command failed while inspecting package.json due to inline quoting syntax error",
+      "file": "package.json",
+      "root_cause": "Ad-hoc node -e command used shell-interpolated template syntax that bash parsed before Node executed it",
+      "fix": "Re-ran package inspection using a Python JSON reader instead of inline shell template literals",
+      "tags": [
+        "tooling",
+        "shell",
+        "qa-session",
+        "command-error"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-21T17:02:50.540944+00:00"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-04-21T17:03:08.095200+00:00",
+      "error_message": "TypeScript compile error in src/components/StoriaCalmLanding.tsx: SplitType option 'lines, chars' is not assignable to TypesList; expected 'lines,chars'",
+      "file": "src/components/StoriaCalmLanding.tsx",
+      "root_cause": "SplitType types option includes a space after the comma, which does not match the package type union",
+      "fix": "Not fixed in QA pass; frontend should change the option string to a valid TypesList value such as \"lines,chars\" and rerun typecheck",
+      "tags": [
+        "typescript",
+        "split-type",
+        "landing-page",
+        "build-break"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-21T17:03:08.095400+00:00"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-04-21T17:04:21.054501+00:00",
+      "error_message": "TypeScript error in landing page: SplitType `types` value \"lines, chars\" is invalid",
+      "file": "src/components/StoriaCalmLanding.tsx",
+      "root_cause": "SplitType TypeScript types expect a comma-separated list without spaces (e.g. \"lines,chars\"), but the implementation used \"lines, chars\" which fails type-checking.",
+      "fix": "Changed SplitType config from \"lines, chars\" to \"lines,chars\" in StoriaCalmLanding.tsx.",
+      "tags": [
+        "typescript",
+        "gsap",
+        "split-type",
+        "landing-page"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-21T17:04:21.054688+00:00"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-04-22T14:00:00Z",
+      "error_message": "Shell command failed while searching editor files due to unquoted parentheses in path src/app/admin/(editor)/books/[id]/edit",
+      "file": "src/app/admin/(editor)/books/[id]/edit/page.tsx",
+      "root_cause": "Shell path containing parentheses was passed to bash without quoting, so the shell parsed it as syntax instead of an rg path argument.",
+      "fix": "Re-ran the search with the path wrapped in single quotes.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "path-quoting"
+      ],
+      "related_bugs": [
+        "bug-034"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T14:00:00Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-04-22T22:52:34.655693+00:00",
+      "error_message": "functions.squad_modify cancel failed with error: activeScheduler is not defined",
+      "file": "functions.squad_modify",
+      "root_cause": "Squad tool cancel action errored internally instead of terminating the running squad.",
+      "fix": "Worked around by not relying on squad cancellation for this task and completing the spec update directly.",
+      "tags": [
+        "tooling",
+        "squad",
+        "cancel",
+        "agent-team"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T22:52:34.655835+00:00"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-04-22T18:05:00Z",
+      "error_message": "QA verification shell command ended with unexpected EOF while looking for matching quote",
+      "file": "QA verification command for specs/web-reader-pronunciation-functional-requirements.md",
+      "root_cause": "Mismatched shell quoting around sed range inside a multi-line bash command.",
+      "fix": "Re-ran verification with corrected quoting and simpler command separation.",
+      "tags": [
+        "qa",
+        "verification",
+        "shell",
+        "quoting"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T18:05:00Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-04-22T18:06:00Z",
+      "error_message": "Python one-liner for memory append failed with unterminated string literal",
+      "file": ".wolf/memory.md",
+      "root_cause": "Used a single-quoted Python string containing a raw newline in the heredoc command.",
+      "fix": "Re-ran the append using a triple-quoted string literal.",
+      "tags": [
+        "qa",
+        "verification",
+        "python",
+        "memory-log"
+      ],
+      "related_bugs": [
+        "bug-039"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T18:06:00Z"
+    },
+    {
+      "id": "bug-041",
+      "timestamp": "2026-04-22T23:08:13.511758+00:00",
+      "error_message": "Vitest failures while adding Phase 1 pronunciation interaction tests: ResizeObserver undefined, fake-timer image preload stalls, and inaccessible query assumptions for hidden secondary controls.",
+      "file": "src/components/IntegratedIllustration.test.tsx",
+      "root_cause": "The component depends on browser-only Image/ResizeObserver APIs and the new accessible alternate action uses a hidden secondary control, so the initial tests lacked environment stubs and used mismatched queries/timer sequencing.",
+      "fix": "Stubbed Image and ResizeObserver in tests, added cleanup between tests, adjusted queries for accessible labels/hidden controls, and sequenced fake timers only around long-press timing after initial render.",
+      "tags": [
+        "tests",
+        "vitest",
+        "resizeobserver",
+        "fake-timers",
+        "accessibility",
+        "long-press"
+      ],
+      "related_bugs": [
+        "bug-004"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T23:08:13.511758+00:00"
+    },
+    {
+      "id": "bug-042",
+      "timestamp": "2026-04-22T23:09:26.178084+00:00",
+      "error_message": "Targeted narration-aware pronunciation hook test does not observe auto-resume completion callback after breakdown playback",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Current breakdown playback test never sees an active source onended handler, suggesting the narration auto-resume completion path is not reliably established or is being cleared before playback completion is observed.",
+      "fix": "Not fixed in this review pass; QA should verify breakdown playback end-state and frontend should inspect active source lifecycle / onended wiring in useWordPronunciation.",
+      "tags": [
+        "pronunciation",
+        "reader",
+        "narration",
+        "tests",
+        "auto-resume"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T23:09:26.178234+00:00"
+    },
+    {
+      "id": "bug-043",
+      "timestamp": "2026-04-22T23:12:54Z",
+      "error_message": "Pronunciation hook tests failed because per-render inline wordPronunciations objects retriggered the reset effect and cleared active playback callbacks",
+      "file": "src/hooks/useWordPronunciation.test.tsx",
+      "root_cause": "renderHook supplied a fresh { hello: '/hello.mp3' } object on every render; useWordPronunciation treats wordPronunciations as an effect dependency and stops active playback whenever that reference changes, nulling source.onended during the test.",
+      "fix": "Reused a stable wordPronunciations map inside each test case and waited for mount-side preload effects before asserting playback lifecycle behavior.",
+      "tags": [
+        "tests",
+        "vitest",
+        "react",
+        "stable-reference",
+        "pronunciation",
+        "narration"
+      ],
+      "related_bugs": [
+        "bug-004",
+        "bug-042"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T23:12:54Z"
+    },
+    {
+      "id": "bug-044",
+      "timestamp": "2026-04-22T23:55:44.535822+00:00",
+      "error_message": "ESLint failed on src/hooks/useWordPronunciation.test.tsx with prefer-const errors after Claude pronunciation test changes.",
+      "file": "src/hooks/useWordPronunciation.test.tsx",
+      "root_cause": "New hook tests introduced mutable let declarations for values never reassigned in those specific cases.",
+      "fix": "Changed the non-reassigned declarations to const and reran targeted ESLint successfully.",
+      "tags": [
+        "lint",
+        "tests",
+        "prefer-const",
+        "pronunciation"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T23:55:44.535822+00:00"
     }
   ]
 }

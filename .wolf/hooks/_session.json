@@ -1,23 +1,12 @@
 {
-  "session_id": "session-2026-04-11-2056",
-  "started": "2026-04-11T01:56:17.601Z",
-  "files_read": {
-    "/Users/akinpound/Documents/experiments/storia/src/lib/admin-auth.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-11T02:22:24.618Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/auth.ts": {
-      "count": 1,
-      "tokens": 1213,
-      "first_read": "2026-04-11T02:22:24.704Z"
-    }
-  },
+  "session_id": "session-2026-04-23-1931",
+  "started": "2026-04-23T00:31:30.123Z",
+  "files_read": {},
   "files_written": [],
   "edit_counts": {},
-  "anatomy_hits": 1,
-  "anatomy_misses": 1,
+  "anatomy_hits": 0,
+  "anatomy_misses": 0,
   "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 7
+  "stop_count": 0
 }

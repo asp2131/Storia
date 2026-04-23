@@ -13,6 +13,12 @@ import {
   alignedWordsToTimestamps,
   validateTimestamps,
 } from "@/lib/wordAlignment";
+import {
+  createStoredPronunciationEntry,
+  extractUniquePronunciationTokens,
+  normalizePronunciationToken,
+  type WordPronunciationEntry,
+} from "@/lib/pronunciation";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -30,6 +36,68 @@ function buildSupabaseClient() {
   });
 }
 
+
+function splitIntoBreakdownChunks(word: string): string[] {
+  const normalized = normalizePronunciationToken(word);
+  if (!normalized || normalized.length <= 3) {
+    return normalized ? [normalized] : [];
+  }
+
+  const vowelGroupRegex = /[^aeiouy]*[aeiouy]+(?:[^aeiouy](?=[^aeiouy]*[aeiouy])|[^aeiouy]?$)?/gi;
+  const roughChunks = normalized.match(vowelGroupRegex)?.filter(Boolean) ?? [];
+
+  if (roughChunks.length >= 2) {
+    return roughChunks;
+  }
+
+  const fallbackChunks: string[] = [];
+  let cursor = 0;
+  while (cursor < normalized.length) {
+    const remaining = normalized.length - cursor;
+    const chunkSize = remaining <= 4 ? Math.max(2, remaining) : 3;
+    fallbackChunks.push(normalized.slice(cursor, cursor + chunkSize));
+    cursor += chunkSize;
+  }
+
+  return fallbackChunks;
+}
+
+function getAudioExtension(contentType: string) {
+  if (contentType.includes("ogg")) return "ogg";
+  if (contentType.includes("wav")) return "wav";
+  return "mp3";
+}
+
+async function uploadPronunciationAsset(params: {
+  supabase: NonNullable<ReturnType<typeof buildSupabaseClient>>;
+  bucket: string;
+  bookId: string;
+  folder: "full-word" | "breakdown";
+  word: string;
+  audioBuffer: Buffer;
+  contentType: string;
+}) {
+  const fileExt = getAudioExtension(params.contentType);
+  const timestamp = Date.now();
+  const storagePath = `books/${params.bookId}/pronunciations/${params.folder}/word_${params.word}_${timestamp}.${fileExt}`;
+
+  const { error } = await params.supabase.storage
+    .from(params.bucket)
+    .upload(storagePath, params.audioBuffer, {
+      contentType: params.contentType,
+      upsert: false,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  const { data } = params.supabase.storage
+    .from(params.bucket)
+    .getPublicUrl(storagePath);
+
+  return data.publicUrl;
+}
 
 export async function POST(request: NextRequest) {
   const supabase = buildSupabaseClient();
@@ -210,13 +278,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let pronunciationMap: Record<string, string> = {};
+    let pronunciationMap: Record<string, WordPronunciationEntry> = {};
     try {
-      const allWords = trimmedText.split(/\s+/);
-      const cleanedWords = allWords
-        .map((w) => w.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").toLowerCase())
-        .filter((w) => w.length > 0);
-      const uniqueWords = Array.from(new Set(cleanedWords));
+      const uniqueWords = extractUniquePronunciationTokens(trimmedText);
 
       console.log(
         `[generate-narration] Generating pronunciations for ${uniqueWords.length} unique words`
@@ -234,7 +298,7 @@ export async function POST(request: NextRequest) {
         const results = await Promise.all(
           batch.map(async (wordValue) => {
             try {
-              const wordAudio = await synthesizeSpeech({
+              const fullWordAudio = await synthesizeSpeech({
                 text: wordValue,
                 voiceId,
                 speed: normalizedVoiceSettings.speed,
@@ -242,52 +306,67 @@ export async function POST(request: NextRequest) {
                 useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
               });
 
-              let wordExt = "mp3";
-              if (wordAudio.contentType.includes("ogg")) {
-                wordExt = "ogg";
-              } else if (wordAudio.contentType.includes("wav")) {
-                wordExt = "wav";
+              const fullWordUrl = await uploadPronunciationAsset({
+                supabase,
+                bucket,
+                bookId,
+                folder: "full-word",
+                word: wordValue,
+                audioBuffer: fullWordAudio.audioBuffer,
+                contentType: fullWordAudio.contentType,
+              });
+
+              const chunks = splitIntoBreakdownChunks(wordValue);
+              let breakdownUrl: string | undefined;
+
+              if (chunks.length >= 2) {
+                try {
+                  const breakdownAudio = await synthesizeSpeech({
+                    text: chunks.join(", "),
+                    voiceId,
+                    speed: Math.max(0.7, normalizedVoiceSettings.speed * 0.92),
+                    style: normalizedVoiceSettings.style,
+                    useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
+                  });
+
+                  breakdownUrl = await uploadPronunciationAsset({
+                    supabase,
+                    bucket,
+                    bookId,
+                    folder: "breakdown",
+                    word: wordValue,
+                    audioBuffer: breakdownAudio.audioBuffer,
+                    contentType: breakdownAudio.contentType,
+                  });
+                } catch (breakdownError) {
+                  console.warn(
+                    `[generate-narration] Failed breakdown generation for "${wordValue}"; keeping full-word only:`,
+                    breakdownError
+                  );
+                }
               }
-
-              const wordTimestamp = Date.now();
-              const wordPath = `books/${bookId}/pronunciations/word_${wordValue}_${wordTimestamp}.${wordExt}`;
-
-              const { error: wordUploadError } = await supabase.storage
-                .from(bucket)
-                .upload(wordPath, wordAudio.audioBuffer, {
-                  contentType: wordAudio.contentType,
-                  upsert: false,
-                });
-
-              if (wordUploadError) {
-                console.warn(
-                  `[generate-narration] Failed to upload pronunciation for "${wordValue}":`,
-                  wordUploadError
-                );
-                return { word: wordValue, url: null };
-              }
-
-              const { data: wordUrlData } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(wordPath);
 
               console.log(
-                `[generate-narration] Pronunciation for "${wordValue}" uploaded: ${wordUrlData.publicUrl}`
+                `[generate-narration] Pronunciation assets for "${wordValue}" uploaded: fullWord=${fullWordUrl}${breakdownUrl ? `, breakdown=${breakdownUrl}` : ""}`
               );
-              return { word: wordValue, url: wordUrlData.publicUrl };
+
+              return {
+                word: wordValue,
+                entry: createStoredPronunciationEntry(fullWordUrl, breakdownUrl),
+              };
             } catch (wordError) {
               console.warn(
                 `[generate-narration] Error generating pronunciation for "${wordValue}":`,
                 wordError
               );
-              return { word: wordValue, url: null };
+              return { word: wordValue, entry: null };
             }
           })
         );
 
         for (const result of results) {
-          if (result.url) {
-            pronunciationMap[result.word] = result.url;
+          if (result.entry) {
+            pronunciationMap[result.word] = result.entry;
           }
         }
       }
