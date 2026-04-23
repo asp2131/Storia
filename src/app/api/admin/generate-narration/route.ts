@@ -19,6 +19,7 @@ import {
   normalizePronunciationToken,
   type WordPronunciationEntry,
 } from "@/lib/pronunciation";
+import { validatePronunciationManifest } from "@/lib/pronunciationValidation";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -384,6 +385,28 @@ export async function POST(request: NextRequest) {
       pronunciationMap = {};
     }
 
+    // ── Publish-time validation (Ticket 1.3) ─────────────────────────────
+    // Validate the generated pronunciation map against the page text before
+    // persistence.  Bad entries are logged and excluded; we never hard-block.
+    const validation = validatePronunciationManifest(trimmedText, pronunciationMap);
+    let pronunciationMapToStore = pronunciationMap;
+
+    if (!validation.ok) {
+      console.warn(
+        `[generate-narration] Pronunciation validation found ${validation.issues.length} issue(s):`,
+        validation.issues.map((issue) => ({
+          kind: issue.kind,
+          key: issue.key,
+          message: issue.message,
+        }))
+      );
+      // Persist only the entries that passed validation.
+      pronunciationMapToStore = validation.validEntries;
+      console.log(
+        `[generate-narration] Persisting ${Object.keys(pronunciationMapToStore).length} valid pronunciation entries (excluded ${Object.keys(pronunciationMap).length - Object.keys(pronunciationMapToStore).length} invalid).`
+      );
+    }
+
     try {
       const bookIdBigInt = BigInt(bookId);
       const now = new Date();
@@ -400,7 +423,7 @@ export async function POST(request: NextRequest) {
         data: {
           narration_url: urlData.publicUrl,
           narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
-          word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
+          word_pronunciations: pronunciationMapToStore as Prisma.InputJsonValue,
           updated_at: now,
         },
       });
@@ -419,7 +442,7 @@ export async function POST(request: NextRequest) {
             page_number: pageNumber,
             narration_url: urlData.publicUrl,
             narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
-            word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
+            word_pronunciations: pronunciationMapToStore as Prisma.InputJsonValue,
             inserted_at: now,
             updated_at: now,
           },
@@ -439,7 +462,12 @@ export async function POST(request: NextRequest) {
       timestampsUrl,
       wordTimestamps: finalTimestamps,
       alignmentQuality,
-      wordPronunciations: pronunciationMap,
+      wordPronunciations: pronunciationMapToStore,
+      pronunciationValidation: {
+        ok: validation.ok,
+        issueCount: validation.issues.length,
+        issues: validation.issues,
+      },
       voice: {
         id: voiceId,
         name: voiceName,

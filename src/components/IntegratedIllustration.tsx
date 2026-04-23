@@ -278,6 +278,11 @@ function OverlayTextElement({
     { positions: [], wordCount: 0 }
   ).positions;
 
+  const hintId = `${element.id}-word-hint`;
+  const groupLabel = interactive
+    ? `Story text: ${element.text}. Tap a word to hear it. Long press, press Shift+Enter, or use the Sound out button to hear a breakdown.`
+    : undefined;
+
   return (
     <div
       className={`absolute select-none ${interactive ? "pointer-events-auto" : "pointer-events-none"}`}
@@ -296,8 +301,16 @@ function OverlayTextElement({
         lineHeight: 1.3,
         ...backgroundStyle,
       }}
+      role={interactive ? "group" : undefined}
+      aria-label={groupLabel}
       aria-hidden={interactive ? undefined : true}
     >
+      {interactive ? (
+        <span id={hintId} className="sr-only">
+          Press Enter or Space to hear the word. Press Shift+Enter, long press,
+          or use the Sound out button to hear it broken down.
+        </span>
+      ) : null}
       {tokens.map((token, tokenIdx) => {
         if (token.trim().length === 0) {
           return <span key={`${element.id}-space-${tokenIdx}`}>{token}</span>;
@@ -321,6 +334,8 @@ function OverlayTextElement({
           );
         }
 
+        const supportsSecondary = typeof onWordSecondaryAction === "function";
+
         return (
           <span
             key={`${element.id}-word-${tokenIdx}`}
@@ -332,6 +347,19 @@ function OverlayTextElement({
               className={isPronouncing ? "word-pronouncing" : "word-tappable"}
               style={sharedWordStyle}
               aria-label={`Hear ${token}`}
+              aria-describedby={hintId}
+              aria-keyshortcuts={supportsSecondary ? "Shift+Enter" : undefined}
+              onKeyDown={(event) => {
+                if (
+                  supportsSecondary &&
+                  event.shiftKey &&
+                  (event.key === "Enter" || event.key === " " || event.key === "Spacebar")
+                ) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onWordSecondaryAction?.(token, globalIndex);
+                }
+              }}
               onPointerDown={(event) => {
                 event.stopPropagation();
                 longPressTriggeredRef.current = false;

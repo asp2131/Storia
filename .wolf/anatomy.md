@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-16T21:55:44.946Z
-> Files: 546 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T00:53:35.401Z
+> Files: 566 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -30,6 +30,28 @@
 - `tsconfig.json` — TypeScript configuration (~192 tok)
 - `tsconfig.tsbuildinfo` (~155219 tok)
 - `vitest.config.ts` — Vitest test configuration (~95 tok)
+
+## .claude/worktrees/agent-a440932b/src/app/api/books/
+
+- `route.ts` — Next.js API route: GET (~2380 tok)
+
+## .claude/worktrees/agent-a440932b/src/app/api/books/[id]/pronunciations/
+
+- `route.ts` — ManifestEntry is the simplified shape the reader consumes. (~1030 tok)
+
+## .claude/worktrees/agent-a440932b/src/hooks/
+
+- `useBookData.ts` — True iff at least one page has a non-empty wordPronunciations map. (~3075 tok)
+- `usePronunciationManifest.test.tsx` — --------------------------------------------------------------------------- (~2855 tok)
+- `usePronunciationManifest.ts` — The three states described in WR-4.8 / FR-WEB-15. (~819 tok)
+
+## .claude/worktrees/agent-a440932b/src/lib/
+
+- `pronunciation.ts` — Exports WordPronunciationEntry, WordPronunciationMap, PronunciationPlaybackMode, resolvePronunciatio (~393 tok)
+
+## .claude/worktrees/agent-a440932b/src/test/
+
+- `setup.ts` — MockResizeObserver: src (~323 tok)
 
 ## _build/
 
@@ -694,6 +716,10 @@
 - `HomeClient.tsx` — MorphogenesisHero — renders form (~5295 tok)
 - `page.tsx` — metadata (~1161 tok)
 
+## src/app/api/admin/generate-narration/
+
+- `route.ts` — Next.js API route: POST (~4378 tok)
+
 ## src/app/api/auth/[...all]/
 
 - `route.ts` — Next.js API route (~230 tok)
@@ -734,12 +760,27 @@
 
 - `route.ts` — Next.js API route: GET (~910 tok)
 
+## src/app/books/[id]/reader/
+
+- `page.tsx` — BookReader (~10603 tok)
+
 ## src/components/
 
+- `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
+- `IntegratedIllustration.tsx` — usePreloadImage (~3700 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
+
+## src/hooks/
+
+- `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
+- `useWordPronunciation.ts` — Playback arbitration state machine states (WG-4 / WR-5). (~5523 tok)
 
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
 - `pronunciation.ts` — Shared pronunciation normalization/token extraction helpers and compatible entry types for generation + reader playback (~220 tok)
+- `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
+- `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1346 tok)
+- `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
+- `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)

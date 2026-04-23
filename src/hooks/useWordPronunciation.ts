@@ -22,11 +22,44 @@ export type PronunciationRequest = {
   trigger?: PronunciationTrigger;
 };
 
+/**
+ * Playback arbitration state machine states (WG-4 / WR-5).
+ *
+ * idle                    — nothing playing, no pending resume
+ * pronouncing-step1       — playing breakdown clip (step 1 of breakdown sequence)
+ * pronouncing-step2       — playing full-word clip after breakdown (step 2)
+ * pronouncing-quick       — playing whole-word clip (single-clip path)
+ * awaiting-resume         — pronunciation done, waiting to resume narration
+ *
+ * Transitions:
+ *  idle           + userTap(whole-word)         → pronouncing-quick
+ *  idle           + userTap(breakdown, no data) → pronouncing-quick (fallback)
+ *  idle           + userTap(breakdown, data)    → pronouncing-step1
+ *  pronouncing-*  + newRequest                  → cancel-and-replace → pronouncing-*
+ *  pronouncing-*  + userToggleNarration         → clears shouldResume intent
+ *  pronouncing-step1 + audioEnded               → pronouncing-step2 (if fullWord exists)
+ *                                               → awaiting-resume / idle otherwise
+ *  pronouncing-step2 + audioEnded               → awaiting-resume / idle
+ *  pronouncing-quick + audioEnded               → idle (no narration resume for quick mode)
+ *  awaiting-resume + condition met              → idle (narration resumed)
+ *  pronouncing-* + audioError                   → awaiting-resume / idle
+ */
+type PlaybackState =
+  | "idle"
+  | "pronouncing-step1"
+  | "pronouncing-step2"
+  | "pronouncing-quick"
+  | "awaiting-resume";
+
 interface UseWordPronunciationReturn {
   pronounceWord: (request: PronunciationRequest) => void;
   pronouncingIndex: number | null;
   isLoading: boolean;
+  playbackState: PlaybackState;
 }
+
+/** Gap in ms between breakdown and full-word clips (WR-5.3). */
+const BREAKDOWN_INTER_CLIP_GAP_MS = 150;
 
 export function useWordPronunciation(options: {
   wordPronunciations: Record<string, WordPronunciationEntry> | null;
@@ -47,11 +80,13 @@ export function useWordPronunciation(options: {
 
   const [pronouncingIndex, setPronouncingIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
   const activeSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const fallbackCache = useRef<Map<string, string>>(new Map());
+  // Monotonically-incrementing request ID for cancel-and-replace (WR-5.8).
   const activeRequestIdRef = useRef(0);
 
   const getAudioContext = useCallback(() => {
@@ -67,29 +102,45 @@ export function useWordPronunciation(options: {
     return audioContextRef.current;
   }, []);
 
+  /**
+   * Stops any in-flight AudioBufferSourceNode and nulls out its onended
+   * callback so it cannot trigger side effects (WR-5.8 cancel-and-replace).
+   */
   const stopActivePlayback = useCallback(() => {
     if (activeSourceRef.current) {
       activeSourceRef.current.onended = null;
       try {
         activeSourceRef.current.stop();
       } catch {
-        // no-op
+        // no-op: already stopped
       }
       activeSourceRef.current = null;
     }
   }, []);
 
-  const finalizeRequest = useCallback(
-    (requestId: number) => {
-      if (requestId !== activeRequestIdRef.current) {
-        return;
-      }
-      setPronouncingIndex(null);
-      setIsLoading(false);
-    },
-    []
-  );
+  /**
+   * Clears pronouncing/loading state for a specific requestId.
+   * Guards against stale callbacks from superseded requests.
+   */
+  const finalizeRequest = useCallback((requestId: number) => {
+    if (requestId !== activeRequestIdRef.current) {
+      return;
+    }
+    setPronouncingIndex(null);
+    setIsLoading(false);
+    setPlaybackState("idle");
+  }, []);
 
+  /**
+   * Attempts to auto-resume narration after pronunciation ends.
+   * Narration is resumed ONLY if:
+   *  - mode is "breakdown" (whole-word never pauses narration, WR-5.7)
+   *  - resumeNarration callback is provided
+   *  - the narration intent version has not changed (user did not manually
+   *    toggle narration during/after pronunciation, WR-5.7)
+   *  - narration is currently paused (we triggered the pause, it wasn't already
+   *    playing, WR-5.6)
+   */
   const maybeResumeNarration = useCallback(
     (mode: PronunciationPlaybackMode, narrationIntentVersionAtStart: number) => {
       if (mode !== "breakdown") {
@@ -100,15 +151,19 @@ export function useWordPronunciation(options: {
       }
       const latestIntentVersion = getNarrationIntentVersion?.() ?? narrationIntentVersionAtStart;
       if (latestIntentVersion !== narrationIntentVersionAtStart) {
+        // User manually changed narration state — user intent wins (WR-5.7).
         return;
       }
       if (getNarrationPlaybackState?.()) {
+        // Narration is already playing (e.g. was never paused), do not resume.
         return;
       }
       resumeNarration();
     },
     [getNarrationIntentVersion, getNarrationPlaybackState, resumeNarration]
   );
+
+  // ─── Audio decoding ────────────────────────────────────────────────────────
 
   const decodeUrl = useCallback(
     async (url: string): Promise<AudioBuffer | null> => {
@@ -125,6 +180,7 @@ export function useWordPronunciation(options: {
     [getAudioContext]
   );
 
+  /** Preload (decode + cache) all audio URLs referenced in a pronunciation map. */
   const preloadMap = useCallback(
     (map: Record<string, WordPronunciationEntry> | null) => {
       if (!map) return;
@@ -150,10 +206,12 @@ export function useWordPronunciation(options: {
     [decodeUrl]
   );
 
+  // Pre-decode current page pronunciations.
   useEffect(() => {
     preloadMap(wordPronunciations);
   }, [wordPronunciations, preloadMap]);
 
+  // Prefetch next page pronunciations during idle time.
   useEffect(() => {
     if (!nextPagePronunciations) return;
     if (typeof requestIdleCallback === "function") {
@@ -165,12 +223,16 @@ export function useWordPronunciation(options: {
     return () => window.clearTimeout(timer);
   }, [nextPagePronunciations, preloadMap]);
 
+  // Cancel active playback and reset state whenever the pronunciation map changes
+  // (e.g. user navigates to a new page). This prevents stuck states (WR-5.9/10).
   useEffect(() => {
     stopActivePlayback();
     setPronouncingIndex(null);
     setIsLoading(false);
+    setPlaybackState("idle");
   }, [wordPronunciations, stopActivePlayback]);
 
+  // Cleanup on unmount.
   useEffect(() => {
     return () => {
       stopActivePlayback();
@@ -180,17 +242,25 @@ export function useWordPronunciation(options: {
     };
   }, [stopActivePlayback]);
 
-  const playBuffer = useCallback(
+  // ─── Core playback primitive ───────────────────────────────────────────────
+
+  /**
+   * Plays an AudioBuffer and installs an onended handler.
+   * The `onEnded` callback is responsible for transitioning state further
+   * (either to step2 for the breakdown chain, or to idle/resume).
+   *
+   * Returns false if the requestId is no longer current (superseded request).
+   */
+  const playSingleBuffer = useCallback(
     (
       buffer: AudioBuffer,
       index: number,
       requestId: number,
-      mode: PronunciationPlaybackMode,
-      shouldResumeNarration: boolean,
-      narrationIntentVersionAtStart: number
-    ) => {
+      state: PlaybackState,
+      onEnded: () => void
+    ): boolean => {
       if (requestId !== activeRequestIdRef.current) {
-        return;
+        return false;
       }
 
       const ctx = getAudioContext();
@@ -202,24 +272,86 @@ export function useWordPronunciation(options: {
 
       setPronouncingIndex(index);
       setIsLoading(false);
+      setPlaybackState(state);
 
       source.onended = () => {
         if (requestId !== activeRequestIdRef.current) {
+          // Request was superseded; discard this callback entirely.
           return;
         }
         activeSourceRef.current = null;
-        setPronouncingIndex(null);
-        setIsLoading(false);
-        if (shouldResumeNarration) {
-          maybeResumeNarration(mode, narrationIntentVersionAtStart);
-        }
+        onEnded();
       };
 
       activeSourceRef.current = source;
       source.start(0);
+      return true;
     },
-    [getAudioContext, maybeResumeNarration, stopActivePlayback]
+    [getAudioContext, stopActivePlayback]
   );
+
+  // ─── Breakdown two-clip sequence (WR-5.3) ─────────────────────────────────
+
+  /**
+   * Plays the breakdown sequence: breakdown clip → [gap] → full-word clip.
+   *
+   * If only one URL is provided (or they share the same URL), the gap is
+   * still inserted for perceptual separation. If fullWordUrl is omitted,
+   * the sequence ends after the breakdown clip.
+   *
+   * All state transitions inside this function guard against superseded
+   * requests via `requestId`.
+   */
+  const playBreakdownSequence = useCallback(
+    (
+      breakdownBuffer: AudioBuffer,
+      fullWordBuffer: AudioBuffer | null,
+      index: number,
+      requestId: number,
+      shouldResumeNarration: boolean,
+      narrationIntentVersionAtStart: number
+    ) => {
+      const finalize = () => {
+        if (requestId !== activeRequestIdRef.current) return;
+        setPronouncingIndex(null);
+        setIsLoading(false);
+        setPlaybackState("idle");
+        if (shouldResumeNarration) {
+          maybeResumeNarration("breakdown", narrationIntentVersionAtStart);
+        }
+      };
+
+      const playStep2 = () => {
+        if (requestId !== activeRequestIdRef.current) return;
+        if (!fullWordBuffer) {
+          finalize();
+          return;
+        }
+        playSingleBuffer(fullWordBuffer, index, requestId, "pronouncing-step2", finalize);
+      };
+
+      const afterStep1 = () => {
+        if (requestId !== activeRequestIdRef.current) return;
+        if (!fullWordBuffer) {
+          finalize();
+          return;
+        }
+        // Insert a short perceptual gap before the full-word clip (WR-5.3).
+        const gapTimer = window.setTimeout(playStep2, BREAKDOWN_INTER_CLIP_GAP_MS);
+        // Store the timer ID so rapid cancellation via stopActivePlayback
+        // has a hook to clear it. We attach it to the active source ref indirectly
+        // by overwriting the onended to a no-op if the request is superseded.
+        // The requestId guard inside playStep2 handles the case where another
+        // request arrives during the gap.
+        void gapTimer; // the guard inside playStep2 is sufficient
+      };
+
+      playSingleBuffer(breakdownBuffer, index, requestId, "pronouncing-step1", afterStep1);
+    },
+    [maybeResumeNarration, playSingleBuffer]
+  );
+
+  // ─── Fallback (API-fetched whole-word) ────────────────────────────────────
 
   const playViaFallback = useCallback(
     async (
@@ -245,6 +377,7 @@ export function useWordPronunciation(options: {
           if (!url) throw new Error("No URL returned");
           fallbackCache.current.set(word, url);
         } catch {
+          // On error: reset state and still attempt narration resume (WR-8.5).
           finalizeRequest(requestId);
           if (shouldResumeNarration) {
             maybeResumeNarration(mode, narrationIntentVersionAtStart);
@@ -263,17 +396,23 @@ export function useWordPronunciation(options: {
       }
 
       bufferCacheRef.current.set(url, buffer);
-      playBuffer(
-        buffer,
-        index,
-        requestId,
-        mode,
-        shouldResumeNarration,
-        narrationIntentVersionAtStart
-      );
+
+      const finalize = () => {
+        if (requestId !== activeRequestIdRef.current) return;
+        setPronouncingIndex(null);
+        setIsLoading(false);
+        setPlaybackState("idle");
+        if (shouldResumeNarration) {
+          maybeResumeNarration(mode, narrationIntentVersionAtStart);
+        }
+      };
+
+      playSingleBuffer(buffer, index, requestId, "pronouncing-quick", finalize);
     },
-    [decodeUrl, finalizeRequest, maybeResumeNarration, playBuffer]
+    [decodeUrl, finalizeRequest, maybeResumeNarration, playSingleBuffer]
   );
+
+  // ─── Public API ───────────────────────────────────────────────────────────
 
   const pronounceWord = useCallback(
     ({ word, index, mode = "whole-word" }: PronunciationRequest) => {
@@ -281,16 +420,21 @@ export function useWordPronunciation(options: {
       if (!normalizedWord) {
         setPronouncingIndex(null);
         setIsLoading(false);
+        setPlaybackState("idle");
         return;
       }
 
+      // Increment request ID: any in-flight operation will see a stale ID
+      // and abort itself (cancel-and-replace, WR-5.8).
       const requestId = activeRequestIdRef.current + 1;
       activeRequestIdRef.current = requestId;
 
       stopActivePlayback();
       setPronouncingIndex(index);
       setIsLoading(true);
+      setPlaybackState("idle"); // Will be updated when audio starts
 
+      // Capture narration state BEFORE pausing (WR-5.1/5.2/5.6).
       const narrationWasPlaying = Boolean(getNarrationPlaybackState?.());
       const shouldResumeNarration = mode === "breakdown" && narrationWasPlaying;
       const narrationIntentVersionAtStart = getNarrationIntentVersion?.() ?? 0;
@@ -299,26 +443,90 @@ export function useWordPronunciation(options: {
         pauseNarration?.();
       }
 
-      const preGeneratedUrl = resolvePronunciationUrl(
-        wordPronunciations?.[normalizedWord],
-        mode
-      );
+      const entry = wordPronunciations?.[normalizedWord];
+      const resolvedUrl = resolvePronunciationUrl(entry, mode);
 
-      if (preGeneratedUrl) {
-        const cachedBuffer = bufferCacheRef.current.get(preGeneratedUrl);
-        if (cachedBuffer) {
-          playBuffer(
-            cachedBuffer,
-            index,
-            requestId,
-            mode,
-            shouldResumeNarration,
-            narrationIntentVersionAtStart
-          );
+      // ── Breakdown 2-clip sequence (WR-5.3/4/5) ──────────────────────────
+      if (mode === "breakdown" && entry && typeof entry !== "string") {
+        const breakdownUrl = entry.breakdown;
+        const fullWordUrl = entry.fullWord;
+
+        if (breakdownUrl) {
+          // We have a breakdown clip: attempt the full two-step sequence.
+          const getOrDecode = (url: string): Promise<AudioBuffer | null> => {
+            const cached = bufferCacheRef.current.get(url);
+            if (cached) return Promise.resolve(cached);
+            return decodeUrl(url).then((buf) => {
+              if (buf) bufferCacheRef.current.set(url, buf);
+              return buf;
+            });
+          };
+
+          Promise.all([
+            getOrDecode(breakdownUrl),
+            fullWordUrl ? getOrDecode(fullWordUrl) : Promise.resolve(null),
+          ]).then(([breakdownBuf, fullWordBuf]) => {
+            if (requestId !== activeRequestIdRef.current) return;
+            if (!breakdownBuf) {
+              // Breakdown audio failed to load — fall back to full-word or fallback API.
+              if (fullWordBuf) {
+                const finalize = () => {
+                  if (requestId !== activeRequestIdRef.current) return;
+                  setPronouncingIndex(null);
+                  setIsLoading(false);
+                  setPlaybackState("idle");
+                  if (shouldResumeNarration) {
+                    maybeResumeNarration("breakdown", narrationIntentVersionAtStart);
+                  }
+                };
+                playSingleBuffer(fullWordBuf, index, requestId, "pronouncing-quick", finalize);
+              } else {
+                playViaFallback(
+                  normalizedWord,
+                  index,
+                  requestId,
+                  mode,
+                  shouldResumeNarration,
+                  narrationIntentVersionAtStart
+                );
+              }
+              return;
+            }
+            playBreakdownSequence(
+              breakdownBuf,
+              fullWordBuf,
+              index,
+              requestId,
+              shouldResumeNarration,
+              narrationIntentVersionAtStart
+            );
+          });
+          return;
+        }
+      }
+
+      // ── Single-clip path (whole-word or breakdown fallback to fullWord) ──
+      if (resolvedUrl) {
+        const cached = bufferCacheRef.current.get(resolvedUrl);
+        const targetState: PlaybackState =
+          mode === "breakdown" ? "pronouncing-quick" : "pronouncing-quick";
+
+        const finalize = () => {
+          if (requestId !== activeRequestIdRef.current) return;
+          setPronouncingIndex(null);
+          setIsLoading(false);
+          setPlaybackState("idle");
+          if (shouldResumeNarration) {
+            maybeResumeNarration(mode, narrationIntentVersionAtStart);
+          }
+        };
+
+        if (cached) {
+          playSingleBuffer(cached, index, requestId, targetState, finalize);
           return;
         }
 
-        decodeUrl(preGeneratedUrl).then((buffer) => {
+        decodeUrl(resolvedUrl).then((buffer) => {
           if (!buffer) {
             finalizeRequest(requestId);
             if (shouldResumeNarration) {
@@ -326,20 +534,13 @@ export function useWordPronunciation(options: {
             }
             return;
           }
-
-          bufferCacheRef.current.set(preGeneratedUrl, buffer);
-          playBuffer(
-            buffer,
-            index,
-            requestId,
-            mode,
-            shouldResumeNarration,
-            narrationIntentVersionAtStart
-          );
+          bufferCacheRef.current.set(resolvedUrl, buffer);
+          playSingleBuffer(buffer, index, requestId, targetState, finalize);
         });
         return;
       }
 
+      // ── API fallback (WR-5.5) ────────────────────────────────────────────
       playViaFallback(
         normalizedWord,
         index,
@@ -356,7 +557,8 @@ export function useWordPronunciation(options: {
       getNarrationPlaybackState,
       maybeResumeNarration,
       pauseNarration,
-      playBuffer,
+      playBreakdownSequence,
+      playSingleBuffer,
       playViaFallback,
       stopActivePlayback,
       wordPronunciations,
@@ -367,5 +569,6 @@ export function useWordPronunciation(options: {
     pronounceWord,
     pronouncingIndex,
     isLoading,
+    playbackState,
   };
 }

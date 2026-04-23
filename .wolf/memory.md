@@ -9,6 +9,7 @@
 | -- | Updated reading-progress route with child-aware + legacy flows | src/app/api/reading-progress/route.ts | rewritten | ~3500 |
 | -- | Created reading-sessions API route (POST with upsert) | src/app/api/reading-sessions/route.ts | new file | ~1800 |
 | -- | Updated books route with childProfileId, hasNarration, hasQuestions | src/app/api/books/route.ts | rewritten | ~3200 |
+| 19:53 | Implemented pronunciation manifest contract (WG-5/WR-4/FR-WEB-15): hasPronunciations+pronunciationManifestUrl on books route, GET /api/books/[id]/pronunciations endpoint, BookData type extension, usePronunciationManifest hook (3-state), 12 tests green, tsc clean | src/app/api/books/route.ts, src/app/api/books/[id]/pronunciations/route.ts, src/hooks/useBookData.ts, src/hooks/usePronunciationManifest.ts, src/hooks/usePronunciationManifest.test.tsx, src/lib/pronunciation.ts | complete | ~4800 |
 
 | 2026-04-07 | Created 3 API routes: continue-reading, books/[bookId]/questions, comprehension | src/app/api/continue-reading/route.ts, src/app/api/books/[bookId]/questions/route.ts, src/app/api/comprehension/route.ts | completed | ~200 |
 
@@ -339,7 +340,41 @@
 | 15:26 | Reviewed pronunciation spec vs current web/backend/mobile contracts; identified pre-merge drift in manifest contract, analytics, and mobile payload compatibility. | specs/word-pronunciation-cross-platform-spec.md, src/app/api/books/[id]/reader/route.ts, src/hooks/useWordPronunciation.ts, src/lib/pronunciation.ts, storia-mobile reader/audio files | review complete | ~2200 |
 | 19:22 | Consolidated pronunciation contract in @/lib/pronunciation: widened createStoredPronunciationEntry, moved resolvePronunciationUrl to lib, route + hook import from there, added pronunciation.test.ts | src/lib/pronunciation.ts, pronunciation.test.ts, generate-narration/route.ts, useWordPronunciation.ts | 34/34 tests pass, typecheck clean | ~3500 |
 
-## Session: 2026-04-23 19:31
+## Session: 2026-04-23 19:31 (agent-a5848414: WG-4/WR-5 state machine)
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 19:45 | Edited src/components/IntegratedIllustration.tsx | CSS: text | ~1498 |
+| 19:46 | Edited src/components/IntegratedIllustration.test.tsx | added optional chaining | ~349 |
+| 19:50 | Implemented WG-4/WR-5 playback arbitration state machine: formal PlaybackState type, 2-clip breakdown sequence (step1→gap→step2), cancel-and-replace hardening via requestId, user-override protection via narrationIntentVersion | src/hooks/useWordPronunciation.ts | complete | ~2200 |
+| 19:51 | Added 6 new state-machine tests (WR-5.3 breakdown sequence, narration resume timing, cancel-during-gap, user-override, WR-5.4 fullWord-only, WR-5.9 rapid-tap) | src/hooks/useWordPronunciation.test.tsx | 17/17 tests passing | ~1800 |
+
+## Session: 2026-04-22 19:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|---------|
+| 19:46 | Strengthened overlay a11y: role="group" + sentence aria-label; Shift+Enter alt path; aria-describedby hint; aria-keyshortcuts | src/components/IntegratedIllustration.tsx | passes 4/4 tests | ~250 |
+| 19:46 | Added test for group semantics + Shift+Enter keyboard alt | src/components/IntegratedIllustration.test.tsx | passes | ~80 |
+| 19:49 | Session end: 2 writes across 2 files (IntegratedIllustration.tsx, IntegratedIllustration.test.tsx) | 17 reads | ~21612 tok |
+| 19:49 | Edited .claude/worktrees/agent-a440932b/src/app/api/books/route.ts | 5→6 lines | ~42 |
+| 19:49 | Edited .claude/worktrees/agent-a440932b/src/app/api/books/route.ts | added 1 condition(s) | ~271 |
+| 19:49 | Created .claude/worktrees/agent-a440932b/src/app/api/books/[id]/pronunciations/route.ts | — | ~1030 |
+| 19:50 | Edited .claude/worktrees/agent-a440932b/src/hooks/useBookData.ts | expanded (+7 lines) | ~128 |
+| 19:50 | Created src/hooks/useWordPronunciation.ts | — | ~5523 |
+| 19:50 | Created .claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.ts | — | ~823 |
+| 19:50 | Created src/lib/pronunciationAnalytics.ts | — | ~1346 |
+| 19:50 | Edited src/app/books/[id]/reader/page.tsx | 4→9 lines | ~80 |
+| 19:50 | Edited src/app/books/[id]/reader/page.tsx | added 3 condition(s) | ~818 |
+| 19:51 | Edited src/app/books/[id]/reader/page.tsx | 11→9 lines | ~69 |
+| 19:51 | Edited src/app/books/[id]/reader/page.tsx | 8→6 lines | ~36 |
+| 19:51 | Created .claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.test.tsx | — | ~2855 |
+| 19:51 | Edited src/hooks/useWordPronunciation.test.tsx | added optional chaining | ~3025 |
+| 19:51 | Created .claude/worktrees/agent-a440932b/src/test/setup.ts | — | ~323 |
+| 19:51 | Edited src/hooks/useWordPronunciation.test.tsx | expanded (+6 lines) | ~259 |
+| 19:51 | Created src/lib/pronunciationValidation.ts | — | ~1807 |
+| 19:51 | Edited .claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.ts | 6→5 lines | ~60 |
+| 19:52 | Created src/lib/pronunciationValidation.test.ts | — | ~3700 |
+| 19:52 | Created .claude/worktrees/agent-a440932b/src/lib/pronunciation.ts | — | ~393 |
+| 19:52 | Edited src/app/api/admin/generate-narration/route.ts | added 1 import(s) | ~72 |
+| 19:53 | Edited src/app/api/admin/generate-narration/route.ts | added 1 condition(s) | ~979 |
+| 19:53 | Created src/lib/pronunciationAnalytics.test.ts | — | ~1922 |

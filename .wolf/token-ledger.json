@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 1319175,
-    "total_reads": 766,
-    "total_writes": 574,
+    "total_tokens_estimated": 1340787,
+    "total_reads": 783,
+    "total_writes": 576,
     "total_sessions": 17,
-    "anatomy_hits": 152,
-    "anatomy_misses": 608,
-    "repeated_reads_blocked": 662,
-    "estimated_savings_vs_bare_cli": 4756124
+    "anatomy_hits": 159,
+    "anatomy_misses": 618,
+    "repeated_reads_blocked": 668,
+    "estimated_savings_vs_bare_cli": 4761564
   },
   "sessions": [
     {
@@ -8922,6 +8922,135 @@
         "writes_count": 0,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-04-23-1931",
+      "started": "2026-04-23T00:31:30.123Z",
+      "ended": "2026-04-23T00:49:23.933Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/reader/ReaderStage.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.test.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/web-reader-pronunciation-functional-requirements.md",
+          "tokens_estimated": 3600,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a5848414/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a5848414/src/hooks/useWordPronunciation.test.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts",
+          "tokens_estimated": 220,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/route.ts",
+          "tokens_estimated": 3200,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/word-pronunciation-cross-platform-spec.md",
+          "tokens_estimated": 5200,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 4250,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.test.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/vitest.config.ts",
+          "tokens_estimated": 95,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/app/api/books/route.ts",
+          "tokens_estimated": 3200,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.tsx",
+          "tokens_estimated": 1498,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.test.tsx",
+          "tokens_estimated": 349,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 19765,
+        "output_tokens_estimated": 1847,
+        "reads_count": 17,
+        "writes_count": 2,
+        "repeated_reads_blocked": 6,
+        "anatomy_lookups": 7
       }
     }
   ],

@@ -31,12 +31,14 @@
 - `src/lib/pronunciation.ts` is the canonical home for the pronunciation contract: `WordPronunciationEntry` type, `normalizePronunciationToken`, `extractUniquePronunciationTokens`, `createStoredPronunciationEntry(fullWord, breakdown?)`, `resolvePronunciationUrl(entry, mode)`. Both the backend (`generate-narration` route) and the reader hook import from here to avoid drift.
 - `createStoredPronunciationEntry` omits the `breakdown` key when no breakdown URL is supplied — reader's `resolvePronunciationUrl` handles this by falling back to `fullWord`.
 - Current web pronunciation implementation still consumes page-level `wordPronunciations` data from the reader payload, now widened to `string | { breakdown?, fullWord? }`; spec-only manifest fields such as `hasPronunciations` / `pronunciationManifestUrl` are not implemented in the reader contract yet.
+- Overlay accessibility (WG-3): each `OverlayTextElement` now wraps interactive words in `role="group"` with sentence-level `aria-label` (Story text + full element.text + interaction hint). Per-word `<button>` carries `aria-label="Hear ${token}"`, `aria-describedby` pointing to a sentence-scoped `sr-only` hint, and `aria-keyshortcuts="Shift+Enter"`. Shift+Enter (or Shift+Space) on a focused word triggers `onWordSecondaryAction` as a keyboard alternate to the long-press / sr-only "Sound out" button. The image is `alt=""` + `aria-hidden=true` while the page alt text lives in a sibling sr-only span.
 
 ## Do-Not-Repeat
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
 <!-- Format: [YYYY-MM-DD] Description of what went wrong and what to do instead. -->
 - [2026-04-22] Do not pass fresh inline `wordPronunciations` objects into `useWordPronunciation` tests on every render; use stable references or the hook's reset effect will stop playback and clear `onended`, producing misleading narration-resume failures.
+- [2026-04-23] When testing cancel-and-replace behavior in a two-clip sequence: the step1 source's `onended` field on the mock is not nulled by `stopActivePlayback` because by the time the new request arrives, `activeSourceRef.current` is already null (step1 finished). The correctness invariant to test is that the gap timer's step2 callback is a no-op (requestId guard prevents it), NOT that step1's `onended` prop is null. Assert via state/pronouncingIndex instead.
 
 ## Decision Log
 

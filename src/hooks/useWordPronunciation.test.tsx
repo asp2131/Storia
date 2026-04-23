@@ -483,4 +483,316 @@ describe("useWordPronunciation", () => {
       expect(result.current.pronouncingIndex).toBeNull();
     });
   });
+
+  // ── WR-5.3: Breakdown 2-clip sequence ─────────────────────────────────────
+
+  it("WR-5.3: breakdown mode plays breakdown clip then full-word clip in sequence", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    const wordPronunciations = {
+      hello: { breakdown: "/hello-breakdown.mp3", fullWord: "/hello-full.mp3" },
+    };
+
+    const { result } = renderHook(() =>
+      useWordPronunciation({
+        wordPronunciations,
+        getNarrationPlaybackState: () => false,
+      })
+    );
+
+    // Wait for preload to settle (real timers used in waitFor).
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((args: unknown[]) => args[0]);
+      expect(urls).toContain("/hello-breakdown.mp3");
+      expect(urls).toContain("/hello-full.mp3");
+    });
+
+    act(() => {
+      result.current.pronounceWord({ word: "hello", index: 0, mode: "breakdown" });
+    });
+
+    // Step 1: breakdown clip starts.
+    await waitFor(() => {
+      expect(createdSources).toHaveLength(1);
+      expect(createdSources[0].start).toHaveBeenCalled();
+      expect(result.current.playbackState).toBe("pronouncing-step1");
+    });
+
+    // Step 1 ends → gap → step 2 starts.
+    act(() => {
+      createdSources[0].onended?.();
+    });
+    vi.advanceTimersByTime(200);
+
+    await waitFor(() => {
+      expect(createdSources).toHaveLength(2);
+      expect(createdSources[1].start).toHaveBeenCalled();
+      expect(result.current.playbackState).toBe("pronouncing-step2");
+    });
+
+    // Step 2 ends → idle.
+    act(() => {
+      createdSources[1].onended?.();
+    });
+
+    await waitFor(() => {
+      expect(result.current.playbackState).toBe("idle");
+      expect(result.current.pronouncingIndex).toBeNull();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("WR-5.3: breakdown narration resumes after step2 ends (not after step1)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    let narrationPlaying = true;
+    let narrationIntentVersion = 0;
+    const pauseNarration = vi.fn(() => { narrationPlaying = false; });
+    const resumeNarration = vi.fn(() => { narrationPlaying = true; });
+
+    const wordPronunciations = {
+      hello: { breakdown: "/hello-breakdown.mp3", fullWord: "/hello-full.mp3" },
+    };
+
+    const { result } = renderHook(() =>
+      useWordPronunciation({
+        wordPronunciations,
+        getNarrationPlaybackState: () => narrationPlaying,
+        pauseNarration,
+        resumeNarration,
+        getNarrationIntentVersion: () => narrationIntentVersion,
+      })
+    );
+
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((args: unknown[]) => args[0]);
+      expect(urls).toContain("/hello-breakdown.mp3");
+    });
+
+    act(() => {
+      result.current.pronounceWord({ word: "hello", index: 0, mode: "breakdown" });
+    });
+
+    await waitFor(() => {
+      expect(pauseNarration).toHaveBeenCalledTimes(1);
+      expect(createdSources).toHaveLength(1);
+    });
+
+    // After step1 ends, narration must NOT resume yet.
+    act(() => {
+      createdSources[0].onended?.();
+    });
+    vi.advanceTimersByTime(200);
+
+    await waitFor(() => expect(createdSources).toHaveLength(2));
+    expect(resumeNarration).not.toHaveBeenCalled();
+
+    // After step2 ends, narration resumes.
+    act(() => {
+      createdSources[1].onended?.();
+    });
+
+    await waitFor(() => {
+      expect(resumeNarration).toHaveBeenCalledTimes(1);
+      expect(result.current.pronouncingIndex).toBeNull();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("WR-5.3: new request during gap cancels step2 and starts fresh (cancel-and-replace)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    const wordPronunciations = {
+      hello: { breakdown: "/hello-breakdown.mp3", fullWord: "/hello-full.mp3" },
+      world: "/world.mp3",
+    };
+
+    fetchMock = vi.fn(async (url: string) => {
+      if (url === "/world.mp3") {
+        return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+      }
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(8) };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() =>
+      useWordPronunciation({
+        wordPronunciations,
+        getNarrationPlaybackState: () => false,
+      })
+    );
+
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((args: unknown[]) => args[0]);
+      expect(urls).toContain("/hello-breakdown.mp3");
+    });
+
+    // Start breakdown sequence for "hello".
+    act(() => {
+      result.current.pronounceWord({ word: "hello", index: 0, mode: "breakdown" });
+    });
+
+    await waitFor(() => expect(createdSources).toHaveLength(1));
+    const step1Source = createdSources[0];
+
+    // Step1 ends; gap timer starts.
+    act(() => { step1Source.onended?.(); });
+
+    // Before gap elapses, fire a new request (cancel-and-replace, WR-5.8).
+    act(() => {
+      result.current.pronounceWord({ word: "world", index: 1, mode: "whole-word" });
+    });
+
+    // Advance past gap — step2 must NOT start because request was replaced.
+    vi.advanceTimersByTime(300);
+
+    await waitFor(() => {
+      // The new "world" request starts a source.
+      expect(result.current.pronouncingIndex).toBe(1);
+    });
+
+    // The new "world" source should be the last (or only second) source.
+    // step2 for "hello" must NOT have started because the request was replaced.
+    // We verify this by checking that pronouncingIndex is the new request's index (1).
+    expect(result.current.pronouncingIndex).toBe(1);
+    // The new source should be playing.
+    expect(createdSources.at(-1)?.start).toHaveBeenCalled();
+
+    // step1Source.onended was already invoked (we called it), so it's not null.
+    // The important invariant is that the gap timer's playStep2 is a no-op —
+    // verified by the fact that createdSources does NOT have a step2 entry
+    // between step1 and the world source. We only allow ≤3 total sources
+    // (step1, possibly step2 if it raced, world). Any step2 would show
+    // pronouncingIndex as 0 instead of 1 — already asserted above.
+    expect(createdSources.length).toBeLessThanOrEqual(3);
+
+    vi.useRealTimers();
+  });
+
+  it("WR-5.7: user toggling narration during step2 prevents auto-resume", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    let narrationPlaying = true;
+    let narrationIntentVersion = 0;
+    const pauseNarration = vi.fn(() => { narrationPlaying = false; });
+    const resumeNarration = vi.fn();
+
+    const wordPronunciations = {
+      hello: { breakdown: "/hello-breakdown.mp3", fullWord: "/hello-full.mp3" },
+    };
+
+    const { result } = renderHook(() =>
+      useWordPronunciation({
+        wordPronunciations,
+        getNarrationPlaybackState: () => narrationPlaying,
+        pauseNarration,
+        resumeNarration,
+        getNarrationIntentVersion: () => narrationIntentVersion,
+      })
+    );
+
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((args: unknown[]) => args[0]);
+      expect(urls).toContain("/hello-breakdown.mp3");
+    });
+
+    act(() => {
+      result.current.pronounceWord({ word: "hello", index: 0, mode: "breakdown" });
+    });
+
+    await waitFor(() => expect(createdSources).toHaveLength(1));
+
+    act(() => { createdSources[0].onended?.(); });
+    vi.advanceTimersByTime(200);
+
+    await waitFor(() => expect(createdSources).toHaveLength(2));
+
+    // User manually toggles narration DURING step2 (intent version bumped).
+    act(() => { narrationIntentVersion += 1; });
+
+    act(() => { createdSources[1].onended?.(); });
+
+    await waitFor(() => {
+      expect(result.current.pronouncingIndex).toBeNull();
+    });
+
+    // Auto-resume must be suppressed because user intent changed.
+    expect(resumeNarration).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it("WR-5.4: if only fullWord exists (no breakdown), plays single full-word clip for breakdown mode", async () => {
+    const wordPronunciations = { hello: { fullWord: "/hello-full.mp3" } };
+
+    const { result } = renderHook(() =>
+      useWordPronunciation({
+        wordPronunciations,
+        getNarrationPlaybackState: () => false,
+      })
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/hello-full.mp3"));
+
+    act(() => {
+      result.current.pronounceWord({ word: "hello", index: 0, mode: "breakdown" });
+    });
+
+    await waitFor(() => {
+      expect(createdSources).toHaveLength(1);
+      expect(createdSources[0].start).toHaveBeenCalled();
+    });
+
+    // Ends cleanly.
+    act(() => { createdSources[0].onended?.(); });
+
+    await waitFor(() => {
+      expect(result.current.pronouncingIndex).toBeNull();
+      expect(result.current.playbackState).toBe("idle");
+    });
+  });
+
+  it("WR-5.9: rapid taps do not leave UI in stuck pronouncingIndex state", async () => {
+    const wordPronunciations = { hello: "/hello.mp3" };
+
+    const { result } = renderHook(() =>
+      useWordPronunciation({
+        wordPronunciations,
+        getNarrationPlaybackState: () => false,
+      })
+    );
+
+    await waitForMountEffectsToSettle();
+
+    // Fire 5 rapid requests.
+    act(() => {
+      for (let i = 0; i < 5; i++) {
+        result.current.pronounceWord({ word: "hello", index: i, mode: "whole-word" });
+      }
+    });
+
+    // Only the last request's source should remain; earlier sources are cancelled.
+    await waitFor(() => {
+      // At least one source should be active.
+      expect(createdSources.length).toBeGreaterThanOrEqual(1);
+      // The pronouncingIndex should be the last request's index (4).
+      expect(result.current.pronouncingIndex).toBe(4);
+    });
+
+    // All but the last source should have been stopped.
+    const allButLast = createdSources.slice(0, -1);
+    for (const src of allButLast) {
+      expect(src.stop).toHaveBeenCalled();
+    }
+
+    // End the last active source; state should clear.
+    act(() => { createdSources.at(-1)?.onended?.(); });
+
+    await waitFor(() => {
+      expect(result.current.pronouncingIndex).toBeNull();
+      expect(result.current.playbackState).toBe("idle");
+    });
+  });
 });

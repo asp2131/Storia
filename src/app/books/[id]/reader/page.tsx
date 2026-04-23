@@ -23,6 +23,11 @@ import {
   type PronunciationPlaybackMode,
 } from "@/hooks/useWordPronunciation";
 import {
+  emitPronunciationEvent,
+  type PronunciationPlaybackPath,
+} from "@/lib/pronunciationAnalytics";
+import { normalizePronunciationToken } from "@/lib/pronunciation";
+import {
   useLocalPreferences,
   type PronunciationMode,
   SoundscapeMode,
@@ -236,18 +241,40 @@ export default function BookReader() {
         word,
         index,
         mode,
-        trigger: mode === "breakdown" ? "click" : "click",
+        trigger: "click",
       });
-      window.umami?.track("reader-pronunciation", {
+
+      // Determine the playback path based on available data.
+      const normalizedWord = normalizePronunciationToken(word);
+      const entry = pageData?.wordPronunciations?.[normalizedWord];
+      let playbackPath: PronunciationPlaybackPath;
+      if (!entry) {
+        playbackPath = "no-data-fallback";
+      } else if (mode === "breakdown") {
+        const hasBreakdown =
+          typeof entry !== "string" && entry.breakdown;
+        playbackPath = hasBreakdown
+          ? "manifest-breakdown"
+          : "manifest-fullword-fallback";
+      } else {
+        playbackPath = "legacy-page-fullword";
+      }
+
+      emitPronunciationEvent({
         bookId,
         pageId: pageData?.id,
         page: currentPage,
         word,
+        normalizedWord,
         mode,
         trigger: "click",
+        playbackPath,
+        latencyMs: null, // populated asynchronously once audio starts playing
+        outcome: "played",  // optimistic; hook owns failure tracking
+        featureEnabled: pronunciationFeatureEnabled,
       });
     },
-    [bookId, currentPage, pageData?.id, pronounceWord, resolvePrimaryPronunciationMode]
+    [bookId, currentPage, pageData, pronounceWord, resolvePrimaryPronunciationMode, pronunciationFeatureEnabled]
   );
 
   const handleWordSecondaryAction = useCallback(
@@ -263,20 +290,39 @@ export default function BookReader() {
         mode: "breakdown",
         trigger: "alternate-control",
       });
-      window.umami?.track("reader-pronunciation", {
+
+      const normalizedWord = normalizePronunciationToken(word);
+      const entry = pageData?.wordPronunciations?.[normalizedWord];
+      let playbackPath: PronunciationPlaybackPath;
+      if (!entry) {
+        playbackPath = "no-data-fallback";
+      } else {
+        const hasBreakdown =
+          typeof entry !== "string" && entry.breakdown;
+        playbackPath = hasBreakdown
+          ? "manifest-breakdown"
+          : "manifest-fullword-fallback";
+      }
+
+      emitPronunciationEvent({
         bookId,
         pageId: pageData?.id,
         page: currentPage,
         word,
+        normalizedWord,
         mode: "breakdown",
         trigger: "alternate-control",
+        playbackPath,
+        latencyMs: null,
+        outcome: "played",
+        featureEnabled: pronunciationFeatureEnabled,
       });
     },
     [
       bookId,
       currentPage,
       handleWordPrimaryAction,
-      pageData?.id,
+      pageData,
       pronounceWord,
       pronunciationFeatureEnabled,
     ]

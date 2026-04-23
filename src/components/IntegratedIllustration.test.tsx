@@ -127,6 +127,36 @@ describe("IntegratedIllustration overlay interactions", () => {
     expect(onWordPrimaryAction).toHaveBeenCalledWith("hello", 0);
   });
 
+  it("exposes overlay sentence as a labeled group and supports Shift+Enter as keyboard alternate for breakdown", async () => {
+    const onWordPrimaryAction = vi.fn();
+    const onWordSecondaryAction = vi.fn();
+
+    render(
+      <IntegratedIllustration
+        imageUrl="https://example.com/base.png"
+        compositedImageUrl={null}
+        overlay={overlay}
+        alt="Page 1"
+        preferDynamicOverlay
+        onWordPrimaryAction={onWordPrimaryAction}
+        onWordSecondaryAction={onWordSecondaryAction}
+      />
+    );
+
+    const helloWord = await screen.findByRole("button", { name: /hear hello/i });
+
+    const group = helloWord.closest('[role="group"]');
+    expect(group).not.toBeNull();
+    expect(group?.getAttribute("aria-label")).toMatch(/hello world/i);
+    expect(group?.getAttribute("aria-label")).toMatch(/sound out/i);
+
+    expect(helloWord.getAttribute("aria-keyshortcuts")).toBe("Shift+Enter");
+
+    fireEvent.keyDown(helloWord, { key: "Enter", shiftKey: true });
+    expect(onWordSecondaryAction).toHaveBeenCalledWith("hello", 0);
+    expect(onWordPrimaryAction).not.toHaveBeenCalled();
+  });
+
   it("fires secondary action on long press and suppresses click after long press", async () => {
     const onWordPrimaryAction = vi.fn();
     const onWordSecondaryAction = vi.fn();
