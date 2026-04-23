@@ -115,13 +115,25 @@ export async function GET(_request: NextRequest, { params }: Params) {
       });
     };
 
+    const bookIdStr = book.id.toString();
+    const hasPronunciations = pages.some((p) => {
+      if (!p.word_pronunciations) return false;
+      const map = p.word_pronunciations as Record<string, unknown>;
+      return Object.keys(map).length > 0;
+    });
+    const pronunciationManifestUrl = hasPronunciations
+      ? `/api/books/${bookIdStr}/pronunciations`
+      : null;
+
     return NextResponse.json({
       book: {
-        id: book.id.toString(),
+        id: bookIdStr,
         title: book.title,
         author: book.author,
         coverUrl: book.cover_url,
         description: book.description,
+        hasPronunciations,
+        pronunciationManifestUrl,
       },
       pages: pages.map((page) => {
         const applicableAssignments = getAssignmentsForPage(page.page_number);

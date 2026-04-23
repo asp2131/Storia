@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
           pages: {
             select: {
               narration_url: true,
+              word_pronunciations: true,
             },
           },
         },
@@ -182,6 +183,14 @@ export async function GET(request: NextRequest) {
       const bookIdStr = book.id.toString();
       const hasNarration = book.pages.some((p) => p.narration_url != null);
       const hasQuestions = (questionCountMap.get(bookIdStr) || 0) > 0;
+      const hasPronunciations = book.pages.some((p) => {
+        if (!p.word_pronunciations) return false;
+        const map = p.word_pronunciations as Record<string, unknown>;
+        return Object.keys(map).length > 0;
+      });
+      const pronunciationManifestUrl = hasPronunciations
+        ? `/api/books/${bookIdStr}/pronunciations`
+        : null;
 
       const baseBook = {
         id: bookIdStr,
@@ -194,6 +203,8 @@ export async function GET(request: NextRequest) {
         hasSoundscape: book.scenes.some((scene) => scene.soundscapes.length > 0),
         hasNarration,
         hasQuestions,
+        hasPronunciations,
+        pronunciationManifestUrl,
       };
 
       // Child-aware progress

@@ -26,7 +26,8 @@ import {
   emitPronunciationEvent,
   type PronunciationPlaybackPath,
 } from "@/lib/pronunciationAnalytics";
-import { normalizePronunciationToken } from "@/lib/pronunciation";
+import { normalizePronunciationToken, type WordPronunciationEntry } from "@/lib/pronunciation";
+import { usePronunciationManifest } from "@/hooks/usePronunciationManifest";
 import {
   useLocalPreferences,
   type PronunciationMode,
@@ -208,9 +209,35 @@ export default function BookReader() {
   );
 
   const nextPageData = pages[activeIndex + 1] ?? null;
+
+  // WR-4: Book-level pronunciation manifest. Used when present; falls back to
+  // page-level wordPronunciations when absent or on fetch failure (WR-8.2).
+  const manifestResult = usePronunciationManifest({
+    bookId,
+    hasPronunciations: readerData?.book?.hasPronunciations,
+    pronunciationManifestUrl: readerData?.book?.pronunciationManifestUrl,
+  });
+
+  const manifestEntries: Record<string, WordPronunciationEntry> | null = useMemo(() => {
+    if (manifestResult.status !== "present") return null;
+    const out: Record<string, WordPronunciationEntry> = {};
+    for (const [key, entry] of Object.entries(manifestResult.entries)) {
+      out[key] = {
+        ...(entry.fullWord ? { fullWord: entry.fullWord } : {}),
+        ...(entry.breakdown ? { breakdown: entry.breakdown } : {}),
+      };
+    }
+    return out;
+  }, [manifestResult]);
+
+  const currentPagePronunciations =
+    manifestEntries ?? pageData?.wordPronunciations ?? null;
+  const nextPagePronunciationsSource =
+    manifestEntries ?? nextPageData?.wordPronunciations ?? null;
+
   const { pronounceWord, pronouncingIndex } = useWordPronunciation({
-    wordPronunciations: pageData?.wordPronunciations || null,
-    nextPagePronunciations: nextPageData?.wordPronunciations || null,
+    wordPronunciations: currentPagePronunciations,
+    nextPagePronunciations: nextPagePronunciationsSource,
     getNarrationPlaybackState: () => isNarrationPlayingRef.current,
     pauseNarration: () => {
       narrationRef.current?.pause();
@@ -246,9 +273,11 @@ export default function BookReader() {
 
       // Determine the playback path based on available data.
       const normalizedWord = normalizePronunciationToken(word);
-      const entry = pageData?.wordPronunciations?.[normalizedWord];
+      const entry = currentPagePronunciations?.[normalizedWord];
       let playbackPath: PronunciationPlaybackPath;
-      if (!entry) {
+      if (manifestResult.status === "error") {
+        playbackPath = "manifest-load-failure";
+      } else if (!entry) {
         playbackPath = "no-data-fallback";
       } else if (mode === "breakdown") {
         const hasBreakdown =
@@ -257,7 +286,9 @@ export default function BookReader() {
           ? "manifest-breakdown"
           : "manifest-fullword-fallback";
       } else {
-        playbackPath = "legacy-page-fullword";
+        playbackPath = manifestEntries
+          ? "manifest-fullword"
+          : "legacy-page-fullword";
       }
 
       emitPronunciationEvent({
@@ -274,7 +305,7 @@ export default function BookReader() {
         featureEnabled: pronunciationFeatureEnabled,
       });
     },
-    [bookId, currentPage, pageData, pronounceWord, resolvePrimaryPronunciationMode, pronunciationFeatureEnabled]
+    [bookId, currentPage, pageData, pronounceWord, resolvePrimaryPronunciationMode, pronunciationFeatureEnabled, currentPagePronunciations, manifestResult.status, manifestEntries]
   );
 
   const handleWordSecondaryAction = useCallback(
@@ -292,9 +323,11 @@ export default function BookReader() {
       });
 
       const normalizedWord = normalizePronunciationToken(word);
-      const entry = pageData?.wordPronunciations?.[normalizedWord];
+      const entry = currentPagePronunciations?.[normalizedWord];
       let playbackPath: PronunciationPlaybackPath;
-      if (!entry) {
+      if (manifestResult.status === "error") {
+        playbackPath = "manifest-load-failure";
+      } else if (!entry) {
         playbackPath = "no-data-fallback";
       } else {
         const hasBreakdown =
@@ -325,6 +358,8 @@ export default function BookReader() {
       pageData,
       pronounceWord,
       pronunciationFeatureEnabled,
+      currentPagePronunciations,
+      manifestResult.status,
     ]
   );
 

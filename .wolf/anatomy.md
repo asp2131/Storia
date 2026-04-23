@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T00:53:35.401Z
-> Files: 566 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T17:46:38.092Z
+> Files: 570 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -726,15 +726,23 @@
 
 ## src/app/api/books/
 
-- `route.ts` — Next.js API route: GET with child-aware progress, hasNarration, hasQuestions (~3200 tok)
+- `route.ts` — Next.js API route: GET with child-aware progress, hasNarration, hasQuestions, hasPronunciations (~3400 tok)
 
 ## src/app/api/books/[bookId]/questions/
 
 - `route.ts` — Next.js API route: GET (~365 tok)
 
+## src/app/api/books/[id]/pronunciations/
+
+- `route.ts` — Book-level pronunciation manifest route that merges normalized page entries and keeps the most complete duplicate (~1030 tok)
+
 ## src/app/api/books/[id]/questions/
 
 - `route.ts` — Next.js API route: GET (~360 tok)
+
+## src/app/api/books/[id]/reader/
+
+- `route.ts` — Next.js API route: GET (~1529 tok)
 
 ## src/app/api/child-profiles/
 
@@ -762,7 +770,7 @@
 
 ## src/app/books/[id]/reader/
 
-- `page.tsx` — BookReader (~10603 tok)
+- `page.tsx` — BookReader (~11038 tok)
 
 ## src/components/
 
@@ -772,6 +780,8 @@
 
 ## src/hooks/
 
+- `usePronunciationManifest.test.tsx` — Covers manifest absent, present, and fetch-failure states for the shipping hook (~1900 tok)
+- `usePronunciationManifest.ts` — Reader hook that fetches the book-level pronunciation manifest with absent/loading/error/present states (~700 tok)
 - `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
 - `useWordPronunciation.ts` — Playback arbitration state machine states (WG-4 / WR-5). (~5523 tok)
 
@@ -781,6 +791,6 @@
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
 - `pronunciation.ts` — Shared pronunciation normalization/token extraction helpers and compatible entry types for generation + reader playback (~220 tok)
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
-- `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1346 tok)
+- `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)

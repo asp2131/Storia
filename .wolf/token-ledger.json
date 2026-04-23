@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 1340787,
-    "total_reads": 783,
-    "total_writes": 576,
-    "total_sessions": 17,
-    "anatomy_hits": 159,
-    "anatomy_misses": 618,
-    "repeated_reads_blocked": 668,
-    "estimated_savings_vs_bare_cli": 4761564
+    "total_tokens_estimated": 1364870,
+    "total_reads": 790,
+    "total_writes": 583,
+    "total_sessions": 18,
+    "anatomy_hits": 165,
+    "anatomy_misses": 619,
+    "repeated_reads_blocked": 669,
+    "estimated_savings_vs_bare_cli": 4773367
   },
   "sessions": [
     {
@@ -9051,6 +9051,100 @@
         "writes_count": 2,
         "repeated_reads_blocked": 6,
         "anatomy_lookups": 7
+      }
+    },
+    {
+      "id": "session-2026-04-23-1242",
+      "started": "2026-04-23T17:42:53.269Z",
+      "ended": "2026-04-23T17:49:09.942Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts",
+          "tokens_estimated": 700,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts",
+          "tokens_estimated": 1030,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 10603,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 5523,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/route.ts",
+          "tokens_estimated": 3400,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.ts",
+          "tokens_estimated": 1346,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/reader/route.ts",
+          "tokens_estimated": 184,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 80,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 367,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 290,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 308,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 62,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.ts",
+          "tokens_estimated": 190,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 22602,
+        "output_tokens_estimated": 1481,
+        "reads_count": 7,
+        "writes_count": 7,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 6
       }
     }
   ],

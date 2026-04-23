@@ -10,6 +10,7 @@
 | -- | Created reading-sessions API route (POST with upsert) | src/app/api/reading-sessions/route.ts | new file | ~1800 |
 | -- | Updated books route with childProfileId, hasNarration, hasQuestions | src/app/api/books/route.ts | rewritten | ~3200 |
 | 19:53 | Implemented pronunciation manifest contract (WG-5/WR-4/FR-WEB-15): hasPronunciations+pronunciationManifestUrl on books route, GET /api/books/[id]/pronunciations endpoint, BookData type extension, usePronunciationManifest hook (3-state), 12 tests green, tsc clean | src/app/api/books/route.ts, src/app/api/books/[id]/pronunciations/route.ts, src/hooks/useBookData.ts, src/hooks/usePronunciationManifest.ts, src/hooks/usePronunciationManifest.test.tsx, src/lib/pronunciation.ts | complete | ~4800 |
+| 20:18 | Fixed pronunciation release blockers: spread analytics payload for Umami build typing and moved manifest absent/present/fetch-failure coverage into shipping src hook/tests; verified targeted vitest + next build | src/lib/pronunciationAnalytics.ts, src/types/umami.d.ts, src/app/api/books/route.ts, src/app/api/books/[id]/pronunciations/route.ts, src/hooks/useBookData.ts, src/hooks/usePronunciationManifest.ts, src/hooks/usePronunciationManifest.test.tsx | verified | ~2600 |
 
 | 2026-04-07 | Created 3 API routes: continue-reading, books/[bookId]/questions, comprehension | src/app/api/continue-reading/route.ts, src/app/api/books/[bookId]/questions/route.ts, src/app/api/comprehension/route.ts | completed | ~200 |
 
@@ -378,3 +379,23 @@
 | 19:52 | Edited src/app/api/admin/generate-narration/route.ts | added 1 import(s) | ~72 |
 | 19:53 | Edited src/app/api/admin/generate-narration/route.ts | added 1 condition(s) | ~979 |
 | 19:53 | Created src/lib/pronunciationAnalytics.test.ts | — | ~1922 |
+| 10:15 | Extracted pronunciation spec scope: phases, deliverables, and acceptance criteria for squad audits | specs/word-pronunciation-cross-platform-spec.md | summarized scope for backend/frontend/mobile/QA handoff | ~2600 |
+| 20:15 | Audited pronunciation spec implementation status across web/backend/mobile; compared spec to current routes, hooks, schema, tests, and mobile reader behavior. | specs/word-pronunciation-cross-platform-spec.md, src/app/books/[id]/reader/page.tsx, src/hooks/useWordPronunciation.ts, src/app/api/admin/generate-narration/route.ts, src/app/api/books/[id]/reader/route.ts, prisma/schema.prisma, storia-mobile/lib/src/data/models.dart, storia-mobile/lib/src/features/reader/runtime/providers/word_tts_provider.dart | Identified implemented vs missing spec phases; major gaps remain in shared manifest contract, mobile integration, editorial tooling, and full analytics/QA. | ~5200 |
+| 20:20 | Re-tested pronunciation fix-1 via targeted vitest, direct manifest test run, build, and source grep. | src/lib/pronunciationAnalytics.ts; src/hooks/usePronunciationManifest.test.tsx; src/app/api/books/route.ts; src/app/api/books/[id]/pronunciations/route.ts | Verified previous compile blocker and shipping-test-gap are fixed; noted non-blocking build warnings. | ~900 |
+| 20:21 | Updated cerebrum to replace stale pronunciation-manifest learning with current shipping contract status. | .wolf/cerebrum.md | Memory now reflects fixed manifest implementation in src/. | ~180 |
+| 20:22 | Re-verified QA pronunciation blocker: production next build compiles clean and shipping manifest tests still pass for absent/present/fetch-failure scenarios | src/lib/pronunciationAnalytics.ts, src/lib/pronunciationAnalytics.test.ts, src/hooks/usePronunciationManifest.test.tsx | verified | ~900 |
+| 20:23 | Re-tested pronunciation analytics build regression and shipping manifest hook coverage; build + targeted vitest pass, noted non-blocking Next root warning/objc duplicate-class log during build | src/lib/pronunciationAnalytics.ts, src/hooks/usePronunciationManifest.test.tsx | verified | ~1200 |
+
+## Session: 2026-04-23 12:42
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:45 | Edited src/app/api/books/[id]/reader/route.ts | added 1 condition(s) | ~184 |
+| 12:45 | Edited src/app/books/[id]/reader/page.tsx | added 1 import(s) | ~80 |
+| 12:45 | Edited src/app/books/[id]/reader/page.tsx | added 1 condition(s) | ~367 |
+| 12:46 | Edited src/app/books/[id]/reader/page.tsx | added 1 condition(s) | ~290 |
+| 12:46 | Edited src/app/books/[id]/reader/page.tsx | added 1 condition(s) | ~308 |
+| 12:46 | Edited src/app/books/[id]/reader/page.tsx | 9→11 lines | ~62 |
+| 12:46 | Edited src/lib/pronunciationAnalytics.ts | 7→8 lines | ~190 |
+| 12:47 | Finished phase-1 manifest wiring: reader route exposes hasPronunciations+manifestUrl; reader page uses usePronunciationManifest and merges manifest entries into useWordPronunciation (fallback page-level on absent/error); analytics reflects manifest-load-failure + manifest-fullword. 83/83 tests + prod build pass. | src/app/api/books/[id]/reader/route.ts, src/app/books/[id]/reader/page.tsx, src/lib/pronunciationAnalytics.ts | success | ~2400 |
+| 12:49 | Session end: 7 writes across 3 files (route.ts, page.tsx, pronunciationAnalytics.ts) | 7 reads | ~24083 tok |

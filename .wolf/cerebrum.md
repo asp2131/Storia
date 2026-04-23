@@ -2,7 +2,7 @@
 
 > OpenWolf's learning memory. Updated automatically as the AI learns from interactions.
 > Do not edit manually unless correcting an error.
-> Last updated: 2026-03-25
+> Last updated: 2026-04-22
 
 ## User Preferences
 
@@ -29,8 +29,9 @@
 - `useWordPronunciation` now accepts `Record<string, WordPronunciationEntry>` where entry is `string | { breakdown?, fullWord? }`. Resolver: breakdown mode prefers `entry.breakdown` then falls back to `entry.fullWord`; whole-word prefers `entry.fullWord` then `entry.breakdown`. Legacy string entries are passed through for either mode.
 - `useWordPronunciation` buffer cache is keyed by audio URL (not by word or mode). This dedups preload+playback fetches when breakdown and fullWord share a URL, and prevents re-fetching when breakdown mode falls back to fullWord audio.
 - `src/lib/pronunciation.ts` is the canonical home for the pronunciation contract: `WordPronunciationEntry` type, `normalizePronunciationToken`, `extractUniquePronunciationTokens`, `createStoredPronunciationEntry(fullWord, breakdown?)`, `resolvePronunciationUrl(entry, mode)`. Both the backend (`generate-narration` route) and the reader hook import from here to avoid drift.
+- Umami tracker typings in this repo use `Record<string, ...>` payloads; passing a named interface like `PronunciationAnalyticsEvent` directly can fail Next build because interfaces lack an index signature. Spread the event into a plain object (`{ ...payload }`) or cast via a helper before calling `window.umami.track`.
 - `createStoredPronunciationEntry` omits the `breakdown` key when no breakdown URL is supplied — reader's `resolvePronunciationUrl` handles this by falling back to `fullWord`.
-- Current web pronunciation implementation still consumes page-level `wordPronunciations` data from the reader payload, now widened to `string | { breakdown?, fullWord? }`; spec-only manifest fields such as `hasPronunciations` / `pronunciationManifestUrl` are not implemented in the reader contract yet.
+- Web pronunciation shipping contract now includes `hasPronunciations` and `pronunciationManifestUrl` on `/api/books` AND `/api/books/[id]/reader`, plus a live `/api/books/[id]/pronunciations` manifest endpoint and `usePronunciationManifest` hook in `src/`; the reader page wires the hook and merges manifest entries into `useWordPronunciation` (manifest preferred; falls back to page-level `wordPronunciations` when manifest absent or fetch fails). Analytics `playbackPath` now carries `manifest-fullword` and `manifest-load-failure` in addition to existing breakdown/fallback variants.
 - Overlay accessibility (WG-3): each `OverlayTextElement` now wraps interactive words in `role="group"` with sentence-level `aria-label` (Story text + full element.text + interaction hint). Per-word `<button>` carries `aria-label="Hear ${token}"`, `aria-describedby` pointing to a sentence-scoped `sr-only` hint, and `aria-keyshortcuts="Shift+Enter"`. Shift+Enter (or Shift+Space) on a focused word triggers `onWordSecondaryAction` as a keyboard alternate to the long-press / sr-only "Sound out" button. The image is `alt=""` + `aria-hidden=true` while the page alt text lives in a sibling sr-only span.
 
 ## Do-Not-Repeat

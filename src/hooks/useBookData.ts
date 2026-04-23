@@ -55,6 +55,8 @@ export type BookData = {
   author: string | null;
   coverUrl: string | null;
   description: string | null;
+  hasPronunciations?: boolean;
+  pronunciationManifestUrl?: string | null;
 };
 
 // ============ EDITOR HOOKS ============

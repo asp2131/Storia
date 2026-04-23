@@ -1,301 +1,95 @@
 {
-  "session_id": "session-2026-04-23-1931",
-  "started": "2026-04-23T00:31:30.123Z",
+  "session_id": "session-2026-04-23-1242",
+  "started": "2026-04-23T17:42:53.269Z",
   "files_read": {
-    "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.tsx": {
+    "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts": {
       "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:43:06.829Z"
+      "tokens": 700,
+      "first_read": "2026-04-23T17:44:35.097Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/components/reader/ReaderStage.tsx": {
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts": {
       "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:43:33.427Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.test.tsx": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:43:57.624Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/specs/web-reader-pronunciation-functional-requirements.md": {
-      "count": 3,
-      "tokens": 3600,
-      "first_read": "2026-04-23T00:48:20.965Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a5848414/src/hooks/useWordPronunciation.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:48:25.846Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a5848414/src/hooks/useWordPronunciation.test.tsx": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:48:26.339Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx": {
-      "count": 4,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:48:30.387Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts": {
-      "count": 3,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:48:30.592Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts": {
-      "count": 3,
-      "tokens": 220,
-      "first_read": "2026-04-23T00:48:36.582Z"
+      "tokens": 1030,
+      "first_read": "2026-04-23T17:44:35.473Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx": {
-      "count": 5,
-      "tokens": 10650,
-      "first_read": "2026-04-23T00:48:39.407Z"
+      "count": 2,
+      "tokens": 10603,
+      "first_read": "2026-04-23T17:44:41.481Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/route.ts": {
+    "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts": {
       "count": 1,
-      "tokens": 3200,
-      "first_read": "2026-04-23T00:48:49.897Z"
+      "tokens": 5523,
+      "first_read": "2026-04-23T17:44:49.354Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-04-23T00:48:51.069Z"
+      "first_read": "2026-04-23T17:44:49.772Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/specs/word-pronunciation-cross-platform-spec.md": {
-      "count": 2,
-      "tokens": 5200,
-      "first_read": "2026-04-23T00:48:55.055Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma": {
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/route.ts": {
       "count": 1,
-      "tokens": 4250,
-      "first_read": "2026-04-23T00:49:00.370Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.test.ts": {
-      "count": 2,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:49:00.586Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/vitest.config.ts": {
-      "count": 2,
-      "tokens": 95,
-      "first_read": "2026-04-23T00:49:04.189Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/app/api/books/route.ts": {
-      "count": 2,
-      "tokens": 3200,
-      "first_read": "2026-04-23T00:49:19.571Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts": {
-      "count": 2,
-      "tokens": 4031,
-      "first_read": "2026-04-23T00:49:26.256Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/app/api/books/[id]": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:49:39.966Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/hooks/useBookData.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:50:06.579Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/test/setup.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:50:32.783Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/test/setup.ts": {
-      "count": 2,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:50:38.768Z"
+      "tokens": 3400,
+      "first_read": "2026-04-23T17:45:20.954Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.ts": {
       "count": 1,
       "tokens": 1346,
-      "first_read": "2026-04-23T00:52:22.543Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationValidation.ts": {
-      "count": 1,
-      "tokens": 1807,
-      "first_read": "2026-04-23T00:52:26.944Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/normalizeWord.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T00:52:27.529Z"
+      "first_read": "2026-04-23T17:46:24.853Z"
     }
   },
   "files_written": [
     {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.tsx",
+      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/reader/route.ts",
       "action": "edit",
-      "tokens": 1498,
-      "at": "2026-04-23T00:45:49.606Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.test.tsx",
-      "action": "edit",
-      "tokens": 349,
-      "at": "2026-04-23T00:46:01.869Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/app/api/books/route.ts",
-      "action": "edit",
-      "tokens": 42,
-      "at": "2026-04-23T00:49:28.985Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/app/api/books/route.ts",
-      "action": "edit",
-      "tokens": 271,
-      "at": "2026-04-23T00:49:36.950Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/app/api/books/[id]/pronunciations/route.ts",
-      "action": "create",
-      "tokens": 1030,
-      "at": "2026-04-23T00:49:58.268Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/hooks/useBookData.ts",
-      "action": "edit",
-      "tokens": 128,
-      "at": "2026-04-23T00:50:11.772Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
-      "action": "create",
-      "tokens": 5523,
-      "at": "2026-04-23T00:50:24.628Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.ts",
-      "action": "create",
-      "tokens": 823,
-      "at": "2026-04-23T00:50:29.512Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.ts",
-      "action": "create",
-      "tokens": 1346,
-      "at": "2026-04-23T00:50:30.508Z"
+      "tokens": 184,
+      "at": "2026-04-23T17:45:27.265Z"
     },
     {
       "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
       "action": "edit",
       "tokens": 80,
-      "at": "2026-04-23T00:50:38.379Z"
+      "at": "2026-04-23T17:45:40.860Z"
     },
     {
       "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
       "action": "edit",
-      "tokens": 818,
-      "at": "2026-04-23T00:50:58.163Z"
+      "tokens": 367,
+      "at": "2026-04-23T17:45:56.808Z"
     },
     {
       "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
       "action": "edit",
-      "tokens": 69,
-      "at": "2026-04-23T00:51:12.296Z"
+      "tokens": 290,
+      "at": "2026-04-23T17:46:07.084Z"
     },
     {
       "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
       "action": "edit",
-      "tokens": 36,
-      "at": "2026-04-23T00:51:15.977Z"
+      "tokens": 308,
+      "at": "2026-04-23T17:46:16.009Z"
     },
     {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.test.tsx",
-      "action": "create",
-      "tokens": 2855,
-      "at": "2026-04-23T00:51:16.835Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
       "action": "edit",
-      "tokens": 3025,
-      "at": "2026-04-23T00:51:18.308Z"
+      "tokens": 62,
+      "at": "2026-04-23T17:46:20.554Z"
     },
     {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/test/setup.ts",
-      "action": "create",
-      "tokens": 323,
-      "at": "2026-04-23T00:51:32.390Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.ts",
       "action": "edit",
-      "tokens": 259,
-      "at": "2026-04-23T00:51:42.059Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationValidation.ts",
-      "action": "create",
-      "tokens": 1807,
-      "at": "2026-04-23T00:51:47.236Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.ts",
-      "action": "edit",
-      "tokens": 60,
-      "at": "2026-04-23T00:51:53.109Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationValidation.test.ts",
-      "action": "create",
-      "tokens": 3700,
-      "at": "2026-04-23T00:52:32.166Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/.claude/worktrees/agent-a440932b/src/lib/pronunciation.ts",
-      "action": "create",
-      "tokens": 393,
-      "at": "2026-04-23T00:52:37.249Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
-      "action": "edit",
-      "tokens": 72,
-      "at": "2026-04-23T00:52:37.458Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
-      "action": "edit",
-      "tokens": 979,
-      "at": "2026-04-23T00:53:00.445Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.test.ts",
-      "action": "create",
-      "tokens": 1922,
-      "at": "2026-04-23T00:53:35.411Z"
+      "tokens": 190,
+      "at": "2026-04-23T17:46:38.103Z"
     }
   ],
   "edit_counts": {
-    "src/components/IntegratedIllustration.tsx": 1,
-    "src/components/IntegratedIllustration.test.tsx": 1,
-    ".claude/worktrees/agent-a440932b/src/app/api/books/route.ts": 2,
-    ".claude/worktrees/agent-a440932b/src/app/api/books/[id]/pronunciations/route.ts": 1,
-    ".claude/worktrees/agent-a440932b/src/hooks/useBookData.ts": 1,
-    "src/hooks/useWordPronunciation.ts": 1,
-    ".claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.ts": 2,
-    "src/lib/pronunciationAnalytics.ts": 1,
-    "src/app/books/[id]/reader/page.tsx": 4,
-    ".claude/worktrees/agent-a440932b/src/hooks/usePronunciationManifest.test.tsx": 1,
-    "src/hooks/useWordPronunciation.test.tsx": 2,
-    ".claude/worktrees/agent-a440932b/src/test/setup.ts": 1,
-    "src/lib/pronunciationValidation.ts": 1,
-    "src/lib/pronunciationValidation.test.ts": 1,
-    ".claude/worktrees/agent-a440932b/src/lib/pronunciation.ts": 1,
-    "src/app/api/admin/generate-narration/route.ts": 2,
-    "src/lib/pronunciationAnalytics.test.ts": 1
+    "src/app/api/books/[id]/reader/route.ts": 1,
+    "src/app/books/[id]/reader/page.tsx": 5,
+    "src/lib/pronunciationAnalytics.ts": 1
   },
-  "anatomy_hits": 9,
-  "anatomy_misses": 16,
-  "repeated_reads_warned": 19,
+  "anatomy_hits": 6,
+  "anatomy_misses": 1,
+  "repeated_reads_warned": 1,
   "cerebrum_warnings": 0,
-  "stop_count": 2
+  "stop_count": 1
 }

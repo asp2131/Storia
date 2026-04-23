@@ -714,7 +714,9 @@
         "auto-resume",
         "state-machine"
       ],
-      "related_bugs": ["bug-043"],
+      "related_bugs": [
+        "bug-043"
+      ],
       "occurrences": 1,
       "last_seen": "2026-04-23T19:51:00Z"
     },
@@ -732,7 +734,9 @@
         "breakdown-sequence",
         "wr-5-3"
       ],
-      "related_bugs": ["bug-042"],
+      "related_bugs": [
+        "bug-042"
+      ],
       "occurrences": 1,
       "last_seen": "2026-04-23T19:52:00Z"
     },
@@ -870,6 +874,79 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-23T00:53:00.447Z"
+    },
+    {
+      "id": "bug-051",
+      "timestamp": "2026-04-23T01:18:19Z",
+      "error_message": "TypeScript compile error: Argument of type 'PronunciationAnalyticsEvent' is not assignable to parameter of type 'Record<string, UmamiValue>' and manifest state coverage existed only in .claude/worktrees instead of shipping src tests.",
+      "file": "src/lib/pronunciationAnalytics.ts",
+      "root_cause": "Umami track expects a Record payload with an index signature, so passing the named PronunciationAnalyticsEvent interface directly failed Next build. Separately, manifest hook/tests were added only in a worktree and not copied into the shipping src tree.",
+      "fix": "Spread the analytics event into a plain object before calling window.umami.track, widened Umami value typings, and added shipping pronunciation manifest route/hook/tests plus books-route metadata so absent/present/fetch-failure coverage runs from src.",
+      "tags": [
+        "typescript",
+        "build-break",
+        "umami",
+        "pronunciation",
+        "manifest",
+        "tests"
+      ],
+      "related_bugs": [
+        "bug-042"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T01:18:19Z"
+    },
+    {
+      "id": "bug-052",
+      "timestamp": "2026-04-22T20:22:00Z",
+      "error_message": "QA reported a production build compile failure in src/lib/pronunciationAnalytics.ts during spec-review-fix-1 recheck.",
+      "file": "src/lib/pronunciationAnalytics.ts",
+      "root_cause": "Umami tracker payloads require a Record<string, UmamiValue>; passing a named analytics interface directly had previously broken Next production type-checking.",
+      "fix": "Re-verified the shipping source uses a plain object payload (window.umami.track(\"reader-pronunciation\", { ...payload })) and confirmed both next build and shipping manifest tests pass.",
+      "tags": [
+        "typescript",
+        "build-break",
+        "umami",
+        "qa-recheck",
+        "pronunciation"
+      ],
+      "related_bugs": [
+        "bug-051"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T20:22:00Z"
+    },
+    {
+      "id": "bug-054",
+      "timestamp": "2026-04-23T17:45:27.266Z",
+      "error_message": "Missing guard clause",
+      "file": "src/app/api/books/[id]/reader/route.ts",
+      "root_cause": "No early return/throw for edge case: !p.word_pronunciations",
+      "fix": "Added guard clause: if (!p.word_pronunciations)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T17:45:27.266Z"
+    },
+    {
+      "id": "bug-055",
+      "timestamp": "2026-04-23T17:45:56.809Z",
+      "error_message": "Missing guard clause",
+      "file": "src/app/books/[id]/reader/page.tsx",
+      "root_cause": "No early return/throw for edge case: manifestResult.status !== \"present\"",
+      "fix": "Added guard clause: if (manifestResult.status !== \"present\")",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T17:45:56.809Z"
     }
   ]
 }

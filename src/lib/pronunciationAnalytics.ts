@@ -28,6 +28,7 @@ import type { PronunciationPlaybackMode, PronunciationTrigger } from "@/hooks/us
  */
 export type PronunciationPlaybackPath =
   | "manifest-breakdown"         // breakdown clip from the manifest entry was used
+  | "manifest-fullword"          // manifest present; whole-word mode played fullWord clip
   | "manifest-fullword-fallback" // manifest entry only had fullWord; fallback to it
   | "legacy-page-fullword"       // legacy page-level word pronunciations hit (string or { fullWord })
   | "no-data-fallback"           // no manifest / no entry → legacy /api/pronounce-word or no audio
@@ -101,6 +102,6 @@ export function emitPronunciationEvent(payload: PronunciationAnalyticsEvent): vo
   // Umami is loaded by the Next.js layout via a <script> tag.  `window.umami`
   // may be undefined in SSR context or when the snippet hasn't loaded yet.
   if (typeof window !== "undefined" && window.umami?.track) {
-    window.umami.track("reader-pronunciation", payload);
+    window.umami.track("reader-pronunciation", { ...payload });
   }
 }
