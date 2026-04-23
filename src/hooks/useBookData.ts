@@ -41,6 +41,17 @@ export type PronunciationCoverageStatus =
   | "partial"
   | "complete";
 
+export type PronunciationReviewCoverageStatus =
+  | "missing"
+  | "full-word-only"
+  | "covered";
+
+export type PronunciationReviewStatus =
+  | "missing"
+  | "generated"
+  | "failed"
+  | "reviewed";
+
 export type PronunciationCoverageRow = {
   pageId: string;
   pageNumber: number;
@@ -50,6 +61,25 @@ export type PronunciationCoverageRow = {
   missing: number;
   missingWords?: string[];
   status?: PronunciationCoverageStatus;
+};
+
+export type PronunciationReviewRow = {
+  normalizedWord: string;
+  displayWord: string;
+  occurrences: number;
+  pageIds: string[];
+  pageNumbers: number[];
+  coverageStatus: PronunciationReviewCoverageStatus;
+  reviewStatus: PronunciationReviewStatus;
+  humanReviewed: boolean;
+  audio: {
+    fullWord?: string;
+    breakdown?: string;
+  };
+  source?: "override" | "lexicon" | "tts";
+  confidence?: number;
+  generatedAt?: string;
+  status?: "generated" | "failed" | "reviewed";
 };
 
 export type PronunciationCoverageSummary = {
@@ -98,6 +128,31 @@ export type PronunciationGenerationResult = {
     limitedByMaxWords: boolean;
   };
   force: boolean;
+};
+
+export type PronunciationReviewResponse = {
+  bookId: string;
+  filters: {
+    search: string | null;
+    pageNumber: number | null;
+    coverageStatus: PronunciationReviewCoverageStatus | null;
+    reviewStatus: PronunciationReviewStatus | null;
+    limit: number | null;
+    offset: number;
+  };
+  review: {
+    items: PronunciationReviewRow[];
+    filteredTotal: number;
+    summary: {
+      totalWords: number;
+      coveredWords: number;
+      fullWordOnlyWords: number;
+      missingWords: number;
+      generatedWords: number;
+      reviewedWords: number;
+      failedWords: number;
+    };
+  };
 };
 
 export type PageData = {
@@ -230,9 +285,58 @@ export function useGenerateBookPronunciations(bookId: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pronunciation-coverage", bookId] });
+      queryClient.invalidateQueries({ queryKey: ["pronunciation-review", bookId] });
       queryClient.invalidateQueries({ queryKey: ["editor-pages", bookId] });
       queryClient.invalidateQueries({ queryKey: ["reader-data", bookId] });
     },
+  });
+}
+
+export function usePronunciationReview(
+  bookId: string | null,
+  filters?: {
+    search?: string;
+    pageNumber?: number;
+    coverageStatus?: PronunciationReviewCoverageStatus;
+    reviewStatus?: PronunciationReviewStatus;
+    limit?: number;
+    offset?: number;
+  }
+) {
+  return useQuery({
+    queryKey: ["pronunciation-review", bookId, filters ?? {}],
+    queryFn: async () => {
+      if (!bookId) throw new Error("No book ID");
+
+      const params = new URLSearchParams();
+      if (filters?.search) params.set("search", filters.search);
+      if (typeof filters?.pageNumber === "number") {
+        params.set("pageNumber", String(filters.pageNumber));
+      }
+      if (filters?.coverageStatus) {
+        params.set("coverageStatus", filters.coverageStatus);
+      }
+      if (filters?.reviewStatus) {
+        params.set("reviewStatus", filters.reviewStatus);
+      }
+      if (typeof filters?.limit === "number") {
+        params.set("limit", String(filters.limit));
+      }
+      if (typeof filters?.offset === "number") {
+        params.set("offset", String(filters.offset));
+      }
+
+      const query = params.toString();
+      const response = await fetch(
+        `/api/admin/books/${bookId}/pronunciations${query ? `?${query}` : ""}`
+      );
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to load pronunciation review data");
+      }
+      return response.json() as Promise<PronunciationReviewResponse>;
+    },
+    enabled: !!bookId,
   });
 }
 

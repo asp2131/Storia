@@ -717,8 +717,14 @@
 - `HomeClient.tsx` — MorphogenesisHero — renders form (~5295 tok)
 - `page.tsx` — metadata (~1161 tok)
 
+## src/app/api/admin/books/[id]/pronunciations/
+
+- `route.test.ts` — Vitest coverage for editor pronunciation review data aggregation, filter validation, and search/pagination. (~2200 tok)
+- `route.ts` — Admin pronunciation review data endpoint with per-word audio/status metadata plus lightweight search/filter support. (~1700 tok)
+
 ## src/app/api/admin/books/[id]/pronunciations/generate/
 
+- `route.test.ts` — Vitest coverage for standalone pronunciation generation summary/coverage responses and input validation. (~1900 tok)
 - `route.ts` — Standalone pronunciation generation endpoint (Phase 2 — Ticket 2.1 & 2.4). (~2434 tok)
 
 ## src/app/api/admin/generate-narration/
@@ -801,5 +807,7 @@
 - `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
 - `pronunciationGeneration.test.ts` — Declares fakeSupabase (~1793 tok)
 - `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~2670 tok)
+- `pronunciationReview.test.ts` — Vitest coverage for per-word review aggregation, metadata shaping, and filter/pagination behavior. (~1500 tok)
+- `pronunciationReview.ts` — Builds editor-friendly per-word pronunciation review rows and summary stats from page text plus stored entries. (~2800 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
