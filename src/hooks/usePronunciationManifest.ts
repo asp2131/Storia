@@ -1,8 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Manifest, ManifestEntry } from "@/app/api/books/[id]/pronunciations/route";
+import {
+  manifestToWordPronunciationMap,
+  type PublishedPronunciationPlaybackMode,
+  type ReaderPronunciationManifest,
+  type WordPronunciationMap,
+} from "@/lib/pronunciation";
 
 export type PronunciationManifestResult =
-  | { status: "present"; entries: Record<string, ManifestEntry>; bookId: string }
+  | {
+      status: "present";
+      entries: WordPronunciationMap;
+      bookId: string;
+      locale?: string;
+      defaultPlaybackMode?: PublishedPronunciationPlaybackMode;
+    }
   | { status: "absent" }
   | { status: "error"; cause?: unknown }
   | { status: "loading" };
@@ -20,7 +31,7 @@ export function usePronunciationManifest(opts: {
     typeof pronunciationManifestUrl === "string" &&
     pronunciationManifestUrl.length > 0;
 
-  const query = useQuery<Manifest, Error>({
+  const query = useQuery<ReaderPronunciationManifest, Error>({
     queryKey: ["pronunciation-manifest", bookId],
     queryFn: async () => {
       const response = await fetch(pronunciationManifestUrl as string);
@@ -29,7 +40,7 @@ export function usePronunciationManifest(opts: {
           `Pronunciation manifest fetch failed: ${response.status} ${response.statusText}`
         );
       }
-      return response.json() as Promise<Manifest>;
+      return response.json() as Promise<ReaderPronunciationManifest>;
     },
     enabled,
     staleTime: Infinity,
@@ -54,6 +65,11 @@ export function usePronunciationManifest(opts: {
   return {
     status: "present",
     bookId: query.data.bookId,
-    entries: query.data.entries,
+    locale: "locale" in query.data ? query.data.locale : undefined,
+    defaultPlaybackMode:
+      "defaultPlaybackMode" in query.data
+        ? query.data.defaultPlaybackMode
+        : undefined,
+    entries: manifestToWordPronunciationMap(query.data),
   };
 }

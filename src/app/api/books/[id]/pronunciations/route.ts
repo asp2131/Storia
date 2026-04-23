@@ -2,20 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   normalizePronunciationToken,
+  type BookPronunciationManifest,
+  type PublishedWordPronunciation,
   type WordPronunciationEntry,
 } from "@/lib/pronunciation";
 
-export type ManifestEntry = {
-  word: string;
-  fullWord?: string;
-  breakdown?: string;
-};
-
-export type Manifest = {
-  bookId: string;
-  version: 1;
-  entries: Record<string, ManifestEntry>;
-};
+export type ManifestEntry = PublishedWordPronunciation;
+export type Manifest = BookPronunciationManifest;
 
 function entryScore(entry: WordPronunciationEntry): number {
   if (typeof entry === "string") return 1;
@@ -28,24 +21,53 @@ function entryScore(entry: WordPronunciationEntry): number {
 }
 
 function toManifestEntry(
+  bookId: string,
   normalizedKey: string,
   entry: WordPronunciationEntry
 ): ManifestEntry {
   if (typeof entry === "string") {
-    return { word: normalizedKey, fullWord: entry };
+    return {
+      id: `${bookId}:${normalizedKey}`,
+      normalizedWord: normalizedKey,
+      displayWord: normalizedKey,
+      humanReviewed: false,
+      updatedAt: new Date(0).toISOString(),
+      audio: {
+        fullWord: {
+          url: entry,
+        },
+      },
+    };
   }
 
-  const result: ManifestEntry = { word: normalizedKey };
+  const humanReviewed = entry.status === "reviewed" || entry.source === "override";
 
-  if (typeof entry.fullWord === "string" && entry.fullWord.length > 0) {
-    result.fullWord = entry.fullWord;
-  }
-
-  if (typeof entry.breakdown === "string" && entry.breakdown.length > 0) {
-    result.breakdown = entry.breakdown;
-  }
-
-  return result;
+  return {
+    id: `${bookId}:${normalizedKey}`,
+    normalizedWord: normalizedKey,
+    displayWord: normalizedKey,
+    ...(entry.source ? { source: entry.source } : {}),
+    ...(typeof entry.confidence === "number" ? { confidence: entry.confidence } : {}),
+    ...(entry.status ? { status: entry.status } : {}),
+    humanReviewed,
+    updatedAt: entry.generatedAt ?? new Date(0).toISOString(),
+    audio: {
+      ...(typeof entry.fullWord === "string" && entry.fullWord.length > 0
+        ? {
+            fullWord: {
+              url: entry.fullWord,
+            },
+          }
+        : {}),
+      ...(typeof entry.breakdown === "string" && entry.breakdown.length > 0
+        ? {
+            breakdown: {
+              url: entry.breakdown,
+            },
+          }
+        : {}),
+    },
+  };
 }
 
 export async function GET(
@@ -81,12 +103,14 @@ export async function GET(
 
     const entries: Record<string, ManifestEntry> = {};
     for (const [key, { entry }] of Object.entries(merged)) {
-      entries[key] = toManifestEntry(key, entry);
+      entries[key] = toManifestEntry(bookId, key, entry);
     }
 
     const manifest: Manifest = {
       bookId,
       version: 1,
+      locale: "en-US",
+      defaultPlaybackMode: "breakdown_then_word",
       entries,
     };
 

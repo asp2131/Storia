@@ -485,7 +485,7 @@ These gaps are not blockers to documenting the requirements, but they are blocke
 - Introduce cross-platform pronunciation data structure.
 - Keep `WordTimestamp` unchanged.
 - Support per-word breakdown and full-word refs.
-- Notes: a shared manifest endpoint and shared normalization contract exist, but the currently implemented manifest shape is still thinner than the fuller proposed schema later in this document.
+- Notes: a shared manifest endpoint and shared normalization contract now exist with book-level metadata (`version`, `bookId`, `locale`, `defaultPlaybackMode`) and richer per-entry published fields (`id`, `normalizedWord`, nested `audio`, review/source metadata). This remains partial because mobile does not consume the manifest yet and the full richer authoring fields proposed later in this document are not all populated yet.
 
 #### Ticket 1.2 — Define word normalization rules
 **Status: Done**

@@ -26,7 +26,10 @@ import {
   emitPronunciationEvent,
   type PronunciationPlaybackPath,
 } from "@/lib/pronunciationAnalytics";
-import { normalizePronunciationToken, type WordPronunciationEntry } from "@/lib/pronunciation";
+import {
+  normalizePronunciationToken,
+  type WordPronunciationEntry,
+} from "@/lib/pronunciation";
 import { usePronunciationManifest } from "@/hooks/usePronunciationManifest";
 import {
   useLocalPreferences,
@@ -220,14 +223,7 @@ export default function BookReader() {
 
   const manifestEntries: Record<string, WordPronunciationEntry> | null = useMemo(() => {
     if (manifestResult.status !== "present") return null;
-    const out: Record<string, WordPronunciationEntry> = {};
-    for (const [key, entry] of Object.entries(manifestResult.entries)) {
-      out[key] = {
-        ...(entry.fullWord ? { fullWord: entry.fullWord } : {}),
-        ...(entry.breakdown ? { breakdown: entry.breakdown } : {}),
-      };
-    }
-    return out;
+    return manifestResult.entries;
   }, [manifestResult]);
 
   const currentPagePronunciations =

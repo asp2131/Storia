@@ -2,8 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   createStoredPronunciationEntry,
   extractUniquePronunciationTokens,
+  manifestEntryToWordPronunciationEntry,
+  manifestToWordPronunciationMap,
   normalizePronunciationToken,
   resolvePronunciationUrl,
+  resolvePublishedPronunciationUrl,
+  type BookPronunciationManifest,
+  type LegacyBookPronunciationManifest,
+  type PublishedWordPronunciation,
   type WordPronunciationEntry,
   type WordPronunciationMap,
 } from "@/lib/pronunciation";
@@ -170,6 +176,174 @@ describe("resolvePronunciationUrl", () => {
   it("returns undefined when entry has no URLs", () => {
     expect(resolvePronunciationUrl({}, "breakdown")).toBeUndefined();
     expect(resolvePronunciationUrl({}, "whole-word")).toBeUndefined();
+  });
+});
+
+describe("resolvePublishedPronunciationUrl", () => {
+  it("prefers nested breakdown then fullWord audio in breakdown mode", () => {
+    const entry: PublishedWordPronunciation = {
+      id: "42:adventure",
+      normalizedWord: "adventure",
+      humanReviewed: false,
+      updatedAt: "2026-04-23T00:00:00Z",
+      audio: {
+        breakdown: { url: "/break.mp3" },
+        fullWord: { url: "/full.mp3" },
+      },
+    };
+
+    expect(resolvePublishedPronunciationUrl(entry, "breakdown")).toBe("/break.mp3");
+    expect(resolvePublishedPronunciationUrl(entry, "whole-word")).toBe("/full.mp3");
+  });
+
+  it("falls back across nested audio variants when one is missing", () => {
+    const entry: PublishedWordPronunciation = {
+      id: "42:cat",
+      normalizedWord: "cat",
+      humanReviewed: false,
+      updatedAt: "2026-04-23T00:00:00Z",
+      audio: {
+        fullWord: { url: "/cat.mp3" },
+      },
+    };
+
+    expect(resolvePublishedPronunciationUrl(entry, "breakdown")).toBe("/cat.mp3");
+    expect(resolvePublishedPronunciationUrl(entry, "whole-word")).toBe("/cat.mp3");
+  });
+});
+
+describe("manifestEntryToWordPronunciationEntry", () => {
+  it("converts the published manifest shape into the reader storage shape", () => {
+    const entry: PublishedWordPronunciation = {
+      id: "42:adventure",
+      normalizedWord: "adventure",
+      source: "tts",
+      confidence: 0.88,
+      status: "generated",
+      humanReviewed: false,
+      updatedAt: "2026-04-23T00:00:00Z",
+      audio: {
+        breakdown: { url: "/break.mp3" },
+        fullWord: { url: "/full.mp3" },
+      },
+    };
+
+    expect(manifestEntryToWordPronunciationEntry(entry)).toEqual({
+      breakdown: "/break.mp3",
+      fullWord: "/full.mp3",
+      source: "tts",
+      confidence: 0.88,
+      status: "generated",
+      generatedAt: "2026-04-23T00:00:00Z",
+    });
+  });
+
+  it("omits absent optional fields while preserving backward compatibility", () => {
+    const entry: PublishedWordPronunciation = {
+      id: "42:cat",
+      normalizedWord: "cat",
+      humanReviewed: false,
+      updatedAt: "2026-04-23T00:00:00Z",
+      audio: {
+        fullWord: { url: "/cat.mp3" },
+      },
+    };
+
+    expect(manifestEntryToWordPronunciationEntry(entry)).toEqual({
+      fullWord: "/cat.mp3",
+      generatedAt: "2026-04-23T00:00:00Z",
+    });
+  });
+
+  it("accepts legacy manifest entries without metadata loss", () => {
+    expect(
+      manifestEntryToWordPronunciationEntry({
+        word: "cat",
+        fullWord: "/cat.mp3",
+        breakdown: "/cat-break.mp3",
+      })
+    ).toEqual({
+      fullWord: "/cat.mp3",
+      breakdown: "/cat-break.mp3",
+    });
+  });
+});
+
+describe("manifestToWordPronunciationMap", () => {
+  it("normalizes every published manifest entry into the reader storage shape", () => {
+    const manifest: BookPronunciationManifest = {
+      bookId: "42",
+      version: 1,
+      locale: "en-US",
+      defaultPlaybackMode: "breakdown_then_word",
+      entries: {
+        cat: {
+          id: "42:cat",
+          normalizedWord: "cat",
+          humanReviewed: false,
+          updatedAt: "2026-04-23T00:00:00Z",
+          audio: {
+            fullWord: { url: "/cat.mp3" },
+          },
+        },
+        adventure: {
+          id: "42:adventure",
+          normalizedWord: "adventure",
+          source: "tts",
+          confidence: 0.87,
+          status: "generated",
+          humanReviewed: false,
+          updatedAt: "2026-04-23T00:00:00Z",
+          audio: {
+            fullWord: { url: "/full.mp3" },
+            breakdown: { url: "/break.mp3" },
+          },
+        },
+      },
+    };
+
+    expect(manifestToWordPronunciationMap(manifest)).toEqual({
+      cat: {
+        fullWord: "/cat.mp3",
+        generatedAt: "2026-04-23T00:00:00Z",
+      },
+      adventure: {
+        fullWord: "/full.mp3",
+        breakdown: "/break.mp3",
+        source: "tts",
+        confidence: 0.87,
+        status: "generated",
+        generatedAt: "2026-04-23T00:00:00Z",
+      },
+    });
+  });
+
+  it("normalizes every legacy manifest entry into the reader storage shape", () => {
+    const manifest: LegacyBookPronunciationManifest = {
+      bookId: "42",
+      version: 1,
+      entries: {
+        cat: {
+          word: "cat",
+          fullWord: "/cat.mp3",
+        },
+        adventure: {
+          word: "adventure",
+          fullWord: "/full.mp3",
+          breakdown: "/break.mp3",
+        },
+      },
+    };
+
+    expect(manifestToWordPronunciationMap(manifest)).toEqual({
+      cat: {
+        fullWord: "/cat.mp3",
+      },
+      adventure: {
+        fullWord: "/full.mp3",
+        breakdown: "/break.mp3",
+      },
+    });
   });
 });
 

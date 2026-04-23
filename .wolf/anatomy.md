@@ -739,6 +739,7 @@
 
 ## src/app/api/books/[id]/pronunciations/
 
+- `route.test.ts` — Vitest coverage for published pronunciation manifest route shape, duplicate merging, legacy-string compatibility, and 500 handling (~1500 tok)
 - `route.ts` — Book-level pronunciation manifest route that merges normalized page entries and keeps the most complete duplicate (~1030 tok)
 
 ## src/app/api/books/[id]/questions/
