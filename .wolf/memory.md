@@ -421,3 +421,5 @@
 | 14:01 | Edited src/app/books/[id]/reader/page.tsx | CSS: onPlaybackStart | ~385 |
 | 14:01 | Edited src/components/IntegratedIllustration.tsx | expanded (+8 lines) | ~163 |
 | 14:01 | Edited specs/web-reader-pronunciation-functional-requirements.md | modified pipeline() | ~336 |
+| 14:06 | audited word pronunciation spec implementation status across web/mobile/spec artifacts | specs/word-pronunciation-cross-platform-spec.md, src/app/books/[id]/reader/page.tsx, src/hooks/useWordPronunciation.ts, src/components/IntegratedIllustration.tsx, src/lib/pronunciation.ts, src/app/api/books/[id]/pronunciations/route.ts, storia-mobile/lib/src/data/models.dart, storia-mobile/lib/src/features/reader/runtime/{providers/word_tts_provider.dart,services/word_tts_service.dart} | status summary prepared | ~2300 |
+| 14:15 | updated pronunciation cross-platform spec with in-file progress tracking and per-ticket status markers | specs/word-pronunciation-cross-platform-spec.md | spec now reflects done/partial/not-started state | ~1700 |

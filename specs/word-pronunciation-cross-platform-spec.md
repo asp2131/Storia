@@ -1,9 +1,48 @@
 # Cross-Platform Word Pronunciation Spec
 
-Status: Draft  
+Status: In progress  
 Date: 2026-04-22  
+Last updated: 2026-04-23  
 Scope: Storia web + storia-mobile  
 Related feature: Tap or long-press a word to hear a broken-down pronunciation flow instead of only hearing the whole word
+
+## Implementation status snapshot
+
+This spec now doubles as a progress tracker for the current implementation state in the repo.
+
+### Status legend
+
+- **Done** — implemented and present in the current codebase
+- **Partial** — some meaningful implementation exists, but the spec intent is not fully complete
+- **Not started** — no corresponding implementation was found yet
+
+### Current progress summary
+
+#### Done
+- Phase 1: **1.2**, **1.3**
+- Phase 2: **2.1**, **2.3**, **2.4**
+- Phase 4: **4.1**, **4.2**, **4.3**, **4.5**
+- Phase 6: **6.1**
+
+#### Partial
+- Phase 0: **0.1**, **0.2**, **0.3**
+- Phase 1: **1.1**
+- Phase 2: **2.2**
+- Phase 3: **3.4**
+- Phase 4: **4.4**
+- Phase 6: **6.2**, **6.4**, **6.5**
+
+#### Not started
+- Phase 3: **3.1**, **3.2**, **3.3**
+- Phase 5: **5.1**, **5.2**, **5.3**, **5.4**
+- Phase 6: **6.3**
+
+### Biggest remaining gaps
+
+1. **Mobile integration is still not done.** The web reader is manifest-backed, but mobile still uses the older TTS-based long-press pronunciation path and does not yet consume the shared pronunciation manifest contract.
+2. **Editorial tooling is still not built.** Generation and validation exist, but editor review, preview, override, and publish-readiness workflows are still missing.
+3. **The implemented manifest is simpler than the full proposed schema.** The current contract supports `fullWord` / `breakdown` plus some metadata, but not the full richer authoring/runtime shape proposed later in this spec.
+4. **QA / rollout work is incomplete.** Core unit coverage exists, but the full manual QA matrix, staged rollout, and post-launch monitoring/readiness work are not complete.
 
 ---
 
@@ -411,54 +450,70 @@ These gaps are not blockers to documenting the requirements, but they are blocke
 
 ## 2. Engineering Phased Ticket List
 
+> Progress snapshot as of 2026-04-23. Each ticket below is marked **Done**, **Partial**, or **Not started** based on the current repo state.
+
 ### Phase 0 — Discovery and contract lock
 
 #### Ticket 0.1 — Finalize gesture semantics
+**Status: Partial**
 - Decide exact phase-1 behavior for tap vs long-press on web and mobile.
 - Document differences by reader mode.
 - Confirm accessibility alternative for long-press-only behavior.
+- Notes: web phase-1 semantics are implemented, including long-press and a keyboard-accessible secondary action, but cross-platform parity is not complete because mobile still uses the older long-press TTS path.
 
 #### Ticket 0.2 — Freeze playback state machine requirements
+**Status: Partial**
 - Define what happens when pronunciation starts during:
   - active narration
   - paused narration
   - soundscape on
   - practice mode
 - Define pause/resume timing and cancellation behavior.
+- Notes: the web playback state machine is implemented, including pause/resume and cancel-and-replace behavior, but it is not yet fully locked and aligned across web, mobile, and practice-mode behavior.
 
 #### Ticket 0.3 — Approve canonical pronunciation asset strategy
+**Status: Partial**
 - Choose pre-generated audio assets as default production path.
 - Define allowed fallback sources.
 - Document why runtime-only TTS is not canonical.
+- Notes: backend/web now clearly prefer pre-generated pronunciation assets, but mobile still relies on runtime TTS for the long-press help path.
 
 ### Phase 1 — Shared schema and API contracts
 
 #### Ticket 1.1 — Add shared pronunciation manifest schema
+**Status: Partial**
 - Introduce cross-platform pronunciation data structure.
 - Keep `WordTimestamp` unchanged.
 - Support per-word breakdown and full-word refs.
+- Notes: a shared manifest endpoint and shared normalization contract exist, but the currently implemented manifest shape is still thinner than the fuller proposed schema later in this document.
 
 #### Ticket 1.2 — Define word normalization rules
+**Status: Done**
 - Lowercasing, punctuation stripping, apostrophe behavior, hyphen handling, unicode normalization.
 - Ensure web and mobile resolve same key for same visible token.
 
 #### Ticket 1.3 — Add publish-time validation rules
+**Status: Done**
 - Validate pronunciation entries map to actual rendered tokens where required.
 - Warn on orphaned entries, duplicate normalized keys, or missing fallback audio.
 
 ### Phase 2 — Generation pipeline and storage
 
 #### Ticket 2.1 — Build pronunciation generation job
+**Status: Done**
 - Input: book vocabulary set or page token set.
 - Output: pronunciation manifest entries plus audio assets.
 - Track source, confidence, and generation status.
 
 #### Ticket 2.2 — Add storage model for pronunciation assets
+**Status: Partial**
 - Define where audio clips live.
 - Store stable URLs/keys for breakdown and full-word audio.
 - Support CDN/cache strategy.
+- Notes: the current implementation stores stable asset URLs and generation output, but the full explicit storage model proposed here is not fully represented yet.
 
 #### Ticket 2.3 — Add generation fallback chain
+**Status: Done**
 - Example order:
   - curated/editor override
   - dictionary/lexicon result
@@ -466,21 +521,25 @@ These gaps are not blockers to documenting the requirements, but they are blocke
   - no asset => client fallback
 
 #### Ticket 2.4 — Add backfill job for existing books
+**Status: Done**
 - Generate manifests for already-published catalog.
 - Produce report: coverage, failures, override candidates.
 
 ### Phase 3 — Editorial tooling
 
 #### Ticket 3.1 — Surface vocabulary review UI in web editor
+**Status: Not started**
 - Show extracted words per book/page.
 - Show status: generated, overridden, missing, low-confidence.
 
 #### Ticket 3.2 — Add pronunciation preview controls
+**Status: Not started**
 - Preview breakdown audio.
 - Preview full-word audio.
 - Preview phonetic/syllable display text.
 
 #### Ticket 3.3 — Add override workflow
+**Status: Not started**
 - Editors can edit:
   - syllable chunks
   - learner-friendly phonetic display
@@ -489,79 +548,100 @@ These gaps are not blockers to documenting the requirements, but they are blocke
 - Mark entries as human-reviewed.
 
 #### Ticket 3.4 — Add pre-publish checks
+**Status: Partial**
 - Prevent silent publish regressions for books requiring pronunciation coverage.
 - Warn on unresolved low-confidence or missing critical words.
+- Notes: validation exists in generation/publish-time flows, but the full editor-facing publish-readiness workflow is not built yet.
 
 ### Phase 4 — Web reader integration
 
 #### Ticket 4.1 — Extend word interaction resolver
+**Status: Done**
 - On tap/long-press, resolve normalized word key.
 - Request pronunciation manifest entry.
 - Fall back safely when missing.
 
 #### Ticket 4.2 — Add pronunciation playback controller
+**Status: Done**
 - Handle pause narration -> play interaction -> resume narration.
 - Avoid collisions with existing playback state.
 - Prevent overlapping pronunciation requests.
 
 #### Ticket 4.3 — Preserve overlay/highlight behavior
+**Status: Done**
 - Keep existing tapped/spoken/narration-active states intact.
 - Ensure pronunciation playback does not corrupt active word highlighting.
 
 #### Ticket 4.4 — Add feature flag / settings path
+**Status: Partial**
 - Reader-level flag for pronunciation-on-tap experiments.
 - Practice-mode enablement path.
+- Notes: a web feature flag and tap-behavior setting exist, but the full practice-mode path described by the spec is not complete yet.
 
 #### Ticket 4.5 — Add analytics events
+**Status: Done**
 - Track trigger source, fallback usage, latency, cancel rate, repeat plays.
 
 ### Phase 5 — Mobile reader integration
 
 #### Ticket 5.1 — Extend mobile word interaction policy
+**Status: Not started**
 - Keep current mobile semantics in phase 1 unless flag changes them.
 - Wire long-press to shared pronunciation manifest lookup.
+- Notes: mobile still uses the older local TTS-based long-press pronunciation path.
 
 #### Ticket 5.2 — Integrate with mobile audio engine safely
+**Status: Not started**
 - Preserve request ID / race-prevention behavior.
 - Keep narration and soundscape channel logic stable.
 - Resume narration reliably after pronunciation flow.
 
 #### Ticket 5.3 — Align overlay token resolution with manifest lookup
+**Status: Not started**
 - Ensure tokenized words from overlay text map to same normalized keys as backend/web.
 
 #### Ticket 5.4 — Add offline/cache support
+**Status: Not started**
 - Cache fetched pronunciation assets for smoother repeat playback.
 - Define behavior when asset missing offline.
 
 ### Phase 6 — QA, testing, and rollout
 
 #### Ticket 6.1 — Unit tests for normalization and manifest lookup
+**Status: Done**
 - punctuation variants
 - capitalization variants
 - contractions and hyphenated words
 - proper noun overrides
 
 #### Ticket 6.2 — Integration tests for playback state transitions
+**Status: Partial**
 - narration active -> pronunciation -> resume
 - rapid repeated taps/long-presses
 - manifest miss -> fallback
 - feature flag on/off
+- Notes: hook-level playback tests are in good shape on web, but full reader-level integration coverage is not complete yet.
 
 #### Ticket 6.3 — Manual QA matrix across web and mobile
+**Status: Not started**
 - browser/device matrix
 - offline/slow network behavior
 - accessibility checks
 - practice mode interactions
 
 #### Ticket 6.4 — Staged rollout
+**Status: Partial**
 - internal only
 - selected books
 - practice mode cohort
 - broader release
+- Notes: web feature-flag gating exists, but the fuller staged rollout plan is not yet represented here as completed work.
 
 #### Ticket 6.5 — Post-launch monitoring
+**Status: Partial**
 - monitor latency, failure, fallback, and editor override trends
 - gather qualitative reading-support feedback
+- Notes: pronunciation analytics events exist, but the broader post-launch monitoring loop is not complete yet.
 
 ---
 

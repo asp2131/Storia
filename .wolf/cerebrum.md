@@ -8,6 +8,7 @@
 
 <!-- How the user likes things done. Code style, tools, patterns, communication. -->
 - User asked to use a team of agents for implementation/audits instead of solo execution when possible.
+- User prefers product/spec markdown files to be updated in place to reflect current implementation progress rather than receiving status only in chat.
 
 ## Key Learnings
 
