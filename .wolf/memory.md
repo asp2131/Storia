@@ -399,3 +399,16 @@
 | 12:46 | Edited src/lib/pronunciationAnalytics.ts | 7→8 lines | ~190 |
 | 12:47 | Finished phase-1 manifest wiring: reader route exposes hasPronunciations+manifestUrl; reader page uses usePronunciationManifest and merges manifest entries into useWordPronunciation (fallback page-level on absent/error); analytics reflects manifest-load-failure + manifest-fullword. 83/83 tests + prod build pass. | src/app/api/books/[id]/reader/route.ts, src/app/books/[id]/reader/page.tsx, src/lib/pronunciationAnalytics.ts | success | ~2400 |
 | 12:49 | Session end: 7 writes across 3 files (route.ts, page.tsx, pronunciationAnalytics.ts) | 7 reads | ~24083 tok |
+| 12:50 | Session end: 7 writes across 3 files (route.ts, page.tsx, pronunciationAnalytics.ts) | 8 reads | ~29283 tok |
+| 12:56 | Created src/lib/pronunciation.ts | — | ~758 |
+| 12:56 | Created src/lib/pronunciationGeneration.ts | — | ~2670 |
+| 12:56 | Edited src/app/api/admin/generate-narration/route.ts | added 1 import(s) | ~75 |
+| 12:57 | Edited src/app/api/admin/generate-narration/route.ts | removed 63 lines | ~15 |
+| 12:57 | Edited src/app/api/admin/generate-narration/route.ts | modified catch() | ~268 |
+| 12:57 | Edited src/app/api/admin/generate-narration/route.ts | 6→5 lines | ~35 |
+| 13:10 | Created src/app/api/admin/books/[id]/pronunciations/generate/route.ts | — | ~2434 |
+| 13:11 | Created scripts/backfill-pronunciations.ts | — | ~1862 |
+| 13:12 | Created src/lib/pronunciationGeneration.test.ts | — | ~1793 |
+| 13:12 | Edited src/lib/pronunciation.test.ts | expanded (+25 lines) | ~294 |
+| 13:13 | Phase 2 (generation/storage/backfill): extended WordPronunciationEntry w/ source+confidence+status metadata, extracted shared pronunciationGeneration.ts lib, added POST+GET /api/admin/books/[id]/pronunciations/generate standalone endpoint, added scripts/backfill-pronunciations.ts (dry-run + generate modes, report). 99/99 tests + prod build pass. | src/lib/pronunciation.ts, src/lib/pronunciationGeneration.ts, src/lib/pronunciationGeneration.test.ts, src/lib/pronunciation.test.ts, src/app/api/admin/generate-narration/route.ts, src/app/api/admin/books/[id]/pronunciations/generate/route.ts, scripts/backfill-pronunciations.ts | success | ~5600 |
+| 13:13 | Session end: 17 writes across 8 files (route.ts, page.tsx, pronunciationAnalytics.ts, pronunciation.ts, pronunciationGeneration.ts) | 12 reads | ~45892 tok |

@@ -101,6 +101,31 @@ describe("createStoredPronunciationEntry", () => {
     expect(entry).toEqual({ fullWord: "/full.mp3" });
     expect("breakdown" in entry).toBe(false);
   });
+
+  it("attaches metadata fields when provided", () => {
+    const entry = createStoredPronunciationEntry("/full.mp3", "/b.mp3", {
+      source: "tts",
+      confidence: 0.9,
+      status: "generated",
+      generatedAt: "2026-04-23T00:00:00Z",
+    });
+    expect(entry).toEqual({
+      fullWord: "/full.mp3",
+      breakdown: "/b.mp3",
+      source: "tts",
+      confidence: 0.9,
+      status: "generated",
+      generatedAt: "2026-04-23T00:00:00Z",
+    });
+  });
+
+  it("omits metadata keys when not provided (backward compat)", () => {
+    const entry = createStoredPronunciationEntry("/full.mp3");
+    expect("source" in entry).toBe(false);
+    expect("confidence" in entry).toBe(false);
+    expect("status" in entry).toBe(false);
+    expect("generatedAt" in entry).toBe(false);
+  });
 });
 
 describe("resolvePronunciationUrl", () => {

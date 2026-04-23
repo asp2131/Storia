@@ -5,7 +5,6 @@ import { Prisma } from "@prisma/client";
 import {
   normalizeVoiceSettings,
   resolveElevenLabsVoice,
-  synthesizeSpeech,
   synthesizeSpeechWithTimestamps,
 } from "@/lib/elevenlabs";
 import {
@@ -14,11 +13,10 @@ import {
   validateTimestamps,
 } from "@/lib/wordAlignment";
 import {
-  createStoredPronunciationEntry,
   extractUniquePronunciationTokens,
-  normalizePronunciationToken,
   type WordPronunciationEntry,
 } from "@/lib/pronunciation";
+import { generatePronunciationEntries } from "@/lib/pronunciationGeneration";
 import { validatePronunciationManifest } from "@/lib/pronunciationValidation";
 
 const supabaseUrl =
@@ -37,68 +35,6 @@ function buildSupabaseClient() {
   });
 }
 
-
-function splitIntoBreakdownChunks(word: string): string[] {
-  const normalized = normalizePronunciationToken(word);
-  if (!normalized || normalized.length <= 3) {
-    return normalized ? [normalized] : [];
-  }
-
-  const vowelGroupRegex = /[^aeiouy]*[aeiouy]+(?:[^aeiouy](?=[^aeiouy]*[aeiouy])|[^aeiouy]?$)?/gi;
-  const roughChunks = normalized.match(vowelGroupRegex)?.filter(Boolean) ?? [];
-
-  if (roughChunks.length >= 2) {
-    return roughChunks;
-  }
-
-  const fallbackChunks: string[] = [];
-  let cursor = 0;
-  while (cursor < normalized.length) {
-    const remaining = normalized.length - cursor;
-    const chunkSize = remaining <= 4 ? Math.max(2, remaining) : 3;
-    fallbackChunks.push(normalized.slice(cursor, cursor + chunkSize));
-    cursor += chunkSize;
-  }
-
-  return fallbackChunks;
-}
-
-function getAudioExtension(contentType: string) {
-  if (contentType.includes("ogg")) return "ogg";
-  if (contentType.includes("wav")) return "wav";
-  return "mp3";
-}
-
-async function uploadPronunciationAsset(params: {
-  supabase: NonNullable<ReturnType<typeof buildSupabaseClient>>;
-  bucket: string;
-  bookId: string;
-  folder: "full-word" | "breakdown";
-  word: string;
-  audioBuffer: Buffer;
-  contentType: string;
-}) {
-  const fileExt = getAudioExtension(params.contentType);
-  const timestamp = Date.now();
-  const storagePath = `books/${params.bookId}/pronunciations/${params.folder}/word_${params.word}_${timestamp}.${fileExt}`;
-
-  const { error } = await params.supabase.storage
-    .from(params.bucket)
-    .upload(storagePath, params.audioBuffer, {
-      contentType: params.contentType,
-      upsert: false,
-    });
-
-  if (error) {
-    throw error;
-  }
-
-  const { data } = params.supabase.storage
-    .from(params.bucket)
-    .getPublicUrl(storagePath);
-
-  return data.publicUrl;
-}
 
 export async function POST(request: NextRequest) {
   const supabase = buildSupabaseClient();
@@ -282,100 +218,22 @@ export async function POST(request: NextRequest) {
     let pronunciationMap: Record<string, WordPronunciationEntry> = {};
     try {
       const uniqueWords = extractUniquePronunciationTokens(trimmedText);
-
       console.log(
         `[generate-narration] Generating pronunciations for ${uniqueWords.length} unique words`
       );
 
-      const batchSize = 5;
-      for (let i = 0; i < uniqueWords.length; i += batchSize) {
-        const batch = uniqueWords.slice(i, i + batchSize);
-        console.log(
-          `[generate-narration] Processing pronunciation batch ${
-            Math.floor(i / batchSize) + 1
-          }/${Math.ceil(uniqueWords.length / batchSize)}`
-        );
-
-        const results = await Promise.all(
-          batch.map(async (wordValue) => {
-            try {
-              const fullWordAudio = await synthesizeSpeech({
-                text: wordValue,
-                voiceId,
-                speed: normalizedVoiceSettings.speed,
-                style: normalizedVoiceSettings.style,
-                useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
-              });
-
-              const fullWordUrl = await uploadPronunciationAsset({
-                supabase,
-                bucket,
-                bookId,
-                folder: "full-word",
-                word: wordValue,
-                audioBuffer: fullWordAudio.audioBuffer,
-                contentType: fullWordAudio.contentType,
-              });
-
-              const chunks = splitIntoBreakdownChunks(wordValue);
-              let breakdownUrl: string | undefined;
-
-              if (chunks.length >= 2) {
-                try {
-                  const breakdownAudio = await synthesizeSpeech({
-                    text: chunks.join(", "),
-                    voiceId,
-                    speed: Math.max(0.7, normalizedVoiceSettings.speed * 0.92),
-                    style: normalizedVoiceSettings.style,
-                    useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
-                  });
-
-                  breakdownUrl = await uploadPronunciationAsset({
-                    supabase,
-                    bucket,
-                    bookId,
-                    folder: "breakdown",
-                    word: wordValue,
-                    audioBuffer: breakdownAudio.audioBuffer,
-                    contentType: breakdownAudio.contentType,
-                  });
-                } catch (breakdownError) {
-                  console.warn(
-                    `[generate-narration] Failed breakdown generation for "${wordValue}"; keeping full-word only:`,
-                    breakdownError
-                  );
-                }
-              }
-
-              console.log(
-                `[generate-narration] Pronunciation assets for "${wordValue}" uploaded: fullWord=${fullWordUrl}${breakdownUrl ? `, breakdown=${breakdownUrl}` : ""}`
-              );
-
-              return {
-                word: wordValue,
-                entry: createStoredPronunciationEntry(fullWordUrl, breakdownUrl),
-              };
-            } catch (wordError) {
-              console.warn(
-                `[generate-narration] Error generating pronunciation for "${wordValue}":`,
-                wordError
-              );
-              return { word: wordValue, entry: null };
-            }
-          })
-        );
-
-        for (const result of results) {
-          if (result.entry) {
-            pronunciationMap[result.word] = result.entry;
-          }
-        }
-      }
+      const genResult = await generatePronunciationEntries({
+        supabase,
+        bucket,
+        bookId,
+        voiceId,
+        voiceSettings: normalizedVoiceSettings,
+        words: uniqueWords,
+      });
+      pronunciationMap = genResult.pronunciationMap;
 
       console.log(
-        `[generate-narration] Generated ${
-          Object.keys(pronunciationMap).length
-        } word pronunciations`
+        `[generate-narration] Pronunciation stats: generated=${genResult.stats.generated} failed=${genResult.stats.failed} withBreakdown=${genResult.stats.withBreakdown}`
       );
     } catch (pronError) {
       console.error(

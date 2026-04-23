@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T17:46:38.092Z
-> Files: 570 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T18:12:12.106Z
+> Files: 575 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
 
@@ -701,6 +701,7 @@
 
 ## scripts/
 
+- `backfill-pronunciations.ts` — Pronunciation backfill script (Phase 2 — Ticket 2.4). (~1862 tok)
 - `ensure-local-db.sh` — Starts local Postgres container, waits for readiness, recreates `storia_dev` if missing (~220 tok)
 
 ## specs/
@@ -716,9 +717,13 @@
 - `HomeClient.tsx` — MorphogenesisHero — renders form (~5295 tok)
 - `page.tsx` — metadata (~1161 tok)
 
+## src/app/api/admin/books/[id]/pronunciations/generate/
+
+- `route.ts` — Standalone pronunciation generation endpoint (Phase 2 — Ticket 2.1 & 2.4). (~2434 tok)
+
 ## src/app/api/admin/generate-narration/
 
-- `route.ts` — Next.js API route: POST (~4378 tok)
+- `route.ts` — Next.js API route: POST (~3057 tok)
 
 ## src/app/api/auth/[...all]/
 
@@ -789,8 +794,11 @@
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
-- `pronunciation.ts` — Shared pronunciation normalization/token extraction helpers and compatible entry types for generation + reader playback (~220 tok)
+- `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
+- `pronunciation.ts` — True if the entry has at least one usable audio URL. (~758 tok)
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
 - `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
+- `pronunciationGeneration.test.ts` — Declares fakeSupabase (~1793 tok)
+- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~2670 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)

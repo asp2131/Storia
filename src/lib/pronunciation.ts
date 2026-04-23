@@ -1,6 +1,17 @@
-export type WordPronunciationEntry =
-  | string
-  | { breakdown?: string; fullWord?: string };
+export type PronunciationSource = "override" | "lexicon" | "tts";
+
+export type PronunciationStatus = "generated" | "failed" | "reviewed";
+
+export interface PronunciationEntryObject {
+  breakdown?: string;
+  fullWord?: string;
+  source?: PronunciationSource;
+  confidence?: number;
+  status?: PronunciationStatus;
+  generatedAt?: string;
+}
+
+export type WordPronunciationEntry = string | PronunciationEntryObject;
 
 export type WordPronunciationMap = Record<string, WordPronunciationEntry>;
 
@@ -42,10 +53,36 @@ export function extractUniquePronunciationTokens(text: string): string[] {
 
 export function createStoredPronunciationEntry(
   fullWord: string,
-  breakdown?: string
-): Exclude<WordPronunciationEntry, string> {
+  breakdown?: string,
+  metadata?: {
+    source?: PronunciationSource;
+    confidence?: number;
+    status?: PronunciationStatus;
+    generatedAt?: string;
+  }
+): PronunciationEntryObject {
   return {
     fullWord,
     ...(breakdown ? { breakdown } : {}),
+    ...(metadata?.source ? { source: metadata.source } : {}),
+    ...(typeof metadata?.confidence === "number"
+      ? { confidence: metadata.confidence }
+      : {}),
+    ...(metadata?.status ? { status: metadata.status } : {}),
+    ...(metadata?.generatedAt ? { generatedAt: metadata.generatedAt } : {}),
   };
+}
+
+/**
+ * True if the entry has at least one usable audio URL.
+ * Covers legacy string entries and object entries.
+ */
+export function entryHasAudio(entry: WordPronunciationEntry | undefined): boolean {
+  if (entry === undefined) return false;
+  if (typeof entry === "string") return entry.trim().length > 0;
+  const hasFull =
+    typeof entry.fullWord === "string" && entry.fullWord.trim().length > 0;
+  const hasBreak =
+    typeof entry.breakdown === "string" && entry.breakdown.trim().length > 0;
+  return hasFull || hasBreak;
 }

@@ -947,6 +947,22 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-23T17:45:56.809Z"
+    },
+    {
+      "id": "bug-056",
+      "timestamp": "2026-04-23T17:57:24.507Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/api/admin/generate-narration/route.ts",
+      "root_cause": "52 lines replaced/restructured",
+      "fix": "Rewrote 105→27 lines (52 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T17:57:24.507Z"
     }
   ]
 }
