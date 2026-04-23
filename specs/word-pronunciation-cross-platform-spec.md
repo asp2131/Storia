@@ -28,12 +28,12 @@ This spec now doubles as a progress tracker for the current implementation state
 - Phase 0: **0.1**, **0.2**, **0.3**
 - Phase 1: **1.1**
 - Phase 2: **2.2**
-- Phase 3: **3.4**
+- Phase 3: **3.1**, **3.4**
 - Phase 4: **4.4**
 - Phase 6: **6.2**, **6.4**, **6.5**
 
 #### Not started
-- Phase 3: **3.1**, **3.2**, **3.3**
+- Phase 3: **3.2**, **3.3**
 - Phase 5: **5.1**, **5.2**, **5.3**, **5.4**
 - Phase 6: **6.3**
 
@@ -528,9 +528,10 @@ These gaps are not blockers to documenting the requirements, but they are blocke
 ### Phase 3 — Editorial tooling
 
 #### Ticket 3.1 — Surface vocabulary review UI in web editor
-**Status: Not started**
+**Status: Partial**
 - Show extracted words per book/page.
 - Show status: generated, overridden, missing, low-confidence.
+- Notes: the web editor now includes a book-wide pronunciation generation panel with coverage summary, missing-page hints, and generate/regenerate controls wired to the existing backend generation flow. Full vocabulary review and per-entry status management are still not built.
 
 #### Ticket 3.2 — Add pronunciation preview controls
 **Status: Not started**

@@ -1028,6 +1028,43 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-23T19:30:52.354741+00:00"
+    },
+    {
+      "id": "bug-061",
+      "timestamp": "2026-04-23T20:44:51.052265+00:00",
+      "error_message": "Vitest module mock hoisting error in PronunciationPanel test: Cannot access mockUsePronunciationCoverage before initialization",
+      "file": "src/components/editor/PronunciationPanel.test.tsx",
+      "root_cause": "vi.mock factory is hoisted, but the test referenced top-level mock variables declared after hoisting semantics instead of using vi.hoisted.",
+      "fix": "Moved mocked hook fns into vi.hoisted so the mocked module can reference initialized spies safely.",
+      "tags": [
+        "tests",
+        "vitest",
+        "mocking",
+        "hoisting"
+      ],
+      "related_bugs": [
+        "bug-004"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T20:44:51.052422+00:00"
+    },
+    {
+      "id": "bug-062",
+      "timestamp": "2026-04-23T15:47:00-07:00",
+      "error_message": "Editor pronunciation generate endpoint lacked input guards and returned only low-level coverage/stats, making practical generate-button validation and summary UI awkward.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+      "root_cause": "Route assumed valid BigInt path params and numeric JSON maxWords, had no GET error wrapper, and required the client to derive editor summary/status data by re-aggregating raw coverage fields.",
+      "fix": "Added bookId/maxWords validation, accepted stringified force/maxWords values, wrapped GET in try/catch, and returned request+summary convenience fields plus per-page status/fullWordOnly/missingWords on POST and GET.",
+      "tags": [
+        "pronunciations",
+        "editor",
+        "api-contract",
+        "validation",
+        "summary-ui"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T15:47:00-07:00"
     }
   ]
 }

@@ -35,6 +35,71 @@ export type OverlayNarrationTrack = {
   wordTimestamps: WordTimestamp[] | null;
 };
 
+export type PronunciationCoverageStatus =
+  | "empty"
+  | "missing"
+  | "partial"
+  | "complete";
+
+export type PronunciationCoverageRow = {
+  pageId: string;
+  pageNumber: number;
+  total: number;
+  covered: number;
+  fullWordOnly?: number;
+  missing: number;
+  missingWords?: string[];
+  status?: PronunciationCoverageStatus;
+};
+
+export type PronunciationCoverageSummary = {
+  uniqueBookTokens: number;
+  coveredBookWide: number;
+  missingBookWide: number;
+  ratio: number;
+  pagesTotal: number;
+  pagesComplete: number;
+  pagesPartial: number;
+  pagesEmpty: number;
+  pagesWithMissing: number;
+  fullCoverage: boolean;
+};
+
+export type PronunciationCoverageSnapshot = {
+  uniqueBookTokens: number;
+  coveredBookWide: number;
+  ratio: number;
+  perPage: PronunciationCoverageRow[];
+};
+
+export type PronunciationCoverageReport = {
+  bookId: string;
+  coverage: PronunciationCoverageSnapshot;
+  summary: PronunciationCoverageSummary;
+};
+
+export type PronunciationGenerationResult = {
+  bookId: string;
+  voice: { id: string; name: string };
+  request: {
+    force: boolean;
+    maxWords: number | null;
+  };
+  stats: {
+    generated: number;
+    failed: number;
+    withBreakdown: number;
+    skippedExisting: number;
+  };
+  coverage: PronunciationCoverageSnapshot;
+  summary: PronunciationCoverageSummary & {
+    requestedTokens: number;
+    remainingTokensAfterRun: number;
+    limitedByMaxWords: boolean;
+  };
+  force: boolean;
+};
+
 export type PageData = {
   id: string;
   pageNumber: number;
@@ -117,6 +182,60 @@ export function useAudioAssignments(bookId: string | null, pageNumber: number) {
 /**
  * Generate narration for a page
  */
+export function usePronunciationCoverage(bookId: string | null) {
+  return useQuery({
+    queryKey: ["pronunciation-coverage", bookId],
+    queryFn: async () => {
+      if (!bookId) throw new Error("No book ID");
+      const response = await fetch(`/api/admin/books/${bookId}/pronunciations/generate`);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to load pronunciation coverage");
+      }
+      return response.json() as Promise<PronunciationCoverageReport>;
+    },
+    enabled: !!bookId,
+  });
+}
+
+export function useGenerateBookPronunciations(bookId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      voice,
+      voiceSettings,
+      force = false,
+      maxWords,
+    }: {
+      voice?: string;
+      voiceSettings?: VoiceSettings;
+      force?: boolean;
+      maxWords?: number;
+    }) => {
+      if (!bookId) throw new Error("No book ID");
+
+      const response = await fetch(`/api/admin/books/${bookId}/pronunciations/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voice, voiceSettings, force, maxWords }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to generate pronunciations");
+      }
+
+      return response.json() as Promise<PronunciationGenerationResult>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pronunciation-coverage", bookId] });
+      queryClient.invalidateQueries({ queryKey: ["editor-pages", bookId] });
+      queryClient.invalidateQueries({ queryKey: ["reader-data", bookId] });
+    },
+  });
+}
+
 export function useGenerateNarration(bookId: string | null) {
   const queryClient = useQueryClient();
 

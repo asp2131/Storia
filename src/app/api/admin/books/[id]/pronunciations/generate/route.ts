@@ -37,6 +37,82 @@ import {
   generatePronunciationEntries,
 } from "@/lib/pronunciationGeneration";
 
+function parseBookIdParam(bookId: string): bigint | null {
+  try {
+    return BigInt(bookId);
+  } catch {
+    return null;
+  }
+}
+
+function parseBooleanLike(value: unknown, fallback = false) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value === "true") return true;
+    if (value === "false") return false;
+  }
+  return fallback;
+}
+
+function parsePositiveIntegerLike(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isInteger(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return undefined;
+}
+
+type CoveragePageReport = {
+  pageId: string;
+  pageNumber: number;
+  total: number;
+  covered: number;
+  fullWordOnly: number;
+  missing: number;
+  missingWords: string[];
+  status: "empty" | "missing" | "partial" | "complete";
+};
+
+function summarizeCoverage(
+  perPage: CoveragePageReport[],
+  uniqueBookTokens: number,
+  coveredBookWide: number
+) {
+  const pagesTotal = perPage.length;
+  const pagesComplete = perPage.filter(
+    (page) => page.status === "complete"
+  ).length;
+  const pagesEmpty = perPage.filter((page) => page.status === "empty").length;
+  const pagesWithMissing = perPage.filter((page) => page.missing > 0).length;
+  const pagesPartial = perPage.filter(
+    (page) => page.status === "partial"
+  ).length;
+  const missingBookWide = Math.max(0, uniqueBookTokens - coveredBookWide);
+
+  return {
+    uniqueBookTokens,
+    coveredBookWide,
+    missingBookWide,
+    ratio:
+      uniqueBookTokens > 0
+        ? Number((coveredBookWide / uniqueBookTokens).toFixed(4))
+        : 1,
+    pagesTotal,
+    pagesComplete,
+    pagesPartial,
+    pagesEmpty,
+    pagesWithMissing,
+    fullCoverage: missingBookWide === 0,
+  };
+}
+
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const serviceRoleKey =
@@ -71,12 +147,38 @@ export async function POST(
   }
 
   const { id: bookId } = await params;
+  const parsedBookId = parseBookIdParam(bookId);
+
+  if (parsedBookId === null) {
+    return NextResponse.json(
+      { error: "Invalid book ID.", code: "invalid_book_id" },
+      { status: 400 }
+    );
+  }
+
   const body = await request.json().catch(() => ({}));
-  const { voice, voiceSettings, force = false, maxWords } = body ?? {};
+  const payload = body && typeof body === "object" ? body : {};
+  const { voice, voiceSettings } = payload as {
+    voice?: unknown;
+    voiceSettings?: unknown;
+  };
+  const force = parseBooleanLike((payload as { force?: unknown }).force, false);
+  const rawMaxWords = (payload as { maxWords?: unknown }).maxWords;
+  const maxWords = parsePositiveIntegerLike(rawMaxWords);
+
+  if (rawMaxWords !== undefined && maxWords === undefined) {
+    return NextResponse.json(
+      {
+        error: "maxWords must be a positive integer.",
+        code: "invalid_max_words",
+      },
+      { status: 400 }
+    );
+  }
 
   try {
     const pages = await prisma.pages.findMany({
-      where: { book_id: BigInt(bookId) },
+      where: { book_id: parsedBookId },
       orderBy: { page_number: "asc" },
       select: {
         id: true,
@@ -99,6 +201,7 @@ export async function POST(
     }));
 
     let tokensToProcess = collectMissingTokens(pagesForCollector, { force });
+    const totalMissingBeforeRun = tokensToProcess.length;
     const totalUniqueTokens = Array.from(
       new Set(
         pages.flatMap((p) =>
@@ -148,25 +251,25 @@ export async function POST(
     // Persist merged entries per page: for each page, take its original tokens
     // and look them up in the newly-merged manifest.
     const now = new Date();
-    const perPageReport: Array<{
-      pageId: string;
-      pageNumber: number;
-      total: number;
-      covered: number;
-      missing: number;
-    }> = [];
+    const perPageReport: CoveragePageReport[] = [];
 
     for (const page of pages) {
       const pageTokens = extractUniquePronunciationTokens(page.text_content ?? "");
       const pageEntries: WordPronunciationMap = {};
       let covered = 0;
+      let fullWordOnly = 0;
+      const missingWords: string[] = [];
 
       for (const token of pageTokens) {
         const entry = genResult.pronunciationMap[token];
         if (entry) {
           pageEntries[token] = entry;
-          if (entryHasAudio(entry)) covered += 1;
         }
+
+        const status = entryCoverageStatus(entry);
+        if (status === "covered") covered += 1;
+        else if (status === "full-word-only") fullWordOnly += 1;
+        else missingWords.push(token);
       }
 
       await prisma.pages.update({
@@ -177,12 +280,25 @@ export async function POST(
         },
       });
 
+      const missing = missingWords.length;
+      const status: CoveragePageReport["status"] =
+        pageTokens.length === 0
+          ? "empty"
+          : missing === 0 && fullWordOnly === 0
+            ? "complete"
+            : covered > 0 || fullWordOnly > 0
+              ? "partial"
+              : "missing";
+
       perPageReport.push({
         pageId: page.id.toString(),
         pageNumber: page.page_number,
         total: pageTokens.length,
         covered,
-        missing: pageTokens.length - covered,
+        fullWordOnly,
+        missing,
+        missingWords,
+        status,
       });
     }
 
@@ -190,18 +306,32 @@ export async function POST(
       (e: WordPronunciationEntry | undefined) => entryHasAudio(e)
     ).length;
 
-    const coverageRatio =
-      totalUniqueTokens > 0 ? coveredBookWide / totalUniqueTokens : 1;
+    const summary = summarizeCoverage(
+      perPageReport,
+      totalUniqueTokens,
+      coveredBookWide
+    );
 
     return NextResponse.json({
       bookId,
       voice: { id: voiceId, name: voiceName },
+      request: {
+        force,
+        maxWords: maxWords ?? null,
+      },
       stats: genResult.stats,
       coverage: {
         uniqueBookTokens: totalUniqueTokens,
         coveredBookWide,
-        ratio: Number(coverageRatio.toFixed(4)),
+        ratio: summary.ratio,
         perPage: perPageReport,
+      },
+      summary: {
+        ...summary,
+        requestedTokens: tokensToProcess.length,
+        remainingTokensAfterRun: summary.missingBookWide,
+        limitedByMaxWords:
+          maxWords !== undefined && tokensToProcess.length < totalMissingBeforeRun,
       },
       force,
     });
@@ -226,79 +356,109 @@ export async function GET(
 ) {
   // Read-only coverage report (no generation).
   const { id: bookId } = await params;
+  const parsedBookId = parseBookIdParam(bookId);
 
-  const pages = await prisma.pages.findMany({
-    where: { book_id: BigInt(bookId) },
-    orderBy: { page_number: "asc" },
-    select: {
-      id: true,
-      page_number: true,
-      text_content: true,
-      word_pronunciations: true,
-    },
-  });
-
-  const perPage: Array<{
-    pageId: string;
-    pageNumber: number;
-    total: number;
-    covered: number;
-    fullWordOnly: number;
-    missing: number;
-    missingWords: string[];
-  }> = [];
-
-  const uniqueTokens = new Set<string>();
-  let coveredBookWide = 0;
-
-  for (const page of pages) {
-    const pageTokens = extractUniquePronunciationTokens(page.text_content ?? "");
-    const entries = (page.word_pronunciations as WordPronunciationMap | null) ?? {};
-
-    let covered = 0;
-    let fullWordOnly = 0;
-    const missingWords: string[] = [];
-
-    for (const token of pageTokens) {
-      uniqueTokens.add(token);
-      const status = entryCoverageStatus(entries[token]);
-      if (status === "covered") covered += 1;
-      else if (status === "full-word-only") fullWordOnly += 1;
-      else missingWords.push(token);
-    }
-
-    perPage.push({
-      pageId: page.id.toString(),
-      pageNumber: page.page_number,
-      total: pageTokens.length,
-      covered,
-      fullWordOnly,
-      missing: missingWords.length,
-      missingWords,
-    });
+  if (parsedBookId === null) {
+    return NextResponse.json(
+      { error: "Invalid book ID.", code: "invalid_book_id" },
+      { status: 400 }
+    );
   }
 
-  for (const token of uniqueTokens) {
+  try {
+    const pages = await prisma.pages.findMany({
+      where: { book_id: parsedBookId },
+      orderBy: { page_number: "asc" },
+      select: {
+        id: true,
+        page_number: true,
+        text_content: true,
+        word_pronunciations: true,
+      },
+    });
+
+    const perPage: CoveragePageReport[] = [];
+
+    const uniqueTokens = new Set<string>();
+    let coveredBookWide = 0;
+
     for (const page of pages) {
+      const pageTokens = extractUniquePronunciationTokens(
+        page.text_content ?? ""
+      );
       const entries =
         (page.word_pronunciations as WordPronunciationMap | null) ?? {};
-      if (entryHasAudio(entries[token])) {
-        coveredBookWide += 1;
-        break;
+
+      let covered = 0;
+      let fullWordOnly = 0;
+      const missingWords: string[] = [];
+
+      for (const token of pageTokens) {
+        uniqueTokens.add(token);
+        const status = entryCoverageStatus(entries[token]);
+        if (status === "covered") covered += 1;
+        else if (status === "full-word-only") fullWordOnly += 1;
+        else missingWords.push(token);
+      }
+
+      const missing = missingWords.length;
+      const status: CoveragePageReport["status"] =
+        pageTokens.length === 0
+          ? "empty"
+          : missing === 0 && fullWordOnly === 0
+            ? "complete"
+            : covered > 0 || fullWordOnly > 0
+              ? "partial"
+              : "missing";
+
+      perPage.push({
+        pageId: page.id.toString(),
+        pageNumber: page.page_number,
+        total: pageTokens.length,
+        covered,
+        fullWordOnly,
+        missing,
+        missingWords,
+        status,
+      });
+    }
+
+    for (const token of uniqueTokens) {
+      for (const page of pages) {
+        const entries =
+          (page.word_pronunciations as WordPronunciationMap | null) ?? {};
+        if (entryHasAudio(entries[token])) {
+          coveredBookWide += 1;
+          break;
+        }
       }
     }
-  }
 
-  return NextResponse.json({
-    bookId,
-    coverage: {
-      uniqueBookTokens: uniqueTokens.size,
-      coveredBookWide,
-      ratio:
-        uniqueTokens.size > 0
-          ? Number((coveredBookWide / uniqueTokens.size).toFixed(4))
-          : 1,
-      perPage,
-    },
-  });
+    const summary = summarizeCoverage(perPage, uniqueTokens.size, coveredBookWide);
+
+    return NextResponse.json({
+      bookId,
+      coverage: {
+        uniqueBookTokens: uniqueTokens.size,
+        coveredBookWide,
+        ratio: summary.ratio,
+        perPage,
+      },
+      summary,
+    });
+  } catch (error) {
+    console.error(
+      "[admin/books/[id]/pronunciations/generate][GET] failed:",
+      error
+    );
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to load pronunciation coverage.",
+      },
+      { status: 500 }
+    );
+  }
 }
