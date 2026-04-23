@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T18:12:12.106Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T19:01:58.438Z
 > Files: 575 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ./
@@ -709,7 +709,7 @@
 - `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
-- `web-reader-pronunciation-functional-requirements.md` — Web-specific phase-1 pronunciation requirements covering interactions, accessibility, loading/caching, playback state transitions, settings, fallback handling, and open gaps (~3600 tok)
+- `web-reader-pronunciation-functional-requirements.md` — Web Reader Pronunciation Functional Requirements (~4131 tok)
 - `word-pronunciation-cross-platform-spec.md` — Product spec, phased engineering tickets, and schema/API proposal for cross-platform broken-down word pronunciation across Storia web and mobile (~5200 tok)
 
 ## src/app/
@@ -775,12 +775,12 @@
 
 ## src/app/books/[id]/reader/
 
-- `page.tsx` — BookReader (~11038 tok)
+- `page.tsx` — BookReader (~11050 tok)
 
 ## src/components/
 
 - `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
-- `IntegratedIllustration.tsx` — usePreloadImage (~3700 tok)
+- `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
 
 ## src/hooks/
@@ -788,7 +788,7 @@
 - `usePronunciationManifest.test.tsx` — Covers manifest absent, present, and fetch-failure states for the shipping hook (~1900 tok)
 - `usePronunciationManifest.ts` — Reader hook that fetches the book-level pronunciation manifest with absent/loading/error/present states (~700 tok)
 - `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
-- `useWordPronunciation.ts` — Playback arbitration state machine states (WG-4 / WR-5). (~5523 tok)
+- `useWordPronunciation.ts` — WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()` (~5967 tok)
 
 ## src/lib/
 

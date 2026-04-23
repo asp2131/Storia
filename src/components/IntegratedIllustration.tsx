@@ -345,7 +345,15 @@ function OverlayTextElement({
             <button
               type="button"
               className={isPronouncing ? "word-pronouncing" : "word-tappable"}
-              style={sharedWordStyle}
+              style={{
+                ...sharedWordStyle,
+                // WG-2: guard against native text selection and OS callouts
+                // hijacking the long-press gesture across mouse/touch/stylus.
+                userSelect: "none",
+                WebkitUserSelect: "none",
+                WebkitTouchCallout: "none",
+                touchAction: "manipulation",
+              }}
               aria-label={`Hear ${token}`}
               aria-describedby={hintId}
               aria-keyshortcuts={supportsSecondary ? "Shift+Enter" : undefined}

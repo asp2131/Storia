@@ -412,3 +412,12 @@
 | 13:12 | Edited src/lib/pronunciation.test.ts | expanded (+25 lines) | ~294 |
 | 13:13 | Phase 2 (generation/storage/backfill): extended WordPronunciationEntry w/ source+confidence+status metadata, extracted shared pronunciationGeneration.ts lib, added POST+GET /api/admin/books/[id]/pronunciations/generate standalone endpoint, added scripts/backfill-pronunciations.ts (dry-run + generate modes, report). 99/99 tests + prod build pass. | src/lib/pronunciation.ts, src/lib/pronunciationGeneration.ts, src/lib/pronunciationGeneration.test.ts, src/lib/pronunciation.test.ts, src/app/api/admin/generate-narration/route.ts, src/app/api/admin/books/[id]/pronunciations/generate/route.ts, scripts/backfill-pronunciations.ts | success | ~5600 |
 | 13:13 | Session end: 17 writes across 8 files (route.ts, page.tsx, pronunciationAnalytics.ts, pronunciation.ts, pronunciationGeneration.ts) | 12 reads | ~45892 tok |
+| 13:30 | Session end: 17 writes across 8 files (route.ts, page.tsx, pronunciationAnalytics.ts, pronunciation.ts, pronunciationGeneration.ts) | 12 reads | ~45892 tok |
+| 14:00 | Edited src/hooks/useWordPronunciation.ts | expanded (+7 lines) | ~136 |
+| 14:00 | Edited src/hooks/useWordPronunciation.ts | added error handling | ~375 |
+| 14:00 | Edited src/hooks/useWordPronunciation.ts | 6→7 lines | ~56 |
+| 14:00 | Edited src/hooks/useWordPronunciation.ts | modified if() | ~225 |
+| 14:01 | Edited src/app/books/[id]/reader/page.tsx | CSS: onPlaybackStart | ~395 |
+| 14:01 | Edited src/app/books/[id]/reader/page.tsx | CSS: onPlaybackStart | ~385 |
+| 14:01 | Edited src/components/IntegratedIllustration.tsx | expanded (+8 lines) | ~163 |
+| 14:01 | Edited specs/web-reader-pronunciation-functional-requirements.md | modified pipeline() | ~336 |

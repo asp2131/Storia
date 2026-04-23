@@ -963,6 +963,54 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-23T17:57:24.507Z"
+    },
+    {
+      "id": "bug-057",
+      "timestamp": "2026-04-23T19:00:35.931Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:00:35.931Z"
+    },
+    {
+      "id": "bug-058",
+      "timestamp": "2026-04-23T19:01:06.698Z",
+      "error_message": "CSS fix: outcome",
+      "file": "src/app/books/[id]/reader/page.tsx",
+      "root_cause": "outcome: \"played\",  // optimistic → \"played\",",
+      "fix": "Changed outcome: \"played\",  // optimistic → \"played\",",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:01:06.698Z"
+    },
+    {
+      "id": "bug-059",
+      "timestamp": "2026-04-23T19:01:58.460Z",
+      "error_message": "Significant refactor of ",
+      "file": "specs/web-reader-pronunciation-functional-requirements.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→17 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:01:58.460Z"
     }
   ]
 }

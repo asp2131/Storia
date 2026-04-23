@@ -264,14 +264,6 @@ export default function BookReader() {
   const handleWordPrimaryAction = useCallback(
     (word: string, index: number) => {
       const mode = resolvePrimaryPronunciationMode();
-      pronounceWord({
-        word,
-        index,
-        mode,
-        trigger: "click",
-      });
-
-      // Determine the playback path based on available data.
       const normalizedWord = normalizePronunciationToken(word);
       const entry = currentPagePronunciations?.[normalizedWord];
       let playbackPath: PronunciationPlaybackPath;
@@ -291,18 +283,26 @@ export default function BookReader() {
           : "legacy-page-fullword";
       }
 
-      emitPronunciationEvent({
-        bookId,
-        pageId: pageData?.id,
-        page: currentPage,
+      pronounceWord({
         word,
-        normalizedWord,
+        index,
         mode,
         trigger: "click",
-        playbackPath,
-        latencyMs: null, // populated asynchronously once audio starts playing
-        outcome: "played",  // optimistic; hook owns failure tracking
-        featureEnabled: pronunciationFeatureEnabled,
+        onPlaybackStart: ({ latencyMs }) => {
+          emitPronunciationEvent({
+            bookId,
+            pageId: pageData?.id,
+            page: currentPage,
+            word,
+            normalizedWord,
+            mode,
+            trigger: "click",
+            playbackPath,
+            latencyMs,
+            outcome: "played",
+            featureEnabled: pronunciationFeatureEnabled,
+          });
+        },
       });
     },
     [bookId, currentPage, pageData, pronounceWord, resolvePrimaryPronunciationMode, pronunciationFeatureEnabled, currentPagePronunciations, manifestResult.status, manifestEntries]
@@ -314,13 +314,6 @@ export default function BookReader() {
         handleWordPrimaryAction(word, index);
         return;
       }
-
-      pronounceWord({
-        word,
-        index,
-        mode: "breakdown",
-        trigger: "alternate-control",
-      });
 
       const normalizedWord = normalizePronunciationToken(word);
       const entry = currentPagePronunciations?.[normalizedWord];
@@ -337,18 +330,26 @@ export default function BookReader() {
           : "manifest-fullword-fallback";
       }
 
-      emitPronunciationEvent({
-        bookId,
-        pageId: pageData?.id,
-        page: currentPage,
+      pronounceWord({
         word,
-        normalizedWord,
+        index,
         mode: "breakdown",
         trigger: "alternate-control",
-        playbackPath,
-        latencyMs: null,
-        outcome: "played",
-        featureEnabled: pronunciationFeatureEnabled,
+        onPlaybackStart: ({ latencyMs }) => {
+          emitPronunciationEvent({
+            bookId,
+            pageId: pageData?.id,
+            page: currentPage,
+            word,
+            normalizedWord,
+            mode: "breakdown",
+            trigger: "alternate-control",
+            playbackPath,
+            latencyMs,
+            outcome: "played",
+            featureEnabled: pronunciationFeatureEnabled,
+          });
+        },
       });
     },
     [

@@ -20,6 +20,13 @@ export type PronunciationRequest = {
   index: number;
   mode?: PronunciationPlaybackMode;
   trigger?: PronunciationTrigger;
+  /**
+   * WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()`
+   * fires for this request, with the latency in ms from when `pronounceWord`
+   * was invoked. Not called if the request is superseded or fails before
+   * audible playback begins.
+   */
+  onPlaybackStart?: (info: { latencyMs: number }) => void;
 };
 
 /**
@@ -88,6 +95,31 @@ export function useWordPronunciation(options: {
   const fallbackCache = useRef<Map<string, string>>(new Map());
   // Monotonically-incrementing request ID for cancel-and-replace (WR-5.8).
   const activeRequestIdRef = useRef(0);
+  // Per-request metadata for WR-9.4 latency capture. Only the active request
+  // entry is populated; superseded entries are pruned on new request.
+  const requestMetaRef = useRef<{
+    requestId: number;
+    interactionTs: number;
+    onPlaybackStart?: (info: { latencyMs: number }) => void;
+    started: boolean;
+  } | null>(null);
+
+  /**
+   * Fires `onPlaybackStart` exactly once per request, when the first
+   * `AudioBufferSourceNode.start()` happens. Called inside `playSingleBuffer`
+   * just before `source.start(0)`.
+   */
+  const reportPlaybackStart = useCallback((requestId: number) => {
+    const meta = requestMetaRef.current;
+    if (!meta || meta.requestId !== requestId || meta.started) return;
+    meta.started = true;
+    const latencyMs = Date.now() - meta.interactionTs;
+    try {
+      meta.onPlaybackStart?.({ latencyMs });
+    } catch {
+      // Never let analytics failure affect playback.
+    }
+  }, []);
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
@@ -284,10 +316,11 @@ export function useWordPronunciation(options: {
       };
 
       activeSourceRef.current = source;
+      reportPlaybackStart(requestId);
       source.start(0);
       return true;
     },
-    [getAudioContext, stopActivePlayback]
+    [getAudioContext, reportPlaybackStart, stopActivePlayback]
   );
 
   // ─── Breakdown two-clip sequence (WR-5.3) ─────────────────────────────────
@@ -415,7 +448,7 @@ export function useWordPronunciation(options: {
   // ─── Public API ───────────────────────────────────────────────────────────
 
   const pronounceWord = useCallback(
-    ({ word, index, mode = "whole-word" }: PronunciationRequest) => {
+    ({ word, index, mode = "whole-word", onPlaybackStart }: PronunciationRequest) => {
       const normalizedWord = normalizePronunciationToken(word);
       if (!normalizedWord) {
         setPronouncingIndex(null);
@@ -428,6 +461,14 @@ export function useWordPronunciation(options: {
       // and abort itself (cancel-and-replace, WR-5.8).
       const requestId = activeRequestIdRef.current + 1;
       activeRequestIdRef.current = requestId;
+
+      // WR-9.4: record interaction timestamp for latency capture.
+      requestMetaRef.current = {
+        requestId,
+        interactionTs: Date.now(),
+        onPlaybackStart,
+        started: false,
+      };
 
       stopActivePlayback();
       setPronouncingIndex(index);

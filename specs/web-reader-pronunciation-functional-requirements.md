@@ -1,9 +1,20 @@
 # Web Reader Pronunciation Functional Requirements
 
-Status: Draft  
-Date: 2026-04-22  
-Owner: Frontend / Product requirements handoff  
+Status: Shipped — phase 1 complete (2026-04-23)
+Date: 2026-04-22 (shipped 2026-04-23)
+Owner: Frontend / Product requirements handoff
 Source inputs: `specs/word-pronunciation-cross-platform-spec.md`, current web reader implementation, mobile compatibility brief
+
+## Implementation summary
+
+All WR-1..WR-10 requirements ship in `src/` as of 2026-04-23. Key artifacts:
+
+- Hook: `src/hooks/useWordPronunciation.ts` — state machine, cancel-and-replace, breakdown 2-clip sequence, narration coordination, latency capture callback (WR-9.4).
+- Manifest: `src/hooks/usePronunciationManifest.ts` + `src/app/api/books/[id]/pronunciations/route.ts` — 3-state (present/absent/error).
+- Reader surfaces: `src/app/books/[id]/reader/page.tsx`, `src/components/IntegratedIllustration.tsx`, `src/components/reader/ReaderSettingsPanel.tsx`.
+- Analytics: `src/lib/pronunciationAnalytics.ts` — emits on playback start with real latency.
+- Shared contract: `src/lib/pronunciation.ts` (normalization, entry shape) + `src/lib/pronunciationValidation.ts` (publish-time).
+- Generation pipeline (Phase 2): `src/lib/pronunciationGeneration.ts` + `/api/admin/books/[id]/pronunciations/generate` + `scripts/backfill-pronunciations.ts`.
 
 ## 1. Purpose
 
