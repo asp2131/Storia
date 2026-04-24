@@ -453,3 +453,28 @@
 | 17:14 | Re-ran pronunciation review + panel suite and verified preview playback failure coverage passes in the combined run. | src/components/editor/PronunciationPanel.test.tsx, src/lib/pronunciationReview.test.ts, src/app/api/admin/books/[id]/pronunciations/route.test.ts | verified | ~120 || 17:16 | Re-verified PronunciationPanel preview/review QA scenarios; no additional code changes required because targeted frontend and related review tests already pass | src/components/editor/PronunciationPanel.test.tsx, src/components/editor/PronunciationPanel.tsx | verified | ~120 |
 | 17:17 | Logged verification-command heredoc mistake and added a cerebrum do-not-repeat note for memory.md appends | .wolf/buglog.json, .wolf/cerebrum.md | logged | ~90 |
 | 17:18 | Re-tested PronunciationPanel preview/review regression scenarios after fix 2 with focused and related Vitest runs | src/components/editor/PronunciationPanel.test.tsx, src/lib/pronunciationReview.test.ts, src/app/api/admin/books/[id]/pronunciations/route.test.ts | All targeted tests passed; previous QA issues reproduced as passing coverage | ~250 |
+
+## Session: 2026-04-23 17:37
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-04-23 18:20
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 18:30 | Created ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/pronunciation_book_table_decision.md | — | ~504 |
+| 18:30 | Edited ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/MEMORY.md | 4→7 lines | ~148 |
+| 18:32 | Session end: 2 writes across 2 files (pronunciation_book_table_decision.md, MEMORY.md) | 8 reads | ~15310 tok |
+| 18:32 | Edited prisma/schema.prisma | 3→4 lines | ~39 |
+| 18:32 | Edited prisma/schema.prisma | expanded (+26 lines) | ~341 |
+| 18:35 | Created src/app/api/books/[id]/pronunciations/route.ts | — | ~1134 |
+| 18:35 | Created src/app/api/books/[id]/pronunciations/route.test.ts | — | ~1589 |
+| 18:35 | Created scripts/backfill-book-pronunciations.ts | — | ~2700 |
+| 18:36 | Created src/lib/pronunciationReview.ts | — | ~3023 |
+| 18:37 | Created src/lib/pronunciationGeneration.ts | — | ~4420 |
+| 00:19 | Installed browser-harness editable checkout to ~/Developer/browser-harness via uv tool install -e . | ~/Developer/browser-harness | success | ~900 |
+| 00:21 | Diagnosed local Chrome attach failure (DevToolsActivePort missing) and opened chrome://inspect remote-debugging page. | ~/Developer/browser-harness, Chrome | partial / needs user action | ~700 |
+| 00:24 | Configured Browser Use API key in browser-harness .env, started remote cloud daemon, and verified control by opening the GitHub repo page. | ~/Developer/browser-harness/.env | success | ~1100 |
+| 00:29 | Registered browser-harness globally for Claude via ~/.claude/CLAUDE.md import + symlinked skill file. | ~/.claude/CLAUDE.md, ~/.claude/skills/browser-harness/SKILL.md | success | ~500 |
+| 00:31 | Retried local browser-harness setup; timed out waiting for Chrome remote-debugging Allow flow, then verified remote daemon still works by opening browser-use.com. | ~/Developer/browser-harness, Chrome | remote ok / local pending user desktop action | ~700 |

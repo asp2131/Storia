@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 const { mockPrisma } = vi.hoisted(() => ({
   mockPrisma: {
-    pages: {
+    book_pronunciations: {
       findMany: vi.fn(),
     },
   },
@@ -15,36 +15,67 @@ vi.mock("@/lib/prisma", () => ({
 
 import { GET } from "@/app/api/books/[id]/pronunciations/route";
 
+function makeRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1n,
+    book_id: 42n,
+    normalized_word: "adventure",
+    display_word: "Adventure",
+    phonetic_display: null,
+    syllables: null,
+    breakdown_segments: null,
+    full_word_url: "/adventure-full.mp3",
+    breakdown_url: "/adventure-break.mp3",
+    source: "tts",
+    status: "generated",
+    confidence: 0.91,
+    human_reviewed: false,
+    generated_at: new Date("2026-04-23T00:00:00Z"),
+    reviewed_at: null,
+    created_at: new Date("2026-04-23T00:00:00Z"),
+    updated_at: new Date("2026-04-23T00:00:00Z"),
+    ...overrides,
+  };
+}
+
 describe("/api/books/[id]/pronunciations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns the expanded published manifest shape while preserving legacy entries", async () => {
-    mockPrisma.pages.findMany.mockResolvedValue([
+  it("returns an empty manifest when the book has no pronunciation rows", async () => {
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([]);
+
+    const response = await GET(
+      new NextRequest("http://localhost/api/books/42/pronunciations"),
       {
-        word_pronunciations: {
-          " Adventure! ": {
-            fullWord: "/adventure-full-v1.mp3",
-          },
-          cat: "/cat.mp3",
-          "!!!": {
-            fullWord: "/ignored.mp3",
-          },
-        },
-      },
-      {
-        word_pronunciations: {
-          adventure: {
-            fullWord: "/adventure-full-v2.mp3",
-            breakdown: "/adventure-break.mp3",
-            source: "tts",
-            confidence: 0.91,
-            status: "generated",
-            generatedAt: "2026-04-23T00:00:00Z",
-          },
-        },
-      },
+        params: Promise.resolve({ id: "42" }),
+      }
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.book_pronunciations.findMany).toHaveBeenCalledWith({
+      where: { book_id: 42n },
+      orderBy: { normalized_word: "asc" },
+    });
+    expect(body).toEqual({
+      bookId: "42",
+      version: 1,
+      locale: "en-US",
+      defaultPlaybackMode: "breakdown_then_word",
+      entries: {},
+    });
+  });
+
+  it("serializes a row with both full-word and breakdown audio", async () => {
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      makeRow({
+        syllables: ["ad", "ven", "ture"],
+        breakdown_segments: ["ad", "ven", "ture"],
+        phonetic_display: "ad-ven-chur",
+      }),
     ]);
 
     const response = await GET(
@@ -57,60 +88,63 @@ describe("/api/books/[id]/pronunciations", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(mockPrisma.pages.findMany).toHaveBeenCalledWith({
-      where: { book_id: 42n },
-      select: { word_pronunciations: true },
-    });
-    expect(body).toEqual({
-      bookId: "42",
-      version: 1,
-      locale: "en-US",
-      defaultPlaybackMode: "breakdown_then_word",
-      entries: {
-        adventure: {
-          id: "42:adventure",
-          normalizedWord: "adventure",
-          displayWord: "adventure",
-          source: "tts",
-          confidence: 0.91,
-          humanReviewed: false,
-          status: "generated",
-          updatedAt: "2026-04-23T00:00:00Z",
-          audio: {
-            fullWord: { url: "/adventure-full-v2.mp3" },
-            breakdown: { url: "/adventure-break.mp3" },
-          },
-        },
-        cat: {
-          id: "42:cat",
-          normalizedWord: "cat",
-          displayWord: "cat",
-          humanReviewed: false,
-          updatedAt: new Date(0).toISOString(),
-          audio: {
-            fullWord: { url: "/cat.mp3" },
-          },
-        },
+    expect(body.entries.adventure).toEqual({
+      id: "1",
+      normalizedWord: "adventure",
+      displayWord: "Adventure",
+      phoneticDisplay: "ad-ven-chur",
+      ipa: null,
+      syllables: ["ad", "ven", "ture"],
+      breakdownSegments: ["ad", "ven", "ture"],
+      source: "tts",
+      confidence: 0.91,
+      humanReviewed: false,
+      status: "generated",
+      audio: {
+        fullWord: { url: "/adventure-full.mp3" },
+        breakdown: { url: "/adventure-break.mp3" },
       },
+      updatedAt: new Date("2026-04-23T00:00:00Z").toISOString(),
     });
   });
 
-  it("marks reviewed and override-backed entries as human reviewed", async () => {
-    mockPrisma.pages.findMany.mockResolvedValue([
+  it("omits the breakdown audio key when only full_word_url is present", async () => {
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      makeRow({
+        id: 2n,
+        normalized_word: "cat",
+        display_word: null,
+        full_word_url: "/cat.mp3",
+        breakdown_url: null,
+      }),
+    ]);
+
+    const response = await GET(
+      new NextRequest("http://localhost/api/books/42/pronunciations"),
       {
-        word_pronunciations: {
-          reviewed: {
-            fullWord: "/reviewed.mp3",
-            status: "reviewed",
-            generatedAt: "2026-04-23T01:00:00Z",
-          },
-          override: {
-            fullWord: "/override.mp3",
-            source: "override",
-            generatedAt: "2026-04-23T02:00:00Z",
-          },
-        },
-      },
+        params: Promise.resolve({ id: "42" }),
+      }
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.entries.cat.displayWord).toBe("cat");
+    expect(body.entries.cat.audio).toEqual({
+      fullWord: { url: "/cat.mp3" },
+    });
+    expect(body.entries.cat.audio).not.toHaveProperty("breakdown");
+  });
+
+  it("reports human_reviewed rows via humanReviewed: true", async () => {
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      makeRow({
+        id: 3n,
+        normalized_word: "reviewed",
+        display_word: "Reviewed",
+        human_reviewed: true,
+        status: "reviewed",
+      }),
     ]);
 
     const response = await GET(
@@ -125,12 +159,29 @@ describe("/api/books/[id]/pronunciations", () => {
     expect(response.status).toBe(200);
     expect(body.entries.reviewed.humanReviewed).toBe(true);
     expect(body.entries.reviewed.status).toBe("reviewed");
-    expect(body.entries.override.humanReviewed).toBe(true);
-    expect(body.entries.override.source).toBe("override");
+  });
+
+  it("returns 400 for an invalid bookId param", async () => {
+    const response = await GET(
+      new NextRequest("http://localhost/api/books/not-a-number/pronunciations"),
+      {
+        params: Promise.resolve({ id: "not-a-number" }),
+      }
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body).toEqual({
+      error: { code: "invalid_book_id", message: "Invalid book ID." },
+    });
+    expect(mockPrisma.book_pronunciations.findMany).not.toHaveBeenCalled();
   });
 
   it("returns 500 when manifest lookup fails", async () => {
-    mockPrisma.pages.findMany.mockRejectedValue(new Error("db offline"));
+    mockPrisma.book_pronunciations.findMany.mockRejectedValue(
+      new Error("db offline")
+    );
 
     const response = await GET(
       new NextRequest("http://localhost/api/books/42/pronunciations"),

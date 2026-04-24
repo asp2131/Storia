@@ -1122,6 +1122,60 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-04-23T22:16:54.662824+00:00"
+    },
+    {
+      "id": "bug-066",
+      "timestamp": "2026-04-23T23:32:48.740Z",
+      "error_message": "Significant refactor of ",
+      "file": "prisma/schema.prisma",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 3\u21924 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "prisma"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T23:32:48.740Z"
+    },
+    {
+      "id": "bug-067",
+      "timestamp": "2026-04-24T00:47:28.792378+00:00",
+      "error_message": "browser-harness --setup failed: DevToolsActivePort not found; local Chrome remote debugging not enabled on current profile",
+      "file": "~/Developer/browser-harness/admin.py",
+      "root_cause": "Local browser profile had not enabled Chrome remote debugging, so browser-harness could not attach through the default local CDP bootstrap path.",
+      "fix": "Opened chrome://inspect/#remote-debugging for user enablement, then bypassed the local-CDP requirement by configuring BROWSER_USE_API_KEY and starting a Browser Use cloud browser via admin.start_remote_daemon('storia-install').",
+      "tags": [
+        "browser-harness",
+        "install",
+        "chrome-cdp",
+        "devtoolsactiveport",
+        "remote-browser"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T00:47:28.792558+00:00"
+    },
+    {
+      "id": "bug-068",
+      "timestamp": "2026-04-24T00:51:19.258443+00:00",
+      "error_message": "browser-harness --setup timed out repeatedly waiting for Chrome remote-debugging Allow flow",
+      "file": "~/Developer/browser-harness/admin.py",
+      "root_cause": "Finishing local Chrome attach requires interactive approval in the desktop browser; user was on phone so the required Allow/checkbox step could not be completed.",
+      "fix": "Skipped blocking local-CDP setup, kept the working Browser Use remote daemon path, and verified remote browsing still functions.",
+      "tags": [
+        "browser-harness",
+        "setup",
+        "timeout",
+        "interactive-approval",
+        "mobile-context"
+      ],
+      "related_bugs": [
+        "bug-032"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T00:51:19.258611+00:00"
     }
   ]
 }

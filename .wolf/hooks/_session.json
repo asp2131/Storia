@@ -1,243 +1,167 @@
 {
-  "session_id": "session-2026-04-23-1242",
-  "started": "2026-04-23T17:42:53.269Z",
+  "session_id": "session-2026-04-23-1820",
+  "started": "2026-04-23T23:20:39.711Z",
   "files_read": {
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts": {
-      "count": 1,
-      "tokens": 700,
-      "first_read": "2026-04-23T17:44:35.097Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts": {
-      "count": 1,
-      "tokens": 1030,
-      "first_read": "2026-04-23T17:44:35.473Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx": {
-      "count": 2,
-      "tokens": 10603,
-      "first_read": "2026-04-23T17:44:41.481Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts": {
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/route.ts": {
       "count": 4,
-      "tokens": 5523,
-      "first_read": "2026-04-23T17:44:49.354Z"
+      "tokens": 1700,
+      "first_read": "2026-04-23T23:22:48.688Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-23T17:44:49.772Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/route.ts": {
-      "count": 1,
-      "tokens": 3400,
-      "first_read": "2026-04-23T17:45:20.954Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.ts": {
-      "count": 1,
-      "tokens": 1346,
-      "first_read": "2026-04-23T17:46:24.853Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/specs/word-pronunciation-cross-platform-spec.md": {
-      "count": 1,
-      "tokens": 5200,
-      "first_read": "2026-04-23T17:50:08.506Z"
+    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationReview.ts": {
+      "count": 2,
+      "tokens": 2800,
+      "first_read": "2026-04-23T23:22:49.119Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts": {
+      "count": 4,
+      "tokens": 758,
+      "first_read": "2026-04-23T23:22:49.499Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma": {
+      "count": 2,
+      "tokens": 4981,
+      "first_read": "2026-04-23T23:22:49.819Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts": {
+      "count": 3,
+      "tokens": 2670,
+      "first_read": "2026-04-23T23:22:55.226Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx": {
       "count": 1,
-      "tokens": 220,
-      "first_read": "2026-04-23T17:55:33.017Z"
+      "tokens": 0,
+      "first_read": "2026-04-23T23:23:03.154Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/generate/route.ts": {
+      "count": 2,
+      "tokens": 2434,
+      "first_read": "2026-04-23T23:23:25.756Z"
+    },
+    "/Users/akinpound/.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/MEMORY.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-23T23:29:54.977Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts": {
+      "count": 2,
+      "tokens": 1134,
+      "first_read": "2026-04-23T23:34:16.948Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.test.ts": {
+      "count": 1,
+      "tokens": 1500,
+      "first_read": "2026-04-23T23:34:17.378Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/scripts/backfill-pronunciations.ts": {
+      "count": 1,
+      "tokens": 1862,
+      "first_read": "2026-04-23T23:35:05.417Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationReview.test.ts": {
+      "count": 1,
+      "tokens": 1500,
+      "first_read": "2026-04-23T23:35:08.932Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/route.test.ts": {
+      "count": 1,
+      "tokens": 2200,
+      "first_read": "2026-04-23T23:35:12.110Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts": {
       "count": 1,
-      "tokens": 4378,
-      "first_read": "2026-04-23T17:55:33.044Z"
+      "tokens": 3057,
+      "first_read": "2026-04-23T23:35:29.603Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationValidation.ts": {
+    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts": {
       "count": 1,
-      "tokens": 1807,
-      "first_read": "2026-04-23T17:55:36.781Z"
+      "tokens": 1793,
+      "first_read": "2026-04-23T23:35:33.421Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.test.ts": {
+    "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/generate/route.test.ts": {
+      "count": 1,
+      "tokens": 1900,
+      "first_read": "2026-04-23T23:35:40.495Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/vitest.config.ts": {
+      "count": 1,
+      "tokens": 95,
+      "first_read": "2026-04-23T23:36:04.014Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/test/setup.ts": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-04-23T18:12:03.775Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.tsx": {
-      "count": 2,
-      "tokens": 3700,
-      "first_read": "2026-04-23T19:01:27.403Z"
+      "first_read": "2026-04-23T23:36:07.356Z"
     }
   },
   "files_written": [
     {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/reader/route.ts",
-      "action": "edit",
-      "tokens": 184,
-      "at": "2026-04-23T17:45:27.265Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
-      "action": "edit",
-      "tokens": 80,
-      "at": "2026-04-23T17:45:40.860Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
-      "action": "edit",
-      "tokens": 367,
-      "at": "2026-04-23T17:45:56.808Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
-      "action": "edit",
-      "tokens": 290,
-      "at": "2026-04-23T17:46:07.084Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
-      "action": "edit",
-      "tokens": 308,
-      "at": "2026-04-23T17:46:16.009Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
-      "action": "edit",
-      "tokens": 62,
-      "at": "2026-04-23T17:46:20.554Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationAnalytics.ts",
-      "action": "edit",
-      "tokens": 190,
-      "at": "2026-04-23T17:46:38.103Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts",
+      "file": "/Users/akinpound/.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/pronunciation_book_table_decision.md",
       "action": "create",
-      "tokens": 758,
-      "at": "2026-04-23T17:56:03.682Z"
+      "tokens": 540,
+      "at": "2026-04-23T23:30:23.356Z"
+    },
+    {
+      "file": "/Users/akinpound/.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/MEMORY.md",
+      "action": "edit",
+      "tokens": 158,
+      "at": "2026-04-23T23:30:31.068Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+      "action": "edit",
+      "tokens": 42,
+      "at": "2026-04-23T23:32:48.738Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+      "action": "edit",
+      "tokens": 365,
+      "at": "2026-04-23T23:32:57.429Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts",
+      "action": "create",
+      "tokens": 1134,
+      "at": "2026-04-23T23:35:03.428Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.test.ts",
+      "action": "create",
+      "tokens": 1589,
+      "at": "2026-04-23T23:35:26.686Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/scripts/backfill-book-pronunciations.ts",
+      "action": "create",
+      "tokens": 2700,
+      "at": "2026-04-23T23:35:46.717Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationReview.ts",
+      "action": "create",
+      "tokens": 3023,
+      "at": "2026-04-23T23:36:24.127Z"
     },
     {
       "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
       "action": "create",
-      "tokens": 2670,
-      "at": "2026-04-23T17:56:48.636Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
-      "action": "edit",
-      "tokens": 75,
-      "at": "2026-04-23T17:56:56.170Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
-      "action": "edit",
-      "tokens": 15,
-      "at": "2026-04-23T17:57:07.562Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
-      "action": "edit",
-      "tokens": 268,
-      "at": "2026-04-23T17:57:24.506Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
-      "action": "edit",
-      "tokens": 35,
-      "at": "2026-04-23T17:57:40.551Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
-      "action": "create",
-      "tokens": 2434,
-      "at": "2026-04-23T18:10:51.407Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/scripts/backfill-pronunciations.ts",
-      "action": "create",
-      "tokens": 1862,
-      "at": "2026-04-23T18:11:28.584Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
-      "action": "create",
-      "tokens": 1793,
-      "at": "2026-04-23T18:12:00.140Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.test.ts",
-      "action": "edit",
-      "tokens": 294,
-      "at": "2026-04-23T18:12:12.116Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
-      "action": "edit",
-      "tokens": 136,
-      "at": "2026-04-23T19:00:24.072Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
-      "action": "edit",
-      "tokens": 375,
-      "at": "2026-04-23T19:00:35.930Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
-      "action": "edit",
-      "tokens": 56,
-      "at": "2026-04-23T19:00:41.322Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
-      "action": "edit",
-      "tokens": 225,
-      "at": "2026-04-23T19:00:50.910Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
-      "action": "edit",
-      "tokens": 395,
-      "at": "2026-04-23T19:01:06.687Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
-      "action": "edit",
-      "tokens": 385,
-      "at": "2026-04-23T19:01:18.979Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/IntegratedIllustration.tsx",
-      "action": "edit",
-      "tokens": 163,
-      "at": "2026-04-23T19:01:42.198Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/specs/web-reader-pronunciation-functional-requirements.md",
-      "action": "edit",
-      "tokens": 360,
-      "at": "2026-04-23T19:01:58.459Z"
+      "tokens": 4420,
+      "at": "2026-04-23T23:37:17.988Z"
     }
   ],
   "edit_counts": {
-    "src/app/api/books/[id]/reader/route.ts": 1,
-    "src/app/books/[id]/reader/page.tsx": 7,
-    "src/lib/pronunciationAnalytics.ts": 1,
-    "src/lib/pronunciation.ts": 1,
-    "src/lib/pronunciationGeneration.ts": 1,
-    "src/app/api/admin/generate-narration/route.ts": 4,
-    "src/app/api/admin/books/[id]/pronunciations/generate/route.ts": 1,
-    "scripts/backfill-pronunciations.ts": 1,
-    "src/lib/pronunciationGeneration.test.ts": 1,
-    "src/lib/pronunciation.test.ts": 1,
-    "src/hooks/useWordPronunciation.ts": 4,
-    "src/components/IntegratedIllustration.tsx": 1,
-    "specs/web-reader-pronunciation-functional-requirements.md": 1
+    "../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/pronunciation_book_table_decision.md": 1,
+    "../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/MEMORY.md": 1,
+    "prisma/schema.prisma": 2,
+    "src/app/api/books/[id]/pronunciations/route.ts": 1,
+    "src/app/api/books/[id]/pronunciations/route.test.ts": 1,
+    "scripts/backfill-book-pronunciations.ts": 1,
+    "src/lib/pronunciationReview.ts": 1,
+    "src/lib/pronunciationGeneration.ts": 1
   },
-  "anatomy_hits": 11,
-  "anatomy_misses": 2,
-  "repeated_reads_warned": 5,
+  "anatomy_hits": 15,
+  "anatomy_misses": 3,
+  "repeated_reads_warned": 12,
   "cerebrum_warnings": 0,
   "stop_count": 4
 }

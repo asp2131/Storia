@@ -6,12 +6,14 @@
 
 ## User Preferences
 
+- User may request setup work while on their phone; prefer remote/non-interactive completion paths and avoid blocking on desktop-only clicks when possible.
 <!-- How the user likes things done. Code style, tools, patterns, communication. -->
 - User asked to use a team of agents for implementation/audits instead of solo execution when possible.
 - User prefers product/spec markdown files to be updated in place to reflect current implementation progress rather than receiving status only in chat.
 
 ## Key Learnings
 
+- Browser-harness CLI always runs `ensure_daemon()` before executing stdin code, so remote Browser Use bootstrap on a machine without local Chrome CDP enabled must be started via `python -c 'from admin import start_remote_daemon; ...'` (or another direct `admin.py` import), then invoked later with `BU_NAME=<name> browser-harness`.
 - Standalone editor pronunciation generation endpoint `/api/admin/books/[id]/pronunciations/generate` now accepts stringified `force` / `maxWords` values, returns a `request` echo plus a `summary` object (`missingBookWide`, `requestedTokens`, `limitedByMaxWords`, page counts), and includes per-page `status` / `fullWordOnly` / `missingWords` on both POST and GET responses for editor summary UI without extra client-side aggregation.
 - Frontend manifest consumers should type against `src/lib/pronunciation.ts` (`ReaderPronunciationManifest`) rather than importing API route types directly; `usePronunciationManifest` now normalizes both legacy `{ word, fullWord, breakdown }` entries and expanded published manifest entries into a reader-safe `WordPronunciationMap`, so playback code stays stable while the backend contract evolves.
 - Mobile `Book` / `PageData` models in `storia-mobile` still lack any `hasPronunciations` / `pronunciationManifestUrl` / `wordPronunciations` fields; current cross-platform pronunciation shipping path therefore remains web/backend-only page JSON, and adopting the spec's manifest contract will require an explicit mobile API/model update.
@@ -66,6 +68,7 @@
 - 2026-04-22: For phase-1 web pronunciation UX, keep click/tap as whole-word playback, use pointer long-press (~450ms) for breakdown playback, and require a keyboard-accessible secondary breakdown action so long-press is not web-only.
 - 2026-04-22: In the current web overlay implementation, expose the alternate breakdown action as a per-word secondary "Sound out" button reachable by keyboard/screen readers instead of relying only on modifier-key discovery.
 - 2026-04-22: Treat the web pronunciation spec itself as the source of release QA truth by adding scenario-based acceptance criteria, edge-case coverage, and a manual QA matrix for manifest, narration, accessibility, repeated interaction, network, and feature-flag variants.
+- 2026-04-23: For Ticket 3.3 pronunciation override workflow, migrate storage from per-page `pages.word_pronunciations` JSON to a dedicated `book_pronunciations` Prisma table keyed by `(book_id, normalized_word)`. Chose table over per-page fan-out even though most books are <20 pages because: (a) single source of truth avoids drift between duplicate entries across pages, (b) override UPDATE becomes a single row operation instead of N-page JSON patch, (c) matches published manifest schema shape (spec §3.5), (d) cleaner `human_reviewed`/status indexing for editorial queries. Migration plan: Part A = schema + backfill script + read-path swap (manifest/review/generate endpoints), keep `pages.word_pronunciations` column one release for rollback. Part B = override PUT/DELETE/upload endpoints + edit UI on top of the new table.
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->
 - 2026-03-25: Keep per-page overlay stores in a registry and remap keys on reorder/delete; for reorder-induced active-page index shifts, preserve current store to avoid deleting remapped keys or losing unsaved overlay edits.
 - 2026-03-27: Replaced naive JS MP3 buffer concatenation with ffmpeg-static (child_process.execFile). Chose over: (a) @ffmpeg/ffmpeg WASM — browser-only, can't run in Vercel serverless, (b) Xing header stripping — insufficient, frame parameter mismatches between silence and real audio still break browsers, (c) sequential playback — would require Flutter mobile reader changes. ffmpeg concat filter decodes all inputs to PCM and re-encodes, producing spec-compliant output.

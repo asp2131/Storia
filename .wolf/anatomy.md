@@ -1,7 +1,12 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T19:01:58.438Z
-> Files: 575 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T23:37:17.969Z
+> Files: 584 tracked | Anatomy hits: 0 | Misses: 0
+
+## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
+
+- `MEMORY.md` — Storia Project Memory (~465 tok)
+- `pronunciation_book_table_decision.md` (~486 tok)
 
 ## ./
 
@@ -696,11 +701,12 @@
 
 ## prisma/
 
-- `schema.prisma` — Declares String (~4250 tok)
+- `schema.prisma` — Declares String (~4981 tok)
 - `seed.ts` — prisma: main (~3664 tok)
 
 ## scripts/
 
+- `backfill-book-pronunciations.ts` — Backfill script: migrate per-page `pages.word_pronunciations` JSON into the (~2700 tok)
 - `backfill-pronunciations.ts` — Pronunciation backfill script (Phase 2 — Ticket 2.4). (~1862 tok)
 - `ensure-local-db.sh` — Starts local Postgres container, waits for readiness, recreates `storia_dev` if missing (~220 tok)
 
@@ -745,8 +751,8 @@
 
 ## src/app/api/books/[id]/pronunciations/
 
-- `route.test.ts` — Vitest coverage for published pronunciation manifest route shape, duplicate merging, legacy-string compatibility, and 500 handling (~1500 tok)
-- `route.ts` — Book-level pronunciation manifest route that merges normalized page entries and keeps the most complete duplicate (~1030 tok)
+- `route.test.ts` — Declares makeRow (~1589 tok)
+- `route.ts` — Next.js API route: GET (~1134 tok)
 
 ## src/app/api/books/[id]/questions/
 
@@ -806,8 +812,8 @@
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
 - `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
 - `pronunciationGeneration.test.ts` — Declares fakeSupabase (~1793 tok)
-- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~2670 tok)
+- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~4420 tok)
 - `pronunciationReview.test.ts` — Vitest coverage for per-word review aggregation, metadata shaping, and filter/pagination behavior. (~1500 tok)
-- `pronunciationReview.ts` — Builds editor-friendly per-word pronunciation review rows and summary stats from page text plus stored entries. (~2800 tok)
+- `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3023 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)

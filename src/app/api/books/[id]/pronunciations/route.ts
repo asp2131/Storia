@@ -1,72 +1,100 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
-  normalizePronunciationToken,
   type BookPronunciationManifest,
+  type PronunciationSource,
+  type PronunciationStatus,
   type PublishedWordPronunciation,
-  type WordPronunciationEntry,
 } from "@/lib/pronunciation";
 
 export type ManifestEntry = PublishedWordPronunciation;
 export type Manifest = BookPronunciationManifest;
 
-function entryScore(entry: WordPronunciationEntry): number {
-  if (typeof entry === "string") return 1;
-  const hasBreakdown = typeof entry.breakdown === "string" && entry.breakdown.length > 0;
-  const hasFullWord = typeof entry.fullWord === "string" && entry.fullWord.length > 0;
-  if (hasBreakdown && hasFullWord) return 3;
-  if (hasBreakdown) return 2;
-  if (hasFullWord) return 1;
-  return 0;
+const VALID_SOURCES: ReadonlySet<PronunciationSource> = new Set([
+  "override",
+  "lexicon",
+  "tts",
+]);
+
+const VALID_STATUSES: ReadonlySet<PronunciationStatus> = new Set([
+  "generated",
+  "failed",
+  "reviewed",
+]);
+
+function parseBookIdParam(bookId: string): bigint | null {
+  try {
+    return BigInt(bookId);
+  } catch {
+    return null;
+  }
 }
 
-function toManifestEntry(
-  bookId: string,
-  normalizedKey: string,
-  entry: WordPronunciationEntry
-): ManifestEntry {
-  if (typeof entry === "string") {
-    return {
-      id: `${bookId}:${normalizedKey}`,
-      normalizedWord: normalizedKey,
-      displayWord: normalizedKey,
-      humanReviewed: false,
-      updatedAt: new Date(0).toISOString(),
-      audio: {
-        fullWord: {
-          url: entry,
-        },
-      },
-    };
+function toStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const strings: string[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && item.length > 0) {
+      strings.push(item);
+    }
   }
+  return strings.length > 0 ? strings : undefined;
+}
 
-  const humanReviewed = entry.status === "reviewed" || entry.source === "override";
+function toRowEntry(row: {
+  id: bigint;
+  normalized_word: string;
+  display_word: string | null;
+  phonetic_display: string | null;
+  syllables: unknown;
+  breakdown_segments: unknown;
+  full_word_url: string | null;
+  breakdown_url: string | null;
+  source: string;
+  status: string;
+  confidence: number | null;
+  human_reviewed: boolean;
+  updated_at: Date;
+}): ManifestEntry {
+  const normalizedWord = row.normalized_word;
+  const displayWord = row.display_word ?? normalizedWord;
+
+  const syllables = toStringArray(row.syllables);
+  const breakdownSegments = toStringArray(row.breakdown_segments);
+
+  const source = VALID_SOURCES.has(row.source as PronunciationSource)
+    ? (row.source as PronunciationSource)
+    : undefined;
+  const status = VALID_STATUSES.has(row.status as PronunciationStatus)
+    ? (row.status as PronunciationStatus)
+    : undefined;
+
+  const hasFullWord =
+    typeof row.full_word_url === "string" && row.full_word_url.length > 0;
+  const hasBreakdown =
+    typeof row.breakdown_url === "string" && row.breakdown_url.length > 0;
+
+  const audio: PublishedWordPronunciation["audio"] = {
+    ...(hasFullWord ? { fullWord: { url: row.full_word_url as string } } : {}),
+    ...(hasBreakdown ? { breakdown: { url: row.breakdown_url as string } } : {}),
+  };
 
   return {
-    id: `${bookId}:${normalizedKey}`,
-    normalizedWord: normalizedKey,
-    displayWord: normalizedKey,
-    ...(entry.source ? { source: entry.source } : {}),
-    ...(typeof entry.confidence === "number" ? { confidence: entry.confidence } : {}),
-    ...(entry.status ? { status: entry.status } : {}),
-    humanReviewed,
-    updatedAt: entry.generatedAt ?? new Date(0).toISOString(),
-    audio: {
-      ...(typeof entry.fullWord === "string" && entry.fullWord.length > 0
-        ? {
-            fullWord: {
-              url: entry.fullWord,
-            },
-          }
-        : {}),
-      ...(typeof entry.breakdown === "string" && entry.breakdown.length > 0
-        ? {
-            breakdown: {
-              url: entry.breakdown,
-            },
-          }
-        : {}),
-    },
+    id: row.id.toString(),
+    normalizedWord,
+    displayWord,
+    ...(row.phonetic_display ? { phoneticDisplay: row.phonetic_display } : {}),
+    ipa: null,
+    ...(syllables ? { syllables } : {}),
+    ...(breakdownSegments ? { breakdownSegments } : {}),
+    ...(source ? { source } : {}),
+    ...(typeof row.confidence === "number"
+      ? { confidence: row.confidence }
+      : {}),
+    humanReviewed: row.human_reviewed,
+    ...(status ? { status } : {}),
+    audio,
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
@@ -75,35 +103,24 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: bookId } = await params;
+  const parsedBookId = parseBookIdParam(bookId);
+
+  if (parsedBookId === null) {
+    return NextResponse.json(
+      { error: { code: "invalid_book_id", message: "Invalid book ID." } },
+      { status: 400 }
+    );
+  }
 
   try {
-    const pages = await prisma.pages.findMany({
-      where: { book_id: BigInt(bookId) },
-      select: { word_pronunciations: true },
+    const rows = await prisma.book_pronunciations.findMany({
+      where: { book_id: parsedBookId },
+      orderBy: { normalized_word: "asc" },
     });
 
-    const merged: Record<string, { entry: WordPronunciationEntry; score: number }> = {};
-
-    for (const page of pages) {
-      if (!page.word_pronunciations) continue;
-      const map = page.word_pronunciations as Record<string, WordPronunciationEntry>;
-
-      for (const [rawKey, rawEntry] of Object.entries(map)) {
-        const normalizedKey = normalizePronunciationToken(rawKey);
-        if (!normalizedKey) continue;
-
-        const score = entryScore(rawEntry);
-        const existing = merged[normalizedKey];
-
-        if (!existing || score > existing.score) {
-          merged[normalizedKey] = { entry: rawEntry, score };
-        }
-      }
-    }
-
     const entries: Record<string, ManifestEntry> = {};
-    for (const [key, { entry }] of Object.entries(merged)) {
-      entries[key] = toManifestEntry(bookId, key, entry);
+    for (const row of rows) {
+      entries[row.normalized_word] = toRowEntry(row);
     }
 
     const manifest: Manifest = {

@@ -1,12 +1,8 @@
 import {
-  entryHasAudio,
   normalizePronunciationToken,
   type PronunciationSource,
   type PronunciationStatus,
-  type WordPronunciationEntry,
-  type WordPronunciationMap,
 } from "@/lib/pronunciation";
-import { entryCoverageStatus } from "@/lib/pronunciationGeneration";
 
 export type PronunciationReviewCoverageStatus =
   | "missing"
@@ -67,7 +63,29 @@ export interface PronunciationReviewPageInput {
   id: string | bigint;
   pageNumber: number;
   textContent: string | null;
-  entries: WordPronunciationMap;
+}
+
+/**
+ * Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of
+ * fields required for review aggregation). Kept as a structural type so tests
+ * can seed plain objects.
+ */
+export interface PronunciationReviewEntryRow {
+  normalized_word: string;
+  display_word?: string | null;
+  full_word_url?: string | null;
+  breakdown_url?: string | null;
+  source?: string | null;
+  status?: string | null;
+  confidence?: number | null;
+  human_reviewed?: boolean | null;
+  generated_at?: Date | string | null;
+  updated_at?: Date | string | null;
+}
+
+export interface PronunciationReviewInput {
+  pages: PronunciationReviewPageInput[];
+  pronunciations: PronunciationReviewEntryRow[];
 }
 
 const EDGE_PUNCTUATION_REGEX = /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu;
@@ -96,29 +114,44 @@ function extractDisplayTokens(text: string): Array<{
     );
 }
 
+function nonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 function getCoverageStatus(
-  entry: WordPronunciationEntry | undefined
+  row: PronunciationReviewEntryRow | undefined
 ): PronunciationReviewCoverageStatus {
-  return entryCoverageStatus(entry);
+  if (!row) return "missing";
+  const hasFull = nonEmptyString(row.full_word_url) !== undefined;
+  const hasBreak = nonEmptyString(row.breakdown_url) !== undefined;
+  if (hasFull && hasBreak) return "covered";
+  if (hasFull || hasBreak) return "full-word-only";
+  return "missing";
 }
 
 function getReviewStatus(
-  entry: WordPronunciationEntry | undefined
+  row: PronunciationReviewEntryRow | undefined
 ): PronunciationReviewStatus {
-  if (typeof entry === "object" && entry?.status === "failed") {
+  if (!row) return "missing";
+
+  if (row.status === "failed") {
     return "failed";
   }
 
   if (
-    typeof entry === "object" &&
-    (entry.status === "reviewed" || entry.source === "override")
+    row.human_reviewed === true ||
+    row.status === "reviewed" ||
+    row.source === "override"
   ) {
     return "reviewed";
   }
 
-  if (entryHasAudio(entry)) {
-    return "generated";
-  }
+  const hasAudio =
+    nonEmptyString(row.full_word_url) !== undefined ||
+    nonEmptyString(row.breakdown_url) !== undefined;
+  if (hasAudio) return "generated";
 
   return "missing";
 }
@@ -147,56 +180,14 @@ function getCoveragePriority(status: PronunciationReviewCoverageStatus): number 
   }
 }
 
-function entryRichnessScore(entry: WordPronunciationEntry | undefined): number {
-  if (!entry) return 0;
-  if (typeof entry === "string") return entry.trim().length > 0 ? 2 : 0;
-
-  let score = 0;
-  if (typeof entry.fullWord === "string" && entry.fullWord.trim().length > 0) {
-    score += 2;
+function toIsoString(value: Date | string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
   }
-  if (typeof entry.breakdown === "string" && entry.breakdown.trim().length > 0) {
-    score += 3;
-  }
-  if (entry.status === "reviewed" || entry.source === "override") {
-    score += 4;
-  } else if (entry.status === "generated") {
-    score += 1;
-  }
-  if (typeof entry.confidence === "number") {
-    score += entry.confidence;
-  }
-
-  return score;
-}
-
-function preferEntry(
-  current: WordPronunciationEntry | undefined,
-  candidate: WordPronunciationEntry | undefined
-): WordPronunciationEntry | undefined {
-  if (!candidate) return current;
-  if (!current) return candidate;
-
-  const currentScore = entryRichnessScore(current);
-  const candidateScore = entryRichnessScore(candidate);
-
-  if (candidateScore > currentScore) {
-    return candidate;
-  }
-
-  if (candidateScore < currentScore) {
-    return current;
-  }
-
-  if (
-    typeof candidate === "object" &&
-    typeof current === "object" &&
-    (candidate.generatedAt ?? "") > (current.generatedAt ?? "")
-  ) {
-    return candidate;
-  }
-
-  return current;
+  return undefined;
 }
 
 function toReviewItem(
@@ -206,52 +197,50 @@ function toReviewItem(
     occurrences: number;
     pageIds: Set<string>;
     pageNumbers: Set<number>;
-    entry?: WordPronunciationEntry;
+    row?: PronunciationReviewEntryRow;
   }
 ): PronunciationReviewItem {
-  const entry = aggregate.entry;
-  const coverageStatus = getCoverageStatus(entry);
-  const reviewStatus = getReviewStatus(entry);
+  const row = aggregate.row;
+  const coverageStatus = getCoverageStatus(row);
+  const reviewStatus = getReviewStatus(row);
 
-  if (typeof entry === "string") {
-    return {
-      normalizedWord,
-      displayWord: aggregate.displayWord,
-      occurrences: aggregate.occurrences,
-      pageIds: Array.from(aggregate.pageIds),
-      pageNumbers: Array.from(aggregate.pageNumbers).sort((a, b) => a - b),
-      coverageStatus,
-      reviewStatus,
-      humanReviewed: false,
-      audio: {
-        fullWord: entry,
-      },
-    };
-  }
+  const fullWordUrl = nonEmptyString(row?.full_word_url);
+  const breakdownUrl = nonEmptyString(row?.breakdown_url);
+
+  const displayWord =
+    nonEmptyString(row?.display_word) ?? aggregate.displayWord;
+
+  const humanReviewed = row?.human_reviewed === true;
+
+  const generatedAt =
+    toIsoString(row?.generated_at) ?? toIsoString(row?.updated_at);
+
+  const source = nonEmptyString(row?.source) as
+    | PronunciationSource
+    | undefined;
+  const status = nonEmptyString(row?.status) as
+    | PronunciationStatus
+    | undefined;
 
   return {
     normalizedWord,
-    displayWord: aggregate.displayWord,
+    displayWord,
     occurrences: aggregate.occurrences,
     pageIds: Array.from(aggregate.pageIds),
     pageNumbers: Array.from(aggregate.pageNumbers).sort((a, b) => a - b),
     coverageStatus,
     reviewStatus,
-    humanReviewed: reviewStatus === "reviewed",
+    humanReviewed,
     audio: {
-      ...(typeof entry?.fullWord === "string" && entry.fullWord.trim().length > 0
-        ? { fullWord: entry.fullWord }
-        : {}),
-      ...(typeof entry?.breakdown === "string" && entry.breakdown.trim().length > 0
-        ? { breakdown: entry.breakdown }
-        : {}),
+      ...(fullWordUrl ? { fullWord: fullWordUrl } : {}),
+      ...(breakdownUrl ? { breakdown: breakdownUrl } : {}),
     },
-    ...(entry?.source ? { source: entry.source } : {}),
-    ...(typeof entry?.confidence === "number"
-      ? { confidence: entry.confidence }
+    ...(source ? { source } : {}),
+    ...(typeof row?.confidence === "number"
+      ? { confidence: row.confidence }
       : {}),
-    ...(entry?.generatedAt ? { generatedAt: entry.generatedAt } : {}),
-    ...(entry?.status ? { status: entry.status } : {}),
+    ...(generatedAt ? { generatedAt } : {}),
+    ...(status ? { status } : {}),
   };
 }
 
@@ -321,9 +310,20 @@ function sortItems(left: PronunciationReviewItem, right: PronunciationReviewItem
 }
 
 export function buildPronunciationReviewData(
-  pages: PronunciationReviewPageInput[],
+  input: PronunciationReviewInput,
   filters: PronunciationReviewFilters = {}
 ): PronunciationReviewResult {
+  const { pages, pronunciations } = input;
+
+  // Build a lookup of stored pronunciation rows keyed by normalized_word. If
+  // duplicates exist (shouldn't — unique index), last write wins.
+  const rowByNormalized = new Map<string, PronunciationReviewEntryRow>();
+  for (const row of pronunciations) {
+    const key = normalizePronunciationToken(row.normalized_word ?? "");
+    if (!key) continue;
+    rowByNormalized.set(key, row);
+  }
+
   const aggregates = new Map<
     string,
     {
@@ -331,7 +331,7 @@ export function buildPronunciationReviewData(
       occurrences: number;
       pageIds: Set<string>;
       pageNumbers: Set<number>;
-      entry?: WordPronunciationEntry;
+      row?: PronunciationReviewEntryRow;
     }
   >();
 
@@ -345,6 +345,7 @@ export function buildPronunciationReviewData(
         occurrences: 0,
         pageIds: new Set<string>(),
         pageNumbers: new Set<number>(),
+        row: rowByNormalized.get(token.normalizedWord),
       };
 
       existing.occurrences += 1;
@@ -354,8 +355,6 @@ export function buildPronunciationReviewData(
         existing.displayWord = token.displayWord;
       }
 
-      const pageEntry = page.entries[token.normalizedWord];
-      existing.entry = preferEntry(existing.entry, pageEntry);
       aggregates.set(token.normalizedWord, existing);
     }
   }

@@ -6,30 +6,66 @@
  *   - `/api/admin/books/[id]/pronunciations/generate` (standalone)
  *   - `scripts/backfill-pronunciations.ts` (Ticket 2.4 backfill)
  *
- * Generation fallback chain (Ticket 2.3):
- *   1. `existingEntries` — curated/editor override or already-generated. Skipped
- *      unless `force: true`.
- *   2. TTS (ElevenLabs) — synthesises full-word + breakdown clips.
- *   3. Failure — entry is recorded as `{ status: "failed", source: "tts" }`
- *      so the client can surface a fallback path without retrying.
+ * Persistence:
+ *   All generated + failure entries are written to the `book_pronunciations`
+ *   Prisma table keyed by `(book_id, normalized_word)`. The legacy per-page
+ *   `pages.word_pronunciations` JSON is no longer written by this pipeline.
  *
- * Dictionary/lexicon tier is deferred; the hook is in place (`source` field)
- * so a future provider can slot in before the TTS tier without client changes.
+ * Generation fallback chain (Ticket 2.3):
+ *   1. Existing table row — skipped unless `force: true`. Reviewed rows are
+ *      ALWAYS skipped (see "reviewed guard" below).
+ *   2. TTS (ElevenLabs) — synthesises full-word + breakdown clips.
+ *   3. Failure — entry is upserted with `status: "failed"` so the client can
+ *      surface a fallback path without retrying.
+ *
+ * Reviewed guard (critical invariant):
+ *   Even when `force: true`, rows where ANY of the following are true are
+ *   skipped untouched:
+ *     - `human_reviewed === true`
+ *     - `status === "reviewed"`
+ *     - `source === "override"`
+ *   This preserves editorial decisions across regeneration runs. The
+ *   `includeReviewed` escape hatch bypasses the guard but is NOT exposed
+ *   through any HTTP route.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { synthesizeSpeech } from "@/lib/elevenlabs";
+import { prisma } from "@/lib/prisma";
 import {
-  createStoredPronunciationEntry,
-  entryHasAudio,
   normalizePronunciationToken,
+  type PronunciationEntryObject,
   type WordPronunciationEntry,
-  type WordPronunciationMap,
 } from "@/lib/pronunciation";
+
+/**
+ * Minimal shape of a `book_pronunciations` row that this module needs.
+ * Matches the Prisma model subset returned by `findMany`.
+ */
+export interface BookPronunciationRow {
+  id: bigint;
+  book_id: bigint;
+  normalized_word: string;
+  display_word: string | null;
+  phonetic_display: string | null;
+  syllables: unknown;
+  breakdown_segments: unknown;
+  full_word_url: string | null;
+  breakdown_url: string | null;
+  source: string;
+  status: string;
+  confidence: number | null;
+  human_reviewed: boolean;
+  generated_at: Date | null;
+  reviewed_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
 
 export interface GenerateOptions {
   supabase: SupabaseClient;
   bucket: string;
+  /** Book ID as a string (BigInt-compatible). */
   bookId: string;
   voiceId: string;
   voiceSettings: {
@@ -37,14 +73,17 @@ export interface GenerateOptions {
     style: number;
     useSpeakerBoost: boolean;
   };
-  /** Existing manifest; entries here are skipped unless `force: true`. */
-  existingEntries?: WordPronunciationMap;
-  /** Regenerate even when an entry already exists. */
+  /** Regenerate even when an entry already exists. Reviewed rows still skipped. */
   force?: boolean;
-  /** Words to generate — expected to be normalized via `normalizePronunciationToken`. */
+  /** Words to generate — will be normalized via `normalizePronunciationToken`. */
   words: string[];
   /** Concurrency per batch. */
   batchSize?: number;
+  /**
+   * ESCAPE HATCH — when true, skips the reviewed guard and regenerates even
+   * human-reviewed/override rows. Internal use only; NOT wired to any route.
+   */
+  includeReviewed?: boolean;
 }
 
 export interface GenerateStats {
@@ -60,11 +99,13 @@ export interface GenerateStats {
   withBreakdown: number;
   /** Failed word list for diagnostics. */
   failures: Array<{ word: string; error: string }>;
+  /** Words skipped because of the reviewed guard (even under force). */
+  skippedReviewed: number;
 }
 
 export interface GenerateResult {
-  /** Map of normalized word → entry (merged existing + newly generated). */
-  pronunciationMap: WordPronunciationMap;
+  /** All rows for the book after this run. */
+  rows: BookPronunciationRow[];
   stats: GenerateStats;
 }
 
@@ -130,9 +171,32 @@ export async function uploadPronunciationAsset(params: {
 }
 
 /**
- * Generate (or reuse) pronunciation entries for a set of words.
- * Merges newly-generated entries with `existingEntries` and returns the full
- * manifest plus coverage stats.
+ * True when a row is protected from regeneration by the reviewed guard.
+ */
+export function isRowReviewedGuarded(row: BookPronunciationRow): boolean {
+  return (
+    row.human_reviewed === true ||
+    row.status === "reviewed" ||
+    row.source === "override"
+  );
+}
+
+/**
+ * True when a row already has any usable audio URL.
+ */
+function rowHasAudio(row: BookPronunciationRow | undefined): boolean {
+  if (!row) return false;
+  const hasFull =
+    typeof row.full_word_url === "string" && row.full_word_url.length > 0;
+  const hasBreak =
+    typeof row.breakdown_url === "string" && row.breakdown_url.length > 0;
+  return hasFull || hasBreak;
+}
+
+/**
+ * Generate (or reuse) pronunciation entries for a set of words and persist
+ * them to the `book_pronunciations` table. Returns the full row set for the
+ * book plus run stats — callers can derive page-level coverage from `rows`.
  */
 export async function generatePronunciationEntries(
   opts: GenerateOptions
@@ -143,18 +207,29 @@ export async function generatePronunciationEntries(
     bookId,
     voiceId,
     voiceSettings,
-    existingEntries = {},
     force = false,
     words,
     batchSize = 5,
+    includeReviewed = false,
   } = opts;
+
+  const bookIdBigInt = BigInt(bookId);
+
+  // Load existing rows for the book up front — one query, then reuse.
+  const existingRows = (await prisma.book_pronunciations.findMany({
+    where: { book_id: bookIdBigInt },
+  })) as BookPronunciationRow[];
+
+  const existingByWord = new Map<string, BookPronunciationRow>();
+  for (const row of existingRows) {
+    existingByWord.set(row.normalized_word, row);
+  }
 
   // De-dupe normalized words.
   const uniqueWords = Array.from(
     new Set(words.map(normalizePronunciationToken).filter(Boolean))
   );
 
-  const merged: WordPronunciationMap = { ...existingEntries };
   const stats: GenerateStats = {
     total: uniqueWords.length,
     generated: 0,
@@ -162,14 +237,29 @@ export async function generatePronunciationEntries(
     failed: 0,
     withBreakdown: 0,
     failures: [],
+    skippedReviewed: 0,
   };
 
-  const wordsToGenerate = uniqueWords.filter((w) => {
-    if (force) return true;
-    return !entryHasAudio(existingEntries[w]);
-  });
+  const wordsToGenerate: string[] = [];
+  for (const word of uniqueWords) {
+    const existing = existingByWord.get(word);
 
-  stats.skipped = uniqueWords.length - wordsToGenerate.length;
+    // Reviewed guard: reviewed rows are skipped untouched unless the
+    // explicit internal escape hatch is set.
+    if (existing && isRowReviewedGuarded(existing) && !includeReviewed) {
+      stats.skippedReviewed += 1;
+      stats.skipped += 1;
+      continue;
+    }
+
+    // Existing row with audio + not forced → skip.
+    if (!force && rowHasAudio(existing)) {
+      stats.skipped += 1;
+      continue;
+    }
+
+    wordsToGenerate.push(word);
+  }
 
   for (let i = 0; i < wordsToGenerate.length; i += batchSize) {
     const batch = wordsToGenerate.slice(i, i + batchSize);
@@ -226,60 +316,131 @@ export async function generatePronunciationEntries(
 
           return {
             word,
-            entry: createStoredPronunciationEntry(fullWordUrl, breakdownUrl, {
-              source: "tts",
-              status: "generated",
-              confidence: 1,
-              generatedAt: new Date().toISOString(),
-            }),
+            fullWordUrl,
+            breakdownUrl,
+            error: null as string | null,
           } as const;
         } catch (wordError) {
           const message =
             wordError instanceof Error ? wordError.message : String(wordError);
-          return { word, entry: null, error: message } as const;
+          return {
+            word,
+            fullWordUrl: null as string | null,
+            breakdownUrl: null as string | undefined | null,
+            error: message,
+          } as const;
         }
       })
     );
 
     for (const result of results) {
-      if (result.entry) {
-        merged[result.word] = result.entry;
+      if (result.error === null && result.fullWordUrl) {
+        const now = new Date();
+        await prisma.book_pronunciations.upsert({
+          where: {
+            book_id_normalized_word: {
+              book_id: bookIdBigInt,
+              normalized_word: result.word,
+            },
+          },
+          create: {
+            book_id: bookIdBigInt,
+            normalized_word: result.word,
+            full_word_url: result.fullWordUrl,
+            breakdown_url: result.breakdownUrl ?? null,
+            source: "tts",
+            status: "generated",
+            confidence: 1,
+            generated_at: now,
+          },
+          update: {
+            full_word_url: result.fullWordUrl,
+            breakdown_url: result.breakdownUrl ?? null,
+            source: "tts",
+            status: "generated",
+            confidence: 1,
+            generated_at: now,
+          },
+        });
+
         stats.generated += 1;
-        if (
-          typeof result.entry !== "string" &&
-          typeof result.entry.breakdown === "string"
-        ) {
+        if (result.breakdownUrl) {
           stats.withBreakdown += 1;
         }
       } else {
+        // Failure — upsert a failure marker. Keep old generated_at if row
+        // already existed so failure does not overwrite prior success metadata.
+        await prisma.book_pronunciations.upsert({
+          where: {
+            book_id_normalized_word: {
+              book_id: bookIdBigInt,
+              normalized_word: result.word,
+            },
+          },
+          create: {
+            book_id: bookIdBigInt,
+            normalized_word: result.word,
+            source: "tts",
+            status: "failed",
+          },
+          update: {
+            status: "failed",
+            source: "tts",
+          },
+        });
+
         stats.failed += 1;
-        stats.failures.push({ word: result.word, error: result.error });
+        stats.failures.push({
+          word: result.word,
+          error: result.error ?? "unknown",
+        });
       }
     }
   }
 
-  return { pronunciationMap: merged, stats };
+  // Re-fetch final rows so callers can build coverage reports without
+  // another round-trip.
+  const finalRows = (await prisma.book_pronunciations.findMany({
+    where: { book_id: bookIdBigInt },
+  })) as BookPronunciationRow[];
+
+  return { rows: finalRows, stats };
 }
 
 /**
- * For a set of page texts, return the unique normalized tokens that do not
- * yet have an existing audio-bearing entry.
+ * For a set of page text token lists, return the unique normalized tokens
+ * that are not yet covered in the existing rows. Honors `force` and the
+ * reviewed guard.
  */
 export function collectMissingTokens(
-  pages: Array<{ textContent: string | null; entries: WordPronunciationMap }>,
-  options?: { force?: boolean }
+  tokensByPage: string[][],
+  existingRows: BookPronunciationRow[],
+  options?: { force?: boolean; includeReviewed?: boolean }
 ): string[] {
   const force = options?.force ?? false;
+  const includeReviewed = options?.includeReviewed ?? false;
+
+  const rowByWord = new Map<string, BookPronunciationRow>();
+  for (const row of existingRows) {
+    rowByWord.set(row.normalized_word, row);
+  }
+
   const missing = new Set<string>();
 
-  for (const page of pages) {
-    const text = page.textContent ?? "";
-    if (!text.trim()) continue;
-
-    for (const rawToken of text.split(/\s+/)) {
+  for (const pageTokens of tokensByPage) {
+    for (const rawToken of pageTokens) {
       const token = normalizePronunciationToken(rawToken);
       if (!token) continue;
-      if (!force && entryHasAudio(page.entries[token])) continue;
+
+      const existing = rowByWord.get(token);
+
+      // Reviewed rows are never regenerated (unless internal escape hatch).
+      if (existing && isRowReviewedGuarded(existing) && !includeReviewed) {
+        continue;
+      }
+
+      if (!force && rowHasAudio(existing)) continue;
+
       missing.add(token);
     }
   }
@@ -288,16 +449,52 @@ export function collectMissingTokens(
 }
 
 /**
- * For a single entry, report whether it is ready for the reader.
+ * Minimal shape used for coverage classification. Accepts either a table row
+ * (via `{ full_word_url, breakdown_url }`) or `null` for "missing".
+ */
+export type CoverageEntry =
+  | Pick<BookPronunciationRow, "full_word_url" | "breakdown_url">
+  | null
+  | undefined;
+
+/**
+ * Classify a single row (or null) for coverage reporting.
+ *
+ *   - "covered"         — both full-word and breakdown audio present
+ *   - "full-word-only"  — only one of the two URLs present
+ *   - "missing"         — row absent or both URLs empty
  */
 export function entryCoverageStatus(
-  entry: WordPronunciationEntry | undefined
+  entry: CoverageEntry
 ): "covered" | "full-word-only" | "missing" {
   if (!entry) return "missing";
-  if (typeof entry === "string") return entry.trim().length > 0 ? "full-word-only" : "missing";
-  const hasFull = typeof entry.fullWord === "string" && entry.fullWord.length > 0;
-  const hasBreak = typeof entry.breakdown === "string" && entry.breakdown.length > 0;
+  const hasFull =
+    typeof entry.full_word_url === "string" && entry.full_word_url.length > 0;
+  const hasBreak =
+    typeof entry.breakdown_url === "string" && entry.breakdown_url.length > 0;
   if (hasFull && hasBreak) return "covered";
   if (hasFull || hasBreak) return "full-word-only";
   return "missing";
+}
+
+/**
+ * Convenience: convert a table row into the legacy `WordPronunciationEntry`
+ * object shape used by narration-route response payloads for backward
+ * compatibility with clients that still consume `wordPronunciations` inline.
+ */
+export function rowToWordPronunciationEntry(
+  row: BookPronunciationRow
+): WordPronunciationEntry {
+  const entry: PronunciationEntryObject = {};
+  if (row.full_word_url) entry.fullWord = row.full_word_url;
+  if (row.breakdown_url) entry.breakdown = row.breakdown_url;
+  if (row.source === "override" || row.source === "lexicon" || row.source === "tts") {
+    entry.source = row.source;
+  }
+  if (typeof row.confidence === "number") entry.confidence = row.confidence;
+  if (row.status === "generated" || row.status === "failed" || row.status === "reviewed") {
+    entry.status = row.status;
+  }
+  if (row.generated_at) entry.generatedAt = row.generated_at.toISOString();
+  return entry;
 }

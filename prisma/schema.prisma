@@ -26,9 +26,10 @@ model books {
   cover_url         String?            @db.VarChar(255)
   description       String?
   book_type         String             @default("pdf_book") @db.VarChar(255)
-  pages             pages[]
-  reading_progress  reading_progress[]
-  scenes            scenes[]
+  pages               pages[]
+  reading_progress    reading_progress[]
+  scenes              scenes[]
+  book_pronunciations book_pronunciations[]
 
   @@index([author(ops: raw("gin_trgm_ops"))], map: "books_author_gin_idx", type: Gin)
   @@index([is_published], map: "books_is_published_index")
@@ -100,6 +101,32 @@ model pages {
   @@index([book_id], map: "pages_book_id_index")
   @@index([scene_id], map: "pages_scene_id_index")
   @@index([composited_image_url], map: "pages_composited_image_url_index")
+}
+
+model book_pronunciations {
+  id                 BigInt    @id @default(autoincrement())
+  book_id            BigInt
+  normalized_word    String    @db.VarChar(255)
+  display_word       String?   @db.VarChar(255)
+  phonetic_display   String?
+  syllables          Json?
+  breakdown_segments Json?
+  full_word_url      String?   @db.VarChar(500)
+  breakdown_url      String?   @db.VarChar(500)
+  source             String    @default("tts") @db.VarChar(32)
+  status             String    @default("generated") @db.VarChar(32)
+  confidence         Float?
+  human_reviewed     Boolean   @default(false)
+  generated_at       DateTime? @db.Timestamp(0)
+  reviewed_at        DateTime? @db.Timestamp(0)
+  created_at         DateTime  @default(now()) @db.Timestamp(0)
+  updated_at         DateTime  @updatedAt @db.Timestamp(0)
+  books              books     @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([book_id, normalized_word], map: "book_pronunciations_book_id_normalized_word_idx")
+  @@index([book_id], map: "book_pronunciations_book_id_idx")
+  @@index([human_reviewed], map: "book_pronunciations_human_reviewed_idx")
+  @@index([book_id, status], map: "book_pronunciations_book_id_status_idx")
 }
 
 model page_audio_assignments {
