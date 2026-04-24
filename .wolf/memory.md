@@ -478,3 +478,26 @@
 | 00:24 | Configured Browser Use API key in browser-harness .env, started remote cloud daemon, and verified control by opening the GitHub repo page. | ~/Developer/browser-harness/.env | success | ~1100 |
 | 00:29 | Registered browser-harness globally for Claude via ~/.claude/CLAUDE.md import + symlinked skill file. | ~/.claude/CLAUDE.md, ~/.claude/skills/browser-harness/SKILL.md | success | ~500 |
 | 00:31 | Retried local browser-harness setup; timed out waiting for Chrome remote-debugging Allow flow, then verified remote daemon still works by opening browser-use.com. | ~/Developer/browser-harness, Chrome | remote ok / local pending user desktop action | ~700 |
+
+## Session: 2026-04-24 17:57
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 18:03 | Created src/app/admin/login/page.tsx | — | ~2393 |
+| 18:03 | Edited src/app/admin/(dashboard)/layout.tsx | added 2 condition(s) | ~70 |
+
+| $(date +%H:%M) | Added /admin/login page (Better Auth OTP + Google) and routed admin layout unauthenticated/non-admin to it | src/app/admin/login/page.tsx, src/app/admin/(dashboard)/layout.tsx | complete | ~600 |
+| 18:04 | Session end: 2 writes across 2 files (page.tsx, layout.tsx) | 3 reads | ~8971 tok |
+| 18:06 | Session end: 2 writes across 2 files (page.tsx, layout.tsx) | 3 reads | ~8971 tok |
+| 18:11 | Session end: 2 writes across 2 files (page.tsx, layout.tsx) | 3 reads | ~8971 tok |
+| 18:12 | Session end: 2 writes across 2 files (page.tsx, layout.tsx) | 3 reads | ~8971 tok |
+| 18:15 | Created src/components/editor/PronunciationPanel.tsx | — | ~8152 |
+| 18:16 | Edited src/components/editor/PronunciationPanel.tsx | expanded (+18 lines) | ~252 |
+| 18:16 | Edited src/components/editor/PronunciationPanel.tsx | modified Sep() | ~53 |
+| 18:16 | Edited src/components/editor/PronunciationPanel.tsx | inline fix | ~30 |
+| 18:18 | designqc: captured 2 screenshots (92KB, ~5000 tok) | /admin/books/1/edit | ready for eval | ~0 |
+| 18:19 | Edited src/components/editor/PronunciationPanel.tsx | 3→3 lines | ~77 |
+| 18:19 | designqc: captured 2 screenshots (94KB, ~5000 tok) | /admin/books/1/edit | ready for eval | ~0 |
+
+| $(date +%H:%M) | Redesigned PronunciationPanel: dropped violet/fuchsia gradient + pastel chips, added coverage ring + single status banner + segmented review-status chips + tighter row layout. Tests 11/11 green. | src/components/editor/PronunciationPanel.tsx | complete | ~3000 |
+| 18:20 | Session end: 7 writes across 3 files (page.tsx, layout.tsx, PronunciationPanel.tsx) | 5 reads | ~17535 tok |

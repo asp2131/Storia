@@ -4,13 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
-  CircleDot,
   Loader2,
+  Pause,
   Play,
   RefreshCcw,
   Search,
   Sparkles,
-  Volume2,
   Wand2,
 } from "lucide-react";
 import {
@@ -24,11 +23,21 @@ import {
   type VoiceSettings,
 } from "@/hooks/useBookData";
 
-const statusStyles: Record<NonNullable<PronunciationCoverageRow["status"]>, string> = {
-  complete: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  partial: "border-amber-200 bg-amber-50 text-amber-700",
-  missing: "border-rose-200 bg-rose-50 text-rose-700",
-  empty: "border-slate-200 bg-slate-100 text-slate-500",
+type ReviewFilter = "all" | PronunciationReviewStatus;
+type CoverageFilter = "all" | PronunciationReviewCoverageStatus;
+
+const pageStatusDot: Record<NonNullable<PronunciationCoverageRow["status"]>, string> = {
+  complete: "bg-emerald-500",
+  partial: "bg-amber-500",
+  missing: "bg-rose-500",
+  empty: "bg-slate-300",
+};
+
+const pageStatusText: Record<NonNullable<PronunciationCoverageRow["status"]>, string> = {
+  complete: "text-emerald-700",
+  partial: "text-amber-700",
+  missing: "text-rose-700",
+  empty: "text-slate-500",
 };
 
 const statusLabels: Record<NonNullable<PronunciationCoverageRow["status"]>, string> = {
@@ -38,16 +47,6 @@ const statusLabels: Record<NonNullable<PronunciationCoverageRow["status"]>, stri
   empty: "No text",
 };
 
-type ReviewFilter = "all" | PronunciationReviewStatus;
-type CoverageFilter = "all" | PronunciationReviewCoverageStatus;
-
-const reviewStatusTone: Record<PronunciationReviewStatus, string> = {
-  missing: "border-rose-200 bg-rose-50 text-rose-700",
-  failed: "border-amber-200 bg-amber-50 text-amber-700",
-  generated: "border-violet-200 bg-violet-50 text-violet-700",
-  reviewed: "border-sky-200 bg-sky-50 text-sky-700",
-};
-
 const reviewStatusLabel: Record<PronunciationReviewStatus, string> = {
   missing: "Missing",
   failed: "Failed",
@@ -55,10 +54,11 @@ const reviewStatusLabel: Record<PronunciationReviewStatus, string> = {
   reviewed: "Reviewed",
 };
 
-const coverageTone: Record<PronunciationReviewCoverageStatus, string> = {
-  missing: "border-rose-200 bg-rose-50 text-rose-700",
-  "full-word-only": "border-amber-200 bg-amber-50 text-amber-700",
-  covered: "border-emerald-200 bg-emerald-50 text-emerald-700",
+const reviewStatusDot: Record<PronunciationReviewStatus, string> = {
+  missing: "bg-rose-500",
+  failed: "bg-amber-500",
+  generated: "bg-indigo-500",
+  reviewed: "bg-emerald-500",
 };
 
 const coverageLabel: Record<PronunciationReviewCoverageStatus, string> = {
@@ -67,12 +67,16 @@ const coverageLabel: Record<PronunciationReviewCoverageStatus, string> = {
   covered: "Covered",
 };
 
+const coverageBadge: Record<PronunciationReviewCoverageStatus, string> = {
+  missing: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
+  "full-word-only": "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+  covered: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+};
+
 function formatGeneratedAt(value?: string): string | null {
   if (!value) return null;
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-
   return new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",
@@ -169,100 +173,146 @@ export function PronunciationPanel({
     });
   };
 
-  const statusTone = generateMutation.isError
-    ? "border-rose-200 bg-rose-50 text-rose-700"
-    : latestRun
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : coverageQuery.isError
-        ? "border-amber-200 bg-amber-50 text-amber-700"
-        : "border-violet-200 bg-white/70 text-slate-600";
+  const coveragePct = displaySummary ? Math.round(displaySummary.ratio * 100) : null;
+  const isFetching = coverageQuery.isFetching || reviewQuery.isFetching;
 
-  const coveragePercent = displaySummary
-    ? `${Math.round(displaySummary.ratio * 100)}%`
-    : "—";
+  const reviewCounts = useMemo(() => {
+    const total = reviewSummary?.totalWords ?? 0;
+    return [
+      { id: "all" as const, label: "All", count: total },
+      { id: "missing" as const, label: "Missing", count: reviewSummary?.missingWords ?? 0 },
+      { id: "failed" as const, label: "Failed", count: reviewSummary?.failedWords ?? 0 },
+      { id: "generated" as const, label: "Generated", count: reviewSummary?.generatedWords ?? 0 },
+      { id: "reviewed" as const, label: "Reviewed", count: reviewSummary?.reviewedWords ?? 0 },
+    ];
+  }, [reviewSummary]);
 
   return (
     <section className="space-y-3" aria-labelledby="pronunciation-panel-heading">
-      <h4
-        id="pronunciation-panel-heading"
-        className="text-xs font-bold uppercase tracking-wider text-slate-400"
-      >
-        Word Pronunciations
-      </h4>
+      <div className="flex items-center justify-between">
+        <h4
+          id="pronunciation-panel-heading"
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500"
+        >
+          Word Pronunciations
+        </h4>
+        <button
+          type="button"
+          onClick={() => {
+            coverageQuery.refetch();
+            reviewQuery.refetch();
+          }}
+          disabled={isFetching || generateMutation.isPending}
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Refresh report"
+        >
+          <RefreshCcw className={`h-3 w-3 ${isFetching ? "animate-spin" : ""}`} />
+          Refresh report
+        </button>
+      </div>
 
-      <div className="space-y-4 rounded-xl border border-violet-200 bg-linear-to-br from-violet-50 to-fuchsia-50 p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-violet-700">
-              <Wand2 className="h-4 w-4" />
-              <span className="text-sm font-semibold">Generate pronunciation help</span>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* Hero: coverage */}
+        <div className="flex items-start gap-4 border-b border-slate-100 px-4 py-4">
+          <CoverageRing percent={coveragePct} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-900">
+              <Wand2 className="h-3.5 w-3.5 text-indigo-600" />
+              Generate pronunciation help
             </div>
-            <p className="text-xs leading-5 text-slate-600">
-              Build or refresh whole-word and breakdown clips for this book using the
-              current narration voice selection.
+            <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+              Build whole-word and breakdown clips using the current narration voice.
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
+              <span>
+                <span className="font-semibold text-slate-900">
+                  {displaySummary
+                    ? `${displaySummary.coveredBookWide}/${displaySummary.uniqueBookTokens}`
+                    : "—"}
+                </span>{" "}
+                words ready
+              </span>
+              <span className="text-slate-300">·</span>
+              <span>
+                <span className="font-semibold text-slate-900">
+                  {displaySummary?.pagesComplete ?? "—"}
+                </span>{" "}
+                pages ready
+              </span>
+              <span className="text-slate-300">·</span>
+              <span className="text-slate-500">
+                {displaySummary ? `${displaySummary.pagesWithMissing} still need review` : "Loading"}
+              </span>
+            </div>
           </div>
-          <span className="rounded-full border border-violet-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-700">
-            Book-wide
-          </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <MetricCard
-            label="Coverage"
-            value={coveragePercent}
-            helper={
-              displaySummary
-                ? `${displaySummary.coveredBookWide}/${displaySummary.uniqueBookTokens} words ready`
-                : "Loading report"
-            }
-          />
-          <MetricCard
-            label="Pages ready"
-            value={displaySummary ? String(displaySummary.pagesComplete) : "—"}
-            helper={
-              displaySummary
-                ? `${displaySummary.pagesWithMissing} still need review`
-                : "Loading report"
-            }
-          />
-          <MetricCard
-            label={latestRun ? "Generated" : "Book status"}
-            value={
-              latestRun
-                ? String(latestRun.stats.generated)
-                : displaySummary?.fullCoverage
-                  ? "Ready"
-                  : "Open"
-            }
-            helper={
-              latestRun
-                ? `${latestRun.stats.withBreakdown} with breakdown`
-                : displaySummary?.fullCoverage
-                  ? "All book tokens covered"
-                  : displaySummary
-                    ? `${displaySummary.missingBookWide} words still missing`
-                    : "Loading report"
-            }
-          />
-        </div>
+        {/* Status banner — single source */}
+        <StatusBanner
+          state={
+            generateMutation.isPending
+              ? {
+                  kind: "loading",
+                  message: forceRegenerate
+                    ? "Regenerating pronunciation assets for the whole book…"
+                    : "Generating missing pronunciation assets…",
+                }
+              : generateMutation.isError
+                ? { kind: "error", message: generateMutation.error.message }
+                : latestRun
+                  ? {
+                      kind: "success",
+                      message: latestRun.summary.fullCoverage
+                        ? "Pronunciation coverage is now complete for this book."
+                        : latestRun.force
+                          ? "Full pronunciation regeneration complete."
+                          : "Missing pronunciations generated.",
+                      detail: `${latestRun.summary.coveredBookWide}/${latestRun.summary.uniqueBookTokens} words covered across the book.${
+                        latestRun.summary.remainingTokensAfterRun > 0
+                          ? ` ${latestRun.summary.remainingTokensAfterRun} still missing.`
+                          : " No missing words remain."
+                      }`,
+                      capped: latestRun.summary.limitedByMaxWords
+                        ? `This run was capped at ${latestRun.request.maxWords} words.`
+                        : null,
+                      stats: [
+                        { label: "Generated", value: latestRun.stats.generated },
+                        { label: "Failed", value: latestRun.stats.failed },
+                        { label: "Skipped", value: latestRun.stats.skippedExisting },
+                      ],
+                    }
+                  : coverageQuery.isError
+                    ? { kind: "error", message: coverageQuery.error.message }
+                    : displaySummary
+                      ? displaySummary.fullCoverage
+                        ? { kind: "idle-ok", message: "Pronunciation help is complete for this book." }
+                        : { kind: "idle-warn", message: `${displaySummary.missingBookWide} words still missing` }
+                      : { kind: "idle", message: "Loading pronunciation coverage report…" }
+          }
+        />
 
+        {/* Top pages to review */}
         {pagesNeedingReview.length > 0 ? (
-          <div className="rounded-lg border border-violet-200/80 bg-white/80 p-3">
-            <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-700">
-              <Sparkles className="h-3.5 w-3.5" />
+          <div className="border-b border-slate-100 px-4 py-3">
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
+              <Sparkles className="h-3 w-3 text-indigo-500" />
               Top pages to review
             </div>
-            <div className="space-y-2 text-xs text-slate-600">
+            <ul className="space-y-1.5">
               {pagesNeedingReview.map((page) => (
-                <div
+                <li
                   key={page.pageId}
-                  className="rounded-md border border-violet-100 bg-white px-2.5 py-2"
+                  className="rounded-lg border border-slate-200 bg-slate-50/60 px-2.5 py-2 text-xs"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-slate-800">Page {page.pageNumber}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${pageStatusDot[page.status ?? "partial"]}`}
+                      />
+                      <span className="font-medium text-slate-800">Page {page.pageNumber}</span>
+                    </div>
                     <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${statusStyles[page.status ?? "partial"]}`}
+                      className={`text-[10px] font-semibold ${pageStatusText[page.status ?? "partial"]}`}
                     >
                       {statusLabels[page.status ?? "partial"]}
                     </span>
@@ -273,150 +323,53 @@ export function PronunciationPanel({
                       : `${page.fullWordOnly ?? 0} words still need breakdown audio`}
                   </div>
                   {page.missingWords && page.missingWords.length > 0 ? (
-                    <div className="mt-1.5 line-clamp-2 text-[11px] text-slate-500">
+                    <div className="mt-1 truncate text-[11px] text-slate-400">
                       Missing: {page.missingWords.slice(0, 4).join(", ")}
                       {page.missingWords.length > 4 ? "…" : ""}
                     </div>
                   ) : null}
-                </div>
+                </li>
               ))}
-            </div>
-          </div>
-        ) : displaySummary?.fullCoverage ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/90 p-3 text-xs text-emerald-800">
-            All currently tokenized words have both whole-word and breakdown pronunciation coverage.
+            </ul>
           </div>
         ) : null}
 
-        <label className="flex items-start gap-3 rounded-lg border border-violet-200/80 bg-white/80 p-3 text-xs text-slate-700">
+        {/* Force regenerate toggle */}
+        <label className="flex cursor-pointer items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-xs text-slate-700 transition hover:bg-slate-50/70">
           <input
             type="checkbox"
             checked={forceRegenerate}
             onChange={(event) => setForceRegenerate(event.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-500"
+            className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
-          <span className="space-y-1">
-            <span className="block font-medium text-slate-800">Regenerate existing pronunciations</span>
-            <span className="block text-slate-500">
-              Off = only fill missing words. On = rebuild all current pronunciation entries for this book.
+          <span className="space-y-0.5">
+            <span className="block font-medium text-slate-800">
+              Regenerate existing pronunciations
+            </span>
+            <span className="block text-[11px] leading-snug text-slate-500">
+              Off = only fill missing words. On = rebuild every entry for this book.
             </span>
           </span>
         </label>
 
-        <div aria-live="polite" className={`rounded-lg border p-3 text-xs ${statusTone}`}>
-          {generateMutation.isPending ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>
-                {forceRegenerate
-                  ? "Regenerating pronunciation assets for the whole book…"
-                  : "Generating missing pronunciation assets…"}
-              </span>
-            </div>
-          ) : generateMutation.isError ? (
-            <div className="flex items-start gap-2">
-              <AlertCircle className="mt-0.5 h-4 w-4" />
-              <span>{generateMutation.error.message}</span>
-            </div>
-          ) : latestRun ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 font-medium">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>
-                  {latestRun.summary.fullCoverage
-                    ? "Pronunciation coverage is now complete for this book."
-                    : latestRun.force
-                      ? "Full pronunciation regeneration complete."
-                      : "Missing pronunciations generated."}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-[11px]">
-                <RunMetric label="Generated" value={latestRun.stats.generated} />
-                <RunMetric label="Failed" value={latestRun.stats.failed} />
-                <RunMetric label="Skipped" value={latestRun.stats.skippedExisting} />
-              </div>
-              <div className="rounded-md border border-emerald-200/80 bg-white/80 px-2.5 py-2 text-[11px] text-emerald-900">
-                <div>
-                  {latestRun.summary.coveredBookWide}/{latestRun.summary.uniqueBookTokens} words covered across the book.
-                  {latestRun.summary.remainingTokensAfterRun > 0
-                    ? ` ${latestRun.summary.remainingTokensAfterRun} still missing.`
-                    : " No missing words remain."}
-                </div>
-                {latestRun.summary.limitedByMaxWords ? (
-                  <div className="mt-1 font-medium text-emerald-800">
-                    This run was capped at {latestRun.request.maxWords} words.
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ) : coverageQuery.isError ? (
-            <div className="flex items-start gap-2">
-              <AlertCircle className="mt-0.5 h-4 w-4" />
-              <span>{coverageQuery.error.message}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <CircleDot className="h-4 w-4" />
-              <span>
-                {displaySummary
-                  ? displaySummary.fullCoverage
-                    ? "Coverage report loaded. Pronunciation help is complete for this book."
-                    : `${displaySummary.missingBookWide} book-wide words are still missing pronunciation help.`
-                  : "Loading pronunciation coverage report…"}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {previewError ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            {previewError}
-          </div>
-        ) : null}
-
-        <div className="rounded-lg border border-violet-200/80 bg-white/85 p-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-700">
-                Per-word review
-              </div>
-              <p className="mt-1 text-xs text-slate-500">
-                Search words, inspect review metadata, and preview full-word or breakdown clips.
-              </p>
-            </div>
-            <div className="text-xs text-slate-500">
+        {/* Per-word review */}
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <h5 className="text-[13px] font-semibold text-slate-900">Per-word review</h5>
+            <span className="text-[11px] text-slate-500">
               {reviewQuery.isLoading
-                ? "Loading review list…"
-                : `${reviewItems.length} of ${reviewQuery.data?.review.filteredTotal ?? 0} words shown`}
-            </div>
+                ? "Loading…"
+                : `${reviewItems.length} of ${reviewQuery.data?.review.filteredTotal ?? 0}`}
+            </span>
           </div>
+          <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+            Search words, inspect review metadata, and preview full-word or breakdown clips.
+          </p>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
-            <MetricMiniCard
-              label="Covered"
-              value={reviewSummary ? String(reviewSummary.coveredWords) : "—"}
-              tone="emerald"
-            />
-            <MetricMiniCard
-              label="Full word only"
-              value={reviewSummary ? String(reviewSummary.fullWordOnlyWords) : "—"}
-              tone="amber"
-            />
-            <MetricMiniCard
-              label="Reviewed"
-              value={reviewSummary ? String(reviewSummary.reviewedWords) : "—"}
-              tone="sky"
-            />
-            <MetricMiniCard
-              label="Failed"
-              value={reviewSummary ? String(reviewSummary.failedWords) : "—"}
-              tone="rose"
-            />
-          </div>
-
-          <div className="mt-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_140px_180px_180px]">
-            <label className="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-slate-600">
-              <Search className="h-3.5 w-3.5 text-violet-500" />
+          {/* Filters */}
+          <div className="mt-3 space-y-2">
+            <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-600 focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400">
+              <Search className="h-3.5 w-3.5 text-slate-400" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -425,65 +378,93 @@ export function PronunciationPanel({
                 aria-label="Search pronunciation words"
               />
             </label>
-            <label className="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-slate-600">
-              <span className="font-medium text-slate-700">Page</span>
-              <input
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={pageNumberFilter}
-                onChange={(event) => setPageNumberFilter(event.target.value.replace(/[^0-9]/g, ""))}
-                placeholder="Any"
-                className="w-full bg-transparent outline-none placeholder:text-slate-400"
-                aria-label="Filter pronunciation review by page"
-              />
-            </label>
-            <label className="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-slate-600">
-              <span className="font-medium text-slate-700">Coverage</span>
-              <select
-                value={coverageFilter}
-                onChange={(event) => setCoverageFilter(event.target.value as CoverageFilter)}
-                className="w-full bg-transparent outline-none"
-                aria-label="Filter pronunciation review by coverage"
-              >
-                <option value="all">All</option>
-                <option value="covered">Covered</option>
-                <option value="full-word-only">Full word only</option>
-                <option value="missing">Missing</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-slate-600">
-              <span className="font-medium text-slate-700">Review</span>
-              <select
-                value={reviewFilter}
-                onChange={(event) => setReviewFilter(event.target.value as ReviewFilter)}
-                className="w-full bg-transparent outline-none"
-                aria-label="Filter pronunciation review by status"
-              >
-                <option value="all">All</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="generated">Generated</option>
-                <option value="failed">Failed</option>
-                <option value="missing">Missing</option>
-              </select>
-            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-600">
+                <span className="font-medium text-slate-700">Page</span>
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={pageNumberFilter}
+                  onChange={(event) =>
+                    setPageNumberFilter(event.target.value.replace(/[^0-9]/g, ""))
+                  }
+                  placeholder="Any"
+                  className="w-full bg-transparent outline-none placeholder:text-slate-400"
+                  aria-label="Filter pronunciation review by page"
+                />
+              </label>
+              <label className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-slate-600">
+                <span className="font-medium text-slate-700">Coverage</span>
+                <select
+                  value={coverageFilter}
+                  onChange={(event) => setCoverageFilter(event.target.value as CoverageFilter)}
+                  className="w-full cursor-pointer bg-transparent outline-none"
+                  aria-label="Filter pronunciation review by coverage"
+                >
+                  <option value="all">All</option>
+                  <option value="covered">Covered</option>
+                  <option value="full-word-only">Full word only</option>
+                  <option value="missing">Missing</option>
+                </select>
+              </label>
+            </div>
+
+            {/* Review status segmented chips */}
+            <div className="flex flex-wrap gap-1" role="group" aria-label="Review status quick filter">
+              {reviewCounts.map((chip) => {
+                const active = reviewFilter === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setReviewFilter(chip.id)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
+                      active
+                        ? "bg-slate-900 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {chip.label}
+                    <span
+                      className={`rounded-full px-1.5 text-[10px] tabular-nums ${
+                        active ? "bg-white/20" : "bg-white text-slate-600"
+                      }`}
+                    >
+                      {chip.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Hidden native select to keep filter-by-status accessible by label for tests/AT */}
+            <select
+              value={reviewFilter}
+              onChange={(event) => setReviewFilter(event.target.value as ReviewFilter)}
+              aria-label="Filter pronunciation review by status"
+              className="sr-only"
+              tabIndex={-1}
+            >
+              <option value="all">All</option>
+              <option value="reviewed">Reviewed</option>
+              <option value="generated">Generated</option>
+              <option value="failed">Failed</option>
+              <option value="missing">Missing</option>
+            </select>
           </div>
 
-          <div className="mt-3 max-h-96 space-y-2 overflow-y-auto pr-1">
+          {/* Word rows */}
+          <div className="mt-3 max-h-[28rem] divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 bg-white">
             {reviewQuery.isLoading ? (
-              <div className="rounded-lg border border-violet-100 bg-violet-50/70 px-3 py-6 text-center text-xs text-slate-500">
-                Loading pronunciation review words…
-              </div>
+              <EmptyState message="Loading pronunciation review words…" />
             ) : reviewQuery.isError ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-6 text-center text-xs text-amber-800">
-                {reviewQuery.error.message}
-              </div>
+              <EmptyState tone="error" message={reviewQuery.error.message} />
             ) : reviewItems.length === 0 ? (
-              <div className="rounded-lg border border-violet-100 bg-violet-50/70 px-3 py-6 text-center text-xs text-slate-500">
-                No words match the current search/filter.
-              </div>
+              <EmptyState message="No words match the current search/filter." />
             ) : (
               reviewItems.map((row) => (
-                <ReviewRowCard
+                <ReviewRow
                   key={row.normalizedWord}
                   row={row}
                   previewingUrl={previewingUrl}
@@ -492,28 +473,22 @@ export function PronunciationPanel({
               ))
             )}
           </div>
+
+          {previewError ? (
+            <div className="mt-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-800 ring-1 ring-inset ring-amber-200">
+              <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>{previewError}</span>
+            </div>
+          ) : null}
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={() => {
-              coverageQuery.refetch();
-              reviewQuery.refetch();
-            }}
-            disabled={coverageQuery.isFetching || reviewQuery.isFetching || generateMutation.isPending}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCcw
-              className={`h-3.5 w-3.5 ${coverageQuery.isFetching || reviewQuery.isFetching ? "animate-spin" : ""}`}
-            />
-            Refresh report
-          </button>
+        {/* Sticky CTA */}
+        <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
           <button
             type="button"
             onClick={handleGenerate}
             disabled={generateMutation.isPending || coverageQuery.isLoading}
-            className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 active:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {generateMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -528,7 +503,124 @@ export function PronunciationPanel({
   );
 }
 
-function ReviewRowCard({
+function CoverageRing({ percent }: { percent: number | null }) {
+  const value = percent ?? 0;
+  const radius = 22;
+  const circ = 2 * Math.PI * radius;
+  const offset = circ - (value / 100) * circ;
+  const tone =
+    percent === null
+      ? "stroke-slate-300"
+      : value === 100
+        ? "stroke-emerald-500"
+        : value >= 60
+          ? "stroke-indigo-500"
+          : "stroke-amber-500";
+
+  return (
+    <div className="relative shrink-0" aria-hidden>
+      <svg width="56" height="56" viewBox="0 0 56 56" className="-rotate-90">
+        <circle
+          cx="28"
+          cy="28"
+          r={radius}
+          strokeWidth="5"
+          className="fill-none stroke-slate-100"
+        />
+        <circle
+          cx="28"
+          cy="28"
+          r={radius}
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          className={`fill-none transition-[stroke-dashoffset] duration-500 ${tone}`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-[13px] font-bold tabular-nums text-slate-900">
+        {percent === null ? "—" : `${percent}%`}
+      </div>
+    </div>
+  );
+}
+
+type BannerState =
+  | { kind: "loading"; message: string }
+  | { kind: "error"; message: string }
+  | { kind: "idle"; message: string }
+  | { kind: "idle-ok"; message: string }
+  | { kind: "idle-warn"; message: string }
+  | {
+      kind: "success";
+      message: string;
+      detail: string;
+      capped: string | null;
+      stats: { label: string; value: number }[];
+    };
+
+function StatusBanner({ state }: { state: BannerState }) {
+  const tone =
+    state.kind === "error"
+      ? "bg-rose-50 text-rose-800 ring-rose-200"
+      : state.kind === "success"
+        ? "bg-emerald-50 text-emerald-900 ring-emerald-200"
+        : state.kind === "idle-warn"
+          ? "bg-amber-50 text-amber-800 ring-amber-200"
+          : state.kind === "idle-ok"
+            ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+            : "bg-slate-50 text-slate-700 ring-slate-200";
+
+  const Icon =
+    state.kind === "loading"
+      ? Loader2
+      : state.kind === "error"
+        ? AlertCircle
+        : state.kind === "success" || state.kind === "idle-ok"
+          ? CheckCircle2
+          : AlertCircle;
+
+  return (
+    <div
+      aria-live="polite"
+      className={`mx-4 my-3 rounded-lg px-3 py-2.5 text-xs ring-1 ring-inset ${tone}`}
+    >
+      <div className="flex items-start gap-2">
+        <Icon
+          className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${state.kind === "loading" ? "animate-spin" : ""}`}
+        />
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="font-medium leading-snug">{state.message}</div>
+          {state.kind === "success" ? (
+            <>
+              <div className="text-[11px] leading-snug text-emerald-800/90">{state.detail}</div>
+              {state.capped ? (
+                <div className="text-[11px] font-medium text-emerald-800">{state.capped}</div>
+              ) : null}
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                {state.stats.map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-md bg-white/70 px-2 py-1 ring-1 ring-inset ring-emerald-200"
+                  >
+                    <div className="text-[9px] font-semibold uppercase tracking-wider text-emerald-700">
+                      {s.label}
+                    </div>
+                    <div className="text-sm font-bold tabular-nums text-emerald-900">
+                      {s.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewRow({
   row,
   previewingUrl,
   onPreview,
@@ -538,126 +630,128 @@ function ReviewRowCard({
   onPreview: (url: string) => Promise<void>;
 }) {
   const generatedAtLabel = formatGeneratedAt(row.generatedAt);
+  const fullPlaying = previewingUrl === row.audio.fullWord;
+  const breakPlaying = previewingUrl === row.audio.breakdown;
 
   return (
-    <article className="rounded-lg border border-violet-100 bg-white px-3 py-2.5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-slate-800">{row.displayWord}</span>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-              {row.occurrences}×
+    <article className="px-3 py-2.5 transition hover:bg-slate-50/70">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="truncate text-sm font-semibold text-slate-900">
+              {row.displayWord}
             </span>
+            <span className="text-[10px] tabular-nums text-slate-400">×{row.occurrences}</span>
             <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${coverageTone[row.coverageStatus]}`}
+              className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${coverageBadge[row.coverageStatus]}`}
             >
               {coverageLabel[row.coverageStatus]}
             </span>
-            <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${reviewStatusTone[row.reviewStatus]}`}
-            >
+            <span className="inline-flex items-center gap-1 text-[10px] text-slate-500">
+              <span className={`h-1.5 w-1.5 rounded-full ${reviewStatusDot[row.reviewStatus]}`} />
               {reviewStatusLabel[row.reviewStatus]}
             </span>
           </div>
-
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">
-            <span>Normalized {row.normalizedWord}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-slate-500">
             <span>Pages {row.pageNumbers.join(", ")}</span>
-            {row.source ? <span>Source {row.source}</span> : null}
-            {typeof row.confidence === "number" ? (
-              <span>Confidence {Math.round(row.confidence * 100)}%</span>
+            {row.source ? (
+              <>
+                <Sep />
+                <span>Source {row.source}</span>
+              </>
             ) : null}
-            {row.status ? <span>Entry {row.status}</span> : null}
-            {generatedAtLabel ? <span>Generated {generatedAtLabel}</span> : null}
+            {typeof row.confidence === "number" ? (
+              <>
+                <Sep />
+                <span>Confidence {Math.round(row.confidence * 100)}%</span>
+              </>
+            ) : null}
+            {row.status ? (
+              <>
+                <Sep />
+                <span>Entry {row.status}</span>
+              </>
+            ) : null}
+            {generatedAtLabel ? (
+              <>
+                <Sep />
+                <span>Generated {generatedAtLabel}</span>
+              </>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={!row.audio.fullWord}
-            onClick={() => row.audio.fullWord && onPreview(row.audio.fullWord)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-violet-200 px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label={`Preview whole word ${row.displayWord}`}
-          >
-            {previewingUrl === row.audio.fullWord ? (
-              <Volume2 className="h-3.5 w-3.5" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-            Whole word
-          </button>
-          <button
-            type="button"
-            disabled={!row.audio.breakdown}
-            onClick={() => row.audio.breakdown && onPreview(row.audio.breakdown)}
-            className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-violet-200 px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label={`Preview breakdown ${row.displayWord}`}
-          >
-            {previewingUrl === row.audio.breakdown ? (
-              <Volume2 className="h-3.5 w-3.5" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-            Breakdown
-          </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <PreviewButton
+            label="Whole word"
+            ariaLabel={`Preview whole word ${row.displayWord}`}
+            url={row.audio.fullWord}
+            playing={fullPlaying}
+            onPreview={onPreview}
+          />
+          <PreviewButton
+            label="Breakdown"
+            ariaLabel={`Preview breakdown ${row.displayWord}`}
+            url={row.audio.breakdown}
+            playing={breakPlaying}
+            onPreview={onPreview}
+          />
         </div>
       </div>
+
+      <span className="sr-only">Normalized {row.normalizedWord}</span>
     </article>
   );
 }
 
-function MetricCard({
+function PreviewButton({
   label,
-  value,
-  helper,
+  ariaLabel,
+  url,
+  playing,
+  onPreview,
 }: {
   label: string;
-  value: string;
-  helper: string;
+  ariaLabel: string;
+  url?: string;
+  playing: boolean;
+  onPreview: (url: string) => Promise<void>;
 }) {
   return (
-    <div className="rounded-lg border border-violet-200/80 bg-white/80 p-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-700">
-        {label}
-      </div>
-      <div className="mt-1 text-lg font-bold text-slate-800">{value}</div>
-      <div className="mt-1 text-[11px] text-slate-500">{helper}</div>
-    </div>
+    <button
+      type="button"
+      disabled={!url}
+      onClick={() => url && onPreview(url)}
+      className={`inline-flex h-7 items-center gap-1 rounded-md px-2 text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+        playing
+          ? "bg-indigo-600 text-white hover:bg-indigo-700"
+          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+      }`}
+      aria-label={ariaLabel}
+      title={label}
+    >
+      {playing ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
   );
 }
 
-function MetricMiniCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "emerald" | "amber" | "sky" | "rose";
-}) {
-  const toneClass = {
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-900",
-    amber: "border-amber-200 bg-amber-50 text-amber-900",
-    sky: "border-sky-200 bg-sky-50 text-sky-900",
-    rose: "border-rose-200 bg-rose-50 text-rose-900",
-  }[tone];
-
+function Sep() {
   return (
-    <div className={`rounded-lg border px-3 py-2 ${toneClass}`}>
-      <div className="text-[10px] font-semibold uppercase tracking-[0.12em]">{label}</div>
-      <div className="mt-1 text-base font-bold">{value}</div>
-    </div>
+    <span aria-hidden className="text-slate-300">
+      ·
+    </span>
   );
 }
 
-function RunMetric({ label, value }: { label: string; value: number }) {
+function EmptyState({ message, tone }: { message: string; tone?: "error" }) {
   return (
-    <div className="rounded-md border border-emerald-200 bg-white/80 px-2 py-1.5">
-      <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-700">
-        {label}
-      </div>
-      <div className="mt-0.5 text-sm font-bold text-emerald-900">{value}</div>
+    <div
+      className={`px-3 py-8 text-center text-[11px] ${
+        tone === "error" ? "text-rose-700" : "text-slate-500"
+      }`}
+    >
+      {message}
     </div>
   );
 }

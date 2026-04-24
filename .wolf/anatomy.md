@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-23T23:37:17.969Z
-> Files: 584 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T23:19:05.421Z
+> Files: 587 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -723,6 +723,14 @@
 - `HomeClient.tsx` — MorphogenesisHero — renders form (~5295 tok)
 - `page.tsx` — metadata (~1161 tok)
 
+## src/app/admin/(dashboard)/
+
+- `layout.tsx` — dynamic (~2615 tok)
+
+## src/app/admin/login/
+
+- `page.tsx` — dynamic — renders form (~2393 tok)
+
 ## src/app/api/admin/books/[id]/pronunciations/
 
 - `route.test.ts` — Vitest coverage for editor pronunciation review data aggregation, filter validation, and search/pagination. (~2200 tok)
@@ -795,6 +803,10 @@
 - `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
 - `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
+
+## src/components/editor/
+
+- `PronunciationPanel.tsx` — pageStatusDot (~8274 tok)
 
 ## src/hooks/
 
