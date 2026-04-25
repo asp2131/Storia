@@ -23,8 +23,11 @@ export default function AdminLayout({
   const [isPendingCreation, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!isPending && (!session || session.user.role !== "admin")) {
-      router.push("/");
+    if (isPending) return;
+    if (!session) {
+      router.push("/admin/login");
+    } else if (session.user.role !== "admin") {
+      router.push("/admin/login?error=forbidden");
     }
   }, [session, isPending, router]);
 

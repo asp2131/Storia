@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { WordPronunciationEntry } from "@/lib/pronunciation";
 import type { TextOverlayConfig } from "@/types/text-overlay";
 
 // Types
@@ -34,6 +35,126 @@ export type OverlayNarrationTrack = {
   wordTimestamps: WordTimestamp[] | null;
 };
 
+export type PronunciationCoverageStatus =
+  | "empty"
+  | "missing"
+  | "partial"
+  | "complete";
+
+export type PronunciationReviewCoverageStatus =
+  | "missing"
+  | "full-word-only"
+  | "covered";
+
+export type PronunciationReviewStatus =
+  | "missing"
+  | "generated"
+  | "failed"
+  | "reviewed";
+
+export type PronunciationCoverageRow = {
+  pageId: string;
+  pageNumber: number;
+  total: number;
+  covered: number;
+  fullWordOnly?: number;
+  missing: number;
+  missingWords?: string[];
+  status?: PronunciationCoverageStatus;
+};
+
+export type PronunciationReviewRow = {
+  normalizedWord: string;
+  displayWord: string;
+  occurrences: number;
+  pageIds: string[];
+  pageNumbers: number[];
+  coverageStatus: PronunciationReviewCoverageStatus;
+  reviewStatus: PronunciationReviewStatus;
+  humanReviewed: boolean;
+  audio: {
+    fullWord?: string;
+    breakdown?: string;
+  };
+  source?: "override" | "lexicon" | "tts";
+  confidence?: number;
+  generatedAt?: string;
+  status?: "generated" | "failed" | "reviewed";
+};
+
+export type PronunciationCoverageSummary = {
+  uniqueBookTokens: number;
+  coveredBookWide: number;
+  missingBookWide: number;
+  ratio: number;
+  pagesTotal: number;
+  pagesComplete: number;
+  pagesPartial: number;
+  pagesEmpty: number;
+  pagesWithMissing: number;
+  fullCoverage: boolean;
+};
+
+export type PronunciationCoverageSnapshot = {
+  uniqueBookTokens: number;
+  coveredBookWide: number;
+  ratio: number;
+  perPage: PronunciationCoverageRow[];
+};
+
+export type PronunciationCoverageReport = {
+  bookId: string;
+  coverage: PronunciationCoverageSnapshot;
+  summary: PronunciationCoverageSummary;
+};
+
+export type PronunciationGenerationResult = {
+  bookId: string;
+  voice: { id: string; name: string };
+  request: {
+    force: boolean;
+    maxWords: number | null;
+  };
+  stats: {
+    generated: number;
+    failed: number;
+    withBreakdown: number;
+    skippedExisting: number;
+  };
+  coverage: PronunciationCoverageSnapshot;
+  summary: PronunciationCoverageSummary & {
+    requestedTokens: number;
+    remainingTokensAfterRun: number;
+    limitedByMaxWords: boolean;
+  };
+  force: boolean;
+};
+
+export type PronunciationReviewResponse = {
+  bookId: string;
+  filters: {
+    search: string | null;
+    pageNumber: number | null;
+    coverageStatus: PronunciationReviewCoverageStatus | null;
+    reviewStatus: PronunciationReviewStatus | null;
+    limit: number | null;
+    offset: number;
+  };
+  review: {
+    items: PronunciationReviewRow[];
+    filteredTotal: number;
+    summary: {
+      totalWords: number;
+      coveredWords: number;
+      fullWordOnlyWords: number;
+      missingWords: number;
+      generatedWords: number;
+      reviewedWords: number;
+      failedWords: number;
+    };
+  };
+};
+
 export type PageData = {
   id: string;
   pageNumber: number;
@@ -41,7 +162,7 @@ export type PageData = {
   imageUrl: string | null;
   narrationUrl: string | null;
   narrationTimestamps: WordTimestamp[] | null;
-  wordPronunciations: Record<string, string> | null;
+  wordPronunciations: Record<string, WordPronunciationEntry> | null;
   compositedImageUrl: string | null;
   overlay: TextOverlayConfig | null;
   assignments?: AudioAssignment[];
@@ -54,6 +175,8 @@ export type BookData = {
   author: string | null;
   coverUrl: string | null;
   description: string | null;
+  hasPronunciations?: boolean;
+  pronunciationManifestUrl?: string | null;
 };
 
 // ============ EDITOR HOOKS ============
@@ -114,6 +237,109 @@ export function useAudioAssignments(bookId: string | null, pageNumber: number) {
 /**
  * Generate narration for a page
  */
+export function usePronunciationCoverage(bookId: string | null) {
+  return useQuery({
+    queryKey: ["pronunciation-coverage", bookId],
+    queryFn: async () => {
+      if (!bookId) throw new Error("No book ID");
+      const response = await fetch(`/api/admin/books/${bookId}/pronunciations/generate`);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to load pronunciation coverage");
+      }
+      return response.json() as Promise<PronunciationCoverageReport>;
+    },
+    enabled: !!bookId,
+  });
+}
+
+export function useGenerateBookPronunciations(bookId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      voice,
+      voiceSettings,
+      force = false,
+      maxWords,
+    }: {
+      voice?: string;
+      voiceSettings?: VoiceSettings;
+      force?: boolean;
+      maxWords?: number;
+    }) => {
+      if (!bookId) throw new Error("No book ID");
+
+      const response = await fetch(`/api/admin/books/${bookId}/pronunciations/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voice, voiceSettings, force, maxWords }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to generate pronunciations");
+      }
+
+      return response.json() as Promise<PronunciationGenerationResult>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pronunciation-coverage", bookId] });
+      queryClient.invalidateQueries({ queryKey: ["pronunciation-review", bookId] });
+      queryClient.invalidateQueries({ queryKey: ["editor-pages", bookId] });
+      queryClient.invalidateQueries({ queryKey: ["reader-data", bookId] });
+    },
+  });
+}
+
+export function usePronunciationReview(
+  bookId: string | null,
+  filters?: {
+    search?: string;
+    pageNumber?: number;
+    coverageStatus?: PronunciationReviewCoverageStatus;
+    reviewStatus?: PronunciationReviewStatus;
+    limit?: number;
+    offset?: number;
+  }
+) {
+  return useQuery({
+    queryKey: ["pronunciation-review", bookId, filters ?? {}],
+    queryFn: async () => {
+      if (!bookId) throw new Error("No book ID");
+
+      const params = new URLSearchParams();
+      if (filters?.search) params.set("search", filters.search);
+      if (typeof filters?.pageNumber === "number") {
+        params.set("pageNumber", String(filters.pageNumber));
+      }
+      if (filters?.coverageStatus) {
+        params.set("coverageStatus", filters.coverageStatus);
+      }
+      if (filters?.reviewStatus) {
+        params.set("reviewStatus", filters.reviewStatus);
+      }
+      if (typeof filters?.limit === "number") {
+        params.set("limit", String(filters.limit));
+      }
+      if (typeof filters?.offset === "number") {
+        params.set("offset", String(filters.offset));
+      }
+
+      const query = params.toString();
+      const response = await fetch(
+        `/api/admin/books/${bookId}/pronunciations${query ? `?${query}` : ""}`
+      );
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to load pronunciation review data");
+      }
+      return response.json() as Promise<PronunciationReviewResponse>;
+    },
+    enabled: !!bookId,
+  });
+}
+
 export function useGenerateNarration(bookId: string | null) {
   const queryClient = useQueryClient();
 
@@ -148,6 +374,7 @@ export function useGenerateNarration(bookId: string | null) {
         wordTimestamps: WordTimestamp[];
         alignmentQuality?: number;
         timestampsUrl?: string;
+        wordPronunciations?: Record<string, WordPronunciationEntry>;
       }>;
     },
     onSuccess: (data, variables) => {

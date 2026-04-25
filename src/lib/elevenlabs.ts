@@ -141,8 +141,28 @@ export async function synthesizeSpeech(params: {
   speed?: number;
   style?: number;
   useSpeakerBoost?: boolean;
+  modelId?: string;
 }): Promise<{ audioBuffer: Buffer; contentType: string }> {
   const apiKey = ensureApiKey();
+  const modelId = params.modelId ?? "eleven_turbo_v2_5";
+  const isV3 = modelId === "eleven_v3";
+
+  // eleven_v3 ignores speed and uses a simpler stability semantic; keep
+  // turbo/v2 settings unchanged for non-v3 callers.
+  const voiceSettings = isV3
+    ? {
+        stability: 0.5,
+        similarity_boost: 0.75,
+        use_speaker_boost: params.useSpeakerBoost ?? true,
+      }
+    : {
+        stability: 0.5,
+        similarity_boost: 0.75,
+        style: params.style ?? 0.76,
+        speed: params.speed ?? 1,
+        use_speaker_boost: params.useSpeakerBoost ?? true,
+      };
+
   const response = await fetch(`${ELEVENLABS_BASE_URL}/text-to-speech/${params.voiceId}`, {
     method: "POST",
     headers: {
@@ -152,14 +172,8 @@ export async function synthesizeSpeech(params: {
     },
     body: JSON.stringify({
       text: params.text,
-      model_id: "eleven_turbo_v2_5",
-      voice_settings: {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: params.style ?? 0.76,
-        speed: params.speed ?? 1,
-        use_speaker_boost: params.useSpeakerBoost ?? true,
-      },
+      model_id: modelId,
+      voice_settings: voiceSettings,
     }),
   });
 

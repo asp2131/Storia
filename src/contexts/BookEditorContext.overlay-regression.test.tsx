@@ -6,6 +6,7 @@ import {
   destroyOverlayEditorStore,
   getOverlayEditorStore,
 } from "@/stores/overlayEditorRegistry";
+import type { TextElement } from "@/types/text-overlay";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -75,7 +76,7 @@ function CapturePageManager({ onUpdate }: ProbeProps) {
   return null;
 }
 
-function makeElement(id: string) {
+function makeElement(id: string): TextElement {
   return {
     id,
     text: id,

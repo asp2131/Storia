@@ -554,6 +554,1313 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-07T15:55:49.300Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-04-21T17:02:50.540761+00:00",
+      "error_message": "Shell command failed while inspecting package.json due to inline quoting syntax error",
+      "file": "package.json",
+      "root_cause": "Ad-hoc node -e command used shell-interpolated template syntax that bash parsed before Node executed it",
+      "fix": "Re-ran package inspection using a Python JSON reader instead of inline shell template literals",
+      "tags": [
+        "tooling",
+        "shell",
+        "qa-session",
+        "command-error"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-21T17:02:50.540944+00:00"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-04-21T17:03:08.095200+00:00",
+      "error_message": "TypeScript compile error in src/components/StoriaCalmLanding.tsx: SplitType option 'lines, chars' is not assignable to TypesList; expected 'lines,chars'",
+      "file": "src/components/StoriaCalmLanding.tsx",
+      "root_cause": "SplitType types option includes a space after the comma, which does not match the package type union",
+      "fix": "Not fixed in QA pass; frontend should change the option string to a valid TypesList value such as \"lines,chars\" and rerun typecheck",
+      "tags": [
+        "typescript",
+        "split-type",
+        "landing-page",
+        "build-break"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-21T17:03:08.095400+00:00"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-04-21T17:04:21.054501+00:00",
+      "error_message": "TypeScript error in landing page: SplitType `types` value \"lines, chars\" is invalid",
+      "file": "src/components/StoriaCalmLanding.tsx",
+      "root_cause": "SplitType TypeScript types expect a comma-separated list without spaces (e.g. \"lines,chars\"), but the implementation used \"lines, chars\" which fails type-checking.",
+      "fix": "Changed SplitType config from \"lines, chars\" to \"lines,chars\" in StoriaCalmLanding.tsx.",
+      "tags": [
+        "typescript",
+        "gsap",
+        "split-type",
+        "landing-page"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-21T17:04:21.054688+00:00"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-04-22T14:00:00Z",
+      "error_message": "Shell command failed while searching editor files due to unquoted parentheses in path src/app/admin/(editor)/books/[id]/edit",
+      "file": "src/app/admin/(editor)/books/[id]/edit/page.tsx",
+      "root_cause": "Shell path containing parentheses was passed to bash without quoting, so the shell parsed it as syntax instead of an rg path argument.",
+      "fix": "Re-ran the search with the path wrapped in single quotes.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "path-quoting"
+      ],
+      "related_bugs": [
+        "bug-034"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T14:00:00Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-04-22T22:52:34.655693+00:00",
+      "error_message": "functions.squad_modify cancel failed with error: activeScheduler is not defined",
+      "file": "functions.squad_modify",
+      "root_cause": "Squad tool cancel action errored internally instead of terminating the running squad.",
+      "fix": "Worked around by not relying on squad cancellation for this task and completing the spec update directly.",
+      "tags": [
+        "tooling",
+        "squad",
+        "cancel",
+        "agent-team"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T22:52:34.655835+00:00"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-04-22T18:05:00Z",
+      "error_message": "QA verification shell command ended with unexpected EOF while looking for matching quote",
+      "file": "QA verification command for specs/web-reader-pronunciation-functional-requirements.md",
+      "root_cause": "Mismatched shell quoting around sed range inside a multi-line bash command.",
+      "fix": "Re-ran verification with corrected quoting and simpler command separation.",
+      "tags": [
+        "qa",
+        "verification",
+        "shell",
+        "quoting"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T18:05:00Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-04-22T18:06:00Z",
+      "error_message": "Python one-liner for memory append failed with unterminated string literal",
+      "file": ".wolf/memory.md",
+      "root_cause": "Used a single-quoted Python string containing a raw newline in the heredoc command.",
+      "fix": "Re-ran the append using a triple-quoted string literal.",
+      "tags": [
+        "qa",
+        "verification",
+        "python",
+        "memory-log"
+      ],
+      "related_bugs": [
+        "bug-039"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T18:06:00Z"
+    },
+    {
+      "id": "bug-041",
+      "timestamp": "2026-04-22T23:08:13.511758+00:00",
+      "error_message": "Vitest failures while adding Phase 1 pronunciation interaction tests: ResizeObserver undefined, fake-timer image preload stalls, and inaccessible query assumptions for hidden secondary controls.",
+      "file": "src/components/IntegratedIllustration.test.tsx",
+      "root_cause": "The component depends on browser-only Image/ResizeObserver APIs and the new accessible alternate action uses a hidden secondary control, so the initial tests lacked environment stubs and used mismatched queries/timer sequencing.",
+      "fix": "Stubbed Image and ResizeObserver in tests, added cleanup between tests, adjusted queries for accessible labels/hidden controls, and sequenced fake timers only around long-press timing after initial render.",
+      "tags": [
+        "tests",
+        "vitest",
+        "resizeobserver",
+        "fake-timers",
+        "accessibility",
+        "long-press"
+      ],
+      "related_bugs": [
+        "bug-004"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T23:08:13.511758+00:00"
+    },
+    {
+      "id": "bug-042",
+      "timestamp": "2026-04-22T23:09:26.178084+00:00",
+      "error_message": "Targeted narration-aware pronunciation hook test does not observe auto-resume completion callback after breakdown playback",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Current breakdown playback test never sees an active source onended handler, suggesting the narration auto-resume completion path is not reliably established or is being cleared before playback completion is observed.",
+      "fix": "Fixed 2026-04-23: Rewrote useWordPronunciation with formal PlaybackState machine and playSingleBuffer primitive that installs onended correctly for every play path, including the 2-clip breakdown chain (step1 onended → gap → step2 onended → maybeResumeNarration). All narration-resume tests now pass with stable wordPronunciations references.",
+      "tags": [
+        "pronunciation",
+        "reader",
+        "narration",
+        "tests",
+        "auto-resume",
+        "state-machine"
+      ],
+      "related_bugs": [
+        "bug-043"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:51:00Z"
+    },
+    {
+      "id": "bug-046",
+      "timestamp": "2026-04-23T19:52:00Z",
+      "error_message": "WR-5.3 breakdown 2-clip sequence missing: pronunciation hook only played single resolved URL, not breakdown→fullWord chain",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "The pronounceWord function used resolvePronunciationUrl to get a single URL and played one AudioBuffer. The spec (WR-5.3) requires breakdown mode to play breakdown clip THEN full-word clip sequentially with a short inter-clip gap.",
+      "fix": "Added playBreakdownSequence and playSingleBuffer helpers. pronounceWord now detects entries with a breakdown URL and dispatches to the 2-clip sequence. The gap timer is BREAKDOWN_INTER_CLIP_GAP_MS=150ms. requestId guards inside each step ensure cancel-and-replace supersedes any in-flight step.",
+      "tags": [
+        "pronunciation",
+        "narration",
+        "state-machine",
+        "breakdown-sequence",
+        "wr-5-3"
+      ],
+      "related_bugs": [
+        "bug-042"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:52:00Z"
+    },
+    {
+      "id": "bug-043",
+      "timestamp": "2026-04-22T23:12:54Z",
+      "error_message": "Pronunciation hook tests failed because per-render inline wordPronunciations objects retriggered the reset effect and cleared active playback callbacks",
+      "file": "src/hooks/useWordPronunciation.test.tsx",
+      "root_cause": "renderHook supplied a fresh { hello: '/hello.mp3' } object on every render; useWordPronunciation treats wordPronunciations as an effect dependency and stops active playback whenever that reference changes, nulling source.onended during the test.",
+      "fix": "Reused a stable wordPronunciations map inside each test case and waited for mount-side preload effects before asserting playback lifecycle behavior.",
+      "tags": [
+        "tests",
+        "vitest",
+        "react",
+        "stable-reference",
+        "pronunciation",
+        "narration"
+      ],
+      "related_bugs": [
+        "bug-004",
+        "bug-042"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T23:12:54Z"
+    },
+    {
+      "id": "bug-044",
+      "timestamp": "2026-04-22T23:55:44.535822+00:00",
+      "error_message": "ESLint failed on src/hooks/useWordPronunciation.test.tsx with prefer-const errors after Claude pronunciation test changes.",
+      "file": "src/hooks/useWordPronunciation.test.tsx",
+      "root_cause": "New hook tests introduced mutable let declarations for values never reassigned in those specific cases.",
+      "fix": "Changed the non-reassigned declarations to const and reran targeted ESLint successfully.",
+      "tags": [
+        "lint",
+        "tests",
+        "prefer-const",
+        "pronunciation"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T23:55:44.535822+00:00"
+    },
+    {
+      "id": "bug-045",
+      "timestamp": "2026-04-23T00:46:01.871Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/components/IntegratedIllustration.test.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T00:46:01.871Z"
+    },
+    {
+      "id": "bug-046",
+      "timestamp": "2026-04-23T00:49:36.950Z",
+      "error_message": "Missing guard clause",
+      "file": ".claude/worktrees/agent-a440932b/src/app/api/books/route.ts",
+      "root_cause": "No early return/throw for edge case: !p.word_pronunciations",
+      "fix": "Added guard clause: if (!p.word_pronunciations)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T00:49:36.950Z"
+    },
+    {
+      "id": "bug-047",
+      "timestamp": "2026-04-23T00:50:58.166Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/books/[id]/reader/page.tsx",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 52→97 lines (5 removed) | Also: const interactionTs = Date.now();; onInteractionStart: interactionTs,",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-23T00:51:15.980Z"
+    },
+    {
+      "id": "bug-048",
+      "timestamp": "2026-04-23T00:51:18.313Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/hooks/useWordPronunciation.test.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T00:51:18.313Z"
+    },
+    {
+      "id": "bug-049",
+      "timestamp": "2026-04-23T00:51:42.061Z",
+      "error_message": "Type error",
+      "file": "src/hooks/useWordPronunciation.test.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T00:51:42.061Z"
+    },
+    {
+      "id": "bug-050",
+      "timestamp": "2026-04-23T00:53:00.447Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/api/admin/generate-narration/route.ts",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 74→101 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T00:53:00.447Z"
+    },
+    {
+      "id": "bug-051",
+      "timestamp": "2026-04-23T01:18:19Z",
+      "error_message": "TypeScript compile error: Argument of type 'PronunciationAnalyticsEvent' is not assignable to parameter of type 'Record<string, UmamiValue>' and manifest state coverage existed only in .claude/worktrees instead of shipping src tests.",
+      "file": "src/lib/pronunciationAnalytics.ts",
+      "root_cause": "Umami track expects a Record payload with an index signature, so passing the named PronunciationAnalyticsEvent interface directly failed Next build. Separately, manifest hook/tests were added only in a worktree and not copied into the shipping src tree.",
+      "fix": "Spread the analytics event into a plain object before calling window.umami.track, widened Umami value typings, and added shipping pronunciation manifest route/hook/tests plus books-route metadata so absent/present/fetch-failure coverage runs from src.",
+      "tags": [
+        "typescript",
+        "build-break",
+        "umami",
+        "pronunciation",
+        "manifest",
+        "tests"
+      ],
+      "related_bugs": [
+        "bug-042"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T01:18:19Z"
+    },
+    {
+      "id": "bug-052",
+      "timestamp": "2026-04-22T20:22:00Z",
+      "error_message": "QA reported a production build compile failure in src/lib/pronunciationAnalytics.ts during spec-review-fix-1 recheck.",
+      "file": "src/lib/pronunciationAnalytics.ts",
+      "root_cause": "Umami tracker payloads require a Record<string, UmamiValue>; passing a named analytics interface directly had previously broken Next production type-checking.",
+      "fix": "Re-verified the shipping source uses a plain object payload (window.umami.track(\"reader-pronunciation\", { ...payload })) and confirmed both next build and shipping manifest tests pass.",
+      "tags": [
+        "typescript",
+        "build-break",
+        "umami",
+        "qa-recheck",
+        "pronunciation"
+      ],
+      "related_bugs": [
+        "bug-051"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-22T20:22:00Z"
+    },
+    {
+      "id": "bug-054",
+      "timestamp": "2026-04-23T17:45:27.266Z",
+      "error_message": "Missing guard clause",
+      "file": "src/app/api/books/[id]/reader/route.ts",
+      "root_cause": "No early return/throw for edge case: !p.word_pronunciations",
+      "fix": "Added guard clause: if (!p.word_pronunciations)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T17:45:27.266Z"
+    },
+    {
+      "id": "bug-055",
+      "timestamp": "2026-04-23T17:45:56.809Z",
+      "error_message": "Missing guard clause",
+      "file": "src/app/books/[id]/reader/page.tsx",
+      "root_cause": "No early return/throw for edge case: manifestResult.status !== \"present\"",
+      "fix": "Added guard clause: if (manifestResult.status !== \"present\")",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T17:45:56.809Z"
+    },
+    {
+      "id": "bug-056",
+      "timestamp": "2026-04-23T17:57:24.507Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/api/admin/generate-narration/route.ts",
+      "root_cause": "52 lines replaced/restructured",
+      "fix": "Rewrote 105→27 lines (52 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T17:57:24.507Z"
+    },
+    {
+      "id": "bug-057",
+      "timestamp": "2026-04-23T19:00:35.931Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:00:35.931Z"
+    },
+    {
+      "id": "bug-058",
+      "timestamp": "2026-04-23T19:01:06.698Z",
+      "error_message": "CSS fix: outcome",
+      "file": "src/app/books/[id]/reader/page.tsx",
+      "root_cause": "outcome: \"played\",  // optimistic → \"played\",",
+      "fix": "Changed outcome: \"played\",  // optimistic → \"played\",",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:01:06.698Z"
+    },
+    {
+      "id": "bug-059",
+      "timestamp": "2026-04-23T19:01:58.460Z",
+      "error_message": "Significant refactor of ",
+      "file": "specs/web-reader-pronunciation-functional-requirements.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 6→17 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:01:58.460Z"
+    },
+    {
+      "id": "bug-060",
+      "timestamp": "2026-04-23T19:30:52.354572+00:00",
+      "error_message": "npx tsc --noEmit fails in src/contexts/BookEditorContext.overlay-regression.test.tsx because mock TextElement fixtures use fontFamily: string instead of the narrowed union type",
+      "file": "src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Pre-existing test fixture objects are inferred with fontFamily: string, which is not assignable to the TextElement fontFamily union used by the current TypeScript config.",
+      "fix": "Not fixed in this frontend pronunciation task; recorded as unrelated existing typecheck failure encountered during verification.",
+      "tags": [
+        "typescript",
+        "verification",
+        "test-fixture",
+        "fontFamily"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T19:30:52.354741+00:00"
+    },
+    {
+      "id": "bug-061",
+      "timestamp": "2026-04-23T20:44:51.052265+00:00",
+      "error_message": "Vitest module mock hoisting error in PronunciationPanel test: Cannot access mockUsePronunciationCoverage before initialization",
+      "file": "src/components/editor/PronunciationPanel.test.tsx",
+      "root_cause": "vi.mock factory is hoisted, but the test referenced top-level mock variables declared after hoisting semantics instead of using vi.hoisted.",
+      "fix": "Moved mocked hook fns into vi.hoisted so the mocked module can reference initialized spies safely.",
+      "tags": [
+        "tests",
+        "vitest",
+        "mocking",
+        "hoisting"
+      ],
+      "related_bugs": [
+        "bug-004"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T20:44:51.052422+00:00"
+    },
+    {
+      "id": "bug-062",
+      "timestamp": "2026-04-23T15:47:00-07:00",
+      "error_message": "Editor pronunciation generate endpoint lacked input guards and returned only low-level coverage/stats, making practical generate-button validation and summary UI awkward.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+      "root_cause": "Route assumed valid BigInt path params and numeric JSON maxWords, had no GET error wrapper, and required the client to derive editor summary/status data by re-aggregating raw coverage fields.",
+      "fix": "Added bookId/maxWords validation, accepted stringified force/maxWords values, wrapped GET in try/catch, and returned request+summary convenience fields plus per-page status/fullWordOnly/missingWords on POST and GET.",
+      "tags": [
+        "pronunciations",
+        "editor",
+        "api-contract",
+        "validation",
+        "summary-ui"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T15:47:00-07:00"
+    },
+    {
+      "id": "bug-063",
+      "timestamp": "2026-04-23T22:09:04Z",
+      "error_message": "PronunciationPanel test failed with TestingLibraryElementError: Found multiple elements with the text: Covered",
+      "file": "src/components/editor/PronunciationPanel.test.tsx",
+      "root_cause": "The updated UI renders the word-level coverage label, summary card label, and filter option all as \"Covered\", so a singular getByText assertion became ambiguous.",
+      "fix": "Changed the test to assert specific metadata text and use more specific role/label-driven queries instead of ambiguous getByText(\"Covered\").",
+      "tags": [
+        "tests",
+        "vitest",
+        "testing-library",
+        "ambiguous-query",
+        "pronunciation"
+      ],
+      "related_bugs": [
+        "bug-061"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T22:09:04Z"
+    },
+    {
+      "id": "bug-064",
+      "timestamp": "2026-04-23T22:13:06Z",
+      "error_message": "QA requested added preview playback failure coverage for the editor pronunciation panel.",
+      "file": "src/components/editor/PronunciationPanel.test.tsx",
+      "root_cause": "The existing regression suite only covered preview failure via play() rejection, leaving the audio-element onerror path in PronunciationPanel untested.",
+      "fix": "Added a targeted PronunciationPanel test that swaps in a constructor-safe FakeAudio class, triggers Audio.onerror for a preview clip, and asserts the inline \"Preview failed for <url>\" message. Re-ran targeted vitest and eslint.",
+      "tags": [
+        "qa",
+        "tests",
+        "pronunciation",
+        "preview-playback",
+        "audio-error"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T22:13:06Z"
+    },
+    {
+      "id": "bug-065",
+      "timestamp": "2026-04-23T22:16:54.662669+00:00",
+      "error_message": "Python one-liner for memory append failed with unterminated f-string literal during QA re-verification notes",
+      "file": ".wolf/memory.md",
+      "root_cause": "Used a single-line f-string containing an unescaped newline in the heredoc command.",
+      "fix": "Re-ran the append using a triple-quoted f-string literal, then recorded the command failure in buglog per OpenWolf protocol.",
+      "tags": [
+        "tooling",
+        "python",
+        "memory-log",
+        "verification"
+      ],
+      "related_bugs": [
+        "bug-040"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T22:16:54.662824+00:00"
+    },
+    {
+      "id": "bug-066",
+      "timestamp": "2026-04-23T23:32:48.740Z",
+      "error_message": "Significant refactor of ",
+      "file": "prisma/schema.prisma",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 3→4 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "prisma"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-23T23:32:48.740Z"
+    },
+    {
+      "id": "bug-067",
+      "timestamp": "2026-04-24T00:47:28.792378+00:00",
+      "error_message": "browser-harness --setup failed: DevToolsActivePort not found; local Chrome remote debugging not enabled on current profile",
+      "file": "~/Developer/browser-harness/admin.py",
+      "root_cause": "Local browser profile had not enabled Chrome remote debugging, so browser-harness could not attach through the default local CDP bootstrap path.",
+      "fix": "Opened chrome://inspect/#remote-debugging for user enablement, then bypassed the local-CDP requirement by configuring BROWSER_USE_API_KEY and starting a Browser Use cloud browser via admin.start_remote_daemon('storia-install').",
+      "tags": [
+        "browser-harness",
+        "install",
+        "chrome-cdp",
+        "devtoolsactiveport",
+        "remote-browser"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T00:47:28.792558+00:00"
+    },
+    {
+      "id": "bug-068",
+      "timestamp": "2026-04-24T00:51:19.258443+00:00",
+      "error_message": "browser-harness --setup timed out repeatedly waiting for Chrome remote-debugging Allow flow",
+      "file": "~/Developer/browser-harness/admin.py",
+      "root_cause": "Finishing local Chrome attach requires interactive approval in the desktop browser; user was on phone so the required Allow/checkbox step could not be completed.",
+      "fix": "Skipped blocking local-CDP setup, kept the working Browser Use remote daemon path, and verified remote browsing still functions.",
+      "tags": [
+        "browser-harness",
+        "setup",
+        "timeout",
+        "interactive-approval",
+        "mobile-context"
+      ],
+      "related_bugs": [
+        "bug-032"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T00:51:19.258611+00:00"
+    },
+    {
+      "id": "bug-069",
+      "timestamp": "2026-04-24T23:03:14.905Z",
+      "error_message": "Missing guard clause",
+      "file": "src/app/admin/(dashboard)/layout.tsx",
+      "root_cause": "No early return/throw for edge case: isPending",
+      "fix": "Added guard clause: if (isPending)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T23:03:14.905Z"
+    },
+    {
+      "id": "bug-070",
+      "timestamp": "2026-04-24T23:16:23.261Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/components/editor/PronunciationPanel.tsx",
+      "root_cause": "5 lines replaced/restructured",
+      "fix": "Rewrote 9→27 lines (5 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T23:16:23.261Z"
+    },
+    {
+      "id": "bug-071",
+      "timestamp": "2026-04-24T23:16:47.733Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/components/editor/PronunciationPanel.tsx",
+      "root_cause": "Had \"Filter pronunciation review by status\"",
+      "fix": "Changed to \"Review status quick filter\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-24T23:19:05.437Z"
+    },
+    {
+      "id": "bug-072",
+      "timestamp": "2026-04-25T00:45:56.245023+00:00",
+      "error_message": "Book editor autosave debounce was too sensitive, making page content editing disruptive.",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "The main book editor autosave fired after only 2500ms of inactivity, so brief pauses while writing page content or metadata triggered saves too aggressively.",
+      "fix": "Raised the main book editor autosave debounce to 6000ms so normal writing pauses do not immediately trigger a save cycle.",
+      "tags": [
+        "editor",
+        "autosave",
+        "debounce",
+        "ux",
+        "page-content"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:45:56.245191+00:00"
+    },
+    {
+      "id": "bug-073",
+      "timestamp": "2026-04-25T00:45:56.245193+00:00",
+      "error_message": "Overlay text editor autosave and lint verification exposed a ref-updated-during-render issue in DraggableTextOverlayEditor.",
+      "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+      "root_cause": "The overlay autosave was also tuned tightly at 3000ms, and the component updated actionsRef.current directly during render, which fails the react-hooks/refs lint rule.",
+      "fix": "Raised overlay autosave debounce to 6000ms and moved actionsRef.current synchronization into a useEffect so targeted eslint passes without errors.",
+      "tags": [
+        "editor",
+        "overlay",
+        "autosave",
+        "debounce",
+        "lint",
+        "refs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:45:56.245194+00:00"
+    },
+    {
+      "id": "bug-074",
+      "timestamp": "2026-04-25T00:45:56.245195+00:00",
+      "error_message": "Shell search command failed due to unquoted parentheses in src/app/admin/(editor) path while tracing editor autosave usage.",
+      "file": "src/app/admin/(editor)/books/[id]/edit/page.tsx",
+      "root_cause": "A bash rg command included a path containing parentheses without quoting it, so the shell treated the path as syntax.",
+      "fix": "Re-ran the search with the path wrapped in single quotes and continued investigation with quoted paths.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "path-quoting"
+      ],
+      "related_bugs": [
+        "bug-037"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:45:56.245197+00:00"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-04-25T00:55:35.091887+00:00",
+      "error_message": "Shell command failed while listing improve-codebase-architecture skill files due to malformed sed substitute expression",
+      "file": "/Users/akinpound/.agents/skills/improve-codebase-architecture/REFERENCE.md",
+      "root_cause": "An ad-hoc bash pipeline used an invalid sed replacement expression, so shell inspection failed before file discovery completed.",
+      "fix": "Re-ran the inspection with a simpler find command and read REFERENCE.md directly for dependency-category definitions.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "sed"
+      ],
+      "related_bugs": [
+        "bug-034",
+        "bug-037",
+        "bug-074"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:55:35.091887+00:00"
+    },
+    {
+      "id": "bug-076",
+      "timestamp": "2026-04-24T19:59:06-0500",
+      "error_message": "Read tool failed with ENOENT while loading improve-codebase-architecture skill from a mistaken .pi path",
+      "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/improve-codebase-architecture/SKILL.md",
+      "root_cause": "Session lookup used the wrong skill root (.pi instead of ~/.agents) even though the project context listed the canonical skill location.",
+      "fix": "Retried the read using /Users/akinpound/.agents/skills/improve-codebase-architecture/SKILL.md and continued the QA analysis.",
+      "tags": [
+        "tooling",
+        "read-tool",
+        "command-error",
+        "skill-path"
+      ],
+      "related_bugs": [
+        "bug-034",
+        "bug-075"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T19:59:06-0500"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-04-25T01:05:11.210109+00:00",
+      "error_message": "Shell search command failed due to unquoted parentheses in src/app/admin/(editor) while tracing book editor context consumers.",
+      "file": "src/app/admin/(editor)/books/[id]/edit/page.tsx",
+      "root_cause": "An rg bash command targeted a path containing parentheses without quoting the path, so the shell parsed it as syntax.",
+      "fix": "Re-ran the search with the src/app/admin/(editor)/... path wrapped in single quotes.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "path-quoting",
+        "editor-analysis"
+      ],
+      "related_bugs": [
+        "bug-037",
+        "bug-074"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T01:05:11.210109+00:00"
+    },
+    {
+      "id": "bug-077",
+      "timestamp": "2026-04-25T01:11:00.799928+00:00",
+      "error_message": "Removing a range soundscape/narration from a covered page in the editor can silently do nothing.",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "The active-page UI resolves current assignments via GET /api/admin/audio-assignments for any page covered by a range, but handleDeleteAudio deletes by the active page's pageId+audioType. Range assignments are stored on the source page row, so covered pages often send the wrong owner pageId and DELETE removes 0 rows.",
+      "fix": "Not fixed in this session. Recommended fix: surface assignment ownership/id in ActivePageView and delete by assignment id (or owner page id) instead of active page id.",
+      "tags": [
+        "audio-assignments",
+        "range",
+        "editor",
+        "soundscape",
+        "narration",
+        "delete"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T01:11:00.800149+00:00"
+    },
+    {
+      "id": "bug-079",
+      "timestamp": "2026-04-25T01:16:45.323726+00:00",
+      "error_message": "ENOENT reading /Users/akinpound/Documents/experiments/storia/.pi/skills/improve-codebase-architecture/SKILL.md during QA setup",
+      "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/improve-codebase-architecture/SKILL.md",
+      "root_cause": "Configured skill path does not exist in this checkout, so the read tool failed before any project analysis.",
+      "fix": "Skipped the missing skill file and proceeded with OpenWolf docs plus in-repo editor/context/test inspection.",
+      "tags": [
+        "env",
+        "skill-path",
+        "qa-setup"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T01:16:45.323726+00:00"
+    },
+    {
+      "id": "bug-080",
+      "timestamp": "2026-04-25T03:27:44.639Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 14→17 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:27:44.639Z"
+    },
+    {
+      "id": "bug-081",
+      "timestamp": "2026-04-24T00:00:00Z",
+      "error_message": "Overlay autosave fires mid-typing — debounce never resets while user keeps editing",
+      "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+      "root_cause": "Autosave useEffect deps were [autoSaveStatus, onSave]. First keystroke flips status idle->pending; subsequent keystrokes keep it pending (no value change) so the effect does not re-run and the cleanup never fires, letting the original 6s timer reach completion while user is still typing. Triggers handleOverlaySave -> setLocalPages -> overlay prop ref change -> init() -> in-flight edits clobbered.",
+      "fix": "Added `elements` to the autosave effect dep array. Each store mutation produces a new array ref, so the effect re-runs, cleanup clears the prior setTimeout, and a fresh 6s debounce window starts.",
+      "tags": [
+        "autosave",
+        "debounce",
+        "useEffect",
+        "overlay-editor",
+        "zustand"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T00:00:00Z"
+    },
+    {
+      "id": "bug-082",
+      "timestamp": "2026-04-25T03:46:31.805451+00:00",
+      "error_message": "npm run lint -- --file ... failed: Invalid option '--file' with ESLint flat config",
+      "file": "package.json / eslint CLI invocation",
+      "root_cause": "ESLint flat config no longer supports the legacy Next-style --file flag through this script.",
+      "fix": "Reran verification with direct file paths: npx eslint <files>.",
+      "tags": [
+        "eslint",
+        "verification",
+        "flat-config",
+        "cli"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:46:31.805451+00:00"
+    },
+    {
+      "id": "bug-083",
+      "timestamp": "2026-04-25T03:46:31.805451+00:00",
+      "error_message": "Editor book/page and overlay autosaves could race, letting a stale page PATCH overwrite overlay-derived textContent.",
+      "file": "src/lib/editor/saveCoordinator.ts, src/contexts/BookEditorContext.tsx",
+      "root_cause": "Book draft autosave and overlay autosave were separate state machines/timers without an ordering rule between overlay POST and page PATCH.",
+      "fix": "Introduced SaveCoordinator with one debounce and overlay-before-book flush ordering; BookEditorContext now snapshots the book draft after applying overlay save results.",
+      "tags": [
+        "autosave",
+        "race-condition",
+        "overlay",
+        "book-editor"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:46:31.805451+00:00"
+    },
+    {
+      "id": "bug-084",
+      "timestamp": "2026-04-25T03:47:39.045827+00:00",
+      "error_message": "npx tsc --noEmit fails with pre-existing pronunciation route/test type errors and overlay-regression TextElement fontFamily literal errors",
+      "file": "src/app/api/admin/books/[id]/pronunciations/*, src/lib/pronunciationGeneration.test.ts, src/lib/pronunciationReview.test.ts, src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Repository-wide TypeScript verification currently includes unrelated stale contracts around pronunciation generation/review plus existing overlay regression fixture literal widening.",
+      "fix": "Confirmed the new SaveCoordinator/editor files do not appear in the tsc error output; kept validation to targeted tests and ESLint for changed files.",
+      "tags": [
+        "typescript",
+        "verification",
+        "pre-existing",
+        "pronunciation",
+        "tests"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:47:39.045827+00:00"
+    },
+    {
+      "id": "bug-085",
+      "timestamp": "2026-04-25T03:47:52.619356+00:00",
+      "error_message": "Editor save/dirty/autosave flow was split across duplicated 6s timers, scattered dirty setters, overlay store status, component timer, and context mutations; prior bug-081 came from this seam.",
+      "file": "src/contexts/BookEditorContext.tsx; src/components/text-overlay/DraggableTextOverlayEditor.tsx; src/lib/editor/saveCoordinator.ts",
+      "root_cause": "Book draft saves and overlay saves had independent debounce/state machines with no shared dirty/status boundary, so debounce reset, errors, retries, and overlay+book ordering could drift.",
+      "fix": "Added SaveCoordinator boundary with injected ports, moved book/overlay dirty scheduling and debounce into it, wired BookEditorContext and standalone overlay route through it, and changed DraggableTextOverlayEditor to request saves without owning a timer.",
+      "tags": [
+        "autosave",
+        "dirty-state",
+        "save-coordinator",
+        "overlay-editor",
+        "debounce"
+      ],
+      "related_bugs": [
+        "bug-081"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:47:52.619356+00:00"
+    },
+    {
+      "id": "bug-086",
+      "timestamp": "2026-04-25T03:47:52.619356+00:00",
+      "error_message": "Targeted SaveCoordinator test initially failed with \"promise resolved undefined instead of rejecting\" after debounce timer flush.",
+      "file": "src/lib/editor/saveCoordinator.test.ts",
+      "root_cause": "The test advanced the fake scheduler and asserted a later manual retry before the timer-started flush promise had fully settled through its finally cleanup.",
+      "fix": "Settled pending microtasks before the next flush assertion; targeted SaveCoordinator test now passes.",
+      "tags": [
+        "tests",
+        "vitest",
+        "save-coordinator",
+        "fake-scheduler"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:47:52.619356+00:00"
+    },
+    {
+      "id": "bug-087",
+      "timestamp": "2026-04-25T03:48:55.594159+00:00",
+      "error_message": "npx tsc --noEmit failed with pre-existing pronunciationGeneration/pronunciationReview API-contract type errors plus existing overlay-regression fixture fontFamily narrow-union errors during SaveCoordinator verification.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts; src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationGeneration.test.ts; src/lib/pronunciationReview.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Repository-wide TypeScript has unrelated stale test/route contracts around pronunciation generation/review and overlay fixture types; touched SaveCoordinator files were clean under targeted tsc grep after fixes.",
+      "fix": "Did not fix unrelated failures in this save-coordinator change; verified touched files by filtering `npx tsc --noEmit --pretty false` output for saveCoordinator/BookEditorContext/Draggable/overlay route paths and got no matches.",
+      "tags": [
+        "typescript",
+        "verification",
+        "pre-existing",
+        "pronunciation",
+        "tests"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:48:55.594159+00:00"
+    },
+    {
+      "id": "bug-088",
+      "timestamp": "2026-04-25T03:48:56.372279+00:00",
+      "error_message": "Standalone overlay editor used SaveCoordinator but did not mark DraggableTextOverlayEditor as coordinated, so the component could mark saved immediately after queueing a debounced save.",
+      "file": "src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/page.tsx",
+      "root_cause": "The standalone route passed an onSave handler that only enqueues a coordinator request, while leaving DraggableTextOverlayEditor in direct-save mode.",
+      "fix": "Passed isSaveCoordinated to DraggableTextOverlayEditor in the standalone route so save lifecycle status comes from SaveCoordinator subscription.",
+      "tags": [
+        "autosave",
+        "overlay-editor",
+        "status",
+        "save-coordinator"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:48:56.372279+00:00"
+    },
+    {
+      "id": "bug-089",
+      "timestamp": "2026-04-25T03:49:38.556695+00:00",
+      "error_message": "squad_modify action=cancel returned \"activeScheduler is not defined\" while trying to stop the background squad after local SaveCoordinator implementation.",
+      "file": "squad tool runtime",
+      "root_cause": "Tool-side scheduler reference error, not an application code failure.",
+      "fix": "Left squad running and continued with local verification; no code change needed.",
+      "tags": [
+        "tooling",
+        "squad",
+        "runtime-error"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:49:38.556695+00:00"
+    },
+    {
+      "id": "bug-090",
+      "timestamp": "2026-04-25T03:50:22.734763+00:00",
+      "error_message": "Manual editor save could flush the coordinator before the overlay component effect had queued the latest dirty overlay draft.",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "Overlay dirty requests are normally enqueued from a React effect in DraggableTextOverlayEditor, but Ctrl/Cmd+S or publish can happen while the active overlay store is dirty and before that effect has run.",
+      "fix": "BookEditorContext now checks the active overlay store for hasChanges and queues its buildConfig before manual save/publish flushes.",
+      "tags": [
+        "manual-save",
+        "overlay",
+        "save-coordinator",
+        "race-condition"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:50:22.734763+00:00"
+    },
+    {
+      "id": "bug-091",
+      "timestamp": "2026-04-25T14:21:52.970556+00:00",
+      "error_message": "POST /api/admin/books/[id]/pronunciations/generate failing with TypeError: existingRows is not iterable",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+      "root_cause": "The standalone generation route still used the old page-json collectMissingTokens call shape and passed an options object where pronunciationGeneration.collectMissingTokens now expects a BookPronunciationRow[] from book_pronunciations.",
+      "fix": "Fetch book_pronunciations rows before generation, pass token arrays plus BookPronunciationRow[] into collectMissingTokens, stop writing pages.word_pronunciations, and derive POST/GET coverage from generated/fetched table rows.",
+      "tags": [
+        "pronunciation",
+        "book_pronunciations",
+        "api-contract",
+        "typeerror"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:21:52.970556+00:00"
+    },
+    {
+      "id": "bug-092",
+      "timestamp": "2026-04-25T14:21:52.970556+00:00",
+      "error_message": "npx tsc --noEmit --pretty false fails with stale pronunciation review and overlay fixture type errors",
+      "file": "src/app/api/admin/books/[id]/pronunciations/route.ts",
+      "root_cause": "Repository-wide TypeScript currently includes pre-existing stale pronunciation review call sites expecting the old page-entry contract plus overlay regression fixtures with widened fontFamily strings.",
+      "fix": "Not fixed in this task; targeted pronunciation generation files have no reported tsc errors and targeted Vitest coverage passes.",
+      "tags": [
+        "typescript",
+        "pre-existing",
+        "pronunciation-review",
+        "overlay-tests"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:21:52.970556+00:00"
+    },
+    {
+      "id": "bug-093",
+      "timestamp": "2026-04-25T14:22:13.742660+00:00",
+      "error_message": "POST /api/admin/books/1/pronunciations/generate returned 500: TypeError: existingRows is not iterable at collectMissingTokens(src/lib/pronunciationGeneration.ts:424). User also noted actual table may be named book_pronuncations.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+      "root_cause": "Generate route was still using the legacy per-page word_pronunciations map contract and called collectMissingTokens(pagesForCollector, { force }) after pronunciationGeneration had changed to collectMissingTokens(tokensByPage: string[][], existingRows: BookPronunciationRow[], options).",
+      "fix": "Updated generate route to fetch existing book_pronunciations rows, pass string[][] page tokens plus rows into collectMissingTokens, call generatePronunciationEntries without removed existingEntries/pronunciationMap options, and build coverage from returned table rows. Updated route tests to mock book_pronunciations rows.",
+      "tags": [
+        "pronunciation-generation",
+        "book-pronunciations",
+        "api-500",
+        "contract-drift"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:22:13.742660+00:00"
+    },
+    {
+      "id": "bug-094",
+      "timestamp": "2026-04-25T14:23:55.734767+00:00",
+      "error_message": "npx tsc --noEmit --pretty false failed during pronunciation-generation QA verification",
+      "file": "src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationReview.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Repository-wide TypeScript still includes unrelated stale pronunciation review input contracts and overlay regression fixture fontFamily literal widening; targeted pronunciation generation tests passed and tsc output did not include the generate route or pronunciationGeneration.ts.",
+      "fix": "Not fixed in this QA task; reported as remaining unrelated failures.",
+      "tags": [
+        "typescript",
+        "qa-verification",
+        "pre-existing",
+        "pronunciation-review",
+        "overlay-tests"
+      ],
+      "related_bugs": [
+        "bug-092"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:23:55.734767+00:00"
+    },
+    {
+      "id": "bug-095",
+      "timestamp": "2026-04-25T14:27:46.828895+00:00",
+      "error_message": "npx tsc --noEmit --pretty false failed in pronunciation review route/tests because buildPronunciationReviewData was called with legacy page-entry arrays, and overlay regression fixtures widened fontFamily to string.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationReview.test.ts; src/app/api/admin/books/[id]/pronunciations/route.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "After the book_pronunciations migration, buildPronunciationReviewData expects { pages, pronunciations } with table rows, but the admin review route and unit test still supplied the old page.word_pronunciations-derived entries array. The overlay test helper had no return type, so object literal fontFamily widened beyond the OverlayFont union.",
+      "fix": "Updated the admin review route/tests to fetch/mock book_pronunciations rows and pass { pages, pronunciations } into buildPronunciationReviewData; annotated the overlay makeElement helper as TextElement. Full npx tsc and targeted Vitest suites now pass.",
+      "tags": [
+        "typescript",
+        "pronunciation-review",
+        "book_pronunciations",
+        "api-contract",
+        "overlay-tests"
+      ],
+      "related_bugs": [
+        "bug-092",
+        "bug-094"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:27:46.828895+00:00"
+    },
+    {
+      "id": "bug-096",
+      "timestamp": "2026-04-25T14:34:39.021840+00:00",
+      "error_message": "Pronunciation generation produced only whole-word audio; breakdown_url was not backfilled for rows that already had full_word_url.",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "The generation skip logic treated any existing audio URL as complete coverage. Full-word-only rows were skipped by collectMissingTokens/generatePronunciationEntries on subsequent runs, so missing breakdown_url assets were never generated unless force=true.",
+      "fix": "Changed skip logic to skip only rows with complete coverage (both full_word_url and breakdown_url). Full-word-only rows are now selected for generation/backfill. Added tests for partial coverage collection and full-word-only backfill.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "full-word-only",
+        "coverage",
+        "backfill"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:34:39.021840+00:00"
+    },
+    {
+      "id": "bug-097",
+      "timestamp": "2026-04-25T14:39:22.801259+00:00",
+      "error_message": "Breakdown pronunciation for words like \"caption\" pronounced the isolated \"tion\" chunk incorrectly instead of the /shun/ sound.",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "The breakdown TTS text used raw orthographic chunks (`cap, tion`). ElevenLabs can read isolated `tion` literally (tee-on) rather than as the suffix phoneme.",
+      "fix": "Added buildBreakdownSpeechText with spoken suffix mapping for `tion` -> `shun`, and use it when synthesizing breakdown audio. Added tests asserting caption uses `cap, shun`.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "tts",
+        "phonics",
+        "tion"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:39:22.801259+00:00"
+    },
+    {
+      "id": "bug-098",
+      "timestamp": "2026-04-25T14:40:11.558497+00:00",
+      "error_message": "Breakdown TTS for words ending in tion synthesized the literal chunk 'tion' instead of the /shun/ sound (e.g. caption => cap, tion).",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "splitIntoBreakdownChunks correctly produced raw chunks like ['cap', 'tion'], but generation passed chunks.join(', ') directly to TTS, causing isolated 'tion' to be spoken literally.",
+      "fix": "Added buildBreakdownSpeechText() to convert spoken-only breakdown chunks from raw chunk text, mapping isolated 'tion' to 'shun', and wired breakdown synthesis to use it. Added tests for caption speech text and generation TTS payload.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "tts",
+        "tion"
+      ],
+      "related_bugs": [
+        "bug-086"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:40:11.558497+00:00"
+    },
+    {
+      "id": "bug-099",
+      "timestamp": "2026-04-25T14:48:42.123404+00:00",
+      "error_message": "User noted pronunciation breakdown segments should have a slight pause between segments.",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "Current breakdown TTS text uses comma-separated chunks (e.g. \"cap, shun\"), which hints a pause but leaves pause duration up to the TTS model and may not be consistent enough.",
+      "fix": "Implemented low-risk option 3: added BREAKDOWN_SEGMENT_SEPARATOR = \" ... \" and changed buildBreakdownSpeechText to join spoken chunks with that separator, so caption becomes \"cap ... shun\". Updated tests and verified pronunciationGeneration tests plus TypeScript.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "tts",
+        "pause",
+        "ux"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:50:09.900893+00:00"
+    },
+    {
+      "id": "bug-100",
+      "timestamp": "2026-04-25T14:56:51.626Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "Had \" ... \"",
+      "fix": "Changed to ' <break time=\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:56:51.626Z"
+    },
+    {
+      "id": "bug-101",
+      "timestamp": "2026-04-25T14:56:55.365Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/lib/pronunciationGeneration.test.ts",
+      "root_cause": "Had \"cap ... shun\"",
+      "fix": "Changed to 'cap <break time=\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-25T14:57:22.224Z"
+    },
+    {
+      "id": "bug-102",
+      "timestamp": "2026-04-25T14:58:41.075Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/lib/elevenlabs.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 27→41 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:58:41.075Z"
+    },
+    {
+      "id": "bug-103",
+      "timestamp": "2026-04-25T15:10:30.478Z",
+      "error_message": "Missing guard clause",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "No early return/throw for edge case: !audioContextRef.current",
+      "fix": "Added guard clause: if (!audioContextRef.current)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-25T15:11:19.118Z"
+    },
+    {
+      "id": "bug-104",
+      "timestamp": "2026-04-25T15:12:45.873Z",
+      "error_message": "Type error",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T15:12:45.873Z"
+    },
+    {
+      "id": "bug-105",
+      "timestamp": "2026-04-25T15:12:52.370Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 15→12 lines (4 removed) | Also: if (!ctx) return null;; const arrayBuffer = await response.arrayBuffer(); | Also: // First call is the user gesture that unblocks Au; const firstInteraction = !userInteractedRef.curren",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-25T15:13:22.261Z"
+    },
+    {
+      "id": "bug-106",
+      "timestamp": "2026-04-25T15:19:24.577Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T15:19:24.577Z"
+    },
+    {
+      "id": "bug-107",
+      "timestamp": "2026-04-25T15:33:07.049Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/hooks/usePronunciationManifest.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 23→31 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T15:33:07.049Z"
     }
   ]
 }

@@ -21,6 +21,7 @@ interface DraggableTextOverlayEditorProps {
   overlay: TextOverlayConfig | null;
   onSave: (overlay: TextOverlayConfig) => Promise<void>;
   onComposite: () => Promise<void>;
+  isSaveCoordinated?: boolean;
   isSaving?: boolean;
   isCompositing?: boolean;
   voiceOptions?: VoiceOption[];
@@ -232,6 +233,7 @@ export function DraggableTextOverlayEditor({
   overlay,
   onSave,
   onComposite,
+  isSaveCoordinated = false,
   isSaving = false,
   isCompositing = false,
   voiceOptions = [],
@@ -242,7 +244,10 @@ export function DraggableTextOverlayEditor({
 
   // Keep a ref to actions so callbacks always use the current store
   const actionsRef = useRef(actions);
-  actionsRef.current = actions;
+
+  useEffect(() => {
+    actionsRef.current = actions;
+  }, [actions]);
 
   // State slices from store
   const elements = useOverlayEditor(pageId, (s) => s.elements);
@@ -283,20 +288,25 @@ export function DraggableTextOverlayEditor({
     };
   }, [pageId]);
 
-  // Autosave effect — triggered when autoSaveStatus transitions to "pending"
+  // Autosave request effect. Coordinated callers report the latest draft to a
+  // parent SaveCoordinator, which owns debounce/status. Non-coordinated callers
+  // still get direct save lifecycle status for compatibility.
   useEffect(() => {
     if (autoSaveStatus !== "pending") return;
-    const timer = setTimeout(async () => {
-      actionsRef.current.markSaving();
-      try {
-        await onSave(actionsRef.current.buildConfig());
-        actionsRef.current.markSaved();
-      } catch {
+
+    const savePromise = onSave(actionsRef.current.buildConfig());
+    if (isSaveCoordinated) {
+      void savePromise.catch(() => {
         actionsRef.current.markSaveError();
-      }
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [autoSaveStatus, onSave]);
+      });
+      return;
+    }
+
+    actionsRef.current.markSaving();
+    void savePromise
+      .then(() => actionsRef.current.markSaved())
+      .catch(() => actionsRef.current.markSaveError());
+  }, [autoSaveStatus, elements, isSaveCoordinated, onSave]);
 
   // Notify parent when selected element changes
   useEffect(() => {

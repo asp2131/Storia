@@ -5,7 +5,6 @@ import { Prisma } from "@prisma/client";
 import {
   normalizeVoiceSettings,
   resolveElevenLabsVoice,
-  synthesizeSpeech,
   synthesizeSpeechWithTimestamps,
 } from "@/lib/elevenlabs";
 import {
@@ -13,6 +12,12 @@ import {
   alignedWordsToTimestamps,
   validateTimestamps,
 } from "@/lib/wordAlignment";
+import {
+  extractUniquePronunciationTokens,
+  type WordPronunciationEntry,
+} from "@/lib/pronunciation";
+import { generatePronunciationEntries } from "@/lib/pronunciationGeneration";
+import { validatePronunciationManifest } from "@/lib/pronunciationValidation";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -210,92 +215,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let pronunciationMap: Record<string, string> = {};
+    let pronunciationMap: Record<string, WordPronunciationEntry> = {};
     try {
-      const allWords = trimmedText.split(/\s+/);
-      const cleanedWords = allWords
-        .map((w) => w.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, "").toLowerCase())
-        .filter((w) => w.length > 0);
-      const uniqueWords = Array.from(new Set(cleanedWords));
-
+      const uniqueWords = extractUniquePronunciationTokens(trimmedText);
       console.log(
         `[generate-narration] Generating pronunciations for ${uniqueWords.length} unique words`
       );
 
-      const batchSize = 5;
-      for (let i = 0; i < uniqueWords.length; i += batchSize) {
-        const batch = uniqueWords.slice(i, i + batchSize);
-        console.log(
-          `[generate-narration] Processing pronunciation batch ${
-            Math.floor(i / batchSize) + 1
-          }/${Math.ceil(uniqueWords.length / batchSize)}`
-        );
-
-        const results = await Promise.all(
-          batch.map(async (wordValue) => {
-            try {
-              const wordAudio = await synthesizeSpeech({
-                text: wordValue,
-                voiceId,
-                speed: normalizedVoiceSettings.speed,
-                style: normalizedVoiceSettings.style,
-                useSpeakerBoost: normalizedVoiceSettings.useSpeakerBoost,
-              });
-
-              let wordExt = "mp3";
-              if (wordAudio.contentType.includes("ogg")) {
-                wordExt = "ogg";
-              } else if (wordAudio.contentType.includes("wav")) {
-                wordExt = "wav";
-              }
-
-              const wordTimestamp = Date.now();
-              const wordPath = `books/${bookId}/pronunciations/word_${wordValue}_${wordTimestamp}.${wordExt}`;
-
-              const { error: wordUploadError } = await supabase.storage
-                .from(bucket)
-                .upload(wordPath, wordAudio.audioBuffer, {
-                  contentType: wordAudio.contentType,
-                  upsert: false,
-                });
-
-              if (wordUploadError) {
-                console.warn(
-                  `[generate-narration] Failed to upload pronunciation for "${wordValue}":`,
-                  wordUploadError
-                );
-                return { word: wordValue, url: null };
-              }
-
-              const { data: wordUrlData } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(wordPath);
-
-              console.log(
-                `[generate-narration] Pronunciation for "${wordValue}" uploaded: ${wordUrlData.publicUrl}`
-              );
-              return { word: wordValue, url: wordUrlData.publicUrl };
-            } catch (wordError) {
-              console.warn(
-                `[generate-narration] Error generating pronunciation for "${wordValue}":`,
-                wordError
-              );
-              return { word: wordValue, url: null };
-            }
-          })
-        );
-
-        for (const result of results) {
-          if (result.url) {
-            pronunciationMap[result.word] = result.url;
-          }
-        }
-      }
+      const genResult = await generatePronunciationEntries({
+        supabase,
+        bucket,
+        bookId,
+        voiceId,
+        voiceSettings: normalizedVoiceSettings,
+        words: uniqueWords,
+      });
+      pronunciationMap = genResult.pronunciationMap;
 
       console.log(
-        `[generate-narration] Generated ${
-          Object.keys(pronunciationMap).length
-        } word pronunciations`
+        `[generate-narration] Pronunciation stats: generated=${genResult.stats.generated} failed=${genResult.stats.failed} withBreakdown=${genResult.stats.withBreakdown}`
       );
     } catch (pronError) {
       console.error(
@@ -303,6 +241,28 @@ export async function POST(request: NextRequest) {
         pronError
       );
       pronunciationMap = {};
+    }
+
+    // ── Publish-time validation (Ticket 1.3) ─────────────────────────────
+    // Validate the generated pronunciation map against the page text before
+    // persistence.  Bad entries are logged and excluded; we never hard-block.
+    const validation = validatePronunciationManifest(trimmedText, pronunciationMap);
+    let pronunciationMapToStore = pronunciationMap;
+
+    if (!validation.ok) {
+      console.warn(
+        `[generate-narration] Pronunciation validation found ${validation.issues.length} issue(s):`,
+        validation.issues.map((issue) => ({
+          kind: issue.kind,
+          key: issue.key,
+          message: issue.message,
+        }))
+      );
+      // Persist only the entries that passed validation.
+      pronunciationMapToStore = validation.validEntries;
+      console.log(
+        `[generate-narration] Persisting ${Object.keys(pronunciationMapToStore).length} valid pronunciation entries (excluded ${Object.keys(pronunciationMap).length - Object.keys(pronunciationMapToStore).length} invalid).`
+      );
     }
 
     try {
@@ -321,7 +281,7 @@ export async function POST(request: NextRequest) {
         data: {
           narration_url: urlData.publicUrl,
           narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
-          word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
+          word_pronunciations: pronunciationMapToStore as Prisma.InputJsonValue,
           updated_at: now,
         },
       });
@@ -340,7 +300,7 @@ export async function POST(request: NextRequest) {
             page_number: pageNumber,
             narration_url: urlData.publicUrl,
             narration_timestamps: finalTimestamps as Prisma.InputJsonValue,
-            word_pronunciations: pronunciationMap as Prisma.InputJsonValue,
+            word_pronunciations: pronunciationMapToStore as Prisma.InputJsonValue,
             inserted_at: now,
             updated_at: now,
           },
@@ -360,7 +320,12 @@ export async function POST(request: NextRequest) {
       timestampsUrl,
       wordTimestamps: finalTimestamps,
       alignmentQuality,
-      wordPronunciations: pronunciationMap,
+      wordPronunciations: pronunciationMapToStore,
+      pronunciationValidation: {
+        ok: validation.ok,
+        issueCount: validation.issues.length,
+        issues: validation.issues,
+      },
       voice: {
         id: voiceId,
         name: voiceName,

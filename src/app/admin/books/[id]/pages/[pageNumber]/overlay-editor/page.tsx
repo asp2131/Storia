@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronRight, Loader2, X } from "lucide-react";
@@ -11,7 +11,17 @@ import {
   TextOverlayConfig,
   emptyOverlayConfig,
 } from "@/types/text-overlay";
-import { destroyOverlayEditorStore } from "@/stores/overlayEditorRegistry";
+import {
+  destroyOverlayEditorStore,
+  getExistingOverlayEditorStore,
+} from "@/stores/overlayEditorRegistry";
+import {
+  EDITOR_AUTOSAVE_DEBOUNCE_MS,
+  SaveCoordinator,
+  type BookDraft,
+  type OverlayDraft,
+  type OverlaySaveResult,
+} from "@/lib/editor/saveCoordinator";
 
 interface OverlayApiResponse {
   overlay: TextOverlayConfig | null;
@@ -46,10 +56,56 @@ export default function OverlayEditorPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [compositeError, setCompositeError] = useState<string | null>(null);
 
+  const saveOverlayPortRef = useRef<
+    (draft: OverlayDraft, reason: "autosave" | "manual" | "retry") => Promise<OverlaySaveResult>
+  >(async () => {
+    throw new Error("Overlay save port is not ready");
+  });
+  const saveCoordinator = useMemo(
+    () =>
+      new SaveCoordinator({
+        debounceMs: EDITOR_AUTOSAVE_DEBOUNCE_MS,
+        getBookDraft: (): BookDraft => ({ title: "Overlay editor", author: "", pages: [] }),
+        saveBook: async () => undefined,
+        saveOverlay: (draft, reason) => saveOverlayPortRef.current(draft, reason),
+        applyOverlayResult: () => undefined,
+      }),
+    []
+  );
+
+  useEffect(() => {
+    const unsubscribe = saveCoordinator.subscribe((snapshot, target) => {
+      if (target !== SaveCoordinator.overlayTarget(overlayPageId)) return;
+
+      const overlayActions = getExistingOverlayEditorStore(overlayPageId)?.getState();
+      if (snapshot.phase === "saving") {
+        setIsSaving(true);
+        setSaveError(null);
+        overlayActions?.markSaving();
+      } else if (snapshot.phase === "saved" && !snapshot.dirty) {
+        setIsSaving(false);
+        overlayActions?.markSaved();
+      } else if (snapshot.phase === "error") {
+        setIsSaving(false);
+        setSaveError(
+          snapshot.error instanceof Error
+            ? snapshot.error.message
+            : "Failed to save overlay"
+        );
+        overlayActions?.markSaveError();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [overlayPageId, saveCoordinator]);
+
   // Cleanup overlay editor store on unmount
   useEffect(() => {
-    return () => destroyOverlayEditorStore(overlayPageId);
-  }, [overlayPageId]);
+    return () => {
+      saveCoordinator.dispose();
+      destroyOverlayEditorStore(overlayPageId);
+    };
+  }, [overlayPageId, saveCoordinator]);
 
   // Fetch data on mount
   useEffect(() => {
@@ -93,20 +149,16 @@ export default function OverlayEditorPage() {
     }
   }, [id, pageNumber]);
 
-  // Handle save
-  const handleSave = async (updatedOverlay: TextOverlayConfig) => {
-    setIsSaving(true);
-    setSaveError(null);
-
-    try {
+  const saveOverlayDraft = useCallback(
+    async (draft: OverlayDraft): Promise<OverlaySaveResult> => {
       const res = await fetch(
-        `/api/admin/books/${id}/pages/${pageNumber}/overlay`,
+        `/api/admin/books/${id}/pages/${draft.pageNumber}/overlay`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ overlay: updatedOverlay }),
+          body: JSON.stringify({ overlay: draft.overlay }),
         }
       );
 
@@ -120,13 +172,26 @@ export default function OverlayEditorPage() {
       // trigger the reset useEffect in the component, resetting hasChanges and
       // potentially overwriting in-flight edits if the user is still editing
       // while the autosave response arrives.
-      await res.json();
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save overlay");
-      throw err;
-    } finally {
-      setIsSaving(false);
-    }
+      const data = await res.json();
+      return {
+        pageKey: draft.pageKey,
+        pageNumber: draft.pageNumber,
+        overlay: data.overlay || draft.overlay,
+        textContent: data.textContent ?? null,
+      };
+    },
+    [id]
+  );
+  saveOverlayPortRef.current = saveOverlayDraft;
+
+  // Handle save request; SaveCoordinator owns the actual debounce and status.
+  const handleSave = async (updatedOverlay: TextOverlayConfig) => {
+    setSaveError(null);
+    saveCoordinator.requestOverlaySave({
+      pageKey: overlayPageId,
+      pageNumber,
+      overlay: updatedOverlay,
+    });
   };
 
   // Handle composite
@@ -251,6 +316,7 @@ export default function OverlayEditorPage() {
             overlay={overlay}
             onSave={handleSave}
             onComposite={handleComposite}
+            isSaveCoordinated
             isSaving={isSaving}
             isCompositing={isCompositing}
           />

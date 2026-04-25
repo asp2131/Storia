@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import {
   Headphones,
   Pause,
@@ -22,8 +23,11 @@ import {
   useAudioLibraryContext,
   usePageManagerContext,
 } from "@/contexts/BookEditorContext";
+import { PronunciationPanel } from "@/components/editor/PronunciationPanel";
 
 export function AudioLibraryPanel() {
+  const params = useParams();
+  const bookId = params.id as string;
   const narration = useNarrationContext();
   const audioLibrary = useAudioLibraryContext();
   const { localPages } = usePageManagerContext();
@@ -189,6 +193,12 @@ export function AudioLibraryPanel() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+          <PronunciationPanel
+            bookId={bookId}
+            selectedVoiceId={selectedVoiceId}
+            voiceSettings={voiceSettings}
+          />
 
           {/* ── Voice Narration ──────────────────────────────────── */}
           <div className="space-y-3">

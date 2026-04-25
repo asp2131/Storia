@@ -1,7 +1,12 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-16T21:55:44.946Z
-> Files: 546 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T15:33:07.037Z
+> Files: 613 tracked | Anatomy hits: 0 | Misses: 0
+
+## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
+
+- `MEMORY.md` — Storia Project Memory (~465 tok)
+- `pronunciation_book_table_decision.md` (~486 tok)
 
 ## ./
 
@@ -30,6 +35,34 @@
 - `tsconfig.json` — TypeScript configuration (~192 tok)
 - `tsconfig.tsbuildinfo` (~155219 tok)
 - `vitest.config.ts` — Vitest test configuration (~95 tok)
+
+## .claude/worktrees/agent-a440932b/src/app/api/books/
+
+- `route.ts` — Next.js API route: GET (~2380 tok)
+
+## .claude/worktrees/agent-a440932b/src/app/api/books/[id]/pronunciations/
+
+- `route.ts` — ManifestEntry is the simplified shape the reader consumes. (~1030 tok)
+
+## .claude/worktrees/agent-a440932b/src/hooks/
+
+- `useBookData.ts` — True iff at least one page has a non-empty wordPronunciations map. (~3075 tok)
+- `usePronunciationManifest.test.tsx` — --------------------------------------------------------------------------- (~2855 tok)
+- `usePronunciationManifest.ts` — The three states described in WR-4.8 / FR-WEB-15. (~819 tok)
+
+## .claude/worktrees/agent-a440932b/src/lib/
+
+- `pronunciation.ts` — Exports WordPronunciationEntry, WordPronunciationMap, PronunciationPlaybackMode, resolvePronunciatio (~393 tok)
+
+## .claude/worktrees/agent-a440932b/src/test/
+
+- `setup.ts` — MockResizeObserver: src (~323 tok)
+
+## .wolf/
+
+- `anatomy.md` — Auto-maintained file map and token estimates for project navigation (~9100 tok)
+- `cerebrum.md` — Project learning memory: user preferences, key learnings, do-not-repeat items, and decisions (~6400 tok)
+- `OPENWOLF.md` — OpenWolf operating protocol for context, navigation, memory, cerebrum, and bug logging (~1190 tok)
 
 ## _build/
 
@@ -674,11 +707,13 @@
 
 ## prisma/
 
-- `schema.prisma` — Declares String (~4250 tok)
+- `schema.prisma` — Declares String (~4981 tok)
 - `seed.ts` — prisma: main (~3664 tok)
 
 ## scripts/
 
+- `backfill-book-pronunciations.ts` — Backfill script: migrate per-page `pages.word_pronunciations` JSON into the (~2700 tok)
+- `backfill-pronunciations.ts` — Pronunciation backfill script (Phase 2 — Ticket 2.4). (~1862 tok)
 - `ensure-local-db.sh` — Starts local Postgres container, waits for readiness, recreates `storia_dev` if missing (~220 tok)
 
 ## specs/
@@ -686,11 +721,51 @@
 - `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
+- `web-reader-pronunciation-functional-requirements.md` — Web Reader Pronunciation Functional Requirements (~4131 tok)
+- `word-pronunciation-cross-platform-spec.md` — Product spec, phased engineering tickets, and schema/API proposal for cross-platform broken-down word pronunciation across Storia web and mobile (~5200 tok)
 
 ## src/app/
 
 - `HomeClient.tsx` — MorphogenesisHero — renders form (~5295 tok)
 - `page.tsx` — metadata (~1161 tok)
+
+## src/app/admin/(dashboard)/
+
+- `layout.tsx` — dynamic (~2615 tok)
+
+## src/app/admin/(editor)/books/[id]/edit/
+
+- `page.tsx` — Book editor shell that mounts shared audio elements and composes meta/page/audio/overlay/pronunciation panels around `BookEditorContext`. (~220 tok)
+
+## src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/
+
+- `page.tsx` — Standalone overlay editor route that fetches/saves one page overlay and destroys the per-page overlay store on exit. (~815 tok)
+
+## src/app/admin/login/
+
+- `page.tsx` — dynamic — renders form (~2393 tok)
+
+## src/app/api/admin/audio-assignments/
+
+- `route.ts` — CRUD-like admin endpoint for per-page/range audio assignments, including narration/soundscape cleanup and overlay narration deletions. (~1072 tok)
+
+## src/app/api/admin/books/[id]/pronunciations/
+
+- `route.test.ts` — Vitest coverage for editor pronunciation review data aggregation, filter validation, and search/pagination. (~2200 tok)
+- `route.ts` — Admin pronunciation review data endpoint with per-word audio/status metadata plus lightweight search/filter support. (~1700 tok)
+
+## src/app/api/admin/books/[id]/pronunciations/generate/
+
+- `route.test.ts` — Vitest coverage for standalone pronunciation generation summary/coverage responses and input validation. (~1900 tok)
+- `route.ts` — Standalone pronunciation generation endpoint (Phase 2 — Ticket 2.1 & 2.4). (~2434 tok)
+
+## src/app/api/admin/generate-narration/
+
+- `route.ts` — Next.js API route: POST (~3057 tok)
+
+## src/app/api/admin/generate-overlay-narration/
+
+- `route.ts` — Generates per-overlay-element narration tracks, persists them, and stitches a page-level fallback narration MP3 for legacy/mobile readers. (~940 tok)
 
 ## src/app/api/auth/[...all]/
 
@@ -698,15 +773,24 @@
 
 ## src/app/api/books/
 
-- `route.ts` — Next.js API route: GET with child-aware progress, hasNarration, hasQuestions (~3200 tok)
+- `route.ts` — Next.js API route: GET with child-aware progress, hasNarration, hasQuestions, hasPronunciations (~3400 tok)
 
 ## src/app/api/books/[bookId]/questions/
 
 - `route.ts` — Next.js API route: GET (~365 tok)
 
+## src/app/api/books/[id]/pronunciations/
+
+- `route.test.ts` — Declares makeRow (~1589 tok)
+- `route.ts` — Next.js API route: GET (~1134 tok)
+
 ## src/app/api/books/[id]/questions/
 
 - `route.ts` — Next.js API route: GET (~360 tok)
+
+## src/app/api/books/[id]/reader/
+
+- `route.ts` — Next.js API route: GET (~1529 tok)
 
 ## src/app/api/child-profiles/
 
@@ -732,11 +816,69 @@
 
 - `route.ts` — Next.js API route: GET (~910 tok)
 
+## src/app/books/[id]/reader/
+
+- `page.tsx` — BookReader (~10974 tok)
+
 ## src/components/
 
+- `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
+- `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
+
+## src/components/editor/
+
+- `AudioLibraryPanel.tsx` — Book editor side panel for browsing audio assets, assigning narration/soundscape to pages, and preview playback state. (~2378 tok)
+- `BookMetaPanel.tsx` — Book editor header panel for title/author inline editing plus save/publish status/actions. (~560 tok)
+- `NarrationPanel.tsx` — Book editor panel for per-page narration generation, preview, and progress/error controls. (~1036 tok)
+- `OverlayEditorPanel.tsx` — Wraps overlay editor launch/composite status for the active page inside the main editor. (~657 tok)
+- `PronunciationPanel.tsx` — pageStatusDot (~8274 tok)
+
+## src/components/text-overlay/
+
+- `DraggableTextOverlayEditor.tsx` — OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS (~3859 tok)
+- `Toolbar.tsx` — Overlay editor toolbar showing save/composite status and actions like add text, undo/redo, and composite export. (~668 tok)
+
+## src/contexts/
+
+- `BookEditorContext.overlay-narration.integration.test.tsx` — Integration tests for provider narration generation branches, especially overlay multivoice and selected-text flows. (~661 tok)
+- `BookEditorContext.overlay-regression.test.tsx` — Regression tests for overlay store remapping/preservation across page reorder and delete operations. (~498 tok)
+- `BookEditorContext.tsx` — Central editor orchestration provider for pages, dirty/autosave flows, audio assignment/generation, overlay composite state, and reader-style previews. (~4422 tok)
+
+## src/hooks/
+
+- `useBookData.ts` — React Query hooks for editor book/pages/audio CRUD, narration generation, and shared API types used by `BookEditorContext`. (~1689 tok)
+- `useOverlayEditor.ts` — Zustand-backed overlay editor hook exports and selectors used by the draggable text canvas. (~114 tok)
+- `usePronunciationManifest.test.tsx` — Covers manifest absent, present, and fetch-failure states for the shipping hook (~1900 tok)
+- `usePronunciationManifest.ts` — Exports PronunciationManifestResult, usePronunciationManifest (~708 tok)
+- `useSoundLibrary.ts` — React Query hooks for sound library browsing plus audio upload helpers for the editor. (~181 tok)
+- `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
+- `useWordPronunciation.ts` — WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()` (~6529 tok)
 
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
+- `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2346 tok)
+- `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
+- `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
+- `pronunciation.ts` — True if the entry has at least one usable audio URL. (~758 tok)
+- `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
+- `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
+- `pronunciationGeneration.test.ts` — BookPronunciationRow: fakeSupabase, makeRow (~3983 tok)
+- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~4894 tok)
+- `pronunciationReview.test.ts` — Vitest coverage for per-word review aggregation, metadata shaping, and filter/pagination behavior. (~1500 tok)
+- `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3023 tok)
+- `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
+- `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
+- `saveCoordinator.ts` — Barrel export for the editor SaveCoordinator boundary in `src/lib/editor/saveCoordinator.ts` (~10 tok)
+
+## src/lib/editor/
+
+- `saveCoordinator.test.ts` — Boundary tests for SaveCoordinator debounce reset, retry/error, and overlay-before-book ordering (~2200 tok)
+- `saveCoordinator.ts` — Pure editor save coordinator with debounced autosave, dirty/status snapshots, retry, and overlay-before-book save ordering (~3650 tok)
+
+## src/stores/
+
+- `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
+- `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)

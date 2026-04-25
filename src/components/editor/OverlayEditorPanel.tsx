@@ -151,6 +151,7 @@ export function OverlayEditorPanel() {
                 overlay={activePageData!.overlay || null}
                 onSave={handleOverlaySave}
                 onComposite={handleOverlayComposite}
+                isSaveCoordinated
                 isSaving={false}
                 isCompositing={overlayEditorCompositing}
                 voiceOptions={voiceOptions}
