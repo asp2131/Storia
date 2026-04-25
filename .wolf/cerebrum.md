@@ -82,6 +82,18 @@
 
 - QA re-test on 2026-04-25 after backend pronunciation fix-1: repository-wide `npx tsc --noEmit --pretty false` passes with no output; original generation suite remains 20/20 passing and admin review/overlay rework suite is 8/8 passing.
 
+- Pronunciation generation completeness means both `full_word_url` and `breakdown_url`; rows with only `full_word_url` are partial and must be selected for backfill by `collectMissingTokens`/`generatePronunciationEntries` rather than skipped as existing audio.
+
+- QA verification on 2026-04-25 after breakdown-generation fix: verbose targeted suite `npm test -- 'src/app/api/admin/books/[id]/pronunciations/generate/route.test.ts' src/lib/pronunciationGeneration.test.ts --reporter=verbose` passes 21/21, including `collectMissingTokens` partial coverage and `generatePronunciationEntries` full-word-only backfill assertions; `npx tsc --noEmit --pretty false` passes with no output.
+
+- Breakdown TTS should use pronounceable spoken chunks, not always raw spelling chunks: `buildBreakdownSpeechText("caption")` maps split chunks `["cap","tion"]` to `"cap, shun"` so ElevenLabs does not pronounce isolated `tion` as literal letters/"tee-on".
+
+- Pronunciation breakdown generation keeps raw chunking separate from spoken TTS text: `splitIntoBreakdownChunks("caption")` remains `["cap", "tion"]`, while `buildBreakdownSpeechText("caption")` returns `"cap, shun"` so isolated terminal `tion` is synthesized as /shun/ without changing storage/backfill/table behavior.
+
+- QA verification on 2026-04-25 for the tion breakdown speech fix: `npm test -- src/lib/pronunciationGeneration.test.ts --reporter=verbose` passes 17/17, `npx tsc --noEmit --pretty false` exits 0, and tests explicitly assert `caption` raw chunks stay `["cap", "tion"]` while breakdown TTS calls use `"cap, shun"`.
+
+- Breakdown TTS now uses an explicit `BREAKDOWN_SEGMENT_SEPARATOR = " ... "` between spoken chunks (e.g. `caption` -> `cap ... shun`) to encourage a slight pause without implementing deterministic audio stitching yet.
+
 ## Do-Not-Repeat
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->

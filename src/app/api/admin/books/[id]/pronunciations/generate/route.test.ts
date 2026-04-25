@@ -126,7 +126,10 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
   });
 
   it("POST accepts string maxWords and returns editor-friendly summary fields", async () => {
-    const hello = makeRow("hello", { full: "/hello.mp3" });
+    const hello = makeRow("hello", {
+      full: "/hello-full.mp3",
+      breakdown: "/hello-breakdown.mp3",
+    });
     const world = makeRow("world", { full: "/world-full.mp3" });
 
     mockPrisma.pages.findMany.mockResolvedValue([
@@ -193,8 +196,8 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
         pageId: "101",
         pageNumber: 1,
         total: 2,
-        covered: 0,
-        fullWordOnly: 2,
+        covered: 1,
+        fullWordOnly: 1,
         missing: 0,
         missingWords: [],
         status: "partial",

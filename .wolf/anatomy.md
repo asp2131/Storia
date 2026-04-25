@@ -865,6 +865,7 @@
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
+- `elevenlabs.ts` — ElevenLabs voice resolution, TTS synthesis helpers, timestamp alignment parsing, and Supabase storage path extraction (~2500 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)

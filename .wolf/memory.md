@@ -609,3 +609,41 @@
 | 09:28 | Read OpenWolf protocol/cerebrum/anatomy and QA skill for pronunciation fix retest | .wolf/OPENWOLF.md; .wolf/cerebrum.md; .wolf/anatomy.md; squad-qa-testing/SKILL.md | ready to verify targeted/full TypeScript tests | ~16000 |
 | 09:28 | Checked buglog entries for previous TypeError and TypeScript failures | .wolf/buglog.json | confirmed bug-095 claims full tsc was fixed by backend rework | ~1200 |
 | 09:29 | Ran pronunciation retest suites, full tsc, and static collectMissingTokens call-site check | pronunciation generation/review tests; TypeScript project | all targeted tests passed; tsc no output; only valid route call site found | ~3500 |
+| 09:32 | User reported generated pronunciations only have whole-word audio, no breakdowns | src/lib/pronunciationGeneration.ts | starting bug investigation; checking buglog first | ~300 |
+| 09:32 | Started squad for missing pronunciation breakdown generation | src/lib/pronunciationGeneration.ts, route/tests | backend and QA agents running | ~500 |
+| 09:33 | Read OpenWolf protocol/cerebrum/anatomy and checked git status before backend pronunciation fix | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md, git | Found existing pronunciation table contract notes; only .wolf/memory.md modified | ~1500 |
+| 09:33 | Read buglog and backend skill before fixing reported missing breakdown URLs | .wolf/buglog.json, squad-backend-dev/SKILL.md | Need inspect relevant pronunciation generation code/tests next | ~900 |
+| 09:33 | Inspected pronunciation generation pipeline, standalone route, and tests | src/lib/pronunciationGeneration.ts, src/lib/pronunciationGeneration.test.ts, src/app/api/admin/books/[id]/pronunciations/generate/route.ts, route.test.ts | Found breakdown generation is attempted after full-word and caught as warning; need trace TTS/upload behavior | ~9000 |
+| 09:33 | Added missing anatomy entry discovered for ElevenLabs helper before deeper inspection | .wolf/anatomy.md, src/lib/elevenlabs.ts | Anatomy now covers TTS helper file | ~300 |
+| 09:34 | Fixed missing breakdown backfill logic and verified tests/tsc | pronunciationGeneration.ts, pronunciationGeneration.test.ts, generate/route.test.ts | 21 targeted tests and tsc passed | ~2200 |
+| 09:34 | Ran targeted pronunciation generation tests after partial-coverage fix | src/lib/pronunciationGeneration.test.ts, src/app/api/admin/books/[id]/pronunciations/generate/route.test.ts | Vitest passed 21 tests | ~400 |
+| 09:34 | Ran repository TypeScript check after pronunciation generation fix | tsconfig, src/lib/pronunciationGeneration.ts, route/tests | npx tsc --noEmit --pretty false passed | ~250 |
+| 09:36 | Reviewed human-applied pronunciation breakdown fix diff without overwriting | src/lib/pronunciationGeneration.ts, src/lib/pronunciationGeneration.test.ts, src/app/api/admin/books/[id]/pronunciations/generate/route.test.ts, .wolf/buglog.json, .wolf/cerebrum.md | Fix targets full-word-only skip root cause; buglog/cerebrum already record learning | ~900 |
+| 09:36 | Read OpenWolf protocol/cerebrum/anatomy and QA skill before verification | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md | ready to run targeted checks | ~20000 |
+| 09:36 | Ran targeted pronunciation generation and generate-route Vitest suite with verbose reporter | src/lib/pronunciationGeneration.test.ts, src/app/api/admin/books/[id]/pronunciations/generate/route.test.ts | 21/21 passed; expected stderr from 500-path test only | ~4500 |
+| 09:36 | Ran TypeScript typecheck after targeted tests | tsconfig.json, source tree | npx tsc --noEmit --pretty false passed with no output | ~1000 |
+| 09:37 | Inspected targeted source/test assertions for breakdown-url coverage | pronunciationGeneration.ts/tests, generate route/tests | confirmed tests exercise partial full_word_url rows and breakdown_url upsert/coverage fields | ~2500 |
+| 09:37 | Updated OpenWolf cerebrum with QA verification result for breakdown generation fix | .wolf/cerebrum.md | recorded targeted suite + tsc pass and coverage note | ~1000 |
+| 09:37 | Checked final working tree after QA verification | git status | only pre-existing backend/OpenWolf files plus my memory/cerebrum updates are modified | ~500 |
+| 09:37 | User reported bad pronunciation for tion in word caption | src/lib/pronunciationGeneration.ts | starting bug investigation; checking buglog | ~250 |
+| 09:38 | Started squad for caption tion breakdown pronunciation bug | src/lib/pronunciationGeneration.ts | backend/QA running | ~500 |
+| 09:38 | Read OpenWolf instructions, cerebrum, buglog start, and git status | .wolf/OPENWOLF.md; .wolf/cerebrum.md; .wolf/buglog.json; git | found existing modified pronunciation files to inspect carefully | ~3000 |
+| 09:39 | Inspected existing pronunciationGeneration diffs and current generation/chunking code | src/lib/pronunciationGeneration.ts; src/lib/pronunciationGeneration.test.ts | found prior partial-coverage edits and TTS text uses chunks.join(", ") | ~5000 |
+| 09:40 | Read package scripts for verification commands | package.json | confirmed npm test runs vitest run | ~600 |
+| 09:39 | Fixed caption tion breakdown TTS text and verified | pronunciationGeneration.ts, pronunciationGeneration.test.ts | tests and tsc passed | ~1600 |
+| 09:42 | Human reported local tion fix; paused and inspected current tree to avoid overwriting | src/lib/pronunciationGeneration.ts; src/lib/pronunciationGeneration.test.ts | checking for overlapping local changes | ~500 |
+| 09:43 | Removed my duplicate chunksToSpeechText helper after human local fix added buildBreakdownSpeechText | src/lib/pronunciationGeneration.ts | preserved human implementation and eliminated unused overlap | ~1000 |
+| 09:40 | Verified pronunciationGeneration tion fix and typecheck after duplicate cleanup | src/lib/pronunciationGeneration.test.ts; tsconfig | npm test 17/17 passed; npx tsc no output/pass | ~800 |
+| 09:41 | Logged tion breakdown TTS bug fix | .wolf/buglog.json | appended structured bug entry | ~500 |
+| 09:42 | Updated cerebrum with pronunciation breakdown spoken-text convention | .wolf/cerebrum.md | recorded raw chunks vs TTS speech text rule | ~600 |
+| 09:43 | Final status/diff review before handoff | git; src/lib/pronunciationGeneration.ts; src/lib/pronunciationGeneration.test.ts | collecting final summary evidence | ~500 |
+| 09:44 | Session summary: pronunciationGeneration now uses buildBreakdownSpeechText for breakdown TTS so caption synthesizes cap, shun; tests/typecheck pass; duplicate helper removed after human local fix | src/lib/pronunciationGeneration.ts; src/lib/pronunciationGeneration.test.ts; .wolf/* | ready for QA handoff | ~900 |
+| 09:40 | read OpenWolf/anatomy/cerebrum and QA skill before verification | .wolf/OPENWOLF.md, .wolf/anatomy.md, .wolf/cerebrum.md | context loaded | ~0.5k |
+| 09:41 | inspected focused pronunciationGeneration tion coverage via ripgrep | src/lib/pronunciationGeneration.ts, src/lib/pronunciationGeneration.test.ts | caption TTS assertions found | ~0.3k |
+| 09:41 | ran targeted pronunciationGeneration vitest suite | src/lib/pronunciationGeneration.test.ts | 17/17 passed, including caption spoken tion test | ~0.7k |
+| 09:41 | ran full TypeScript check | tsconfig/project | npx tsc --noEmit passed with no diagnostics | ~0.1k |
+| 09:41 | captured exact test/implementation evidence for caption breakdown speech text | src/lib/pronunciationGeneration.test.ts, src/lib/pronunciationGeneration.ts | buildBreakdownSpeechText and synthesizeSpeech assertions verified | ~0.4k |
+| 09:41 | recorded QA verification learning in cerebrum | .wolf/cerebrum.md | added tion fix verification note | ~0.1k |
+| 09:41 | captured Node/npm environment for QA report | package tooling | node v22.21.0 npm 10.9.4 | ~0.05k |
+| 09:48 | Logged user concern about slight pauses between breakdown segments | .wolf/buglog.json | recommendation pending | ~500 |
+| 09:50 | Implemented option 3 breakdown pause separator and verified | pronunciationGeneration.ts, pronunciationGeneration.test.ts | tests and tsc passed | ~1200 |

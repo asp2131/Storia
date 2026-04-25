@@ -19,6 +19,7 @@ vi.mock("@/lib/elevenlabs", () => ({
 }));
 
 import {
+  buildBreakdownSpeechText,
   collectMissingTokens,
   entryCoverageStatus,
   splitIntoBreakdownChunks,
@@ -92,15 +93,27 @@ describe("splitIntoBreakdownChunks", () => {
     expect(chunks.length).toBeGreaterThanOrEqual(2);
     expect(chunks.join("")).toMatch(/butterfly|butterfl/);
   });
+
+  it("uses spoken suffixes for breakdown TTS text", () => {
+    expect(splitIntoBreakdownChunks("caption")).toEqual(["cap", "tion"]);
+    expect(buildBreakdownSpeechText("caption")).toBe("cap ... shun");
+  });
 });
 
 describe("collectMissingTokens", () => {
-  it("returns normalized tokens with no table audio", () => {
+  it("returns normalized tokens with partial or missing table coverage", () => {
     const tokens = collectMissingTokens(
-      [["hello", "world"]],
-      [makeRow({ normalized_word: "hello", full_word_url: "https://x/hello.mp3" })]
+      [["hello", "world", "covered"]],
+      [
+        makeRow({ normalized_word: "hello", full_word_url: "https://x/hello.mp3" }),
+        makeRow({
+          normalized_word: "covered",
+          full_word_url: "https://x/covered.mp3",
+          breakdown_url: "https://x/covered-breakdown.mp3",
+        }),
+      ]
     );
-    expect(tokens.sort()).toEqual(["world"]);
+    expect(tokens.sort()).toEqual(["hello", "world"]);
   });
 
   it("force=true returns all unreviewed tokens", () => {
@@ -170,10 +183,11 @@ describe("generatePronunciationEntries", () => {
     }));
   });
 
-  it("skips words with existing table audio unless force", async () => {
+  it("skips words with complete table coverage unless force", async () => {
     const existing = makeRow({
       normalized_word: "hello",
       full_word_url: "https://existing/hello.mp3",
+      breakdown_url: "https://existing/hello-breakdown.mp3",
       generated_at: new Date("2026-01-01T00:00:00.000Z"),
     });
     const generated = makeRow({
@@ -213,6 +227,48 @@ describe("generatePronunciationEntries", () => {
     expect(result.pronunciationMap.world).toMatchObject({
       fullWord: "https://cdn.example/books/42/pronunciations/full-word/world.mp3",
     });
+  });
+
+  it("backfills rows that only have full-word audio", async () => {
+    const existing = makeRow({
+      normalized_word: "hello",
+      full_word_url: "https://existing/hello.mp3",
+      breakdown_url: null,
+    });
+    const regenerated = makeRow({
+      normalized_word: "hello",
+      full_word_url: "https://cdn.example/books/42/pronunciations/full-word/hello.mp3",
+      breakdown_url: "https://cdn.example/books/42/pronunciations/breakdown/hello.mp3",
+      generated_at: new Date("2026-01-02T00:00:00.000Z"),
+    });
+    mockPrisma.book_pronunciations.findMany
+      .mockResolvedValueOnce([existing])
+      .mockResolvedValueOnce([regenerated]);
+
+    const supabase = fakeSupabase();
+    await generatePronunciationEntries({
+      supabase: supabase as never,
+      bucket: "test",
+      bookId: "42",
+      voiceId: "v1",
+      voiceSettings: { speed: 1, style: 0, useSpeakerBoost: false },
+      words: ["hello"],
+    });
+
+    expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "hello" })
+    );
+    expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "hel ... lo" })
+    );
+    expect(mockPrisma.book_pronunciations.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          full_word_url: expect.stringContaining("full-word/word_hello"),
+          breakdown_url: expect.stringContaining("breakdown/word_hello"),
+        }),
+      })
+    );
   });
 
   it("regenerates all when force=true", async () => {
@@ -263,6 +319,37 @@ describe("generatePronunciationEntries", () => {
       status: "generated",
       fullWord: "https://cdn.example/books/42/pronunciations/full-word/hello.mp3",
     });
+  });
+
+  it("uses spoken tion suffix text when synthesizing breakdown audio", async () => {
+    const caption = makeRow({
+      normalized_word: "caption",
+      full_word_url: "https://cdn.example/books/42/pronunciations/full-word/caption.mp3",
+      breakdown_url: "https://cdn.example/books/42/pronunciations/breakdown/caption.mp3",
+      source: "tts",
+      status: "generated",
+      confidence: 1,
+      generated_at: new Date("2026-01-02T00:00:00.000Z"),
+    });
+    mockPrisma.book_pronunciations.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([caption]);
+
+    await generatePronunciationEntries({
+      supabase: fakeSupabase() as never,
+      bucket: "test",
+      bookId: "42",
+      voiceId: "v1",
+      voiceSettings: { speed: 1, style: 0, useSpeakerBoost: false },
+      words: ["caption"],
+    });
+
+    expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "caption" })
+    );
+    expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
+      expect.objectContaining({ text: "cap ... shun" })
+    );
   });
 
   it("records metadata on generated table rows", async () => {

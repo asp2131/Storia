@@ -1660,6 +1660,79 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-04-25T14:27:46.828895+00:00"
+    },
+    {
+      "id": "bug-096",
+      "timestamp": "2026-04-25T14:34:39.021840+00:00",
+      "error_message": "Pronunciation generation produced only whole-word audio; breakdown_url was not backfilled for rows that already had full_word_url.",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "The generation skip logic treated any existing audio URL as complete coverage. Full-word-only rows were skipped by collectMissingTokens/generatePronunciationEntries on subsequent runs, so missing breakdown_url assets were never generated unless force=true.",
+      "fix": "Changed skip logic to skip only rows with complete coverage (both full_word_url and breakdown_url). Full-word-only rows are now selected for generation/backfill. Added tests for partial coverage collection and full-word-only backfill.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "full-word-only",
+        "coverage",
+        "backfill"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:34:39.021840+00:00"
+    },
+    {
+      "id": "bug-097",
+      "timestamp": "2026-04-25T14:39:22.801259+00:00",
+      "error_message": "Breakdown pronunciation for words like \"caption\" pronounced the isolated \"tion\" chunk incorrectly instead of the /shun/ sound.",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "The breakdown TTS text used raw orthographic chunks (`cap, tion`). ElevenLabs can read isolated `tion` literally (tee-on) rather than as the suffix phoneme.",
+      "fix": "Added buildBreakdownSpeechText with spoken suffix mapping for `tion` -> `shun`, and use it when synthesizing breakdown audio. Added tests asserting caption uses `cap, shun`.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "tts",
+        "phonics",
+        "tion"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:39:22.801259+00:00"
+    },
+    {
+      "id": "bug-098",
+      "timestamp": "2026-04-25T14:40:11.558497+00:00",
+      "error_message": "Breakdown TTS for words ending in tion synthesized the literal chunk 'tion' instead of the /shun/ sound (e.g. caption => cap, tion).",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "splitIntoBreakdownChunks correctly produced raw chunks like ['cap', 'tion'], but generation passed chunks.join(', ') directly to TTS, causing isolated 'tion' to be spoken literally.",
+      "fix": "Added buildBreakdownSpeechText() to convert spoken-only breakdown chunks from raw chunk text, mapping isolated 'tion' to 'shun', and wired breakdown synthesis to use it. Added tests for caption speech text and generation TTS payload.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "tts",
+        "tion"
+      ],
+      "related_bugs": [
+        "bug-086"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:40:11.558497+00:00"
+    },
+    {
+      "id": "bug-099",
+      "timestamp": "2026-04-25T14:48:42.123404+00:00",
+      "error_message": "User noted pronunciation breakdown segments should have a slight pause between segments.",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "Current breakdown TTS text uses comma-separated chunks (e.g. \"cap, shun\"), which hints a pause but leaves pause duration up to the TTS model and may not be consistent enough.",
+      "fix": "Implemented low-risk option 3: added BREAKDOWN_SEGMENT_SEPARATOR = \" ... \" and changed buildBreakdownSpeechText to join spoken chunks with that separator, so caption becomes \"cap ... shun\". Updated tests and verified pronunciationGeneration tests plus TypeScript.",
+      "tags": [
+        "pronunciation-generation",
+        "breakdown",
+        "tts",
+        "pause",
+        "ux"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:50:09.900893+00:00"
     }
   ]
 }

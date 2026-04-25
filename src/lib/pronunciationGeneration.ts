@@ -143,6 +143,21 @@ export function splitIntoBreakdownChunks(word: string): string[] {
   return fallbackChunks;
 }
 
+const BREAKDOWN_SEGMENT_SEPARATOR = " ... ";
+
+function spokenBreakdownChunk(chunk: string): string {
+  // Isolated "tion" is often read by TTS as letters/"tee-on". For the
+  // breakdown clip we want the spoken phoneme kids expect to hear.
+  if (chunk === "tion") return "shun";
+  return chunk;
+}
+
+export function buildBreakdownSpeechText(word: string): string | null {
+  const chunks = splitIntoBreakdownChunks(word);
+  if (chunks.length < 2) return null;
+  return chunks.map(spokenBreakdownChunk).join(BREAKDOWN_SEGMENT_SEPARATOR);
+}
+
 export async function uploadPronunciationAsset(params: {
   supabase: SupabaseClient;
   bucket: string;
@@ -184,15 +199,26 @@ export function isRowReviewedGuarded(row: BookPronunciationRow): boolean {
 }
 
 /**
- * True when a row already has any usable audio URL.
+ * True when a row already has both playback assets needed for full coverage.
+ * A full-word-only row is intentionally not complete: it should be selected
+ * for a later generation pass so missing breakdown_url can be backfilled.
  */
-function rowHasAudio(row: BookPronunciationRow | undefined): boolean {
+function rowHasAnyAudio(row: BookPronunciationRow | undefined): boolean {
   if (!row) return false;
   const hasFull =
     typeof row.full_word_url === "string" && row.full_word_url.length > 0;
   const hasBreak =
     typeof row.breakdown_url === "string" && row.breakdown_url.length > 0;
   return hasFull || hasBreak;
+}
+
+function rowHasCompleteAudio(row: BookPronunciationRow | undefined): boolean {
+  if (!row) return false;
+  const hasFull =
+    typeof row.full_word_url === "string" && row.full_word_url.length > 0;
+  const hasBreak =
+    typeof row.breakdown_url === "string" && row.breakdown_url.length > 0;
+  return hasFull && hasBreak;
 }
 
 /**
@@ -254,8 +280,9 @@ export async function generatePronunciationEntries(
       continue;
     }
 
-    // Existing row with audio + not forced → skip.
-    if (!force && rowHasAudio(existing)) {
+    // Existing row with full coverage + not forced → skip. Full-word-only rows
+    // are partial and should be backfilled with breakdown audio.
+    if (!force && rowHasCompleteAudio(existing)) {
       stats.skipped += 1;
       continue;
     }
@@ -288,11 +315,11 @@ export async function generatePronunciationEntries(
           });
 
           let breakdownUrl: string | undefined;
-          const chunks = splitIntoBreakdownChunks(word);
-          if (chunks.length >= 2) {
+          const breakdownSpeechText = buildBreakdownSpeechText(word);
+          if (breakdownSpeechText) {
             try {
               const breakdownAudio = await synthesizeSpeech({
-                text: chunks.join(", "),
+                text: breakdownSpeechText,
                 voiceId,
                 speed: Math.max(0.7, voiceSettings.speed * 0.92),
                 style: voiceSettings.style,
@@ -408,7 +435,7 @@ export async function generatePronunciationEntries(
 
   const pronunciationMap: Record<string, WordPronunciationEntry> = {};
   for (const row of finalRows) {
-    if (rowHasAudio(row)) {
+    if (rowHasAnyAudio(row)) {
       pronunciationMap[row.normalized_word] = rowToWordPronunciationEntry(row);
     }
   }
@@ -448,7 +475,7 @@ export function collectMissingTokens(
         continue;
       }
 
-      if (!force && rowHasAudio(existing)) continue;
+      if (!force && rowHasCompleteAudio(existing)) continue;
 
       missing.add(token);
     }
