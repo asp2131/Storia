@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T14:58:48.698Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T15:33:07.037Z
 > Files: 613 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
@@ -818,7 +818,7 @@
 
 ## src/app/books/[id]/reader/
 
-- `page.tsx` — BookReader (~11050 tok)
+- `page.tsx` — BookReader (~10974 tok)
 
 ## src/components/
 
@@ -850,10 +850,10 @@
 - `useBookData.ts` — React Query hooks for editor book/pages/audio CRUD, narration generation, and shared API types used by `BookEditorContext`. (~1689 tok)
 - `useOverlayEditor.ts` — Zustand-backed overlay editor hook exports and selectors used by the draggable text canvas. (~114 tok)
 - `usePronunciationManifest.test.tsx` — Covers manifest absent, present, and fetch-failure states for the shipping hook (~1900 tok)
-- `usePronunciationManifest.ts` — Reader hook that fetches the book-level pronunciation manifest with absent/loading/error/present states (~700 tok)
+- `usePronunciationManifest.ts` — Exports PronunciationManifestResult, usePronunciationManifest (~708 tok)
 - `useSoundLibrary.ts` — React Query hooks for sound library browsing plus audio upload helpers for the editor. (~181 tok)
 - `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
-- `useWordPronunciation.ts` — WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()` (~5967 tok)
+- `useWordPronunciation.ts` — WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()` (~6529 tok)
 
 ## src/lib/
 

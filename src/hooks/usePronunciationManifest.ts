@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   manifestToWordPronunciationMap,
@@ -50,6 +51,14 @@ export function usePronunciationManifest(opts: {
     refetchOnReconnect: false,
   });
 
+  // Memoize the derived map so its reference is stable across renders.
+  // Otherwise the reader's reset effect re-fires every render and kills
+  // any in-flight pronunciation playback.
+  const entries = useMemo(
+    () => (query.data ? manifestToWordPronunciationMap(query.data) : null),
+    [query.data]
+  );
+
   if (!enabled) {
     return { status: "absent" };
   }
@@ -58,7 +67,7 @@ export function usePronunciationManifest(opts: {
     return { status: "loading" };
   }
 
-  if (query.isError || !query.data) {
+  if (query.isError || !query.data || !entries) {
     return { status: "error", cause: query.error };
   }
 
@@ -70,6 +79,6 @@ export function usePronunciationManifest(opts: {
       "defaultPlaybackMode" in query.data
         ? query.data.defaultPlaybackMode
         : undefined,
-    entries: manifestToWordPronunciationMap(query.data),
+    entries,
   };
 }

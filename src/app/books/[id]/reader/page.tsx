@@ -252,10 +252,10 @@ export default function BookReader() {
       return "whole-word";
     }
 
-    return preferences.pronunciationMode === "tap-breakdown"
-      ? "breakdown"
-      : "whole-word";
-  }, [preferences.pronunciationMode, pronunciationFeatureEnabled]);
+    // Click always tries breakdown first; the hook falls back to full-word
+    // when the row has no breakdown clip.
+    return "breakdown";
+  }, [pronunciationFeatureEnabled]);
 
   const handleWordPrimaryAction = useCallback(
     (word: string, index: number) => {

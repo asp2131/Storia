@@ -660,3 +660,27 @@
 | 09:58 | Edited src/lib/elevenlabs.ts | modified synthesizeSpeech() | ~346 |
 | 09:58 | Edited src/lib/pronunciationGeneration.ts | modified if() | ~164 |
 | 09:59 | Session end: 6 writes across 3 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts) | 3 reads | ~11491 tok |
+| 10:02 | Edited src/app/books/[id]/reader/page.tsx | modified useCallback() | ~98 |
+| 10:03 | Session end: 7 writes across 4 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx) | 4 reads | ~22639 tok |
+| 10:10 | Edited src/hooks/useWordPronunciation.ts | 4→8 lines | ~148 |
+| 10:10 | Edited src/hooks/useWordPronunciation.ts | added 1 condition(s) | ~184 |
+| 10:10 | Edited src/hooks/useWordPronunciation.ts | added 1 condition(s) | ~128 |
+| 10:10 | Edited src/hooks/useWordPronunciation.ts | added 2 condition(s) | ~213 |
+| 10:11 | Edited src/hooks/useWordPronunciation.ts | 14→16 lines | ~100 |
+| 10:11 | Edited src/hooks/useWordPronunciation.ts | added 1 condition(s) | ~61 |
+| 10:12 | Edited src/hooks/useWordPronunciation.ts | 8→9 lines | ~182 |
+| 10:12 | Edited src/hooks/useWordPronunciation.ts | modified if() | ~122 |
+| 10:12 | Edited src/hooks/useWordPronunciation.ts | 3→2 lines | ~19 |
+| 10:13 | Edited src/hooks/useWordPronunciation.ts | added 2 condition(s) | ~414 |
+| 10:13 | Edited src/hooks/useWordPronunciation.ts | modified for() | ~260 |
+| 10:13 | Edited src/hooks/useWordPronunciation.ts | reduced (-9 lines) | ~54 |
+| 10:13 | Edited src/hooks/useWordPronunciation.ts | 16→14 lines | ~86 |
+| 10:13 | Session end: 20 writes across 5 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx, useWordPronunciation.ts) | 6 reads | ~37802 tok |
+| 10:19 | Edited src/hooks/useWordPronunciation.ts | added error handling | ~216 |
+| 10:19 | Edited src/hooks/useWordPronunciation.ts | 14→15 lines | ~93 |
+| 10:19 | Session end: 22 writes across 5 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx, useWordPronunciation.ts) | 6 reads | ~38394 tok |
+| 10:26 | Session end: 22 writes across 5 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx, useWordPronunciation.ts) | 8 reads | ~39852 tok |
+| 10:30 | Session end: 22 writes across 5 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx, useWordPronunciation.ts) | 10 reads | ~42522 tok |
+| 10:32 | Edited src/hooks/usePronunciationManifest.ts | added 1 import(s) | ~76 |
+| 10:33 | Edited src/hooks/usePronunciationManifest.ts | modified manifestToWordPronunciationMap() | ~241 |
+| 10:33 | Session end: 24 writes across 6 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx, useWordPronunciation.ts) | 10 reads | ~42763 tok |

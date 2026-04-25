@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 1649211,
-    "total_reads": 891,
-    "total_writes": 653,
+    "total_tokens_estimated": 1873183,
+    "total_reads": 935,
+    "total_writes": 770,
     "total_sessions": 24,
-    "anatomy_hits": 245,
+    "anatomy_hits": 289,
     "anatomy_misses": 640,
-    "repeated_reads_blocked": 689,
-    "estimated_savings_vs_bare_cli": 4890781
+    "repeated_reads_blocked": 740,
+    "estimated_savings_vs_bare_cli": 5207737
   },
   "sessions": [
     {
@@ -10402,6 +10402,957 @@
         "writes_count": 6,
         "repeated_reads_blocked": 2,
         "anatomy_lookups": 3
+      }
+    },
+    {
+      "id": "session-2026-04-25-0955",
+      "started": "2026-04-25T14:55:40.326Z",
+      "ended": "2026-04-25T15:03:22.204Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 4420,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 3972,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 2500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 11050,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 29,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 346,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 164,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 98,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 21942,
+        "output_tokens_estimated": 697,
+        "reads_count": 4,
+        "writes_count": 7,
+        "repeated_reads_blocked": 2,
+        "anatomy_lookups": 4
+      }
+    },
+    {
+      "id": "session-2026-04-25-0955",
+      "started": "2026-04-25T14:55:40.326Z",
+      "ended": "2026-04-25T15:13:49.104Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 4420,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 3972,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 2500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 11050,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 6239,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+          "tokens_estimated": 6953,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 29,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 346,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 164,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 98,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 148,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 184,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 128,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 213,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 100,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 182,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 122,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 414,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 260,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 54,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 86,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 35134,
+        "output_tokens_estimated": 2668,
+        "reads_count": 6,
+        "writes_count": 20,
+        "repeated_reads_blocked": 6,
+        "anatomy_lookups": 6
+      }
+    },
+    {
+      "id": "session-2026-04-25-0955",
+      "started": "2026-04-25T14:55:40.326Z",
+      "ended": "2026-04-25T15:19:45.223Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 4420,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 3972,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 2500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 11050,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 6522,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+          "tokens_estimated": 6953,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 29,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 346,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 164,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 98,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 148,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 184,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 128,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 213,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 100,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 182,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 122,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 414,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 260,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 54,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 86,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 216,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 93,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 35417,
+        "output_tokens_estimated": 2977,
+        "reads_count": 6,
+        "writes_count": 22,
+        "repeated_reads_blocked": 10,
+        "anatomy_lookups": 6
+      }
+    },
+    {
+      "id": "session-2026-04-25-0955",
+      "started": "2026-04-25T14:55:40.326Z",
+      "ended": "2026-04-25T15:26:08.652Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 4420,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 3972,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 2500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 11050,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 6522,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+          "tokens_estimated": 6953,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts",
+          "tokens_estimated": 700,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts",
+          "tokens_estimated": 758,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 29,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 346,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 164,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 98,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 148,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 184,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 128,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 213,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 100,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 182,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 122,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 414,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 260,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 54,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 86,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 216,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 93,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 36875,
+        "output_tokens_estimated": 2977,
+        "reads_count": 8,
+        "writes_count": 22,
+        "repeated_reads_blocked": 10,
+        "anatomy_lookups": 8
+      }
+    },
+    {
+      "id": "session-2026-04-25-0955",
+      "started": "2026-04-25T14:55:40.326Z",
+      "ended": "2026-04-25T15:30:51.625Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 4420,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 3972,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 2500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 11050,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 6529,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+          "tokens_estimated": 6953,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts",
+          "tokens_estimated": 700,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts",
+          "tokens_estimated": 758,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/reader/route.ts",
+          "tokens_estimated": 1529,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts",
+          "tokens_estimated": 1134,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 29,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 346,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 164,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 98,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 148,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 184,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 128,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 213,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 100,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 182,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 122,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 414,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 260,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 54,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 86,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 216,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 93,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 39545,
+        "output_tokens_estimated": 2977,
+        "reads_count": 10,
+        "writes_count": 22,
+        "repeated_reads_blocked": 11,
+        "anatomy_lookups": 10
+      }
+    },
+    {
+      "id": "session-2026-04-25-0955",
+      "started": "2026-04-25T14:55:40.326Z",
+      "ended": "2026-04-25T15:33:26.525Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 4420,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 3972,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 2500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 10974,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 6529,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.test.tsx",
+          "tokens_estimated": 6953,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts",
+          "tokens_estimated": 700,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts",
+          "tokens_estimated": 758,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/reader/route.ts",
+          "tokens_estimated": 1529,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts",
+          "tokens_estimated": 1134,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 18,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 29,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+          "tokens_estimated": 21,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 346,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+          "tokens_estimated": 164,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx",
+          "tokens_estimated": 98,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 148,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 184,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 128,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 213,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 100,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 61,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 182,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 122,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 414,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 260,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 54,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 86,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 216,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts",
+          "tokens_estimated": 93,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts",
+          "tokens_estimated": 76,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts",
+          "tokens_estimated": 241,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 39469,
+        "output_tokens_estimated": 3294,
+        "reads_count": 10,
+        "writes_count": 24,
+        "repeated_reads_blocked": 12,
+        "anatomy_lookups": 10
       }
     }
   ],

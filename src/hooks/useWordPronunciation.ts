@@ -91,6 +91,11 @@ export function useWordPronunciation(options: {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const bufferCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
+  // Cache of fetched-but-not-yet-decoded clips. Pre-fetching as ArrayBuffer
+  // avoids creating an AudioContext before any user gesture (Chrome logs
+  // "AudioContext was not allowed to start" otherwise).
+  const arrayBufferCacheRef = useRef<Map<string, ArrayBuffer>>(new Map());
+  const inflightFetchRef = useRef<Map<string, Promise<ArrayBuffer | null>>>(new Map());
   const activeSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const fallbackCache = useRef<Map<string, string>>(new Map());
   // Monotonically-incrementing request ID for cancel-and-replace (WR-5.8).
@@ -197,22 +202,56 @@ export function useWordPronunciation(options: {
 
   // ─── Audio decoding ────────────────────────────────────────────────────────
 
+  /**
+   * Pre-fetch the audio bytes without touching AudioContext, so we don't
+   * trip Chrome's autoplay policy on mount. Decoding happens later in
+   * `decodeUrl` once the user has actually tapped a word.
+   */
+  const prefetchUrl = useCallback(
+    async (url: string): Promise<ArrayBuffer | null> => {
+      const cached = arrayBufferCacheRef.current.get(url);
+      if (cached) return cached;
+      const inflight = inflightFetchRef.current.get(url);
+      if (inflight) return inflight;
+      const promise = (async () => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) return null;
+          const buf = await response.arrayBuffer();
+          arrayBufferCacheRef.current.set(url, buf);
+          return buf;
+        } catch {
+          return null;
+        } finally {
+          inflightFetchRef.current.delete(url);
+        }
+      })();
+      inflightFetchRef.current.set(url, promise);
+      return promise;
+    },
+    []
+  );
+
   const decodeUrl = useCallback(
     async (url: string): Promise<AudioBuffer | null> => {
       try {
+        const arrayBuffer = await prefetchUrl(url);
+        if (!arrayBuffer) return null;
         const ctx = getAudioContext();
-        const response = await fetch(url);
-        if (!response.ok) return null;
-        const arrayBuffer = await response.arrayBuffer();
-        return await ctx.decodeAudioData(arrayBuffer);
+        // decodeAudioData detaches the buffer; clone to keep cache reusable.
+        return await ctx.decodeAudioData(arrayBuffer.slice(0));
       } catch {
         return null;
       }
     },
-    [getAudioContext]
+    [getAudioContext, prefetchUrl]
   );
 
-  /** Preload (decode + cache) all audio URLs referenced in a pronunciation map. */
+  /**
+   * Preload the audio bytes for every URL in the map. Only the fetch happens
+   * eagerly; decoding (which requires AudioContext) is deferred to first
+   * play to avoid Chrome's pre-gesture autoplay warning.
+   */
   const preloadMap = useCallback(
     (map: Record<string, WordPronunciationEntry> | null) => {
       if (!map) return;
@@ -226,16 +265,17 @@ export function useWordPronunciation(options: {
               ];
 
         for (const url of urls) {
-          if (bufferCacheRef.current.has(url)) continue;
-          decodeUrl(url).then((buffer) => {
-            if (buffer) {
-              bufferCacheRef.current.set(url, buffer);
-            }
-          });
+          if (
+            bufferCacheRef.current.has(url) ||
+            arrayBufferCacheRef.current.has(url)
+          ) {
+            continue;
+          }
+          void prefetchUrl(url);
         }
       }
     },
-    [decodeUrl]
+    [prefetchUrl]
   );
 
   // Pre-decode current page pronunciations.
@@ -449,6 +489,16 @@ export function useWordPronunciation(options: {
 
   const pronounceWord = useCallback(
     ({ word, index, mode = "whole-word", onPlaybackStart }: PronunciationRequest) => {
+      // Create + resume the AudioContext synchronously inside the click
+      // handler. If we wait until after the prefetch await resolves, Chrome
+      // considers the user gesture window closed and silently creates the
+      // context suspended (and refuses to resume it).
+      try {
+        getAudioContext();
+      } catch {
+        // No AudioContext support; fallback path will still try <audio>.
+      }
+
       const normalizedWord = normalizePronunciationToken(word);
       if (!normalizedWord) {
         setPronouncingIndex(null);
@@ -594,6 +644,7 @@ export function useWordPronunciation(options: {
     [
       decodeUrl,
       finalizeRequest,
+      getAudioContext,
       getNarrationIntentVersion,
       getNarrationPlaybackState,
       maybeResumeNarration,

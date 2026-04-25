@@ -1781,6 +1781,86 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-25T14:58:41.075Z"
+    },
+    {
+      "id": "bug-103",
+      "timestamp": "2026-04-25T15:10:30.478Z",
+      "error_message": "Missing guard clause",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "No early return/throw for edge case: !audioContextRef.current",
+      "fix": "Added guard clause: if (!audioContextRef.current)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-25T15:11:19.118Z"
+    },
+    {
+      "id": "bug-104",
+      "timestamp": "2026-04-25T15:12:45.873Z",
+      "error_message": "Type error",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T15:12:45.873Z"
+    },
+    {
+      "id": "bug-105",
+      "timestamp": "2026-04-25T15:12:52.370Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 15→12 lines (4 removed) | Also: if (!ctx) return null;; const arrayBuffer = await response.arrayBuffer(); | Also: // First call is the user gesture that unblocks Au; const firstInteraction = !userInteractedRef.curren",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 3,
+      "last_seen": "2026-04-25T15:13:22.261Z"
+    },
+    {
+      "id": "bug-106",
+      "timestamp": "2026-04-25T15:19:24.577Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/hooks/useWordPronunciation.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T15:19:24.577Z"
+    },
+    {
+      "id": "bug-107",
+      "timestamp": "2026-04-25T15:33:07.049Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/hooks/usePronunciationManifest.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 23→31 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T15:33:07.049Z"
     }
   ]
 }
