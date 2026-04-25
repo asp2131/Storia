@@ -6,7 +6,6 @@ import {
   type PronunciationReviewFilters,
   type PronunciationReviewStatus,
 } from "@/lib/pronunciationReview";
-import type { WordPronunciationMap } from "@/lib/pronunciation";
 
 const ALLOWED_COVERAGE_FILTERS = new Set<PronunciationReviewCoverageStatus>([
   "missing",
@@ -141,24 +140,42 @@ export async function GET(
   }
 
   try {
-    const pages = await prisma.pages.findMany({
-      where: { book_id: parsedBookId },
-      orderBy: { page_number: "asc" },
-      select: {
-        id: true,
-        page_number: true,
-        text_content: true,
-        word_pronunciations: true,
-      },
-    });
+    const [pages, pronunciations] = await Promise.all([
+      prisma.pages.findMany({
+        where: { book_id: parsedBookId },
+        orderBy: { page_number: "asc" },
+        select: {
+          id: true,
+          page_number: true,
+          text_content: true,
+        },
+      }),
+      prisma.book_pronunciations.findMany({
+        where: { book_id: parsedBookId },
+        select: {
+          normalized_word: true,
+          display_word: true,
+          full_word_url: true,
+          breakdown_url: true,
+          source: true,
+          status: true,
+          confidence: true,
+          human_reviewed: true,
+          generated_at: true,
+          updated_at: true,
+        },
+      }),
+    ]);
 
     const review = buildPronunciationReviewData(
-      pages.map((page) => ({
-        id: page.id,
-        pageNumber: page.page_number,
-        textContent: page.text_content,
-        entries: (page.word_pronunciations as WordPronunciationMap | null) ?? {},
-      })),
+      {
+        pages: pages.map((page) => ({
+          id: page.id,
+          pageNumber: page.page_number,
+          textContent: page.text_content,
+        })),
+        pronunciations,
+      },
       filters
     );
 

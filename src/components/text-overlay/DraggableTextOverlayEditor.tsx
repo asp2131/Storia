@@ -21,14 +21,13 @@ interface DraggableTextOverlayEditorProps {
   overlay: TextOverlayConfig | null;
   onSave: (overlay: TextOverlayConfig) => Promise<void>;
   onComposite: () => Promise<void>;
+  isSaveCoordinated?: boolean;
   isSaving?: boolean;
   isCompositing?: boolean;
   voiceOptions?: VoiceOption[];
   enableVoiceAssignment?: boolean;
   onSelectedElementChange?: (element: TextElement | null) => void;
 }
-
-const OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS = 6000;
 
 // ─── DraggableTextElement Sub-Component ────────────────────────────────────
 
@@ -234,6 +233,7 @@ export function DraggableTextOverlayEditor({
   overlay,
   onSave,
   onComposite,
+  isSaveCoordinated = false,
   isSaving = false,
   isCompositing = false,
   voiceOptions = [],
@@ -288,23 +288,25 @@ export function DraggableTextOverlayEditor({
     };
   }, [pageId]);
 
-  // Autosave effect — debounced. Re-runs on every element mutation so the
-  // 6s timer resets while the user is still typing/editing. `elements` ref
-  // changes on each store mutation; status alone stays "pending" across
-  // edits and would otherwise let the first timer fire mid-typing.
+  // Autosave request effect. Coordinated callers report the latest draft to a
+  // parent SaveCoordinator, which owns debounce/status. Non-coordinated callers
+  // still get direct save lifecycle status for compatibility.
   useEffect(() => {
     if (autoSaveStatus !== "pending") return;
-    const timer = setTimeout(async () => {
-      actionsRef.current.markSaving();
-      try {
-        await onSave(actionsRef.current.buildConfig());
-        actionsRef.current.markSaved();
-      } catch {
+
+    const savePromise = onSave(actionsRef.current.buildConfig());
+    if (isSaveCoordinated) {
+      void savePromise.catch(() => {
         actionsRef.current.markSaveError();
-      }
-    }, OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [autoSaveStatus, elements, onSave]);
+      });
+      return;
+    }
+
+    actionsRef.current.markSaving();
+    void savePromise
+      .then(() => actionsRef.current.markSaved())
+      .catch(() => actionsRef.current.markSaveError());
+  }, [autoSaveStatus, elements, isSaveCoordinated, onSave]);
 
   // Notify parent when selected element changes
   useEffect(() => {

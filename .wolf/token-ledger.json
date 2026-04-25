@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 1607126,
-    "total_reads": 875,
-    "total_writes": 642,
+    "total_tokens_estimated": 1629239,
+    "total_reads": 886,
+    "total_writes": 643,
     "total_sessions": 23,
-    "anatomy_hits": 231,
-    "anatomy_misses": 638,
-    "repeated_reads_blocked": 679,
-    "estimated_savings_vs_bare_cli": 4853695
+    "anatomy_hits": 240,
+    "anatomy_misses": 640,
+    "repeated_reads_blocked": 685,
+    "estimated_savings_vs_bare_cli": 4872997
   },
   "sessions": [
     {
@@ -10200,6 +10200,94 @@
         "writes_count": 1,
         "repeated_reads_blocked": 2,
         "anatomy_lookups": 3
+      }
+    },
+    {
+      "id": "session-2026-04-25-2224",
+      "started": "2026-04-25T03:24:55.766Z",
+      "ended": "2026-04-25T03:31:15.015Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+          "tokens_estimated": 3859,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/stores/overlayEditorStore.ts",
+          "tokens_estimated": 377,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.tsx",
+          "tokens_estimated": 4422,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts",
+          "tokens_estimated": 1689,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/stores/overlayEditorRegistry.ts",
+          "tokens_estimated": 184,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx",
+          "tokens_estimated": 8274,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/books/[id]/edit/page.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/AudioLibraryPanel.tsx",
+          "tokens_estimated": 2378,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/(editor)/books/[id]/edit/page.tsx",
+          "tokens_estimated": 220,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.overlay-regression.test.tsx",
+          "tokens_estimated": 498,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/.claude/skills/improve-codebase-architecture/REFERENCE.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+          "tokens_estimated": 212,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 21901,
+        "output_tokens_estimated": 212,
+        "reads_count": 11,
+        "writes_count": 1,
+        "repeated_reads_blocked": 6,
+        "anatomy_lookups": 9
       }
     }
   ],

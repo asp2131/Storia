@@ -6,6 +6,9 @@ const { mockPrisma } = vi.hoisted(() => ({
     pages: {
       findMany: vi.fn(),
     },
+    book_pronunciations: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -26,34 +29,49 @@ describe("/api/admin/books/[id]/pronunciations", () => {
         id: 101n,
         page_number: 1,
         text_content: "Hello, world! HELLO",
-        word_pronunciations: {
-          hello: {
-            fullWord: "/hello-full.mp3",
-            breakdown: "/hello-break.mp3",
-            source: "tts",
-            status: "generated",
-            generatedAt: "2026-04-23T10:00:00.000Z",
-          },
-        },
       },
       {
         id: 102n,
         page_number: 2,
         text_content: "World lantern",
-        word_pronunciations: {
-          world: {
-            fullWord: "/world-full.mp3",
-            source: "override",
-            status: "reviewed",
-            confidence: 0.92,
-            generatedAt: "2026-04-23T11:00:00.000Z",
-          },
-          lantern: {
-            source: "tts",
-            status: "failed",
-            generatedAt: "2026-04-23T12:00:00.000Z",
-          },
-        },
+      },
+    ]);
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      {
+        normalized_word: "hello",
+        display_word: "Hello",
+        full_word_url: "/hello-full.mp3",
+        breakdown_url: "/hello-break.mp3",
+        source: "tts",
+        status: "generated",
+        confidence: null,
+        human_reviewed: false,
+        generated_at: "2026-04-23T10:00:00.000Z",
+        updated_at: null,
+      },
+      {
+        normalized_word: "world",
+        display_word: "world",
+        full_word_url: "/world-full.mp3",
+        breakdown_url: null,
+        source: "override",
+        status: "reviewed",
+        confidence: 0.92,
+        human_reviewed: true,
+        generated_at: "2026-04-23T11:00:00.000Z",
+        updated_at: null,
+      },
+      {
+        normalized_word: "lantern",
+        display_word: "lantern",
+        full_word_url: null,
+        breakdown_url: null,
+        source: "tts",
+        status: "failed",
+        confidence: null,
+        human_reviewed: false,
+        generated_at: "2026-04-23T12:00:00.000Z",
+        updated_at: null,
       },
     ]);
 
@@ -142,30 +160,49 @@ describe("/api/admin/books/[id]/pronunciations", () => {
         id: 101n,
         page_number: 1,
         text_content: "Hello world",
-        word_pronunciations: {
-          hello: {
-            fullWord: "/hello-full.mp3",
-            breakdown: "/hello-break.mp3",
-            source: "tts",
-            status: "generated",
-          },
-        },
       },
       {
         id: 102n,
         page_number: 2,
         text_content: "World lantern",
-        word_pronunciations: {
-          world: {
-            fullWord: "/world-full.mp3",
-            source: "override",
-            status: "reviewed",
-          },
-          lantern: {
-            source: "tts",
-            status: "failed",
-          },
-        },
+      },
+    ]);
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      {
+        normalized_word: "hello",
+        display_word: "Hello",
+        full_word_url: "/hello-full.mp3",
+        breakdown_url: "/hello-break.mp3",
+        source: "tts",
+        status: "generated",
+        confidence: null,
+        human_reviewed: false,
+        generated_at: null,
+        updated_at: null,
+      },
+      {
+        normalized_word: "world",
+        display_word: "world",
+        full_word_url: "/world-full.mp3",
+        breakdown_url: null,
+        source: "override",
+        status: "reviewed",
+        confidence: null,
+        human_reviewed: true,
+        generated_at: null,
+        updated_at: null,
+      },
+      {
+        normalized_word: "lantern",
+        display_word: "lantern",
+        full_word_url: null,
+        breakdown_url: null,
+        source: "tts",
+        status: "failed",
+        confidence: null,
+        human_reviewed: false,
+        generated_at: null,
+        updated_at: null,
       },
     ]);
 

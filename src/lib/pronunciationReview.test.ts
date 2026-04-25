@@ -2,44 +2,51 @@ import { describe, expect, it } from "vitest";
 import { buildPronunciationReviewData } from "@/lib/pronunciationReview";
 
 describe("buildPronunciationReviewData", () => {
-  const pages = [
-    {
-      id: 101n,
-      pageNumber: 1,
-      textContent: "Hello, world! HELLO",
-      entries: {
-        hello: {
-          fullWord: "/hello-full.mp3",
-          breakdown: "/hello-break.mp3",
-          source: "tts" as const,
-          status: "generated" as const,
-          generatedAt: "2026-04-23T10:00:00.000Z",
-        },
+  const input = {
+    pages: [
+      {
+        id: 101n,
+        pageNumber: 1,
+        textContent: "Hello, world! HELLO",
       },
-    },
-    {
-      id: 102n,
-      pageNumber: 2,
-      textContent: "World lantern",
-      entries: {
-        world: {
-          fullWord: "/world-full.mp3",
-          status: "reviewed" as const,
-          source: "override" as const,
-          confidence: 0.95,
-          generatedAt: "2026-04-23T11:00:00.000Z",
-        },
-        lantern: {
-          status: "failed" as const,
-          source: "tts" as const,
-          generatedAt: "2026-04-23T12:00:00.000Z",
-        },
+      {
+        id: 102n,
+        pageNumber: 2,
+        textContent: "World lantern",
       },
-    },
-  ];
+    ],
+    pronunciations: [
+      {
+        normalized_word: "hello",
+        display_word: "Hello",
+        full_word_url: "/hello-full.mp3",
+        breakdown_url: "/hello-break.mp3",
+        source: "tts",
+        status: "generated",
+        generated_at: "2026-04-23T10:00:00.000Z",
+      },
+      {
+        normalized_word: "world",
+        display_word: "world",
+        full_word_url: "/world-full.mp3",
+        source: "override",
+        status: "reviewed",
+        confidence: 0.95,
+        human_reviewed: true,
+        generated_at: "2026-04-23T11:00:00.000Z",
+      },
+      {
+        normalized_word: "lantern",
+        display_word: "lantern",
+        source: "tts",
+        status: "failed",
+        generated_at: "2026-04-23T12:00:00.000Z",
+      },
+    ],
+  };
 
   it("aggregates normalized review rows with coverage, audio, and review metadata", () => {
-    const result = buildPronunciationReviewData(pages);
+    const result = buildPronunciationReviewData(input);
 
     expect(result.summary).toEqual({
       totalWords: 3,
@@ -97,7 +104,7 @@ describe("buildPronunciationReviewData", () => {
   });
 
   it("supports lightweight search, page, status filters, and pagination", () => {
-    const result = buildPronunciationReviewData(pages, {
+    const result = buildPronunciationReviewData(input, {
       search: "wo",
       reviewStatus: "reviewed",
       pageNumber: 2,

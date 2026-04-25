@@ -80,7 +80,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 13→7 lines (6 removed) | Also: const currentTime = narrationProgress;; let foundIndex = -1;",
+      "fix": "Rewrote 13\u21927 lines (6 removed) | Also: const currentTime = narrationProgress;; let foundIndex = -1;",
       "tags": [
         "auto-detected",
         "refactor",
@@ -112,7 +112,7 @@
       "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
       "file": ".claude/worktrees/agent-a3cc6296/src/contexts/BookEditorContext.tsx",
       "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
-      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
+      "fix": "Changed overlayConfig \u2192 normalizeOverlayForMobile",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -144,7 +144,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 13→7 lines (6 removed)",
+      "fix": "Rewrote 13\u21927 lines (6 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -160,7 +160,7 @@
       "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
-      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
+      "fix": "Changed overlayConfig \u2192 normalizeOverlayForMobile",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -176,7 +176,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/editor/AudioLibraryPanel.tsx",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 6→17 lines (3 removed)",
+      "fix": "Rewrote 6\u219217 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -191,8 +191,8 @@
       "timestamp": "2026-03-27T18:06:35.876Z",
       "error_message": "CSS fix: narrationTimestamps",
       "file": "src/contexts/BookEditorContext.tsx",
-      "root_cause": "narrationTimestamps: undefined → undefined, narrationUrl: undefined",
-      "fix": "Changed narrationTimestamps: undefined → undefined, narrationUrl: undefined",
+      "root_cause": "narrationTimestamps: undefined \u2192 undefined, narrationUrl: undefined",
+      "fix": "Changed narrationTimestamps: undefined \u2192 undefined, narrationUrl: undefined",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -240,7 +240,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/audio-stitcher.ts",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 11→15 lines (3 removed)",
+      "fix": "Rewrote 11\u219215 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -275,7 +275,7 @@
       "timestamp": "2026-03-27T22:27:07.691Z",
       "error_message": "Missing error handling in getFfmpegPath",
       "file": "src/lib/audio-stitcher.ts",
-      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
       "fix": "Added try/catch block | Also: try {; await execFileAsync(ffmpeg, ffmpegArgs, {",
       "tags": [
         "auto-detected",
@@ -291,7 +291,7 @@
       "timestamp": "2026-03-27T23:30:00.000Z",
       "error_message": "Only first overlay text audible when playing back stitched narration (Xing header stripping was insufficient)",
       "file": "src/lib/audio-stitcher.ts",
-      "root_cause": "Naive JS MP3 buffer concatenation fails because: (1) Xing/LAME VBR headers declare total frame count causing browsers to stop early, (2) synthetic silence frames have different encoding parameters than ElevenLabs output causing decoder confusion at frame boundaries. Stripping headers alone was insufficient — the frame parameter mismatch between silence and real audio remained.",
+      "root_cause": "Naive JS MP3 buffer concatenation fails because: (1) Xing/LAME VBR headers declare total frame count causing browsers to stop early, (2) synthetic silence frames have different encoding parameters than ElevenLabs output causing decoder confusion at frame boundaries. Stripping headers alone was insufficient \u2014 the frame parameter mismatch between silence and real audio remained.",
       "fix": "Replaced entire audio-stitcher with ffmpeg-static based implementation. Uses ffmpeg concat filter (decode + re-encode) with anullsrc for silence gaps. Produces a spec-compliant single MP3. Added ffmpeg-static to serverExternalPackages in next.config.ts.",
       "tags": [
         "audio",
@@ -315,7 +315,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 4→6 lines (2 removed)",
+      "fix": "Rewrote 4\u21926 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -330,8 +330,8 @@
       "timestamp": "2026-04-04T19:10:55.836Z",
       "error_message": "CSS fix: https",
       "file": "src/app/page.tsx",
-      "root_cause": "https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
-      "fix": "Changed https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "root_cause": "https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" \u2192 //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "fix": "Changed https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" \u2192 //apps.apple.com/us/app/storia-kids/id6759848322\"",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -346,8 +346,8 @@
       "timestamp": "2026-04-04T19:14:20.118Z",
       "error_message": "CSS fix: background",
       "file": "src/components/MorphogenesisHero.tsx",
-      "root_cause": "background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
-      "fix": "Changed background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "root_cause": "background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", \u2192 \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "fix": "Changed background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", \u2192 \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -395,7 +395,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/MorphogenesisHero.tsx",
       "root_cause": "10 lines replaced/restructured",
-      "fix": "Rewrote 11→4 lines (10 removed) | Also: {/* ── Top zone: Model + Title + Tagline ── */}; <div className=\"relative z-10 flex flex-col items-",
+      "fix": "Rewrote 11\u21924 lines (10 removed) | Also: {/* \u2500\u2500 Top zone: Model + Title + Tagline \u2500\u2500 */}; <div className=\"relative z-10 flex flex-col items-",
       "tags": [
         "auto-detected",
         "refactor",
@@ -411,7 +411,7 @@
       "error_message": "Wrong reference: remotePatterns should be dangerouslyAllowSVG",
       "file": "next.config.ts",
       "root_cause": "Used \"remotePatterns\" instead of \"dangerouslyAllowSVG\"",
-      "fix": "Changed remotePatterns → dangerouslyAllowSVG",
+      "fix": "Changed remotePatterns \u2192 dangerouslyAllowSVG",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -442,7 +442,7 @@
       "timestamp": "2026-04-07T13:05:26.706Z",
       "error_message": "Missing await",
       "file": "prisma/seed.ts",
-      "root_cause": "Async call without await — returned Promise instead of value",
+      "root_cause": "Async call without await \u2014 returned Promise instead of value",
       "fix": "Added await to async call",
       "tags": [
         "auto-detected",
@@ -496,7 +496,7 @@
       "timestamp": "2026-04-07T15:46:04.287Z",
       "error_message": "Missing error handling in function",
       "file": "src/lib/auth.ts",
-      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -512,7 +512,7 @@
       "timestamp": "2026-04-07T15:48:06.222Z",
       "error_message": "Missing error handling in unknown",
       "file": "src/app/api/auth/[...all]/route.ts",
-      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -529,7 +529,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/auth.ts",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 13→15 lines (2 removed)",
+      "fix": "Rewrote 13\u219215 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -705,7 +705,7 @@
       "error_message": "Targeted narration-aware pronunciation hook test does not observe auto-resume completion callback after breakdown playback",
       "file": "src/hooks/useWordPronunciation.ts",
       "root_cause": "Current breakdown playback test never sees an active source onended handler, suggesting the narration auto-resume completion path is not reliably established or is being cleared before playback completion is observed.",
-      "fix": "Fixed 2026-04-23: Rewrote useWordPronunciation with formal PlaybackState machine and playSingleBuffer primitive that installs onended correctly for every play path, including the 2-clip breakdown chain (step1 onended → gap → step2 onended → maybeResumeNarration). All narration-resume tests now pass with stable wordPronunciations references.",
+      "fix": "Fixed 2026-04-23: Rewrote useWordPronunciation with formal PlaybackState machine and playSingleBuffer primitive that installs onended correctly for every play path, including the 2-clip breakdown chain (step1 onended \u2192 gap \u2192 step2 onended \u2192 maybeResumeNarration). All narration-resume tests now pass with stable wordPronunciations references.",
       "tags": [
         "pronunciation",
         "reader",
@@ -723,7 +723,7 @@
     {
       "id": "bug-046",
       "timestamp": "2026-04-23T19:52:00Z",
-      "error_message": "WR-5.3 breakdown 2-clip sequence missing: pronunciation hook only played single resolved URL, not breakdown→fullWord chain",
+      "error_message": "WR-5.3 breakdown 2-clip sequence missing: pronunciation hook only played single resolved URL, not breakdown\u2192fullWord chain",
       "file": "src/hooks/useWordPronunciation.ts",
       "root_cause": "The pronounceWord function used resolvePronunciationUrl to get a single URL and played one AudioBuffer. The spec (WR-5.3) requires breakdown mode to play breakdown clip THEN full-word clip sequentially with a short inter-clip gap.",
       "fix": "Added playBreakdownSequence and playSingleBuffer helpers. pronounceWord now detects entries with a breakdown URL and dispatches to the 2-clip sequence. The gap timer is BREAKDOWN_INTER_CLIP_GAP_MS=150ms. requestId guards inside each step ensure cancel-and-replace supersedes any in-flight step.",
@@ -817,7 +817,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/app/books/[id]/reader/page.tsx",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 52→97 lines (5 removed) | Also: const interactionTs = Date.now();; onInteractionStart: interactionTs,",
+      "fix": "Rewrote 52\u219297 lines (5 removed) | Also: const interactionTs = Date.now();; onInteractionStart: interactionTs,",
       "tags": [
         "auto-detected",
         "refactor",
@@ -865,7 +865,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/app/api/admin/generate-narration/route.ts",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 74→101 lines (3 removed)",
+      "fix": "Rewrote 74\u2192101 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -954,7 +954,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/app/api/admin/generate-narration/route.ts",
       "root_cause": "52 lines replaced/restructured",
-      "fix": "Rewrote 105→27 lines (52 removed)",
+      "fix": "Rewrote 105\u219227 lines (52 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -969,7 +969,7 @@
       "timestamp": "2026-04-23T19:00:35.931Z",
       "error_message": "Missing error handling in unknown",
       "file": "src/hooks/useWordPronunciation.ts",
-      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -985,8 +985,8 @@
       "timestamp": "2026-04-23T19:01:06.698Z",
       "error_message": "CSS fix: outcome",
       "file": "src/app/books/[id]/reader/page.tsx",
-      "root_cause": "outcome: \"played\",  // optimistic → \"played\",",
-      "fix": "Changed outcome: \"played\",  // optimistic → \"played\",",
+      "root_cause": "outcome: \"played\",  // optimistic \u2192 \"played\",",
+      "fix": "Changed outcome: \"played\",  // optimistic \u2192 \"played\",",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -1002,7 +1002,7 @@
       "error_message": "Significant refactor of ",
       "file": "specs/web-reader-pronunciation-functional-requirements.md",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 6→17 lines (2 removed)",
+      "fix": "Rewrote 6\u219217 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1129,7 +1129,7 @@
       "error_message": "Significant refactor of ",
       "file": "prisma/schema.prisma",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 3→4 lines (3 removed)",
+      "fix": "Rewrote 3\u21924 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1199,7 +1199,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/editor/PronunciationPanel.tsx",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 9→27 lines (5 removed)",
+      "fix": "Rewrote 9\u219227 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1384,7 +1384,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 14→17 lines (2 removed)",
+      "fix": "Rewrote 14\u219217 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1397,7 +1397,7 @@
     {
       "id": "bug-081",
       "timestamp": "2026-04-24T00:00:00Z",
-      "error_message": "Overlay autosave fires mid-typing — debounce never resets while user keeps editing",
+      "error_message": "Overlay autosave fires mid-typing \u2014 debounce never resets while user keeps editing",
       "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "root_cause": "Autosave useEffect deps were [autoSaveStatus, onSave]. First keystroke flips status idle->pending; subsequent keystrokes keep it pending (no value change) so the effect does not re-run and the cleanup never fires, letting the original 6s timer reach completion while user is still typing. Triggers handleOverlaySave -> setLocalPages -> overlay prop ref change -> init() -> in-flight edits clobbered.",
       "fix": "Added `elements` to the autosave effect dep array. Each store mutation produces a new array ref, so the effect re-runs, cleanup clears the prior setTimeout, and a fresh 6s debounce window starts.",
@@ -1411,6 +1411,255 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-24T00:00:00Z"
+    },
+    {
+      "id": "bug-082",
+      "timestamp": "2026-04-25T03:46:31.805451+00:00",
+      "error_message": "npm run lint -- --file ... failed: Invalid option '--file' with ESLint flat config",
+      "file": "package.json / eslint CLI invocation",
+      "root_cause": "ESLint flat config no longer supports the legacy Next-style --file flag through this script.",
+      "fix": "Reran verification with direct file paths: npx eslint <files>.",
+      "tags": [
+        "eslint",
+        "verification",
+        "flat-config",
+        "cli"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:46:31.805451+00:00"
+    },
+    {
+      "id": "bug-083",
+      "timestamp": "2026-04-25T03:46:31.805451+00:00",
+      "error_message": "Editor book/page and overlay autosaves could race, letting a stale page PATCH overwrite overlay-derived textContent.",
+      "file": "src/lib/editor/saveCoordinator.ts, src/contexts/BookEditorContext.tsx",
+      "root_cause": "Book draft autosave and overlay autosave were separate state machines/timers without an ordering rule between overlay POST and page PATCH.",
+      "fix": "Introduced SaveCoordinator with one debounce and overlay-before-book flush ordering; BookEditorContext now snapshots the book draft after applying overlay save results.",
+      "tags": [
+        "autosave",
+        "race-condition",
+        "overlay",
+        "book-editor"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:46:31.805451+00:00"
+    },
+    {
+      "id": "bug-084",
+      "timestamp": "2026-04-25T03:47:39.045827+00:00",
+      "error_message": "npx tsc --noEmit fails with pre-existing pronunciation route/test type errors and overlay-regression TextElement fontFamily literal errors",
+      "file": "src/app/api/admin/books/[id]/pronunciations/*, src/lib/pronunciationGeneration.test.ts, src/lib/pronunciationReview.test.ts, src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Repository-wide TypeScript verification currently includes unrelated stale contracts around pronunciation generation/review plus existing overlay regression fixture literal widening.",
+      "fix": "Confirmed the new SaveCoordinator/editor files do not appear in the tsc error output; kept validation to targeted tests and ESLint for changed files.",
+      "tags": [
+        "typescript",
+        "verification",
+        "pre-existing",
+        "pronunciation",
+        "tests"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:47:39.045827+00:00"
+    },
+    {
+      "id": "bug-085",
+      "timestamp": "2026-04-25T03:47:52.619356+00:00",
+      "error_message": "Editor save/dirty/autosave flow was split across duplicated 6s timers, scattered dirty setters, overlay store status, component timer, and context mutations; prior bug-081 came from this seam.",
+      "file": "src/contexts/BookEditorContext.tsx; src/components/text-overlay/DraggableTextOverlayEditor.tsx; src/lib/editor/saveCoordinator.ts",
+      "root_cause": "Book draft saves and overlay saves had independent debounce/state machines with no shared dirty/status boundary, so debounce reset, errors, retries, and overlay+book ordering could drift.",
+      "fix": "Added SaveCoordinator boundary with injected ports, moved book/overlay dirty scheduling and debounce into it, wired BookEditorContext and standalone overlay route through it, and changed DraggableTextOverlayEditor to request saves without owning a timer.",
+      "tags": [
+        "autosave",
+        "dirty-state",
+        "save-coordinator",
+        "overlay-editor",
+        "debounce"
+      ],
+      "related_bugs": [
+        "bug-081"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:47:52.619356+00:00"
+    },
+    {
+      "id": "bug-086",
+      "timestamp": "2026-04-25T03:47:52.619356+00:00",
+      "error_message": "Targeted SaveCoordinator test initially failed with \"promise resolved undefined instead of rejecting\" after debounce timer flush.",
+      "file": "src/lib/editor/saveCoordinator.test.ts",
+      "root_cause": "The test advanced the fake scheduler and asserted a later manual retry before the timer-started flush promise had fully settled through its finally cleanup.",
+      "fix": "Settled pending microtasks before the next flush assertion; targeted SaveCoordinator test now passes.",
+      "tags": [
+        "tests",
+        "vitest",
+        "save-coordinator",
+        "fake-scheduler"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:47:52.619356+00:00"
+    },
+    {
+      "id": "bug-087",
+      "timestamp": "2026-04-25T03:48:55.594159+00:00",
+      "error_message": "npx tsc --noEmit failed with pre-existing pronunciationGeneration/pronunciationReview API-contract type errors plus existing overlay-regression fixture fontFamily narrow-union errors during SaveCoordinator verification.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts; src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationGeneration.test.ts; src/lib/pronunciationReview.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Repository-wide TypeScript has unrelated stale test/route contracts around pronunciation generation/review and overlay fixture types; touched SaveCoordinator files were clean under targeted tsc grep after fixes.",
+      "fix": "Did not fix unrelated failures in this save-coordinator change; verified touched files by filtering `npx tsc --noEmit --pretty false` output for saveCoordinator/BookEditorContext/Draggable/overlay route paths and got no matches.",
+      "tags": [
+        "typescript",
+        "verification",
+        "pre-existing",
+        "pronunciation",
+        "tests"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:48:55.594159+00:00"
+    },
+    {
+      "id": "bug-088",
+      "timestamp": "2026-04-25T03:48:56.372279+00:00",
+      "error_message": "Standalone overlay editor used SaveCoordinator but did not mark DraggableTextOverlayEditor as coordinated, so the component could mark saved immediately after queueing a debounced save.",
+      "file": "src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/page.tsx",
+      "root_cause": "The standalone route passed an onSave handler that only enqueues a coordinator request, while leaving DraggableTextOverlayEditor in direct-save mode.",
+      "fix": "Passed isSaveCoordinated to DraggableTextOverlayEditor in the standalone route so save lifecycle status comes from SaveCoordinator subscription.",
+      "tags": [
+        "autosave",
+        "overlay-editor",
+        "status",
+        "save-coordinator"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:48:56.372279+00:00"
+    },
+    {
+      "id": "bug-089",
+      "timestamp": "2026-04-25T03:49:38.556695+00:00",
+      "error_message": "squad_modify action=cancel returned \"activeScheduler is not defined\" while trying to stop the background squad after local SaveCoordinator implementation.",
+      "file": "squad tool runtime",
+      "root_cause": "Tool-side scheduler reference error, not an application code failure.",
+      "fix": "Left squad running and continued with local verification; no code change needed.",
+      "tags": [
+        "tooling",
+        "squad",
+        "runtime-error"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:49:38.556695+00:00"
+    },
+    {
+      "id": "bug-090",
+      "timestamp": "2026-04-25T03:50:22.734763+00:00",
+      "error_message": "Manual editor save could flush the coordinator before the overlay component effect had queued the latest dirty overlay draft.",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "Overlay dirty requests are normally enqueued from a React effect in DraggableTextOverlayEditor, but Ctrl/Cmd+S or publish can happen while the active overlay store is dirty and before that effect has run.",
+      "fix": "BookEditorContext now checks the active overlay store for hasChanges and queues its buildConfig before manual save/publish flushes.",
+      "tags": [
+        "manual-save",
+        "overlay",
+        "save-coordinator",
+        "race-condition"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:50:22.734763+00:00"
+    },
+    {
+      "id": "bug-091",
+      "timestamp": "2026-04-25T14:21:52.970556+00:00",
+      "error_message": "POST /api/admin/books/[id]/pronunciations/generate failing with TypeError: existingRows is not iterable",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+      "root_cause": "The standalone generation route still used the old page-json collectMissingTokens call shape and passed an options object where pronunciationGeneration.collectMissingTokens now expects a BookPronunciationRow[] from book_pronunciations.",
+      "fix": "Fetch book_pronunciations rows before generation, pass token arrays plus BookPronunciationRow[] into collectMissingTokens, stop writing pages.word_pronunciations, and derive POST/GET coverage from generated/fetched table rows.",
+      "tags": [
+        "pronunciation",
+        "book_pronunciations",
+        "api-contract",
+        "typeerror"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:21:52.970556+00:00"
+    },
+    {
+      "id": "bug-092",
+      "timestamp": "2026-04-25T14:21:52.970556+00:00",
+      "error_message": "npx tsc --noEmit --pretty false fails with stale pronunciation review and overlay fixture type errors",
+      "file": "src/app/api/admin/books/[id]/pronunciations/route.ts",
+      "root_cause": "Repository-wide TypeScript currently includes pre-existing stale pronunciation review call sites expecting the old page-entry contract plus overlay regression fixtures with widened fontFamily strings.",
+      "fix": "Not fixed in this task; targeted pronunciation generation files have no reported tsc errors and targeted Vitest coverage passes.",
+      "tags": [
+        "typescript",
+        "pre-existing",
+        "pronunciation-review",
+        "overlay-tests"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:21:52.970556+00:00"
+    },
+    {
+      "id": "bug-093",
+      "timestamp": "2026-04-25T14:22:13.742660+00:00",
+      "error_message": "POST /api/admin/books/1/pronunciations/generate returned 500: TypeError: existingRows is not iterable at collectMissingTokens(src/lib/pronunciationGeneration.ts:424). User also noted actual table may be named book_pronuncations.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+      "root_cause": "Generate route was still using the legacy per-page word_pronunciations map contract and called collectMissingTokens(pagesForCollector, { force }) after pronunciationGeneration had changed to collectMissingTokens(tokensByPage: string[][], existingRows: BookPronunciationRow[], options).",
+      "fix": "Updated generate route to fetch existing book_pronunciations rows, pass string[][] page tokens plus rows into collectMissingTokens, call generatePronunciationEntries without removed existingEntries/pronunciationMap options, and build coverage from returned table rows. Updated route tests to mock book_pronunciations rows.",
+      "tags": [
+        "pronunciation-generation",
+        "book-pronunciations",
+        "api-500",
+        "contract-drift"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:22:13.742660+00:00"
+    },
+    {
+      "id": "bug-094",
+      "timestamp": "2026-04-25T14:23:55.734767+00:00",
+      "error_message": "npx tsc --noEmit --pretty false failed during pronunciation-generation QA verification",
+      "file": "src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationReview.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "Repository-wide TypeScript still includes unrelated stale pronunciation review input contracts and overlay regression fixture fontFamily literal widening; targeted pronunciation generation tests passed and tsc output did not include the generate route or pronunciationGeneration.ts.",
+      "fix": "Not fixed in this QA task; reported as remaining unrelated failures.",
+      "tags": [
+        "typescript",
+        "qa-verification",
+        "pre-existing",
+        "pronunciation-review",
+        "overlay-tests"
+      ],
+      "related_bugs": [
+        "bug-092"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:23:55.734767+00:00"
+    },
+    {
+      "id": "bug-095",
+      "timestamp": "2026-04-25T14:27:46.828895+00:00",
+      "error_message": "npx tsc --noEmit --pretty false failed in pronunciation review route/tests because buildPronunciationReviewData was called with legacy page-entry arrays, and overlay regression fixtures widened fontFamily to string.",
+      "file": "src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationReview.test.ts; src/app/api/admin/books/[id]/pronunciations/route.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx",
+      "root_cause": "After the book_pronunciations migration, buildPronunciationReviewData expects { pages, pronunciations } with table rows, but the admin review route and unit test still supplied the old page.word_pronunciations-derived entries array. The overlay test helper had no return type, so object literal fontFamily widened beyond the OverlayFont union.",
+      "fix": "Updated the admin review route/tests to fetch/mock book_pronunciations rows and pass { pages, pronunciations } into buildPronunciationReviewData; annotated the overlay makeElement helper as TextElement. Full npx tsc and targeted Vitest suites now pass.",
+      "tags": [
+        "typescript",
+        "pronunciation-review",
+        "book_pronunciations",
+        "api-contract",
+        "overlay-tests"
+      ],
+      "related_bugs": [
+        "bug-092",
+        "bug-094"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T14:27:46.828895+00:00"
     }
   ]
 }

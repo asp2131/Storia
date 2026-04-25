@@ -17,6 +17,9 @@ const {
       findMany: vi.fn(),
       update: vi.fn(),
     },
+    book_pronunciations: {
+      findMany: vi.fn(),
+    },
   },
   mockCreateClient: vi.fn(() => ({ storage: {} })),
   mockResolveElevenLabsVoice: vi.fn(async () => ({
@@ -60,6 +63,47 @@ import {
   POST,
 } from "@/app/api/admin/books/[id]/pronunciations/generate/route";
 
+function makeRow(
+  normalizedWord: string,
+  urls: { full?: string | null; breakdown?: string | null } = {},
+  overrides: Record<string, unknown> = {}
+) {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  return {
+    id: 1n,
+    book_id: 42n,
+    normalized_word: normalizedWord,
+    display_word: null,
+    phonetic_display: null,
+    syllables: null,
+    breakdown_segments: null,
+    full_word_url: urls.full ?? null,
+    breakdown_url: urls.breakdown ?? null,
+    source: "tts",
+    status: "generated",
+    confidence: null,
+    human_reviewed: false,
+    generated_at: now,
+    reviewed_at: null,
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  };
+}
+
+function stats(overrides: Record<string, unknown> = {}) {
+  return {
+    total: 0,
+    generated: 0,
+    skipped: 0,
+    failed: 0,
+    withBreakdown: 0,
+    failures: [],
+    skippedReviewed: 0,
+    ...overrides,
+  };
+}
+
 describe("/api/admin/books/[id]/pronunciations/generate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,37 +117,38 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
       style: 0,
       useSpeakerBoost: false,
     });
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([]);
+    mockGeneratePronunciationEntries.mockResolvedValue({
+      rows: [],
+      pronunciationMap: {},
+      stats: stats(),
+    });
   });
 
   it("POST accepts string maxWords and returns editor-friendly summary fields", async () => {
+    const hello = makeRow("hello", { full: "/hello.mp3" });
+    const world = makeRow("world", { full: "/world-full.mp3" });
+
     mockPrisma.pages.findMany.mockResolvedValue([
       {
         id: 101n,
         page_number: 1,
         text_content: "Hello world",
-        word_pronunciations: { hello: "/hello.mp3" },
       },
       {
         id: 102n,
         page_number: 2,
         text_content: "Again world",
-        word_pronunciations: null,
       },
     ]);
-    mockPrisma.pages.update.mockResolvedValue({});
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([hello]);
     mockGeneratePronunciationEntries.mockResolvedValue({
-      pronunciationMap: {
-        hello: "/hello.mp3",
-        world: { fullWord: "/world-full.mp3" },
-      },
-      stats: {
+      rows: [hello, world],
+      pronunciationMap: {},
+      stats: stats({
         total: 1,
         generated: 1,
-        skipped: 0,
-        failed: 0,
-        withBreakdown: 0,
-        failures: [],
-      },
+      }),
     });
 
     const response = await POST(
@@ -120,6 +165,9 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
+    expect(mockPrisma.book_pronunciations.findMany).toHaveBeenCalledWith({
+      where: { book_id: 42n },
+    });
     expect(mockGeneratePronunciationEntries).toHaveBeenCalledWith(
       expect.objectContaining({
         bookId: "42",
@@ -127,6 +175,7 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
         words: ["world"],
       })
     );
+    expect(mockPrisma.pages.update).not.toHaveBeenCalled();
     expect(body.request).toEqual({ force: false, maxWords: 1 });
     expect(body.summary).toMatchObject({
       uniqueBookTokens: 3,
@@ -188,19 +237,18 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
         id: 201n,
         page_number: 1,
         text_content: "Hello world",
-        word_pronunciations: {
-          hello: {
-            fullWord: "/hello-full.mp3",
-            breakdown: "/hello-break.mp3",
-          },
-        },
       },
       {
         id: 202n,
         page_number: 2,
         text_content: "Again",
-        word_pronunciations: null,
       },
+    ]);
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      makeRow("hello", {
+        full: "/hello-full.mp3",
+        breakdown: "/hello-break.mp3",
+      }),
     ]);
 
     const response = await GET(
@@ -213,6 +261,10 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
+    expect(mockPrisma.book_pronunciations.findMany).toHaveBeenCalledWith({
+      where: { book_id: 42n },
+      orderBy: { normalized_word: "asc" },
+    });
     expect(body.summary).toEqual({
       uniqueBookTokens: 3,
       coveredBookWide: 1,
@@ -250,34 +302,33 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
   });
 
   it("POST accepts stringified force=true and reports full coverage after regeneration", async () => {
+    const oldHello = makeRow("hello", { full: "/old-hello.mp3" });
+    const oldWorld = makeRow("world", { full: "/old-world.mp3" });
+    const newHello = makeRow("hello", {
+      full: "/hello-full.mp3",
+      breakdown: "/hello-break.mp3",
+    });
+    const newWorld = makeRow("world", {
+      full: "/world-full.mp3",
+      breakdown: "/world-break.mp3",
+    });
+
     mockPrisma.pages.findMany.mockResolvedValue([
       {
         id: 301n,
         page_number: 1,
         text_content: "Hello world",
-        word_pronunciations: { hello: "/hello.mp3", world: "/world.mp3" },
       },
     ]);
-    mockPrisma.pages.update.mockResolvedValue({});
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([oldHello, oldWorld]);
     mockGeneratePronunciationEntries.mockResolvedValue({
-      pronunciationMap: {
-        hello: {
-          fullWord: "/hello-full.mp3",
-          breakdown: "/hello-break.mp3",
-        },
-        world: {
-          fullWord: "/world-full.mp3",
-          breakdown: "/world-break.mp3",
-        },
-      },
-      stats: {
+      rows: [newHello, newWorld],
+      pronunciationMap: {},
+      stats: stats({
         total: 2,
         generated: 2,
-        skipped: 0,
-        failed: 0,
         withBreakdown: 2,
-        failures: [],
-      },
+      }),
     });
 
     const response = await POST(
@@ -300,6 +351,7 @@ describe("/api/admin/books/[id]/pronunciations/generate", () => {
         words: ["hello", "world"],
       })
     );
+    expect(mockPrisma.pages.update).not.toHaveBeenCalled();
     expect(body.request).toEqual({ force: true, maxWords: null });
     expect(body.summary).toMatchObject({
       missingBookWide: 0,

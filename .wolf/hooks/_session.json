@@ -3,19 +3,59 @@
   "started": "2026-04-25T03:24:55.766Z",
   "files_read": {
     "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx": {
-      "count": 1,
-      "tokens": 1187,
+      "count": 2,
+      "tokens": 3859,
       "first_read": "2026-04-25T03:26:14.001Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/stores/overlayEditorStore.ts": {
-      "count": 1,
+      "count": 2,
       "tokens": 377,
       "first_read": "2026-04-25T03:26:19.912Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.tsx": {
-      "count": 3,
+      "count": 4,
       "tokens": 4422,
       "first_read": "2026-04-25T03:26:23.448Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts": {
+      "count": 1,
+      "tokens": 1689,
+      "first_read": "2026-04-25T03:29:13.017Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/stores/overlayEditorRegistry.ts": {
+      "count": 1,
+      "tokens": 184,
+      "first_read": "2026-04-25T03:29:13.340Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx": {
+      "count": 1,
+      "tokens": 8274,
+      "first_read": "2026-04-25T03:29:17.613Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/app/admin/books/[id]/edit/page.tsx": {
+      "count": 2,
+      "tokens": 0,
+      "first_read": "2026-04-25T03:29:21.251Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/components/editor/AudioLibraryPanel.tsx": {
+      "count": 1,
+      "tokens": 2378,
+      "first_read": "2026-04-25T03:29:21.500Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/app/admin/(editor)/books/[id]/edit/page.tsx": {
+      "count": 1,
+      "tokens": 220,
+      "first_read": "2026-04-25T03:29:27.739Z"
+    },
+    "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.overlay-regression.test.tsx": {
+      "count": 1,
+      "tokens": 498,
+      "first_read": "2026-04-25T03:29:38.158Z"
+    },
+    "/Users/akinpound/.claude/skills/improve-codebase-architecture/REFERENCE.md": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-04-25T03:30:35.423Z"
     }
   },
   "files_written": [
@@ -29,9 +69,9 @@
   "edit_counts": {
     "src/components/text-overlay/DraggableTextOverlayEditor.tsx": 1
   },
-  "anatomy_hits": 3,
-  "anatomy_misses": 0,
-  "repeated_reads_warned": 2,
+  "anatomy_hits": 9,
+  "anatomy_misses": 2,
+  "repeated_reads_warned": 6,
   "cerebrum_warnings": 0,
-  "stop_count": 1
+  "stop_count": 2
 }

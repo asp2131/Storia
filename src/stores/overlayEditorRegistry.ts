@@ -11,6 +11,10 @@ export function getOverlayEditorStore(pageId: string): OverlayEditorStore {
   return store;
 }
 
+export function getExistingOverlayEditorStore(pageId: string): OverlayEditorStore | undefined {
+  return registry.get(pageId);
+}
+
 export function destroyOverlayEditorStore(pageId: string): void {
   registry.delete(pageId);
 }

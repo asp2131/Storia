@@ -106,6 +106,8 @@ export interface GenerateStats {
 export interface GenerateResult {
   /** All rows for the book after this run. */
   rows: BookPronunciationRow[];
+  /** Backward-compatible map derived from `rows`; persistence remains table-backed. */
+  pronunciationMap: Record<string, WordPronunciationEntry>;
   stats: GenerateStats;
 }
 
@@ -404,7 +406,14 @@ export async function generatePronunciationEntries(
     where: { book_id: bookIdBigInt },
   })) as BookPronunciationRow[];
 
-  return { rows: finalRows, stats };
+  const pronunciationMap: Record<string, WordPronunciationEntry> = {};
+  for (const row of finalRows) {
+    if (rowHasAudio(row)) {
+      pronunciationMap[row.normalized_word] = rowToWordPronunciationEntry(row);
+    }
+  }
+
+  return { rows: finalRows, pronunciationMap, stats };
 }
 
 /**

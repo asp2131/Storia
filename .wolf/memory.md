@@ -550,3 +550,62 @@
 | 22:27 | Edited src/components/text-overlay/DraggableTextOverlayEditor.tsx | 14→17 lines | ~212 |
 | 22:28 | overlay autosave debounce reset on each edit | src/components/text-overlay/DraggableTextOverlayEditor.tsx | fixed | ~6k |
 | 22:28 | Session end: 1 writes across 1 files (DraggableTextOverlayEditor.tsx) | 3 reads | ~6198 tok |
+| 22:31 | Session end: 1 writes across 1 files (DraggableTextOverlayEditor.tsx) | 11 reads | ~22113 tok |
+| 22:37 | Read OpenWolf protocol and anatomy before save-coordinator refactor | .wolf/OPENWOLF.md, .wolf/anatomy.md | prerequisites loaded | ~2500 |
+| 22:37 | Checked cerebrum and buglog before save/dirty/autosave work | .wolf/cerebrum.md, .wolf/buglog.json | found existing save seam learning and bug references | ~9500 |
+| 22:37 | Started squad for SaveCoordinator architecture/implementation/QA | src/contexts, src/components/text-overlay, src/hooks, src/stores | agents running | ~500 |
+| 22:37 | Inspected current editor save/autosave and overlay store snippets | BookEditorContext.tsx, DraggableTextOverlayEditor.tsx, overlayEditorStore.ts, useBookData.ts | confirmed duplicated 6s timers and split status machine | ~12000 |
+| 22:37 | Read OpenWolf/anatomy/cerebrum and inspected target save/autosave files | .wolf/OPENWOLF.md, .wolf/anatomy.md, .wolf/cerebrum.md, src/contexts/BookEditorContext.tsx, src/components/text-overlay/DraggableTextOverlayEditor.tsx, src/stores/overlayEditorStore.ts, src/hooks/useBookData.ts | current save seams mapped | ~22000 |
+| 22:39 | Designed SaveCoordinator boundary and recorded overlay-before-book save dependency | .wolf/cerebrum.md | design decision captured for implementation handoff | ~1200 |
+| 22:39 | Added date to SaveCoordinator cerebrum entry | .wolf/cerebrum.md | OpenWolf learning entry normalized | ~100 |
+| 22:40 | Read OpenWolf guidance, anatomy/cerebrum, and initial save-related file context | .wolf/OPENWOLF.md, .wolf/anatomy.md, .wolf/cerebrum.md, target files | ready to inspect existing coordinator and integrate | ~22000 |
+| 22:42 | Added SaveCoordinator and boundary test, began wiring editor/overlay autosave through it | src/lib/saveCoordinator.ts, src/lib/saveCoordinator.test.ts, BookEditorContext.tsx, DraggableTextOverlayEditor.tsx, OverlayEditorPanel.tsx, .wolf/anatomy.md | central debounce/status boundary drafted | ~18000 |
+| 22:42 | Ran SaveCoordinator boundary test | src/lib/saveCoordinator.test.ts | passed | ~1000 |
+| 22:42 | Added pure SaveCoordinator boundary with injected ports/scheduler and re-export shim | src/lib/editor/saveCoordinator.ts, src/lib/saveCoordinator.ts | coordinator now owns debounce, retry state, overlay-before-book ordering | ~9000 |
+| 22:45 | Re-ran coordinator boundary test and targeted ESLint/TS checks | saveCoordinator*, BookEditorContext.tsx, DraggableTextOverlayEditor.tsx, OverlayEditorPanel.tsx | test passed; targeted tsc clean for touched files; eslint warnings only | ~6000 |
+| 22:45 | Integrated coordinator ports into BookEditorContext and removed overlay component timer | BookEditorContext.tsx, DraggableTextOverlayEditor.tsx, overlayEditorRegistry.ts, saveCoordinator tests | main editor now schedules book/overlay saves through shared coordinator | ~12000 |
+| 22:46 | Ran targeted SaveCoordinator boundary tests | src/lib/editor/saveCoordinator.test.ts | 3 tests passed | ~1200 |
+| 22:46 | Verified lint target paths after flat-config flag failure | ESLint targets, .wolf/buglog.json | target files lint with warnings only; logged CLI failure and autosave race fix | ~4500 |
+| 22:47 | Re-ran tests/lint and checked full tsc failure scope | saveCoordinator.test.ts, changed editor files | targeted tests pass; ESLint warnings only pre-existing; tsc failures unrelated to changed files | ~6500 |
+| 22:47 | Logged save seam fix and SaveCoordinator test failure in buglog | .wolf/buglog.json | added bug entries | ~1500 |
+| 22:48 | Updated cerebrum with implemented SaveCoordinator learning | .wolf/cerebrum.md | learning recorded | ~800 |
+| 22:48 | Reviewed human-integrated standalone overlay coordinator path and added coordinated save prop | src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/page.tsx | standalone route no longer marks overlay saved before coordinator flush | ~2500 |
+| 22:48 | Logged unrelated repository-wide tsc failures encountered during verification | .wolf/buglog.json | pre-existing tsc failure recorded | ~1000 |
+| 22:48 | Re-verified after standalone route cleanup | saveCoordinator test, ESLint targets, tsc grep | 3 tests pass; ESLint warnings only; touched-file tsc grep clean | ~4000 |
+| 22:49 | Updated cerebrum with coordinated overlay editor prop gotcha | .wolf/cerebrum.md | future standalone coordinator wiring should pass isSaveCoordinated | ~500 |
+| 22:49 | Final targeted verification for SaveCoordinator changes | src/lib/editor/saveCoordinator.test.ts and touched-file tsc filter | tests passed; no touched-file tsc errors | ~1200 |
+| 22:49 | Attempted to cancel squad after local implementation | squad runtime | cancel failed: activeScheduler is not defined; left running | ~500 |
+| 22:50 | Added manual save/publish guard for active dirty overlay before coordinator flush | BookEditorContext.tsx | latest active overlay draft is queued even if component effect has not run | ~3500 |
+| 22:50 | Re-verified after manual overlay queue guard | saveCoordinator test, ESLint targets, tsc grep | 3 tests pass; ESLint warnings only; touched-file tsc grep clean | ~4000 |
+| 22:50 | Updated cerebrum with manual save active-overlay queueing rule | .wolf/cerebrum.md | documented guard against effect timing race | ~500 |
+| 22:51 | Read OpenWolf docs, QA skill, SaveCoordinator source/test, and git status | .wolf/OPENWOLF.md; .wolf/anatomy.md; .wolf/cerebrum.md; src/lib/editor/saveCoordinator.* | existing coordinator tests present; working tree has frontend changes | ~9000 |
+| 22:51 | Ran existing SaveCoordinator boundary tests before changes | src/lib/editor/saveCoordinator.test.ts | PASS: 3 tests passed in 687ms | ~200 |
+| 09:17 | User reported pronunciation generation 500 existingRows not iterable | src/lib/pronunciationGeneration.ts, route.ts | starting bug fix; must inspect buglog first | ~300 |
+| 09:17 | Started squad for pronunciation generation existingRows bug | route.ts, pronunciationGeneration.ts | backend and QA agents running | ~500 |
+| 09:17 | Read OpenWolf rules/cerebrum/buglog and checked git status before pronunciation route fix | .wolf/OPENWOLF.md, .wolf/anatomy.md, .wolf/cerebrum.md, .wolf/buglog.json | existing unrelated worktree changes noted; target files unmodified | ~12000 |
+| 09:18 | Ran targeted pronunciation tests to reproduce contract failure | src/app/api/admin/books/[id]/pronunciations/generate/route.test.ts, src/lib/pronunciationGeneration.test.ts | reproduced existingRows non-iterable and stale page-json test assumptions | ~6000 |
+| 09:18 | Checked schema/migration naming after user said table is book_pronuncations | prisma/schema.prisma, prisma/migrations | code/migration expect book_pronunciations spelling; user DB may have typo | ~800 |
+| 09:20 | Route test failed after changing generate route to book_pronunciations rows | route.test.ts | updating mocks from legacy page JSON contract | ~1200 |
+| 09:20 | Updated pronunciation generation route/lib/tests for book_pronunciations row contract | src/app/api/admin/books/[id]/pronunciations/generate/route.ts, src/lib/pronunciationGeneration.ts, related tests | route now passes BookPronunciationRow[] to collectMissingTokens and derives coverage from table rows | ~9000 |
+| 09:20 | Re-ran targeted pronunciation generation tests after contract fix | src/app/api/admin/books/[id]/pronunciations/generate/route.test.ts, src/lib/pronunciationGeneration.test.ts | 20/20 tests passed | ~1000 |
+| 09:22 | Verified fix and updated OpenWolf learning/bug logs | .wolf/cerebrum.md, .wolf/buglog.json, target tests | targeted Vitest passed; full tsc still has pre-existing review/overlay errors logged | ~3000 |
+| 09:22 | Logged and documented pronunciation generation existingRows contract fix | .wolf/buglog.json, .wolf/cerebrum.md | bug and learning recorded | ~1200 |
+| 09:22 | Loaded OpenWolf protocol/cerebrum/anatomy and QA skill for pronunciation-generation verification | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md, squad-qa-testing/SKILL.md | context ready | ~24000 |
+| 09:23 | Added missing .wolf metadata entries required after discovering files absent from anatomy | .wolf/anatomy.md | anatomy updated | ~200 |
+| 09:23 | Checked buglog for existing pronunciation-generation/typecheck records before verification | .wolf/buglog.json | found bug-091..093 covering target bug and known tsc failures | ~2200 |
+| 09:23 | Inspected working tree and npm scripts before QA; pronunciation files already modified by backend | git status, package.json | test script is vitest run | ~900 |
+| 09:23 | Ran targeted pronunciation-generation Vitest files | route.test.ts, pronunciationGeneration.test.ts | PASS: 2 files / 20 tests in 794ms | ~600 |
+| 09:23 | Ran repository TypeScript verification and documented unrelated failures | tsc, .wolf/buglog.json, .wolf/cerebrum.md | FAIL: review route/tests and overlay regression fixtures only | ~1100 |
+| 09:24 | Re-ran targeted Vitest with verbose reporter to capture edge-case names and intentional error-path stderr | route.test.ts, pronunciationGeneration.test.ts | PASS: 20 tests incl invalid maxWords/db-offline/force/existing-audio cases | ~2200 |
+| 09:24 | Captured local QA environment versions for final report | node,npm,vitest,tsc,macOS | node 22.21.0 / vitest 4.1.0 / tsc 5.9.3 | ~250 |
+| 09:24 | Session summary: verified pronunciation generation fix with targeted Vitest pass, full tsc still failing only unrelated review/overlay errors, final QA report prepared | pronunciation generation QA | PASS WITH ISSUES | ~300 |
+| 09:25 | Read OpenWolf protocol, cerebrum/anatomy, and buglog before rework | .wolf/* | ready to inspect TypeScript failures | ~tokens 18000 |
+| 09:25 | Ran git status and full TypeScript check | src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationReview.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx | tsc fails only in review input shape and overlay fontFamily fixtures | ~tokens 3500 |
+| 09:25 | Inspected pronunciation review API/lib tests and overlay regression fixtures | src/lib/pronunciationReview.ts; src/app/api/admin/books/[id]/pronunciations/route.ts; src/lib/pronunciationReview.test.ts; src/contexts/BookEditorContext.overlay-regression.test.tsx | found stale page entries contract and literal widening | ~tokens 9000 |
+| 09:27 | Applied targeted TypeScript fixes for review route/tests and overlay fixture type | pronunciation review route/tests; overlay regression test | ready for verification | ~tokens 2000 |
+| 09:27 | Verified typecheck and targeted pronunciation tests | npx tsc; pronunciation route/review/generate tests | TypeScript passed; 8 review/overlay tests and 20 generate tests passed | ~tokens 1500 |
+| 09:27 | Logged fixed TypeScript bug and pronunciation review contract learning | .wolf/buglog.json; .wolf/cerebrum.md | OpenWolf buglog/cerebrum updated | ~tokens 1000 |
+| 09:28 | Session completion summary: fixed repository-wide TS failures by aligning admin pronunciation review route/tests to book_pronunciations and typing overlay fixture; verified targeted generation tests still pass | route.ts; route.test.ts; pronunciationReview.test.ts; overlay-regression.test.tsx | ready for QA retest | ~tokens 800 |
+| 09:28 | Read OpenWolf protocol/cerebrum/anatomy and QA skill for pronunciation fix retest | .wolf/OPENWOLF.md; .wolf/cerebrum.md; .wolf/anatomy.md; squad-qa-testing/SKILL.md | ready to verify targeted/full TypeScript tests | ~16000 |
+| 09:28 | Checked buglog entries for previous TypeError and TypeScript failures | .wolf/buglog.json | confirmed bug-095 claims full tsc was fixed by backend rework | ~1200 |
+| 09:29 | Ran pronunciation retest suites, full tsc, and static collectMissingTokens call-site check | pronunciation generation/review tests; TypeScript project | all targeted tests passed; tsc no output; only valid route call site found | ~3500 |

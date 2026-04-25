@@ -8,6 +8,14 @@
 - `MEMORY.md` — Storia Project Memory (~465 tok)
 - `pronunciation_book_table_decision.md` (~486 tok)
 
+## .wolf/
+
+- `OPENWOLF.md` — OpenWolf operating protocol for context, navigation, memory, cerebrum, and bug logging (~1190 tok)
+- `anatomy.md` — Auto-maintained file map and token estimates for project navigation (~9100 tok)
+- `buglog.json` — OpenWolf structured bug history for reported errors, command failures, and fixes (~varies)
+- `cerebrum.md` — Project learning memory: user preferences, key learnings, do-not-repeat items, and decisions (~6400 tok)
+- `memory.md` — Chronological OpenWolf session action log (~varies)
+
 ## ./
 
 - `.dockerignore` — Docker ignore rules (~498 tok)
@@ -849,6 +857,11 @@
 - `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
 - `useWordPronunciation.ts` — WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()` (~5967 tok)
 
+## src/lib/editor/
+
+- `saveCoordinator.ts` — Pure editor save coordinator with debounced autosave, dirty/status snapshots, retry, and overlay-before-book save ordering (~3650 tok)
+- `saveCoordinator.test.ts` — Boundary tests for SaveCoordinator debounce reset, retry/error, and overlay-before-book ordering (~2200 tok)
+
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
@@ -862,6 +875,7 @@
 - `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~4420 tok)
 - `pronunciationReview.test.ts` — Vitest coverage for per-word review aggregation, metadata shaping, and filter/pagination behavior. (~1500 tok)
 - `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3023 tok)
+- `saveCoordinator.ts` — Barrel export for the editor SaveCoordinator boundary in `src/lib/editor/saveCoordinator.ts` (~10 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
 
