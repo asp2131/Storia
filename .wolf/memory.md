@@ -647,3 +647,16 @@
 | 09:41 | captured Node/npm environment for QA report | package tooling | node v22.21.0 npm 10.9.4 | ~0.05k |
 | 09:48 | Logged user concern about slight pauses between breakdown segments | .wolf/buglog.json | recommendation pending | ~500 |
 | 09:50 | Implemented option 3 breakdown pause separator and verified | pronunciationGeneration.ts, pronunciationGeneration.test.ts | tests and tsc passed | ~1200 |
+
+## Session: 2026-04-25 09:55
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:56 | Edited src/lib/pronunciationGeneration.ts | " ... " → " <break time=" | ~18 |
+| 09:56 | Edited src/lib/pronunciationGeneration.test.ts | 1→3 lines | ~29 |
+| 09:57 | Edited src/lib/pronunciationGeneration.test.ts | "cap ... shun" → "cap <break time=" | ~21 |
+| 09:57 | Edited src/lib/pronunciationGeneration.test.ts | "hel ... lo" → "hel <break time=" | ~21 |
+| 09:57 | Session end: 4 writes across 2 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts) | 2 reads | ~8481 tok |
+| 09:58 | Edited src/lib/elevenlabs.ts | modified synthesizeSpeech() | ~346 |
+| 09:58 | Edited src/lib/pronunciationGeneration.ts | modified if() | ~164 |
+| 09:59 | Session end: 6 writes across 3 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts) | 3 reads | ~11491 tok |

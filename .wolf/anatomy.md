@@ -1,20 +1,12 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T03:27:44.626Z
-> Files: 606 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T14:58:48.698Z
+> Files: 613 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
 - `MEMORY.md` — Storia Project Memory (~465 tok)
 - `pronunciation_book_table_decision.md` (~486 tok)
-
-## .wolf/
-
-- `OPENWOLF.md` — OpenWolf operating protocol for context, navigation, memory, cerebrum, and bug logging (~1190 tok)
-- `anatomy.md` — Auto-maintained file map and token estimates for project navigation (~9100 tok)
-- `buglog.json` — OpenWolf structured bug history for reported errors, command failures, and fixes (~varies)
-- `cerebrum.md` — Project learning memory: user preferences, key learnings, do-not-repeat items, and decisions (~6400 tok)
-- `memory.md` — Chronological OpenWolf session action log (~varies)
 
 ## ./
 
@@ -65,6 +57,12 @@
 ## .claude/worktrees/agent-a440932b/src/test/
 
 - `setup.ts` — MockResizeObserver: src (~323 tok)
+
+## .wolf/
+
+- `anatomy.md` — Auto-maintained file map and token estimates for project navigation (~9100 tok)
+- `cerebrum.md` — Project learning memory: user preferences, key learnings, do-not-repeat items, and decisions (~6400 tok)
+- `OPENWOLF.md` — OpenWolf operating protocol for context, navigation, memory, cerebrum, and bug logging (~1190 tok)
 
 ## _build/
 
@@ -857,28 +855,28 @@
 - `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
 - `useWordPronunciation.ts` — WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()` (~5967 tok)
 
-## src/lib/editor/
-
-- `saveCoordinator.ts` — Pure editor save coordinator with debounced autosave, dirty/status snapshots, retry, and overlay-before-book save ordering (~3650 tok)
-- `saveCoordinator.test.ts` — Boundary tests for SaveCoordinator debounce reset, retry/error, and overlay-before-book ordering (~2200 tok)
-
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
-- `elevenlabs.ts` — ElevenLabs voice resolution, TTS synthesis helpers, timestamp alignment parsing, and Supabase storage path extraction (~2500 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
+- `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2346 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
 - `pronunciation.ts` — True if the entry has at least one usable audio URL. (~758 tok)
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
 - `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
-- `pronunciationGeneration.test.ts` — Declares fakeSupabase (~1793 tok)
-- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~4420 tok)
+- `pronunciationGeneration.test.ts` — BookPronunciationRow: fakeSupabase, makeRow (~3983 tok)
+- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~4894 tok)
 - `pronunciationReview.test.ts` — Vitest coverage for per-word review aggregation, metadata shaping, and filter/pagination behavior. (~1500 tok)
 - `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3023 tok)
-- `saveCoordinator.ts` — Barrel export for the editor SaveCoordinator boundary in `src/lib/editor/saveCoordinator.ts` (~10 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
+- `saveCoordinator.ts` — Barrel export for the editor SaveCoordinator boundary in `src/lib/editor/saveCoordinator.ts` (~10 tok)
+
+## src/lib/editor/
+
+- `saveCoordinator.test.ts` — Boundary tests for SaveCoordinator debounce reset, retry/error, and overlay-before-book ordering (~2200 tok)
+- `saveCoordinator.ts` — Pure editor save coordinator with debounced autosave, dirty/status snapshots, retry, and overlay-before-book save ordering (~3650 tok)
 
 ## src/stores/
 

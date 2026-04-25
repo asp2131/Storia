@@ -143,7 +143,7 @@ export function splitIntoBreakdownChunks(word: string): string[] {
   return fallbackChunks;
 }
 
-const BREAKDOWN_SEGMENT_SEPARATOR = " ... ";
+const BREAKDOWN_SEGMENT_SEPARATOR = ' <break time="0.4s" /> ';
 
 function spokenBreakdownChunk(chunk: string): string {
   // Isolated "tion" is often read by TTS as letters/"tee-on". For the
@@ -318,11 +318,12 @@ export async function generatePronunciationEntries(
           const breakdownSpeechText = buildBreakdownSpeechText(word);
           if (breakdownSpeechText) {
             try {
+              // eleven_v3 honors <break time="..." /> reliably and produces
+              // clean syllable separation; turbo_v2_5 mostly ignores it.
               const breakdownAudio = await synthesizeSpeech({
                 text: breakdownSpeechText,
                 voiceId,
-                speed: Math.max(0.7, voiceSettings.speed * 0.92),
-                style: voiceSettings.style,
+                modelId: "eleven_v3",
                 useSpeakerBoost: voiceSettings.useSpeakerBoost,
               });
 

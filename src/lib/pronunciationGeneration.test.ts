@@ -96,7 +96,9 @@ describe("splitIntoBreakdownChunks", () => {
 
   it("uses spoken suffixes for breakdown TTS text", () => {
     expect(splitIntoBreakdownChunks("caption")).toEqual(["cap", "tion"]);
-    expect(buildBreakdownSpeechText("caption")).toBe("cap ... shun");
+    expect(buildBreakdownSpeechText("caption")).toBe(
+      'cap <break time="0.4s" /> shun'
+    );
   });
 });
 
@@ -259,7 +261,7 @@ describe("generatePronunciationEntries", () => {
       expect.objectContaining({ text: "hello" })
     );
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "hel ... lo" })
+      expect.objectContaining({ text: 'hel <break time="0.4s" /> lo' })
     );
     expect(mockPrisma.book_pronunciations.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -348,7 +350,7 @@ describe("generatePronunciationEntries", () => {
       expect.objectContaining({ text: "caption" })
     );
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "cap ... shun" })
+      expect.objectContaining({ text: 'cap <break time="0.4s" /> shun' })
     );
   });
 
