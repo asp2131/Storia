@@ -237,6 +237,8 @@ export const useBookEditor           = (): BookEditorContextValue => useBookEdit
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
+const BOOK_EDITOR_AUTOSAVE_DEBOUNCE_MS = 6000;
+
 export function BookEditorProvider({
   bookId: bookIdParam,
   children,
@@ -630,7 +632,7 @@ export function BookEditorProvider({
       } finally {
         setAutoSaving(false);
       }
-    }, 2500);
+    }, BOOK_EDITOR_AUTOSAVE_DEBOUNCE_MS);
 
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);

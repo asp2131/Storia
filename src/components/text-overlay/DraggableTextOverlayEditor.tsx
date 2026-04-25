@@ -28,6 +28,8 @@ interface DraggableTextOverlayEditorProps {
   onSelectedElementChange?: (element: TextElement | null) => void;
 }
 
+const OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS = 6000;
+
 // ─── DraggableTextElement Sub-Component ────────────────────────────────────
 
 interface DraggableTextElementProps {
@@ -242,7 +244,10 @@ export function DraggableTextOverlayEditor({
 
   // Keep a ref to actions so callbacks always use the current store
   const actionsRef = useRef(actions);
-  actionsRef.current = actions;
+
+  useEffect(() => {
+    actionsRef.current = actions;
+  }, [actions]);
 
   // State slices from store
   const elements = useOverlayEditor(pageId, (s) => s.elements);
@@ -283,7 +288,10 @@ export function DraggableTextOverlayEditor({
     };
   }, [pageId]);
 
-  // Autosave effect — triggered when autoSaveStatus transitions to "pending"
+  // Autosave effect — debounced. Re-runs on every element mutation so the
+  // 6s timer resets while the user is still typing/editing. `elements` ref
+  // changes on each store mutation; status alone stays "pending" across
+  // edits and would otherwise let the first timer fire mid-typing.
   useEffect(() => {
     if (autoSaveStatus !== "pending") return;
     const timer = setTimeout(async () => {
@@ -294,9 +302,9 @@ export function DraggableTextOverlayEditor({
       } catch {
         actionsRef.current.markSaveError();
       }
-    }, 3000);
+    }, OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [autoSaveStatus, onSave]);
+  }, [autoSaveStatus, elements, onSave]);
 
   // Notify parent when selected element changes
   useEffect(() => {

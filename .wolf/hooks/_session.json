@@ -1,85 +1,37 @@
 {
-  "session_id": "session-2026-04-24-1757",
-  "started": "2026-04-24T22:57:35.098Z",
+  "session_id": "session-2026-04-25-2224",
+  "started": "2026-04-25T03:24:55.766Z",
   "files_read": {
-    "/Users/akinpound/Documents/experiments/storia/src/lib/auth.ts": {
+    "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx": {
       "count": 1,
-      "tokens": 1213,
-      "first_read": "2026-04-24T22:58:43.032Z"
+      "tokens": 1187,
+      "first_read": "2026-04-25T03:26:14.001Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/app/admin/(dashboard)/layout.tsx": {
+    "/Users/akinpound/Documents/experiments/storia/src/stores/overlayEditorStore.ts": {
       "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-24T22:58:54.852Z"
+      "tokens": 377,
+      "first_read": "2026-04-25T03:26:19.912Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/app/HomeClient.tsx": {
-      "count": 2,
-      "tokens": 5295,
-      "first_read": "2026-04-24T23:02:31.804Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-24T23:13:25.993Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.test.tsx": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-24T23:13:54.695Z"
+    "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.tsx": {
+      "count": 3,
+      "tokens": 4422,
+      "first_read": "2026-04-25T03:26:23.448Z"
     }
   },
   "files_written": [
     {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/login/page.tsx",
-      "action": "create",
-      "tokens": 2393,
-      "at": "2026-04-24T23:03:10.171Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/(dashboard)/layout.tsx",
+      "file": "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "action": "edit",
-      "tokens": 70,
-      "at": "2026-04-24T23:03:14.904Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx",
-      "action": "create",
-      "tokens": 8152,
-      "at": "2026-04-24T23:15:54.342Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx",
-      "action": "edit",
-      "tokens": 252,
-      "at": "2026-04-24T23:16:23.259Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx",
-      "action": "edit",
-      "tokens": 53,
-      "at": "2026-04-24T23:16:28.177Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx",
-      "action": "edit",
-      "tokens": 30,
-      "at": "2026-04-24T23:16:47.732Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/PronunciationPanel.tsx",
-      "action": "edit",
-      "tokens": 77,
-      "at": "2026-04-24T23:19:05.435Z"
+      "tokens": 212,
+      "at": "2026-04-25T03:27:44.638Z"
     }
   ],
   "edit_counts": {
-    "src/app/admin/login/page.tsx": 1,
-    "src/app/admin/(dashboard)/layout.tsx": 1,
-    "src/components/editor/PronunciationPanel.tsx": 5
+    "src/components/text-overlay/DraggableTextOverlayEditor.tsx": 1
   },
-  "anatomy_hits": 2,
-  "anatomy_misses": 3,
-  "repeated_reads_warned": 1,
+  "anatomy_hits": 3,
+  "anatomy_misses": 0,
+  "repeated_reads_warned": 2,
   "cerebrum_warnings": 0,
-  "stop_count": 7
+  "stop_count": 1
 }

@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-24T23:19:05.421Z
-> Files: 587 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T03:27:44.626Z
+> Files: 606 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -727,9 +727,21 @@
 
 - `layout.tsx` — dynamic (~2615 tok)
 
+## src/app/admin/(editor)/books/[id]/edit/
+
+- `page.tsx` — Book editor shell that mounts shared audio elements and composes meta/page/audio/overlay/pronunciation panels around `BookEditorContext`. (~220 tok)
+
+## src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/
+
+- `page.tsx` — Standalone overlay editor route that fetches/saves one page overlay and destroys the per-page overlay store on exit. (~815 tok)
+
 ## src/app/admin/login/
 
 - `page.tsx` — dynamic — renders form (~2393 tok)
+
+## src/app/api/admin/audio-assignments/
+
+- `route.ts` — CRUD-like admin endpoint for per-page/range audio assignments, including narration/soundscape cleanup and overlay narration deletions. (~1072 tok)
 
 ## src/app/api/admin/books/[id]/pronunciations/
 
@@ -744,6 +756,10 @@
 ## src/app/api/admin/generate-narration/
 
 - `route.ts` — Next.js API route: POST (~3057 tok)
+
+## src/app/api/admin/generate-overlay-narration/
+
+- `route.ts` — Generates per-overlay-element narration tracks, persists them, and stitches a page-level fallback narration MP3 for legacy/mobile readers. (~940 tok)
 
 ## src/app/api/auth/[...all]/
 
@@ -806,12 +822,30 @@
 
 ## src/components/editor/
 
+- `AudioLibraryPanel.tsx` — Book editor side panel for browsing audio assets, assigning narration/soundscape to pages, and preview playback state. (~2378 tok)
+- `BookMetaPanel.tsx` — Book editor header panel for title/author inline editing plus save/publish status/actions. (~560 tok)
+- `NarrationPanel.tsx` — Book editor panel for per-page narration generation, preview, and progress/error controls. (~1036 tok)
+- `OverlayEditorPanel.tsx` — Wraps overlay editor launch/composite status for the active page inside the main editor. (~657 tok)
 - `PronunciationPanel.tsx` — pageStatusDot (~8274 tok)
+
+## src/components/text-overlay/
+
+- `DraggableTextOverlayEditor.tsx` — OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS (~3859 tok)
+- `Toolbar.tsx` — Overlay editor toolbar showing save/composite status and actions like add text, undo/redo, and composite export. (~668 tok)
+
+## src/contexts/
+
+- `BookEditorContext.overlay-narration.integration.test.tsx` — Integration tests for provider narration generation branches, especially overlay multivoice and selected-text flows. (~661 tok)
+- `BookEditorContext.overlay-regression.test.tsx` — Regression tests for overlay store remapping/preservation across page reorder and delete operations. (~498 tok)
+- `BookEditorContext.tsx` — Central editor orchestration provider for pages, dirty/autosave flows, audio assignment/generation, overlay composite state, and reader-style previews. (~4422 tok)
 
 ## src/hooks/
 
+- `useBookData.ts` — React Query hooks for editor book/pages/audio CRUD, narration generation, and shared API types used by `BookEditorContext`. (~1689 tok)
+- `useOverlayEditor.ts` — Zustand-backed overlay editor hook exports and selectors used by the draggable text canvas. (~114 tok)
 - `usePronunciationManifest.test.tsx` — Covers manifest absent, present, and fetch-failure states for the shipping hook (~1900 tok)
 - `usePronunciationManifest.ts` — Reader hook that fetches the book-level pronunciation manifest with absent/loading/error/present states (~700 tok)
+- `useSoundLibrary.ts` — React Query hooks for sound library browsing plus audio upload helpers for the editor. (~181 tok)
 - `useWordPronunciation.test.tsx` — waitForMountEffectsToSettle (~6953 tok)
 - `useWordPronunciation.ts` — WR-9.4: called exactly once when the first `AudioBufferSourceNode.start()` (~5967 tok)
 
@@ -819,6 +853,7 @@
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
+- `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
 - `pronunciation.ts` — True if the entry has at least one usable audio URL. (~758 tok)
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
@@ -829,3 +864,8 @@
 - `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3023 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
+
+## src/stores/
+
+- `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
+- `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)

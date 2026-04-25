@@ -1224,6 +1224,193 @@
       "related_bugs": [],
       "occurrences": 2,
       "last_seen": "2026-04-24T23:19:05.437Z"
+    },
+    {
+      "id": "bug-072",
+      "timestamp": "2026-04-25T00:45:56.245023+00:00",
+      "error_message": "Book editor autosave debounce was too sensitive, making page content editing disruptive.",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "The main book editor autosave fired after only 2500ms of inactivity, so brief pauses while writing page content or metadata triggered saves too aggressively.",
+      "fix": "Raised the main book editor autosave debounce to 6000ms so normal writing pauses do not immediately trigger a save cycle.",
+      "tags": [
+        "editor",
+        "autosave",
+        "debounce",
+        "ux",
+        "page-content"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:45:56.245191+00:00"
+    },
+    {
+      "id": "bug-073",
+      "timestamp": "2026-04-25T00:45:56.245193+00:00",
+      "error_message": "Overlay text editor autosave and lint verification exposed a ref-updated-during-render issue in DraggableTextOverlayEditor.",
+      "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+      "root_cause": "The overlay autosave was also tuned tightly at 3000ms, and the component updated actionsRef.current directly during render, which fails the react-hooks/refs lint rule.",
+      "fix": "Raised overlay autosave debounce to 6000ms and moved actionsRef.current synchronization into a useEffect so targeted eslint passes without errors.",
+      "tags": [
+        "editor",
+        "overlay",
+        "autosave",
+        "debounce",
+        "lint",
+        "refs"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:45:56.245194+00:00"
+    },
+    {
+      "id": "bug-074",
+      "timestamp": "2026-04-25T00:45:56.245195+00:00",
+      "error_message": "Shell search command failed due to unquoted parentheses in src/app/admin/(editor) path while tracing editor autosave usage.",
+      "file": "src/app/admin/(editor)/books/[id]/edit/page.tsx",
+      "root_cause": "A bash rg command included a path containing parentheses without quoting it, so the shell treated the path as syntax.",
+      "fix": "Re-ran the search with the path wrapped in single quotes and continued investigation with quoted paths.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "path-quoting"
+      ],
+      "related_bugs": [
+        "bug-037"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:45:56.245197+00:00"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-04-25T00:55:35.091887+00:00",
+      "error_message": "Shell command failed while listing improve-codebase-architecture skill files due to malformed sed substitute expression",
+      "file": "/Users/akinpound/.agents/skills/improve-codebase-architecture/REFERENCE.md",
+      "root_cause": "An ad-hoc bash pipeline used an invalid sed replacement expression, so shell inspection failed before file discovery completed.",
+      "fix": "Re-ran the inspection with a simpler find command and read REFERENCE.md directly for dependency-category definitions.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "sed"
+      ],
+      "related_bugs": [
+        "bug-034",
+        "bug-037",
+        "bug-074"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T00:55:35.091887+00:00"
+    },
+    {
+      "id": "bug-076",
+      "timestamp": "2026-04-24T19:59:06-0500",
+      "error_message": "Read tool failed with ENOENT while loading improve-codebase-architecture skill from a mistaken .pi path",
+      "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/improve-codebase-architecture/SKILL.md",
+      "root_cause": "Session lookup used the wrong skill root (.pi instead of ~/.agents) even though the project context listed the canonical skill location.",
+      "fix": "Retried the read using /Users/akinpound/.agents/skills/improve-codebase-architecture/SKILL.md and continued the QA analysis.",
+      "tags": [
+        "tooling",
+        "read-tool",
+        "command-error",
+        "skill-path"
+      ],
+      "related_bugs": [
+        "bug-034",
+        "bug-075"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T19:59:06-0500"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-04-25T01:05:11.210109+00:00",
+      "error_message": "Shell search command failed due to unquoted parentheses in src/app/admin/(editor) while tracing book editor context consumers.",
+      "file": "src/app/admin/(editor)/books/[id]/edit/page.tsx",
+      "root_cause": "An rg bash command targeted a path containing parentheses without quoting the path, so the shell parsed it as syntax.",
+      "fix": "Re-ran the search with the src/app/admin/(editor)/... path wrapped in single quotes.",
+      "tags": [
+        "tooling",
+        "shell",
+        "command-error",
+        "path-quoting",
+        "editor-analysis"
+      ],
+      "related_bugs": [
+        "bug-037",
+        "bug-074"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T01:05:11.210109+00:00"
+    },
+    {
+      "id": "bug-077",
+      "timestamp": "2026-04-25T01:11:00.799928+00:00",
+      "error_message": "Removing a range soundscape/narration from a covered page in the editor can silently do nothing.",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "The active-page UI resolves current assignments via GET /api/admin/audio-assignments for any page covered by a range, but handleDeleteAudio deletes by the active page's pageId+audioType. Range assignments are stored on the source page row, so covered pages often send the wrong owner pageId and DELETE removes 0 rows.",
+      "fix": "Not fixed in this session. Recommended fix: surface assignment ownership/id in ActivePageView and delete by assignment id (or owner page id) instead of active page id.",
+      "tags": [
+        "audio-assignments",
+        "range",
+        "editor",
+        "soundscape",
+        "narration",
+        "delete"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T01:11:00.800149+00:00"
+    },
+    {
+      "id": "bug-079",
+      "timestamp": "2026-04-25T01:16:45.323726+00:00",
+      "error_message": "ENOENT reading /Users/akinpound/Documents/experiments/storia/.pi/skills/improve-codebase-architecture/SKILL.md during QA setup",
+      "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/improve-codebase-architecture/SKILL.md",
+      "root_cause": "Configured skill path does not exist in this checkout, so the read tool failed before any project analysis.",
+      "fix": "Skipped the missing skill file and proceeded with OpenWolf docs plus in-repo editor/context/test inspection.",
+      "tags": [
+        "env",
+        "skill-path",
+        "qa-setup"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T01:16:45.323726+00:00"
+    },
+    {
+      "id": "bug-080",
+      "timestamp": "2026-04-25T03:27:44.639Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 14→17 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-25T03:27:44.639Z"
+    },
+    {
+      "id": "bug-081",
+      "timestamp": "2026-04-24T00:00:00Z",
+      "error_message": "Overlay autosave fires mid-typing — debounce never resets while user keeps editing",
+      "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+      "root_cause": "Autosave useEffect deps were [autoSaveStatus, onSave]. First keystroke flips status idle->pending; subsequent keystrokes keep it pending (no value change) so the effect does not re-run and the cleanup never fires, letting the original 6s timer reach completion while user is still typing. Triggers handleOverlaySave -> setLocalPages -> overlay prop ref change -> init() -> in-flight edits clobbered.",
+      "fix": "Added `elements` to the autosave effect dep array. Each store mutation produces a new array ref, so the effect re-runs, cleanup clears the prior setTimeout, and a fresh 6s debounce window starts.",
+      "tags": [
+        "autosave",
+        "debounce",
+        "useEffect",
+        "overlay-editor",
+        "zustand"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-24T00:00:00Z"
     }
   ]
 }
