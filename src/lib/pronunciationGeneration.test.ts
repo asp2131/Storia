@@ -34,7 +34,7 @@ function fakeSupabase() {
   const uploads: Array<{ path: string; contentType: string }> = [];
   return {
     storage: {
-      from(_bucket: string) {
+      from() {
         return {
           upload: vi.fn(async (path: string, _buf: Buffer, opts: { contentType: string }) => {
             uploads.push({ path, contentType: opts.contentType });
@@ -130,6 +130,22 @@ describe("collectMissingTokens", () => {
     expect(tokens.sort()).toEqual(["hello", "world"]);
   });
 
+  it("treats swapped storage-role URLs as needing regeneration", () => {
+    const tokens = collectMissingTokens(
+      [["caption"]],
+      [
+        makeRow({
+          normalized_word: "caption",
+          full_word_url:
+            "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+          breakdown_url:
+            "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
+        }),
+      ]
+    );
+    expect(tokens).toEqual(["caption"]);
+  });
+
   it("dedupes across pages", () => {
     const tokens = collectMissingTokens(
       [
@@ -167,6 +183,16 @@ describe("entryCoverageStatus", () => {
       entryCoverageStatus({
         full_word_url: null,
         breakdown_url: "https://x/breakdown.mp3",
+      })
+    ).toBe("full-word-only");
+  });
+  it("marks swapped storage-role URLs as partial so they are not counted covered", () => {
+    expect(
+      entryCoverageStatus({
+        full_word_url:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+        breakdown_url:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
       })
     ).toBe("full-word-only");
   });

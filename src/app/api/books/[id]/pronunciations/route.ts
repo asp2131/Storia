@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   type BookPronunciationManifest,
+  normalizePronunciationUrlPair,
   type PronunciationBreakdownSegment,
   type PronunciationSource,
   type PronunciationStatus,
@@ -100,14 +101,14 @@ function toRowEntry(row: {
     ? (row.status as PronunciationStatus)
     : undefined;
 
-  const hasFullWord =
-    typeof row.full_word_url === "string" && row.full_word_url.length > 0;
-  const hasBreakdown =
-    typeof row.breakdown_url === "string" && row.breakdown_url.length > 0;
+  const urls = normalizePronunciationUrlPair({
+    fullWord: row.full_word_url,
+    breakdown: row.breakdown_url,
+  });
 
   const audio: PublishedWordPronunciation["audio"] = {
-    ...(hasFullWord ? { fullWord: { url: row.full_word_url as string } } : {}),
-    ...(hasBreakdown ? { breakdown: { url: row.breakdown_url as string } } : {}),
+    ...(urls.fullWord ? { fullWord: { url: urls.fullWord } } : {}),
+    ...(urls.breakdown ? { breakdown: { url: urls.breakdown } } : {}),
   };
 
   return {

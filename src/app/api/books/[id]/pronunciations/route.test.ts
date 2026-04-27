@@ -116,6 +116,39 @@ describe("/api/books/[id]/pronunciations", () => {
     });
   });
 
+  it("corrects swapped full-word and breakdown storage URLs before publishing", async () => {
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      makeRow({
+        id: 4n,
+        normalized_word: "caption",
+        display_word: "Caption",
+        full_word_url:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+        breakdown_url:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
+      }),
+    ]);
+
+    const response = await GET(
+      new NextRequest("http://localhost/api/books/42/pronunciations"),
+      {
+        params: Promise.resolve({ id: "42" }),
+      }
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.entries.caption.audio).toEqual({
+      fullWord: {
+        url: "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
+      },
+      breakdown: {
+        url: "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+      },
+    });
+  });
+
   it("promotes legacy bare-string segments to objects for forward compat", async () => {
     mockPrisma.book_pronunciations.findMany.mockResolvedValue([
       makeRow({

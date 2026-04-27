@@ -13,6 +13,8 @@ type MockSource = {
 describe("useWordPronunciation", () => {
   let createdSources: MockSource[];
   let fetchMock: ReturnType<typeof vi.fn>;
+  let audioBufferUrlIds: Map<string, number>;
+  let audioBufferUrlsById: Map<number, string>;
 
   const waitForMountEffectsToSettle = async () => {
     await waitFor(() => {
@@ -22,11 +24,20 @@ describe("useWordPronunciation", () => {
 
   beforeEach(() => {
     createdSources = [];
-    fetchMock = vi.fn(async () => ({
-      ok: true,
-      arrayBuffer: async () => new ArrayBuffer(8),
-      json: async () => ({ url: "/fallback-audio.mp3" }),
-    }));
+    audioBufferUrlIds = new Map<string, number>();
+    audioBufferUrlsById = new Map<number, string>();
+    fetchMock = vi.fn(async (url: string) => {
+      const buffer = new ArrayBuffer(8);
+      const id = audioBufferUrlIds.get(url) ?? audioBufferUrlIds.size + 1;
+      audioBufferUrlIds.set(url, id);
+      audioBufferUrlsById.set(id, url);
+      new Uint8Array(buffer)[0] = id;
+      return {
+        ok: true,
+        arrayBuffer: async () => buffer,
+        json: async () => ({ url: "/fallback-audio.mp3" }),
+      };
+    });
 
     vi.stubGlobal("fetch", fetchMock);
 
@@ -35,7 +46,10 @@ describe("useWordPronunciation", () => {
 
       resume = vi.fn(async () => undefined);
       close = vi.fn(async () => undefined);
-      decodeAudioData = vi.fn(async () => ({ duration: 1 } as AudioBuffer));
+      decodeAudioData = vi.fn(async (buffer: ArrayBuffer) => {
+        const id = new Uint8Array(buffer)[0];
+        return { duration: 1, __url: audioBufferUrlsById.get(id) } as unknown as AudioBuffer;
+      });
       createBufferSource() {
         const source: MockSource = {
           buffer: null,
@@ -515,6 +529,7 @@ describe("useWordPronunciation", () => {
     await waitFor(() => {
       expect(createdSources).toHaveLength(1);
       expect(createdSources[0].start).toHaveBeenCalled();
+      expect(createdSources[0].buffer).toHaveProperty("__url", "/hello-breakdown.mp3");
       expect(result.current.playbackState).toBe("pronouncing-step1");
     });
 
@@ -527,6 +542,7 @@ describe("useWordPronunciation", () => {
     await waitFor(() => {
       expect(createdSources).toHaveLength(2);
       expect(createdSources[1].start).toHaveBeenCalled();
+      expect(createdSources[1].buffer).toHaveProperty("__url", "/hello-full.mp3");
       expect(result.current.playbackState).toBe("pronouncing-step2");
     });
 
@@ -547,7 +563,7 @@ describe("useWordPronunciation", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
 
     let narrationPlaying = true;
-    let narrationIntentVersion = 0;
+    const narrationIntentVersion = 0;
     const pauseNarration = vi.fn(() => { narrationPlaying = false; });
     const resumeNarration = vi.fn(() => { narrationPlaying = true; });
 

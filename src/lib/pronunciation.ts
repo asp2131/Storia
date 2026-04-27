@@ -99,19 +99,69 @@ export function resolvePublishedPronunciationUrl(
   mode: PronunciationPlaybackMode
 ): string | undefined {
   if (!entry?.audio) return undefined;
+  const urls = normalizePronunciationUrlPair({
+    fullWord: entry.audio.fullWord?.url,
+    breakdown: entry.audio.breakdown?.url,
+  });
   if (mode === "breakdown") {
-    return entry.audio.breakdown?.url ?? entry.audio.fullWord?.url;
+    return urls.breakdown ?? urls.fullWord;
   }
-  return entry.audio.fullWord?.url ?? entry.audio.breakdown?.url;
+  return urls.fullWord ?? urls.breakdown;
+}
+
+export type PronunciationAudioRole = "fullWord" | "breakdown" | "unknown";
+
+export function inferPronunciationAudioRole(
+  url: string | null | undefined
+): PronunciationAudioRole {
+  if (!url) return "unknown";
+  let value = url.toLowerCase();
+  try {
+    value = decodeURIComponent(value);
+  } catch {
+    // Keep the original lowercase value if URL decoding fails.
+  }
+
+  if (value.includes("/pronunciations/full-word/")) return "fullWord";
+  if (value.includes("/pronunciations/breakdown/")) return "breakdown";
+  return "unknown";
+}
+
+export function normalizePronunciationUrlPair(pair: {
+  fullWord?: string | null;
+  breakdown?: string | null;
+}): { fullWord?: string; breakdown?: string; corrected: boolean } {
+  const fullWord = pair.fullWord?.trim() || undefined;
+  const breakdown = pair.breakdown?.trim() || undefined;
+  const fullRole = inferPronunciationAudioRole(fullWord);
+  const breakdownRole = inferPronunciationAudioRole(breakdown);
+
+  if (fullRole === "breakdown" && breakdownRole === "fullWord") {
+    return { fullWord: breakdown, breakdown: fullWord, corrected: true };
+  }
+
+  if (fullRole === "breakdown" && !breakdown) {
+    return { breakdown: fullWord, corrected: true };
+  }
+
+  if (breakdownRole === "fullWord" && !fullWord) {
+    return { fullWord: breakdown, corrected: true };
+  }
+
+  return { fullWord, breakdown, corrected: false };
 }
 
 export function manifestEntryToWordPronunciationEntry(
   entry: PublishedWordPronunciation | LegacyPublishedWordPronunciation
 ): PronunciationEntryObject {
   if ("audio" in entry || "normalizedWord" in entry) {
+    const urls = normalizePronunciationUrlPair({
+      fullWord: entry.audio?.fullWord?.url,
+      breakdown: entry.audio?.breakdown?.url,
+    });
     return {
-      ...(entry.audio?.fullWord?.url ? { fullWord: entry.audio.fullWord.url } : {}),
-      ...(entry.audio?.breakdown?.url ? { breakdown: entry.audio.breakdown.url } : {}),
+      ...(urls.fullWord ? { fullWord: urls.fullWord } : {}),
+      ...(urls.breakdown ? { breakdown: urls.breakdown } : {}),
       ...(entry.source ? { source: entry.source } : {}),
       ...(typeof entry.confidence === "number" ? { confidence: entry.confidence } : {}),
       ...(entry.status ? { status: entry.status } : {}),
@@ -119,9 +169,13 @@ export function manifestEntryToWordPronunciationEntry(
     };
   }
 
+  const urls = normalizePronunciationUrlPair({
+    fullWord: entry.fullWord,
+    breakdown: entry.breakdown,
+  });
   return {
-    ...(entry.fullWord ? { fullWord: entry.fullWord } : {}),
-    ...(entry.breakdown ? { breakdown: entry.breakdown } : {}),
+    ...(urls.fullWord ? { fullWord: urls.fullWord } : {}),
+    ...(urls.breakdown ? { breakdown: urls.breakdown } : {}),
   };
 }
 

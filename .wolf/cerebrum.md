@@ -30,6 +30,7 @@
 - Reorder flows that only change active page index to follow the same logical page should preserve the current overlay store (do not destroy on index-only navigation).
 - In Vitest React context tests, mocked hook return objects should be stable references across renders; recreating `data` arrays each render can trigger sync effects repeatedly and cause render-loop/OOM behavior.
 - In Vitest hook tests for `useWordPronunciation`, keep `wordPronunciations` object references stable across rerenders; the hook resets active playback whenever that dependency reference changes, which can null `onended` and make narration auto-resume assertions flaky/false-negative.
+- In `useWordPronunciation` tests that need to assert decoded buffer provenance, do not track `ArrayBuffer` identity with `WeakMap` alone: `decodeUrl` passes `arrayBuffer.slice(0)` to `decodeAudioData`, so URL tags must survive cloning (e.g. encode an id in buffer bytes).
 - Local dev now boots Prisma against a Dockerized Postgres on `localhost:5433`; `npm run dev` runs `db:prepare` first to ensure `storia_dev` exists and apply migrations before Next starts.
 - Proof-test comprehension is modeled as **book-level end-of-book questions**, not page-anchored inline prompts; editor UX should therefore use a dedicated Questions tab separate from page/audio editing.
 - `useWordPronunciation` now accepts `Record<string, WordPronunciationEntry>` where entry is `string | { breakdown?, fullWord? }`. Resolver: breakdown mode prefers `entry.breakdown` then falls back to `entry.fullWord`; whole-word prefers `entry.fullWord` then `entry.breakdown`. Legacy string entries are passed through for either mode.
@@ -93,6 +94,11 @@
 - QA verification on 2026-04-25 for the tion breakdown speech fix: `npm test -- src/lib/pronunciationGeneration.test.ts --reporter=verbose` passes 17/17, `npx tsc --noEmit --pretty false` exits 0, and tests explicitly assert `caption` raw chunks stay `["cap", "tion"]` while breakdown TTS calls use `"cap, shun"`.
 
 - Breakdown TTS now uses an explicit `BREAKDOWN_SEGMENT_SEPARATOR = " ... "` between spoken chunks (e.g. `caption` -> `cap ... shun`) to encourage a slight pause without implementing deterministic audio stitching yet.
+- Pronunciation manifest serialization currently preserves JavaScript object insertion order: `/api/books/[id]/pronunciations` emits `audio.fullWord` before `audio.breakdown`, and `manifestEntryToWordPronunciationEntry` / `rowToWordPronunciationEntry` also assign `fullWord` first. Web `useWordPronunciation` ignores property order and plays breakdown first by named fields, but mobile/other clients must not derive playback sequence from `Object.values(audio)` unless the backend emits a breakdown-first order or an explicit sequence helper.
+
+- Mobile pronunciation playback in `storia-mobile` does not consume the web `/api/books/[id]/pronunciations` JSON manifest; it queries Supabase `book_pronunciations` directly into `BookPronunciationManifest.entries` keyed by `normalized_word`, filters `status` to `generated|reviewed`, and `PronunciationPlaybackService` constructs playback URLs explicitly as `breakdown` then `fullWord`, so backend/JSON field order cannot affect mobile ordering.
+
+- Pronunciation playback role normalization now treats Supabase storage paths as authoritative when URL fields are suspicious: paths containing `/pronunciations/full-word/` are `fullWord`, paths containing `/pronunciations/breakdown/` are `breakdown`. Web manifest serialization, manifest-to-reader conversion, generation coverage, and mobile `WordPronunciation.fromRow` all correct swapped field assignments defensively while marking swapped rows partial for regeneration.
 
 ## Do-Not-Repeat
 
@@ -102,6 +108,7 @@
 - [2026-04-23] When appending to .wolf/memory.md via python heredoc, do not use a single-line f-string with a raw newline; use a triple-quoted string literal or explicit \n escape to avoid unterminated string errors.
 - [2026-04-22] Do not pass fresh inline `wordPronunciations` objects into `useWordPronunciation` tests on every render; use stable references or the hook's reset effect will stop playback and clear `onended`, producing misleading narration-resume failures.
 - [2026-04-23] When testing cancel-and-replace behavior in a two-clip sequence: the step1 source's `onended` field on the mock is not nulled by `stopActivePlayback` because by the time the new request arrives, `activeSourceRef.current` is already null (step1 finished). The correctness invariant to test is that the gap timer's step2 callback is a no-op (requestId guard prevents it), NOT that step1's `onended` prop is null. Assert via state/pronouncingIndex instead.
+- [2026-04-27] Do not use `WeakMap<ArrayBuffer,string>` identity alone to assert `useWordPronunciation` decoded source URLs; the hook clones audio bytes with `arrayBuffer.slice(0)`, so decode mocks need clone-safe URL tagging.
 
 - [2026-04-24] When searching paths that include parentheses like `src/app/admin/(editor)`, quote the path in bash commands or the shell will throw a syntax error before `rg` runs.
 
