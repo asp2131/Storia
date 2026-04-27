@@ -7,6 +7,7 @@ import {
   phoneticDisplay,
   splitIntoBreakdownChunks,
   syllabify,
+  wrapWithPhoneme,
 } from "./pronunciationMetadata";
 
 describe("buildBreakdownSegments", () => {
@@ -39,10 +40,33 @@ describe("splitIntoBreakdownChunks", () => {
     expect(splitIntoBreakdownChunks("a")).toEqual(["a"]);
   });
 
-  it("falls back to fixed-size chunks when no vowel groups match", () => {
-    const result = splitIntoBreakdownChunks("rhythm");
-    expect(result.length).toBeGreaterThan(0);
-    expect(result.join("")).toBe("rhythm");
+  it("returns single chunk for words hypher cannot syllabify", () => {
+    // Real syllabification is preferred over a forced split.
+    expect(splitIntoBreakdownChunks("rhythm")).toEqual(["rhythm"]);
+  });
+
+  it("splits short common words now that hypher leftmin/rightmin are tuned", () => {
+    // Default hypher refuses "hel-lo" (right syllable too short). With our
+    // tuned mins it splits cleanly so kids hear hel-lo, not he-llo.
+    expect(splitIntoBreakdownChunks("hello")).toEqual(["hel", "lo"]);
+  });
+});
+
+describe("wrapWithPhoneme", () => {
+  it("returns the bare word when phonetic is null", () => {
+    expect(wrapWithPhoneme("hello", null)).toBe("hello");
+    expect(wrapWithPhoneme("hello", undefined)).toBe("hello");
+    expect(wrapWithPhoneme("hello", "")).toBe("hello");
+  });
+
+  it("strips slashes and emits an SSML phoneme tag", () => {
+    expect(wrapWithPhoneme("hello", "/həˈloʊ/")).toBe(
+      '<phoneme alphabet="ipa" ph="həˈloʊ">hello</phoneme>'
+    );
+  });
+
+  it("escapes special chars in the visible word", () => {
+    expect(wrapWithPhoneme("a&b", "/eɪ/")).toContain(">a&amp;b<");
   });
 });
 

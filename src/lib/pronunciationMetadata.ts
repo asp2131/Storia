@@ -13,7 +13,9 @@ import english from "hyphenation.en-us";
 import { dictionary as cmuDictionary } from "cmu-pronouncing-dictionary";
 import { normalizePronunciationToken } from "@/lib/pronunciation";
 
-const hypher = new Hypher(english);
+// Default leftmin=2/rightmin=3 refuses to split common kid words like "hello"
+// or "lo-go". Tighten both to 2 so phonetic teaching breakdowns work.
+const hypher = new Hypher({ ...english, leftmin: 2, rightmin: 2 });
 
 export interface BreakdownSegment {
   index: number;
@@ -29,26 +31,17 @@ export interface CharacterAlignment {
   character_end_times_seconds?: number[];
 }
 
-const VOWEL_GROUP_REGEX =
-  /[^aeiouy]*[aeiouy]+(?:[^aeiouy](?=[^aeiouy]*[aeiouy])|[^aeiouy]?$)?/gi;
-
+/**
+ * Split a word into orthographic syllable chunks for breakdown audio.
+ *
+ * Uses the same Liang-Knuth hyphenation engine as `syllabify`, so chunks
+ * align 1:1 with what the reader UI displays as syllables. Words hypher
+ * cannot split (e.g. "rhythm", "world") return a single chunk and yield
+ * no breakdown audio — that is the right call: forcing a fake split would
+ * produce misleading per-syllable highlighting.
+ */
 export function splitIntoBreakdownChunks(word: string): string[] {
-  const normalized = normalizePronunciationToken(word);
-  if (!normalized) return [];
-  if (normalized.length <= 3) return [normalized];
-
-  const rough = normalized.match(VOWEL_GROUP_REGEX)?.filter(Boolean) ?? [];
-  if (rough.length >= 2) return rough;
-
-  const fallback: string[] = [];
-  let cursor = 0;
-  while (cursor < normalized.length) {
-    const remaining = normalized.length - cursor;
-    const size = remaining <= 4 ? Math.max(2, remaining) : 3;
-    fallback.push(normalized.slice(cursor, cursor + size));
-    cursor += size;
-  }
-  return fallback;
+  return syllabify(word);
 }
 
 export function spokenBreakdownChunk(chunk: string): string {
@@ -169,6 +162,30 @@ function arpabetToIpa(arpabet: string): string {
     }
   }
   return out;
+}
+
+/**
+ * Wrap a word in an SSML phoneme tag so ElevenLabs pronounces it from IPA
+ * instead of guessing. Strips the leading/trailing slashes from
+ * `phoneticDisplay()` output. When `phonetic` is null, returns the bare word
+ * unchanged. Escapes the visible word so embedded quotes don't break SSML.
+ *
+ * NOTE: phoneme tags are reliable on `eleven_turbo_v2_5` / multilingual_v2.
+ * `eleven_v3` SSML semantics differ — only use this on the full-word path.
+ */
+export function wrapWithPhoneme(
+  word: string,
+  phonetic: string | null | undefined
+): string {
+  if (!phonetic) return word;
+  const ipa = phonetic.replace(/^\/+|\/+$/g, "").trim();
+  if (!ipa) return word;
+  const safeIpa = ipa.replace(/"/g, "&quot;");
+  const safeWord = word
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `<phoneme alphabet="ipa" ph="${safeIpa}">${safeWord}</phoneme>`;
 }
 
 export function phoneticDisplay(word: string): string | null {

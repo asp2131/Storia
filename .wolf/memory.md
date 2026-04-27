@@ -721,3 +721,15 @@
 | 19:25 | Edited src/lib/pronunciationGeneration.ts | 1→2 lines | ~30 |
 | 19:51 | feat: pronunciation rich metadata + per-segment timings landed | src/lib + scripts + tests | build green, 229 tests pass | session |
 | 19:52 | Session end: 26 writes across 11 files (pronunciation-rich-metadata-and-timing.md, elevenlabs.ts, pronunciationMetadata.ts, pronunciation.ts, pronunciationGeneration.ts) | 13 reads | ~49268 tok |
+| 20:19 | Session end: 26 writes across 11 files (pronunciation-rich-metadata-and-timing.md, elevenlabs.ts, pronunciationMetadata.ts, pronunciation.ts, pronunciationGeneration.ts) | 13 reads | ~49268 tok |
+| 20:22 | Edited src/lib/pronunciationMetadata.ts | 8→10 lines | ~154 |
+| 20:22 | Edited src/lib/pronunciationMetadata.ts | modified splitIntoBreakdownChunks() | ~149 |
+| 20:22 | Edited src/lib/pronunciationMetadata.ts | added 2 condition(s) | ~275 |
+| 20:23 | Edited src/lib/pronunciationGeneration.ts | 8→9 lines | ~69 |
+| 20:23 | Edited src/lib/pronunciationGeneration.ts | 8→12 lines | ~140 |
+| 20:23 | Edited src/lib/pronunciationGeneration.test.ts | 8→8 lines | ~105 |
+| 20:23 | Edited src/lib/pronunciationGeneration.test.ts | 6→8 lines | ~98 |
+| 20:23 | Edited src/lib/pronunciationGeneration.test.ts | 6→6 lines | ~83 |
+| 20:24 | Edited src/lib/pronunciationMetadata.test.ts | 9→10 lines | ~70 |
+| 20:24 | Edited src/lib/pronunciationMetadata.test.ts | expanded (+23 lines) | ~365 |
+| 20:24 | Session end: 36 writes across 11 files (pronunciation-rich-metadata-and-timing.md, elevenlabs.ts, pronunciationMetadata.ts, pronunciation.ts, pronunciationGeneration.ts) | 13 reads | ~50776 tok |

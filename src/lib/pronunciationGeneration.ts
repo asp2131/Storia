@@ -46,6 +46,7 @@ import {
   buildBreakdownSpeechTextFromSegments,
   phoneticDisplay as computePhoneticDisplay,
   syllabify,
+  wrapWithPhoneme,
   type BreakdownSegment,
 } from "@/lib/pronunciationMetadata";
 
@@ -281,8 +282,12 @@ export async function generatePronunciationEntries(
         const phonetic = computePhoneticDisplay(word);
 
         try {
+          // Force pronunciation from CMU IPA when we have it. Falls back to
+          // bare word for out-of-dict words (proper nouns, slang).
+          const fullWordText = wrapWithPhoneme(word, phonetic);
+
           const fullWordAudio = await synthesizeSpeech({
-            text: word,
+            text: fullWordText,
             voiceId,
             speed: voiceSettings.speed,
             style: voiceSettings.style,

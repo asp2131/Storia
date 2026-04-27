@@ -226,10 +226,10 @@ describe("generatePronunciationEntries", () => {
     expect(result.stats.skipped).toBe(1);
     expect(result.stats.generated).toBe(1);
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "world" })
+      expect.objectContaining({ text: expect.stringContaining(">world<") })
     );
     expect(mockSynthesizeSpeech).not.toHaveBeenCalledWith(
-      expect.objectContaining({ text: "hello" })
+      expect.objectContaining({ text: expect.stringContaining(">hello<") })
     );
     expect(mockPrisma.book_pronunciations.upsert).toHaveBeenCalledTimes(1);
     expect(result.rows).toEqual([existing, generated]);
@@ -270,7 +270,9 @@ describe("generatePronunciationEntries", () => {
     });
 
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "hello" })
+      expect.objectContaining({
+        text: expect.stringMatching(/<phoneme alphabet="ipa" ph="[^"]+">hello<\/phoneme>/),
+      })
     );
     expect(mockSynthesizeSpeechWithTimestamps).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'hel <break time="0.4s" /> lo' })
@@ -359,7 +361,7 @@ describe("generatePronunciationEntries", () => {
     });
 
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "caption" })
+      expect.objectContaining({ text: expect.stringContaining(">caption<") })
     );
     expect(mockSynthesizeSpeechWithTimestamps).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'cap <break time="0.4s" /> shun' })

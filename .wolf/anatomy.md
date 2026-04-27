@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T00:25:37.252Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T01:24:18.954Z
 > Files: 617 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
@@ -867,10 +867,10 @@
 - `pronunciation.ts` — True if the entry has at least one usable audio URL. (~1632 tok)
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
 - `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
-- `pronunciationGeneration.test.ts` — BookPronunciationRow: fakeSupabase, makeRow (~5518 tok)
-- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~5385 tok)
-- `pronunciationMetadata.test.ts` — Declares segs (~1496 tok)
-- `pronunciationMetadata.ts` — Pure helpers for pronunciation metadata: chunk segmentation, syllabification, (~1964 tok)
+- `pronunciationGeneration.test.ts` — BookPronunciationRow: fakeSupabase, makeRow (~5565 tok)
+- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~5452 tok)
+- `pronunciationMetadata.test.ts` — Declares segs (~1756 tok)
+- `pronunciationMetadata.ts` — Pure helpers for pronunciation metadata: chunk segmentation, syllabification, (~2214 tok)
 - `pronunciationReview.test.ts` — Vitest coverage for per-word review aggregation, metadata shaping, and filter/pagination behavior. (~1500 tok)
 - `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3566 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
