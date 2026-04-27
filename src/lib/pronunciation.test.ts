@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   createStoredPronunciationEntry,
   extractUniquePronunciationTokens,
+  inferPronunciationAudioRole,
   manifestEntryToWordPronunciationEntry,
   manifestToWordPronunciationMap,
   normalizePronunciationToken,
+  normalizePronunciationUrlPair,
   resolvePronunciationUrl,
   resolvePublishedPronunciationUrl,
   type BookPronunciationManifest,
@@ -209,6 +211,48 @@ describe("resolvePublishedPronunciationUrl", () => {
 
     expect(resolvePublishedPronunciationUrl(entry, "breakdown")).toBe("/cat.mp3");
     expect(resolvePublishedPronunciationUrl(entry, "whole-word")).toBe("/cat.mp3");
+  });
+});
+
+describe("normalizePronunciationUrlPair", () => {
+  it("keeps correctly filed pronunciation URLs unchanged", () => {
+    expect(
+      normalizePronunciationUrlPair({
+        fullWord:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
+        breakdown:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+      })
+    ).toEqual({
+      fullWord:
+        "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
+      breakdown:
+        "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+      corrected: false,
+    });
+  });
+
+  it("detects and corrects swapped full-word/breakdown storage URLs", () => {
+    expect(
+      normalizePronunciationUrlPair({
+        fullWord:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+        breakdown:
+          "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
+      })
+    ).toEqual({
+      fullWord:
+        "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/full-word/word_caption.mp3",
+      breakdown:
+        "https://cdn.example/storage/v1/object/public/storia/books/42/pronunciations/breakdown/word_caption.mp3",
+      corrected: true,
+    });
+  });
+
+  it("recognizes pronunciation asset roles from storage paths", () => {
+    expect(inferPronunciationAudioRole("/books/42/pronunciations/full-word/word_cat.mp3")).toBe("fullWord");
+    expect(inferPronunciationAudioRole("/books/42/pronunciations/breakdown/word_cat.mp3")).toBe("breakdown");
+    expect(inferPronunciationAudioRole("/books/42/other/word_cat.mp3")).toBe("unknown");
   });
 });
 

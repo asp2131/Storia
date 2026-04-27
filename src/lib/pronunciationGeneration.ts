@@ -37,6 +37,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import {
   normalizePronunciationToken,
+  normalizePronunciationUrlPair,
   type PronunciationEntryObject,
   type WordPronunciationEntry,
 } from "@/lib/pronunciation";
@@ -186,20 +187,24 @@ export function isRowReviewedGuarded(row: BookPronunciationRow): boolean {
  */
 function rowHasAnyAudio(row: BookPronunciationRow | undefined): boolean {
   if (!row) return false;
-  const hasFull =
-    typeof row.full_word_url === "string" && row.full_word_url.length > 0;
-  const hasBreak =
-    typeof row.breakdown_url === "string" && row.breakdown_url.length > 0;
-  return hasFull || hasBreak;
+  const urls = normalizePronunciationUrlPair({
+    fullWord: row.full_word_url,
+    breakdown: row.breakdown_url,
+  });
+  return Boolean(urls.fullWord || urls.breakdown);
 }
 
 function rowHasCompleteAudio(row: BookPronunciationRow | undefined): boolean {
   if (!row) return false;
-  const hasFull =
-    typeof row.full_word_url === "string" && row.full_word_url.length > 0;
-  const hasBreak =
-    typeof row.breakdown_url === "string" && row.breakdown_url.length > 0;
-  return hasFull && hasBreak;
+  const urls = normalizePronunciationUrlPair({
+    fullWord: row.full_word_url,
+    breakdown: row.breakdown_url,
+  });
+
+  // Treat obviously swapped/misfiled URL roles as incomplete so the next
+  // generate-missing run repairs the row instead of skipping it as covered.
+  if (urls.corrected) return false;
+  return Boolean(urls.fullWord && urls.breakdown);
 }
 
 /**
@@ -537,10 +542,13 @@ export function entryCoverageStatus(
   entry: CoverageEntry
 ): "covered" | "full-word-only" | "missing" {
   if (!entry) return "missing";
-  const hasFull =
-    typeof entry.full_word_url === "string" && entry.full_word_url.length > 0;
-  const hasBreak =
-    typeof entry.breakdown_url === "string" && entry.breakdown_url.length > 0;
+  const urls = normalizePronunciationUrlPair({
+    fullWord: entry.full_word_url,
+    breakdown: entry.breakdown_url,
+  });
+  if (urls.corrected) return "full-word-only";
+  const hasFull = Boolean(urls.fullWord);
+  const hasBreak = Boolean(urls.breakdown);
   if (hasFull && hasBreak) return "covered";
   if (hasFull || hasBreak) return "full-word-only";
   return "missing";
@@ -554,9 +562,13 @@ export function entryCoverageStatus(
 export function rowToWordPronunciationEntry(
   row: BookPronunciationRow
 ): WordPronunciationEntry {
+  const urls = normalizePronunciationUrlPair({
+    fullWord: row.full_word_url,
+    breakdown: row.breakdown_url,
+  });
   const entry: PronunciationEntryObject = {};
-  if (row.full_word_url) entry.fullWord = row.full_word_url;
-  if (row.breakdown_url) entry.breakdown = row.breakdown_url;
+  if (urls.fullWord) entry.fullWord = urls.fullWord;
+  if (urls.breakdown) entry.breakdown = urls.breakdown;
   if (row.source === "override" || row.source === "lexicon" || row.source === "tts") {
     entry.source = row.source;
   }
