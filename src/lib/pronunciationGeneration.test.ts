@@ -226,10 +226,10 @@ describe("generatePronunciationEntries", () => {
     expect(result.stats.skipped).toBe(1);
     expect(result.stats.generated).toBe(1);
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({ text: expect.stringContaining(">world<") })
+      expect.objectContaining({ text: "world" })
     );
     expect(mockSynthesizeSpeech).not.toHaveBeenCalledWith(
-      expect.objectContaining({ text: expect.stringContaining(">hello<") })
+      expect.objectContaining({ text: "hello" })
     );
     expect(mockPrisma.book_pronunciations.upsert).toHaveBeenCalledTimes(1);
     expect(result.rows).toEqual([existing, generated]);
@@ -270,9 +270,7 @@ describe("generatePronunciationEntries", () => {
     });
 
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({
-        text: expect.stringMatching(/<phoneme alphabet="ipa" ph="[^"]+">hello<\/phoneme>/),
-      })
+      expect.objectContaining({ text: "hello" })
     );
     expect(mockSynthesizeSpeechWithTimestamps).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'hel <break time="0.4s" /> lo' })
@@ -361,7 +359,7 @@ describe("generatePronunciationEntries", () => {
     });
 
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
-      expect.objectContaining({ text: expect.stringContaining(">caption<") })
+      expect.objectContaining({ text: "caption" })
     );
     expect(mockSynthesizeSpeechWithTimestamps).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'cap <break time="0.4s" /> shun' })
@@ -412,6 +410,36 @@ describe("generatePronunciationEntries", () => {
         }),
       })
     );
+  });
+
+  it("does not wrap full-word text in SSML phoneme tags (turbo_v2_5 truncates)", async () => {
+    // Regression guard: a previous attempt wrapped full-word TTS in
+    // <phoneme alphabet="ipa" ph="..."> to force CMU pronunciation. The
+    // default model eleven_turbo_v2_5 mishandled the tag and produced
+    // truncated audio. Until pronunciation-dictionary support lands, full
+    // word text MUST be sent bare.
+    const wonderful = makeRow({
+      normalized_word: "wonderful",
+      full_word_url: "https://cdn.example/full/wonderful.mp3",
+    });
+    mockPrisma.book_pronunciations.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([wonderful]);
+
+    await generatePronunciationEntries({
+      supabase: fakeSupabase() as never,
+      bucket: "test",
+      bookId: "42",
+      voiceId: "v1",
+      voiceSettings: { speed: 1, style: 0, useSpeakerBoost: false },
+      words: ["wonderful"],
+    });
+
+    const fullWordCall = mockSynthesizeSpeech.mock.calls[0]?.[0];
+    expect(fullWordCall).toBeDefined();
+    expect(fullWordCall.text).toBe("wonderful");
+    expect(fullWordCall.text).not.toContain("<phoneme");
+    expect(fullWordCall.modelId).toBeUndefined();
   });
 
   it("persists syllables, phonetic_display, and breakdown_segments on success", async () => {

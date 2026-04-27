@@ -168,10 +168,14 @@ function arpabetToIpa(arpabet: string): string {
  * Wrap a word in an SSML phoneme tag so ElevenLabs pronounces it from IPA
  * instead of guessing. Strips the leading/trailing slashes from
  * `phoneticDisplay()` output. When `phonetic` is null, returns the bare word
- * unchanged. Escapes the visible word so embedded quotes don't break SSML.
+ * unchanged. Escapes the visible word so embedded chars don't break SSML.
  *
- * NOTE: phoneme tags are reliable on `eleven_turbo_v2_5` / multilingual_v2.
- * `eleven_v3` SSML semantics differ — only use this on the full-word path.
+ * WARNING — NOT WIRED INTO THE GENERATION PIPELINE. Phoneme tags are only
+ * supported on `eleven_monolingual_v1`, `eleven_turbo_v2`, and
+ * `eleven_multilingual_v2`. The pipeline's default `eleven_turbo_v2_5` (and
+ * `eleven_v3` on the breakdown path) mishandle the tag and truncate audio.
+ * For runtime IPA enforcement use ElevenLabs' pronunciation-dictionary
+ * feature instead. This helper is kept for future opt-in callers.
  */
 export function wrapWithPhoneme(
   word: string,

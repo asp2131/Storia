@@ -3,8 +3,8 @@
   "started": "2026-04-27T00:02:02.856Z",
   "files_read": {
     "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts": {
-      "count": 1,
-      "tokens": 4894,
+      "count": 3,
+      "tokens": 5452,
       "first_read": "2026-04-27T00:04:55.328Z"
     },
     "/Users/akinpound/Documents/experiments/storia/specs/pronunciation-rich-metadata-and-timing.md": {
@@ -13,8 +13,8 @@
       "first_read": "2026-04-27T00:16:46.303Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts": {
-      "count": 1,
-      "tokens": 2346,
+      "count": 2,
+      "tokens": 2486,
       "first_read": "2026-04-27T00:16:55.635Z"
     },
     "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts": {
@@ -284,25 +284,79 @@
       "action": "edit",
       "tokens": 365,
       "at": "2026-04-27T01:24:18.963Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+      "action": "edit",
+      "tokens": 288,
+      "at": "2026-04-27T01:31:49.609Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+      "action": "edit",
+      "tokens": 587,
+      "at": "2026-04-27T01:32:03.952Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+      "action": "edit",
+      "tokens": 64,
+      "at": "2026-04-27T01:44:26.411Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts",
+      "action": "edit",
+      "tokens": 77,
+      "at": "2026-04-27T01:44:37.757Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+      "action": "edit",
+      "tokens": 89,
+      "at": "2026-04-27T01:44:45.194Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+      "action": "edit",
+      "tokens": 74,
+      "at": "2026-04-27T01:44:53.209Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+      "action": "edit",
+      "tokens": 75,
+      "at": "2026-04-27T01:45:02.819Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.test.ts",
+      "action": "edit",
+      "tokens": 370,
+      "at": "2026-04-27T01:45:23.417Z"
+    },
+    {
+      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationMetadata.ts",
+      "action": "edit",
+      "tokens": 220,
+      "at": "2026-04-27T01:45:40.942Z"
     }
   ],
   "edit_counts": {
     "specs/pronunciation-rich-metadata-and-timing.md": 1,
     "src/lib/elevenlabs.ts": 1,
-    "src/lib/pronunciationMetadata.ts": 4,
+    "src/lib/pronunciationMetadata.ts": 5,
     "src/lib/pronunciation.ts": 2,
-    "src/lib/pronunciationGeneration.ts": 7,
+    "src/lib/pronunciationGeneration.ts": 10,
     "src/app/api/books/[id]/pronunciations/route.ts": 3,
     "src/lib/pronunciationReview.ts": 4,
     "src/app/api/admin/books/[id]/pronunciations/route.ts": 1,
     "src/app/api/books/[id]/pronunciations/route.test.ts": 1,
-    "src/lib/pronunciationGeneration.test.ts": 8,
+    "src/lib/pronunciationGeneration.test.ts": 13,
     "src/lib/pronunciationMetadata.test.ts": 3,
     "scripts/backfill-pronunciation-metadata.ts": 1
   },
   "anatomy_hits": 13,
   "anatomy_misses": 0,
-  "repeated_reads_warned": 0,
+  "repeated_reads_warned": 3,
   "cerebrum_warnings": 0,
-  "stop_count": 5
+  "stop_count": 8
 }
