@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-25T15:33:07.037Z
-> Files: 613 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T00:25:37.252Z
+> Files: 617 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -713,12 +713,14 @@
 ## scripts/
 
 - `backfill-book-pronunciations.ts` — Backfill script: migrate per-page `pages.word_pronunciations` JSON into the (~2700 tok)
+- `backfill-pronunciation-metadata.ts` — Backfill `syllables`, `phonetic_display`, and `breakdown_segments` for any (~1477 tok)
 - `backfill-pronunciations.ts` — Pronunciation backfill script (Phase 2 — Ticket 2.4). (~1862 tok)
 - `ensure-local-db.sh` — Starts local Postgres container, waits for readiness, recreates `storia_dev` if missing (~220 tok)
 
 ## specs/
 
 - `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
+- `pronunciation-rich-metadata-and-timing.md` — Plan: Pronunciation Rich Metadata + Per-Segment Audio Timing (~5038 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
 - `web-reader-pronunciation-functional-requirements.md` — Web Reader Pronunciation Functional Requirements (~4131 tok)
@@ -743,7 +745,7 @@
 
 ## src/app/admin/login/
 
-- `page.tsx` — dynamic — renders form (~2393 tok)
+- `page.tsx` — dynamic — renders form (~2433 tok)
 
 ## src/app/api/admin/audio-assignments/
 
@@ -752,7 +754,7 @@
 ## src/app/api/admin/books/[id]/pronunciations/
 
 - `route.test.ts` — Vitest coverage for editor pronunciation review data aggregation, filter validation, and search/pagination. (~2200 tok)
-- `route.ts` — Admin pronunciation review data endpoint with per-word audio/status metadata plus lightweight search/filter support. (~1700 tok)
+- `route.ts` — Next.js API route: GET (~1565 tok)
 
 ## src/app/api/admin/books/[id]/pronunciations/generate/
 
@@ -781,8 +783,8 @@
 
 ## src/app/api/books/[id]/pronunciations/
 
-- `route.test.ts` — Declares makeRow (~1589 tok)
-- `route.ts` — Next.js API route: GET (~1134 tok)
+- `route.test.ts` — Declares makeRow (~1938 tok)
+- `route.ts` — Next.js API route: GET (~1487 tok)
 
 ## src/app/api/books/[id]/questions/
 
@@ -859,16 +861,18 @@
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
 - `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
-- `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2346 tok)
+- `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
-- `pronunciation.ts` — True if the entry has at least one usable audio URL. (~758 tok)
+- `pronunciation.ts` — True if the entry has at least one usable audio URL. (~1632 tok)
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
 - `pronunciationAnalytics.ts` — Pronunciation analytics helper — Part 1 of WR-9 / FR-WEB-37–39. (~1374 tok)
-- `pronunciationGeneration.test.ts` — BookPronunciationRow: fakeSupabase, makeRow (~3983 tok)
-- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~4894 tok)
+- `pronunciationGeneration.test.ts` — BookPronunciationRow: fakeSupabase, makeRow (~5518 tok)
+- `pronunciationGeneration.ts` — Shared pronunciation generation pipeline (Phase 2 — Ticket 2.1 / 2.2 / 2.3). (~5385 tok)
+- `pronunciationMetadata.test.ts` — Declares segs (~1496 tok)
+- `pronunciationMetadata.ts` — Pure helpers for pronunciation metadata: chunk segmentation, syllabification, (~1964 tok)
 - `pronunciationReview.test.ts` — Vitest coverage for per-word review aggregation, metadata shaping, and filter/pagination behavior. (~1500 tok)
-- `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3023 tok)
+- `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3566 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
 - `saveCoordinator.ts` — Barrel export for the editor SaveCoordinator boundary in `src/lib/editor/saveCoordinator.ts` (~10 tok)

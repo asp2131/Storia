@@ -684,3 +684,40 @@
 | 10:32 | Edited src/hooks/usePronunciationManifest.ts | added 1 import(s) | ~76 |
 | 10:33 | Edited src/hooks/usePronunciationManifest.ts | modified manifestToWordPronunciationMap() | ~241 |
 | 10:33 | Session end: 24 writes across 6 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx, useWordPronunciation.ts) | 10 reads | ~42763 tok |
+| 10:49 | Edited src/app/admin/login/page.tsx | AdminLoginPage() → AdminLoginPageInner() | ~79 |
+| 10:49 | Edited src/app/admin/login/page.tsx | modified AdminLoginPage() | ~61 |
+| 10:49 | Session end: 26 writes across 6 files (pronunciationGeneration.ts, pronunciationGeneration.test.ts, elevenlabs.ts, page.tsx, useWordPronunciation.ts) | 10 reads | ~42903 tok |
+
+## Session: 2026-04-27 19:02
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 19:13 | Created specs/pronunciation-rich-metadata-and-timing.md | — | ~5374 |
+| 19:14 | Session end: 1 writes across 1 files (pronunciation-rich-metadata-and-timing.md) | 1 reads | ~10652 tok |
+| 19:19 | Edited src/lib/elevenlabs.ts | modified synthesizeSpeechWithTimestamps() | ~587 |
+| 19:20 | Created src/lib/pronunciationMetadata.ts | — | ~1964 |
+| 19:20 | Edited src/lib/pronunciation.ts | expanded (+11 lines) | ~128 |
+| 19:20 | Edited src/lib/pronunciation.ts | 3→3 lines | ~32 |
+| 19:20 | Edited src/lib/pronunciationGeneration.ts | expanded (+11 lines) | ~156 |
+| 19:20 | Edited src/lib/pronunciationGeneration.ts | modified buildBreakdownSpeechText() | ~100 |
+| 19:21 | Edited src/lib/pronunciationGeneration.ts | modified if() | ~1747 |
+| 19:21 | Edited src/lib/pronunciationGeneration.ts | added 3 condition(s) | ~296 |
+| 19:21 | Edited src/app/api/books/[id]/pronunciations/route.ts | 6→7 lines | ~58 |
+| 19:21 | Edited src/app/api/books/[id]/pronunciations/route.ts | added 6 condition(s) | ~429 |
+| 19:22 | Edited src/app/api/books/[id]/pronunciations/route.ts | 2→2 lines | ~36 |
+| 19:22 | Edited src/lib/pronunciationReview.ts | 5→6 lines | ~47 |
+| 19:22 | Edited src/lib/pronunciationReview.ts | 18→21 lines | ~162 |
+| 19:22 | Edited src/lib/pronunciationReview.ts | 12→15 lines | ~131 |
+| 19:22 | Edited src/lib/pronunciationReview.ts | added 5 condition(s) | ~652 |
+| 19:22 | Edited src/app/api/admin/books/[id]/pronunciations/route.ts | 15→18 lines | ~147 |
+| 19:23 | Edited src/app/api/books/[id]/pronunciations/route.test.ts | expanded (+34 lines) | ~675 |
+| 19:23 | Edited src/lib/pronunciationGeneration.test.ts | 17→20 lines | ~150 |
+| 19:23 | Edited src/lib/pronunciationGeneration.test.ts | expanded (+9 lines) | ~190 |
+| 19:23 | Edited src/lib/pronunciationGeneration.test.ts | 15→15 lines | ~168 |
+| 19:23 | Edited src/lib/pronunciationGeneration.test.ts | 7→7 lines | ~77 |
+| 19:24 | Edited src/lib/pronunciationGeneration.test.ts | added optional chaining | ~1410 |
+| 19:24 | Created src/lib/pronunciationMetadata.test.ts | — | ~1496 |
+| 19:25 | Created scripts/backfill-pronunciation-metadata.ts | — | ~1477 |
+| 19:25 | Edited src/lib/pronunciationGeneration.ts | 1→2 lines | ~30 |
+| 19:51 | feat: pronunciation rich metadata + per-segment timings landed | src/lib + scripts + tests | build green, 229 tests pass | session |
+| 19:52 | Session end: 26 writes across 11 files (pronunciation-rich-metadata-and-timing.md, elevenlabs.ts, pronunciationMetadata.ts, pronunciation.ts, pronunciationGeneration.ts) | 13 reads | ~49268 tok |

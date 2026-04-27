@@ -163,6 +163,9 @@ export async function GET(
           human_reviewed: true,
           generated_at: true,
           updated_at: true,
+          phonetic_display: true,
+          syllables: true,
+          breakdown_segments: true,
         },
       }),
     ]);

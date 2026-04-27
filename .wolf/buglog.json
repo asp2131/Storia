@@ -1861,6 +1861,166 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-25T15:33:07.049Z"
+    },
+    {
+      "id": "bug-108",
+      "timestamp": "2026-04-27T00:19:40.433Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/lib/elevenlabs.ts",
+      "root_cause": "3 lines replaced/restructured",
+      "fix": "Rewrote 53→75 lines (3 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:19:40.433Z"
+    },
+    {
+      "id": "bug-109",
+      "timestamp": "2026-04-27T00:20:35.863Z",
+      "error_message": "Wrong reference: string should be PronunciationBreakdownSegment",
+      "file": "src/lib/pronunciation.ts",
+      "root_cause": "Used \"string\" instead of \"PronunciationBreakdownSegment\"",
+      "fix": "Changed string → PronunciationBreakdownSegment",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:20:35.863Z"
+    },
+    {
+      "id": "bug-110",
+      "timestamp": "2026-04-27T00:20:44.593Z",
+      "error_message": "Type error",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation | Also: if (row.phonetic_display) entry.phoneticDisplay = row.phonet; if (Array.isArray(row.syllables)) {",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-27T00:21:41.327Z"
+    },
+    {
+      "id": "bug-111",
+      "timestamp": "2026-04-27T00:20:57.270Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "26 lines replaced/restructured",
+      "fix": "Rewrote 40→10 lines (26 removed) | Also: const breakdownSpeechText = buildBreakdownSpeechTe; // eleven_v3 honors <break time=\"...\" /> reliably ",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-27T00:21:30.693Z"
+    },
+    {
+      "id": "bug-112",
+      "timestamp": "2026-04-27T00:21:57.704Z",
+      "error_message": "Missing guard clause",
+      "file": "src/app/api/books/[id]/pronunciations/route.ts",
+      "root_cause": "No early return/throw for edge case: !Array.isArray(value",
+      "fix": "Added guard clause: if (!Array.isArray(value)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:21:57.704Z"
+    },
+    {
+      "id": "bug-113",
+      "timestamp": "2026-04-27T00:22:08.698Z",
+      "error_message": "Wrong reference: toStringArray should be toBreakdownSegmentArray",
+      "file": "src/app/api/books/[id]/pronunciations/route.ts",
+      "root_cause": "Used \"toStringArray\" instead of \"toBreakdownSegmentArray\"",
+      "fix": "Changed toStringArray → toBreakdownSegmentArray",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:22:08.698Z"
+    },
+    {
+      "id": "bug-114",
+      "timestamp": "2026-04-27T00:22:43.963Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/lib/pronunciationReview.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:22:43.963Z"
+    },
+    {
+      "id": "bug-115",
+      "timestamp": "2026-04-27T00:23:07.533Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/app/api/books/[id]/pronunciations/route.test.ts",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 38→72 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:23:07.533Z"
+    },
+    {
+      "id": "bug-116",
+      "timestamp": "2026-04-27T00:24:19.095Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/lib/pronunciationGeneration.test.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:24:19.095Z"
+    },
+    {
+      "id": "bug-117",
+      "timestamp": "2026-04-27T00:25:37.263Z",
+      "error_message": "Wrong reference: undefined should be as",
+      "file": "src/lib/pronunciationGeneration.ts",
+      "root_cause": "Used \"undefined\" instead of \"as\"",
+      "fix": "Changed undefined → as",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-27T00:25:37.263Z"
     }
   ]
 }

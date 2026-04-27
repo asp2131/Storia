@@ -30,13 +30,24 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { synthesizeSpeech } from "@/lib/elevenlabs";
+import {
+  synthesizeSpeech,
+  synthesizeSpeechWithTimestamps,
+} from "@/lib/elevenlabs";
 import { prisma } from "@/lib/prisma";
 import {
   normalizePronunciationToken,
   type PronunciationEntryObject,
   type WordPronunciationEntry,
 } from "@/lib/pronunciation";
+import {
+  attachTimingsToSegments,
+  buildBreakdownSegments,
+  buildBreakdownSpeechTextFromSegments,
+  phoneticDisplay as computePhoneticDisplay,
+  syllabify,
+  type BreakdownSegment,
+} from "@/lib/pronunciationMetadata";
 
 /**
  * Minimal shape of a `book_pronunciations` row that this module needs.
@@ -117,45 +128,15 @@ function getAudioExtension(contentType: string) {
   return "mp3";
 }
 
-export function splitIntoBreakdownChunks(word: string): string[] {
-  const normalized = normalizePronunciationToken(word);
-  if (!normalized || normalized.length <= 3) {
-    return normalized ? [normalized] : [];
-  }
-
-  const vowelGroupRegex =
-    /[^aeiouy]*[aeiouy]+(?:[^aeiouy](?=[^aeiouy]*[aeiouy])|[^aeiouy]?$)?/gi;
-  const roughChunks = normalized.match(vowelGroupRegex)?.filter(Boolean) ?? [];
-
-  if (roughChunks.length >= 2) {
-    return roughChunks;
-  }
-
-  const fallbackChunks: string[] = [];
-  let cursor = 0;
-  while (cursor < normalized.length) {
-    const remaining = normalized.length - cursor;
-    const chunkSize = remaining <= 4 ? Math.max(2, remaining) : 3;
-    fallbackChunks.push(normalized.slice(cursor, cursor + chunkSize));
-    cursor += chunkSize;
-  }
-
-  return fallbackChunks;
-}
-
-const BREAKDOWN_SEGMENT_SEPARATOR = ' <break time="0.4s" /> ';
-
-function spokenBreakdownChunk(chunk: string): string {
-  // Isolated "tion" is often read by TTS as letters/"tee-on". For the
-  // breakdown clip we want the spoken phoneme kids expect to hear.
-  if (chunk === "tion") return "shun";
-  return chunk;
-}
+// Re-exported for backward compatibility with existing callers/tests.
+export {
+  splitIntoBreakdownChunks,
+  spokenBreakdownChunk,
+} from "@/lib/pronunciationMetadata";
 
 export function buildBreakdownSpeechText(word: string): string | null {
-  const chunks = splitIntoBreakdownChunks(word);
-  if (chunks.length < 2) return null;
-  return chunks.map(spokenBreakdownChunk).join(BREAKDOWN_SEGMENT_SEPARATOR);
+  const segments = buildBreakdownSegments(word);
+  return buildBreakdownSpeechTextFromSegments(segments);
 }
 
 export async function uploadPronunciationAsset(params: {
@@ -295,6 +276,10 @@ export async function generatePronunciationEntries(
 
     const results = await Promise.all(
       batch.map(async (word) => {
+        const segments = buildBreakdownSegments(word);
+        const syllables = syllabify(word);
+        const phonetic = computePhoneticDisplay(word);
+
         try {
           const fullWordAudio = await synthesizeSpeech({
             text: word,
@@ -315,12 +300,15 @@ export async function generatePronunciationEntries(
           });
 
           let breakdownUrl: string | undefined;
-          const breakdownSpeechText = buildBreakdownSpeechText(word);
+          let timedSegments: BreakdownSegment[] = segments;
+          const breakdownSpeechText =
+            buildBreakdownSpeechTextFromSegments(segments);
           if (breakdownSpeechText) {
             try {
-              // eleven_v3 honors <break time="..." /> reliably and produces
-              // clean syllable separation; turbo_v2_5 mostly ignores it.
-              const breakdownAudio = await synthesizeSpeech({
+              // eleven_v3 honors <break time="..." /> reliably and gives
+              // clean syllable separation. with-timestamps endpoint returns
+              // per-character alignment we can fold back into segments.
+              const breakdownAudio = await synthesizeSpeechWithTimestamps({
                 text: breakdownSpeechText,
                 voiceId,
                 modelId: "eleven_v3",
@@ -336,6 +324,22 @@ export async function generatePronunciationEntries(
                 audioBuffer: breakdownAudio.audioBuffer,
                 contentType: breakdownAudio.contentType,
               });
+
+              try {
+                const alignment =
+                  breakdownAudio.alignment ?? breakdownAudio.normalizedAlignment;
+                timedSegments = attachTimingsToSegments(
+                  segments,
+                  alignment,
+                  breakdownSpeechText
+                );
+              } catch (alignErr) {
+                console.warn(
+                  `[pronunciationGeneration] alignment parse failed for "${word}":`,
+                  alignErr
+                );
+                timedSegments = segments;
+              }
             } catch (breakdownError) {
               console.warn(
                 `[pronunciationGeneration] breakdown failed for "${word}":`,
@@ -348,6 +352,9 @@ export async function generatePronunciationEntries(
             word,
             fullWordUrl,
             breakdownUrl,
+            segments: timedSegments,
+            syllables,
+            phonetic,
             error: null as string | null,
           } as const;
         } catch (wordError) {
@@ -357,6 +364,9 @@ export async function generatePronunciationEntries(
             word,
             fullWordUrl: null as string | null,
             breakdownUrl: null as string | undefined | null,
+            segments,
+            syllables,
+            phonetic,
             error: message,
           } as const;
         }
@@ -364,6 +374,12 @@ export async function generatePronunciationEntries(
     );
 
     for (const result of results) {
+      const breakdownSegmentsJson =
+        result.segments.length > 0 ? result.segments : null;
+      const syllablesJson =
+        result.syllables.length > 0 ? result.syllables : null;
+      const phoneticDisplayValue = result.phonetic ?? null;
+
       if (result.error === null && result.fullWordUrl) {
         const now = new Date();
         await prisma.book_pronunciations.upsert({
@@ -378,6 +394,10 @@ export async function generatePronunciationEntries(
             normalized_word: result.word,
             full_word_url: result.fullWordUrl,
             breakdown_url: result.breakdownUrl ?? null,
+            phonetic_display: phoneticDisplayValue,
+            syllables: syllablesJson ?? undefined,
+            breakdown_segments:
+              (breakdownSegmentsJson as unknown as object) ?? undefined,
             source: "tts",
             status: "generated",
             confidence: 1,
@@ -386,6 +406,10 @@ export async function generatePronunciationEntries(
           update: {
             full_word_url: result.fullWordUrl,
             breakdown_url: result.breakdownUrl ?? null,
+            phonetic_display: phoneticDisplayValue,
+            syllables: syllablesJson ?? undefined,
+            breakdown_segments:
+              (breakdownSegmentsJson as unknown as object) ?? undefined,
             source: "tts",
             status: "generated",
             confidence: 1,
@@ -398,8 +422,8 @@ export async function generatePronunciationEntries(
           stats.withBreakdown += 1;
         }
       } else {
-        // Failure — upsert a failure marker. Keep old generated_at if row
-        // already existed so failure does not overwrite prior success metadata.
+        // Failure — upsert a failure marker. Metadata still useful even when
+        // audio generation failed, so persist syllables/phonetic/segments too.
         await prisma.book_pronunciations.upsert({
           where: {
             book_id_normalized_word: {
@@ -410,10 +434,18 @@ export async function generatePronunciationEntries(
           create: {
             book_id: bookIdBigInt,
             normalized_word: result.word,
+            phonetic_display: phoneticDisplayValue,
+            syllables: syllablesJson ?? undefined,
+            breakdown_segments:
+              (breakdownSegmentsJson as unknown as object) ?? undefined,
             source: "tts",
             status: "failed",
           },
           update: {
+            phonetic_display: phoneticDisplayValue,
+            syllables: syllablesJson ?? undefined,
+            breakdown_segments:
+              (breakdownSegmentsJson as unknown as object) ?? undefined,
             status: "failed",
             source: "tts",
           },
@@ -533,5 +565,12 @@ export function rowToWordPronunciationEntry(
     entry.status = row.status;
   }
   if (row.generated_at) entry.generatedAt = row.generated_at.toISOString();
+  if (row.phonetic_display) entry.phoneticDisplay = row.phonetic_display;
+  if (Array.isArray(row.syllables)) {
+    entry.syllables = (row.syllables as unknown[]).map((s) => String(s));
+  }
+  if (Array.isArray(row.breakdown_segments)) {
+    entry.breakdownSegments = row.breakdown_segments as PronunciationEntryObject["breakdownSegments"];
+  }
   return entry;
 }
