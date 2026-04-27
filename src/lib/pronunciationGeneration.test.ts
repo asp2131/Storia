@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockPrisma, mockSynthesizeSpeech } = vi.hoisted(() => ({
-  mockPrisma: {
-    book_pronunciations: {
-      findMany: vi.fn(),
-      upsert: vi.fn(),
+const { mockPrisma, mockSynthesizeSpeech, mockSynthesizeSpeechWithTimestamps } =
+  vi.hoisted(() => ({
+    mockPrisma: {
+      book_pronunciations: {
+        findMany: vi.fn(),
+        upsert: vi.fn(),
+      },
     },
-  },
-  mockSynthesizeSpeech: vi.fn(),
-}));
+    mockSynthesizeSpeech: vi.fn(),
+    mockSynthesizeSpeechWithTimestamps: vi.fn(),
+  }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: mockPrisma,
@@ -16,6 +18,7 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/elevenlabs", () => ({
   synthesizeSpeech: mockSynthesizeSpeech,
+  synthesizeSpeechWithTimestamps: mockSynthesizeSpeechWithTimestamps,
 }));
 
 import {
@@ -183,6 +186,15 @@ describe("generatePronunciationEntries", () => {
       audioBuffer: Buffer.from(`audio:${text}`),
       contentType: "audio/mpeg",
     }));
+    mockSynthesizeSpeechWithTimestamps.mockImplementation(
+      async ({ text }: { text: string }) => ({
+        audioBuffer: Buffer.from(`audio:${text}`),
+        contentType: "audio/mpeg",
+        wordTimestamps: [],
+        alignment: undefined,
+        normalizedAlignment: undefined,
+      })
+    );
   });
 
   it("skips words with complete table coverage unless force", async () => {
@@ -260,7 +272,7 @@ describe("generatePronunciationEntries", () => {
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
       expect.objectContaining({ text: "hello" })
     );
-    expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
+    expect(mockSynthesizeSpeechWithTimestamps).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'hel <break time="0.4s" /> lo' })
     );
     expect(mockPrisma.book_pronunciations.upsert).toHaveBeenCalledWith(
@@ -349,7 +361,7 @@ describe("generatePronunciationEntries", () => {
     expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
       expect.objectContaining({ text: "caption" })
     );
-    expect(mockSynthesizeSpeech).toHaveBeenCalledWith(
+    expect(mockSynthesizeSpeechWithTimestamps).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'cap <break time="0.4s" /> shun' })
     );
   });
@@ -398,6 +410,170 @@ describe("generatePronunciationEntries", () => {
         }),
       })
     );
+  });
+
+  it("does not wrap full-word text in SSML phoneme tags (turbo_v2_5 truncates)", async () => {
+    // Regression guard: a previous attempt wrapped full-word TTS in
+    // <phoneme alphabet="ipa" ph="..."> to force CMU pronunciation. The
+    // default model eleven_turbo_v2_5 mishandled the tag and produced
+    // truncated audio. Until pronunciation-dictionary support lands, full
+    // word text MUST be sent bare.
+    const wonderful = makeRow({
+      normalized_word: "wonderful",
+      full_word_url: "https://cdn.example/full/wonderful.mp3",
+    });
+    mockPrisma.book_pronunciations.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([wonderful]);
+
+    await generatePronunciationEntries({
+      supabase: fakeSupabase() as never,
+      bucket: "test",
+      bookId: "42",
+      voiceId: "v1",
+      voiceSettings: { speed: 1, style: 0, useSpeakerBoost: false },
+      words: ["wonderful"],
+    });
+
+    const fullWordCall = mockSynthesizeSpeech.mock.calls[0]?.[0];
+    expect(fullWordCall).toBeDefined();
+    expect(fullWordCall.text).toBe("wonderful");
+    expect(fullWordCall.text).not.toContain("<phoneme");
+    expect(fullWordCall.modelId).toBeUndefined();
+  });
+
+  it("persists syllables, phonetic_display, and breakdown_segments on success", async () => {
+    const generatedAt = new Date("2026-02-01T00:00:00.000Z");
+    const wonderful = makeRow({
+      normalized_word: "wonderful",
+      full_word_url:
+        "https://cdn.example/books/42/pronunciations/full-word/wonderful.mp3",
+      breakdown_url:
+        "https://cdn.example/books/42/pronunciations/breakdown/wonderful.mp3",
+      generated_at: generatedAt,
+    });
+    mockPrisma.book_pronunciations.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([wonderful]);
+
+    const breakdownText = 'won <break time="0.4s" /> der <break time="0.4s" /> ful';
+    const characters = breakdownText.split("");
+    const starts = characters.map((_, i) => i * 0.05);
+    const ends = characters.map((_, i) => i * 0.05 + 0.04);
+    mockSynthesizeSpeechWithTimestamps.mockResolvedValueOnce({
+      audioBuffer: Buffer.from("audio:breakdown"),
+      contentType: "audio/mpeg",
+      wordTimestamps: [],
+      alignment: {
+        characters,
+        character_start_times_seconds: starts,
+        character_end_times_seconds: ends,
+      },
+      normalizedAlignment: undefined,
+    });
+
+    await generatePronunciationEntries({
+      supabase: fakeSupabase() as never,
+      bucket: "test",
+      bookId: "42",
+      voiceId: "v1",
+      voiceSettings: { speed: 1, style: 0, useSpeakerBoost: false },
+      words: ["wonderful"],
+    });
+
+    const upsertCall = mockPrisma.book_pronunciations.upsert.mock.calls[0]?.[0];
+    expect(upsertCall).toBeDefined();
+    expect(upsertCall.create.syllables).toEqual(["won", "der", "ful"]);
+    expect(upsertCall.create.phonetic_display).toMatch(/^\/.+\/$/);
+    const segments = upsertCall.create.breakdown_segments as Array<{
+      index: number;
+      chunk: string;
+      spoken: string;
+      startMs?: number;
+      endMs?: number;
+    }>;
+    expect(segments).toHaveLength(3);
+    expect(segments[0]).toMatchObject({ index: 0, chunk: "won", spoken: "won" });
+    expect(typeof segments[0].startMs).toBe("number");
+    expect(typeof segments[0].endMs).toBe("number");
+    expect(segments[1].startMs!).toBeGreaterThan(segments[0].endMs!);
+    expect(segments[2].startMs!).toBeGreaterThan(segments[1].endMs!);
+  });
+
+  it("falls back to bare segments when alignment is missing", async () => {
+    const wonderful = makeRow({
+      normalized_word: "wonderful",
+      full_word_url:
+        "https://cdn.example/books/42/pronunciations/full-word/wonderful.mp3",
+      breakdown_url:
+        "https://cdn.example/books/42/pronunciations/breakdown/wonderful.mp3",
+    });
+    mockPrisma.book_pronunciations.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([wonderful]);
+    mockSynthesizeSpeechWithTimestamps.mockResolvedValueOnce({
+      audioBuffer: Buffer.from("audio:breakdown"),
+      contentType: "audio/mpeg",
+      wordTimestamps: [],
+      alignment: undefined,
+      normalizedAlignment: undefined,
+    });
+
+    await generatePronunciationEntries({
+      supabase: fakeSupabase() as never,
+      bucket: "test",
+      bookId: "42",
+      voiceId: "v1",
+      voiceSettings: { speed: 1, style: 0, useSpeakerBoost: false },
+      words: ["wonderful"],
+    });
+
+    const upsertCall = mockPrisma.book_pronunciations.upsert.mock.calls[0]?.[0];
+    expect(upsertCall).toBeDefined();
+    const segments = upsertCall.create.breakdown_segments as Array<{
+      startMs?: number;
+      endMs?: number;
+    }>;
+    expect(segments.length).toBeGreaterThan(0);
+    for (const seg of segments) {
+      expect(seg.startMs).toBeUndefined();
+      expect(seg.endMs).toBeUndefined();
+    }
+  });
+
+  it("persists metadata on failure path even when audio synth throws", async () => {
+    mockSynthesizeSpeech.mockRejectedValueOnce(new Error("boom"));
+    const failed = makeRow({
+      normalized_word: "wonderful",
+      status: "failed",
+      source: "tts",
+    });
+    mockPrisma.book_pronunciations.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([failed]);
+
+    await generatePronunciationEntries({
+      supabase: fakeSupabase() as never,
+      bucket: "test",
+      bookId: "42",
+      voiceId: "v1",
+      voiceSettings: { speed: 1, style: 0, useSpeakerBoost: false },
+      words: ["wonderful"],
+    });
+
+    const upsertCall = mockPrisma.book_pronunciations.upsert.mock.calls[0]?.[0];
+    expect(upsertCall).toBeDefined();
+    expect(upsertCall.create.status).toBe("failed");
+    expect(upsertCall.create.syllables).toEqual(["won", "der", "ful"]);
+    expect(upsertCall.create.phonetic_display).toMatch(/^\/.+\/$/);
+    const segments = upsertCall.create.breakdown_segments as Array<{
+      chunk: string;
+      startMs?: number;
+    }>;
+    expect(segments.length).toBeGreaterThan(0);
+    for (const seg of segments) {
+      expect(seg.startMs).toBeUndefined();
+    }
   });
 
   it("records failure stats when synthesize throws", async () => {

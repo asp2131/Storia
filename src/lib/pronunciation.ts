@@ -12,6 +12,14 @@ export interface PronunciationAudioAsset {
   checksum?: string;
 }
 
+export interface PronunciationBreakdownSegment {
+  index: number;
+  chunk: string;
+  spoken: string;
+  startMs?: number;
+  endMs?: number;
+}
+
 export interface PronunciationEntryObject {
   breakdown?: string;
   fullWord?: string;
@@ -19,6 +27,9 @@ export interface PronunciationEntryObject {
   confidence?: number;
   status?: PronunciationStatus;
   generatedAt?: string;
+  phoneticDisplay?: string;
+  syllables?: string[];
+  breakdownSegments?: PronunciationBreakdownSegment[];
 }
 
 export type WordPronunciationEntry = string | PronunciationEntryObject;
@@ -34,7 +45,7 @@ export interface PublishedWordPronunciation {
   phoneticDisplay?: string | null;
   ipa?: string | null;
   syllables?: string[];
-  breakdownSegments?: string[];
+  breakdownSegments?: PronunciationBreakdownSegment[];
   source?: PronunciationSource;
   confidence?: number | null;
   humanReviewed: boolean;

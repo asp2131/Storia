@@ -1,5 +1,6 @@
 import {
   normalizePronunciationToken,
+  type PronunciationBreakdownSegment,
   type PronunciationSource,
   type PronunciationStatus,
 } from "@/lib/pronunciation";
@@ -32,6 +33,9 @@ export interface PronunciationReviewItem {
   confidence?: number;
   generatedAt?: string;
   status?: PronunciationStatus;
+  phoneticDisplay?: string;
+  syllables?: string[];
+  breakdownSegments?: PronunciationBreakdownSegment[];
 }
 
 export interface PronunciationReviewSummary {
@@ -81,6 +85,9 @@ export interface PronunciationReviewEntryRow {
   human_reviewed?: boolean | null;
   generated_at?: Date | string | null;
   updated_at?: Date | string | null;
+  phonetic_display?: string | null;
+  syllables?: unknown;
+  breakdown_segments?: unknown;
 }
 
 export interface PronunciationReviewInput {
@@ -222,6 +229,37 @@ function toReviewItem(
     | PronunciationStatus
     | undefined;
 
+  const phoneticDisplay = nonEmptyString(row?.phonetic_display);
+  const syllables = Array.isArray(row?.syllables)
+    ? (row?.syllables as unknown[]).map((s) => String(s)).filter((s) => s.length > 0)
+    : undefined;
+  const breakdownSegments = Array.isArray(row?.breakdown_segments)
+    ? (row?.breakdown_segments as unknown[])
+        .map((item) => {
+          if (item && typeof item === "object") {
+            const obj = item as Record<string, unknown>;
+            const chunk = typeof obj.chunk === "string" ? obj.chunk : undefined;
+            const spoken =
+              typeof obj.spoken === "string" ? obj.spoken : chunk;
+            if (!chunk || spoken === undefined) return null;
+            const seg: PronunciationBreakdownSegment = {
+              index: typeof obj.index === "number" ? obj.index : 0,
+              chunk,
+              spoken,
+            };
+            if (typeof obj.startMs === "number") seg.startMs = obj.startMs;
+            if (typeof obj.endMs === "number") seg.endMs = obj.endMs;
+            return seg;
+          }
+          if (typeof item === "string" && item.length > 0) {
+            return { index: 0, chunk: item, spoken: item } as PronunciationBreakdownSegment;
+          }
+          return null;
+        })
+        .filter((s): s is PronunciationBreakdownSegment => s !== null)
+        .map((seg, i) => ({ ...seg, index: typeof seg.index === "number" ? seg.index : i }))
+    : undefined;
+
   return {
     normalizedWord,
     displayWord,
@@ -241,6 +279,11 @@ function toReviewItem(
       : {}),
     ...(generatedAt ? { generatedAt } : {}),
     ...(status ? { status } : {}),
+    ...(phoneticDisplay ? { phoneticDisplay } : {}),
+    ...(syllables && syllables.length > 0 ? { syllables } : {}),
+    ...(breakdownSegments && breakdownSegments.length > 0
+      ? { breakdownSegments }
+      : {}),
   };
 }
 

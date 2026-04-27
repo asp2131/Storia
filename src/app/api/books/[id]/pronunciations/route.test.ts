@@ -73,7 +73,11 @@ describe("/api/books/[id]/pronunciations", () => {
     mockPrisma.book_pronunciations.findMany.mockResolvedValue([
       makeRow({
         syllables: ["ad", "ven", "ture"],
-        breakdown_segments: ["ad", "ven", "ture"],
+        breakdown_segments: [
+          { index: 0, chunk: "ad", spoken: "ad", startMs: 0, endMs: 380 },
+          { index: 1, chunk: "ven", spoken: "ven", startMs: 800, endMs: 1180 },
+          { index: 2, chunk: "ture", spoken: "ture", startMs: 1600, endMs: 1980 },
+        ],
         phonetic_display: "ad-ven-chur",
       }),
     ]);
@@ -95,7 +99,11 @@ describe("/api/books/[id]/pronunciations", () => {
       phoneticDisplay: "ad-ven-chur",
       ipa: null,
       syllables: ["ad", "ven", "ture"],
-      breakdownSegments: ["ad", "ven", "ture"],
+      breakdownSegments: [
+        { index: 0, chunk: "ad", spoken: "ad", startMs: 0, endMs: 380 },
+        { index: 1, chunk: "ven", spoken: "ven", startMs: 800, endMs: 1180 },
+        { index: 2, chunk: "ture", spoken: "ture", startMs: 1600, endMs: 1980 },
+      ],
       source: "tts",
       confidence: 0.91,
       humanReviewed: false,
@@ -106,6 +114,32 @@ describe("/api/books/[id]/pronunciations", () => {
       },
       updatedAt: new Date("2026-04-23T00:00:00Z").toISOString(),
     });
+  });
+
+  it("promotes legacy bare-string segments to objects for forward compat", async () => {
+    mockPrisma.book_pronunciations.findMany.mockResolvedValue([
+      makeRow({
+        normalized_word: "legacy",
+        display_word: "Legacy",
+        breakdown_segments: ["leg", "a", "cy"],
+      }),
+    ]);
+
+    const response = await GET(
+      new NextRequest("http://localhost/api/books/42/pronunciations"),
+      {
+        params: Promise.resolve({ id: "42" }),
+      }
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.entries.legacy.breakdownSegments).toEqual([
+      { index: 0, chunk: "leg", spoken: "leg" },
+      { index: 1, chunk: "a", spoken: "a" },
+      { index: 2, chunk: "cy", spoken: "cy" },
+    ]);
   });
 
   it("omits the breakdown audio key when only full_word_url is present", async () => {

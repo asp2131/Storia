@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
   type BookPronunciationManifest,
+  type PronunciationBreakdownSegment,
   type PronunciationSource,
   type PronunciationStatus,
   type PublishedWordPronunciation,
@@ -41,6 +42,36 @@ function toStringArray(value: unknown): string[] | undefined {
   return strings.length > 0 ? strings : undefined;
 }
 
+function toBreakdownSegmentArray(
+  value: unknown
+): PronunciationBreakdownSegment[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const segments: PronunciationBreakdownSegment[] = [];
+  for (const item of value) {
+    if (item && typeof item === "object") {
+      const obj = item as Record<string, unknown>;
+      const chunk = typeof obj.chunk === "string" ? obj.chunk : undefined;
+      const spoken =
+        typeof obj.spoken === "string" ? obj.spoken : chunk;
+      const index =
+        typeof obj.index === "number" ? obj.index : segments.length;
+      if (!chunk || spoken === undefined) continue;
+      const segment: PronunciationBreakdownSegment = { index, chunk, spoken };
+      if (typeof obj.startMs === "number") segment.startMs = obj.startMs;
+      if (typeof obj.endMs === "number") segment.endMs = obj.endMs;
+      segments.push(segment);
+    } else if (typeof item === "string" && item.length > 0) {
+      // Legacy: bare chunk string. Promote to object for forward compat.
+      segments.push({
+        index: segments.length,
+        chunk: item,
+        spoken: item,
+      });
+    }
+  }
+  return segments.length > 0 ? segments : undefined;
+}
+
 function toRowEntry(row: {
   id: bigint;
   normalized_word: string;
@@ -60,7 +91,7 @@ function toRowEntry(row: {
   const displayWord = row.display_word ?? normalizedWord;
 
   const syllables = toStringArray(row.syllables);
-  const breakdownSegments = toStringArray(row.breakdown_segments);
+  const breakdownSegments = toBreakdownSegmentArray(row.breakdown_segments);
 
   const source = VALID_SOURCES.has(row.source as PronunciationSource)
     ? (row.source as PronunciationSource)
