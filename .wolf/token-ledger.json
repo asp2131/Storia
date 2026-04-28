@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 2238820,
-    "total_reads": 1025,
-    "total_writes": 1006,
-    "total_sessions": 25,
-    "anatomy_hits": 379,
-    "anatomy_misses": 640,
+    "total_tokens_estimated": 2246672,
+    "total_reads": 1033,
+    "total_writes": 1008,
+    "total_sessions": 26,
+    "anatomy_hits": 384,
+    "anatomy_misses": 643,
     "repeated_reads_blocked": 760,
-    "estimated_savings_vs_bare_cli": 5341548
+    "estimated_savings_vs_bare_cli": 5342548
   },
   "sessions": [
     {
@@ -13225,6 +13225,81 @@
         "writes_count": 45,
         "repeated_reads_blocked": 3,
         "anatomy_lookups": 13
+      }
+    },
+    {
+      "id": "session-2026-04-28-1210",
+      "started": "2026-04-28T17:10:38.323Z",
+      "ended": "2026-04-28T17:16:38.819Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/child-profiles/route.ts",
+          "tokens_estimated": 1100,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/auth.ts",
+          "tokens_estimated": 1213,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 303,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/auth-client.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reading-progress/route.ts",
+          "tokens_estimated": 3500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.ts",
+          "tokens_estimated": 910,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/child-profiles/route.test.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 65,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 761,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7026,
+        "output_tokens_estimated": 826,
+        "reads_count": 8,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 5
       }
     }
   ],

@@ -100,6 +100,9 @@
 
 - Pronunciation playback role normalization now treats Supabase storage paths as authoritative when URL fields are suspicious: paths containing `/pronunciations/full-word/` are `fullWord`, paths containing `/pronunciations/breakdown/` are `breakdown`. Web manifest serialization, manifest-to-reader conversion, generation coverage, and mobile `WordPronunciation.fromRow` all correct swapped field assignments defensively while marking swapped rows partial for regeneration.
 
+- Auth is dual-stack: web signs in via Better Auth (cookies, `useSession` from `@/lib/auth-client`); mobile signs in via Supabase (Bearer token in `authorization` header). `getAuthenticatedUser()` in `src/lib/child-auth.ts` resolves both: bearer present -> Supabase verification path; otherwise -> Better Auth `auth.api.getSession({ headers })` path. Any new web-facing route that needs the parent user MUST go through `getAuthenticatedUser`/`validateChildAccess`, not raw `auth.api.getSession`, so it works for both clients.
+- 2026-04-28 auth audit learning: current child-auth tests mock the helper in route tests and there is no direct coverage of real bearer parsing/fallback/identity-linking; the helper accepts non-Bearer Authorization as a Supabase token and links Supabase users to Better Auth users by email without a stored `supabaseId`, so future auth changes need explicit conflict/verified-email tests.
+
 ## Do-Not-Repeat
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
@@ -111,6 +114,7 @@
 - [2026-04-27] Do not use `WeakMap<ArrayBuffer,string>` identity alone to assert `useWordPronunciation` decoded source URLs; the hook clones audio bytes with `arrayBuffer.slice(0)`, so decode mocks need clone-safe URL tagging.
 
 - [2026-04-24] When searching paths that include parentheses like `src/app/admin/(editor)`, quote the path in bash commands or the shell will throw a syntax error before `rg` runs.
+- [2026-04-28] Do not gate web-facing API routes on Supabase bearer token alone. Web client uses Better Auth cookies and sends no bearer; bearer-only `getAuthenticatedUser` returned 401 in prod for `/api/child-profiles`, `/api/reports/summary`, and any child-aware web call. Always go through the dual-stack helper that falls back to `auth.api.getSession`.
 
 ## Decision Log
 

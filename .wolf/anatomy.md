@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T01:45:40.933Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-28T17:14:02.162Z
 > Files: 617 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
@@ -860,7 +860,7 @@
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
-- `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
+- `child-auth.ts` — API routes: GET (2 endpoints) (~1666 tok)
 - `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
@@ -886,3 +886,21 @@
 
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
+
+## Discovered during 2026-04-28 auth audit
+
+- `src/lib/admin-auth.ts` — Admin-only Better Auth helper/guard for admin routes (~222 tok)
+- `src/app/api/reports/analytics/route.ts` — Child-authorized analytics report endpoint (~819 tok)
+- `src/app/api/reports/analytics/route.test.ts` — Tests for analytics report auth/queries (~582 tok)
+- `src/app/api/reports/analytics.reader-flow.integration.test.ts` — Integration tests for reader analytics flow and report aggregation (~1531 tok)
+- `src/app/api/analytics/events/route.ts` — Child-authorized analytics event ingestion endpoint (~349 tok)
+- `src/app/api/analytics/events/route.test.ts` — Tests for analytics event route validation/auth (~218 tok)
+- `src/app/api/feedback/route.ts` — Feedback submission route using Better Auth session (~188 tok)
+- `src/app/api/feedback/status/route.ts` — Feedback status route using Better Auth session (~181 tok)
+- `src/app/api/books/[id]/questions/[questionId]/route.ts` — Question answer route with auth and scoring logic (~948 tok)
+- `src/app/api/child-profiles/route.test.ts` — Vitest coverage for child profile GET/POST auth/validation paths (~1300 tok)
+- `src/app/api/comprehension/route.test.ts` — Vitest coverage for comprehension POST auth/access/scoring paths (~1500 tok)
+- `src/app/api/continue-reading/route.test.ts` — Vitest coverage for continue-reading GET auth and latest progress selection (~650 tok)
+- `src/app/api/reading-progress/route.test.ts` — Vitest coverage for reading-progress GET/POST legacy + child-aware auth paths (~1250 tok)
+- `src/app/api/reading-sessions/route.test.ts` — Vitest coverage for reading session POST auth/access/upsert paths (~800 tok)
+- `src/app/api/reports/summary/route.test.ts` — Vitest coverage for reports summary auth/access/query behavior (~1100 tok)

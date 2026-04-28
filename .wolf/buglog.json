@@ -2226,6 +2226,26 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-04-27T15:33:09.896350+00:00"
+    },
+    {
+      "id": "bug-130",
+      "timestamp": "2026-04-28T00:00:00.000000+00:00",
+      "error_message": "GET /api/child-profiles 401 in prod; reports page shows 'Could not load child profiles - Authentication required'",
+      "file": "src/lib/child-auth.ts",
+      "root_cause": "getAuthenticatedUser() only accepted Supabase bearer tokens (mobile path). Web client signs in via Better Auth (cookies) and sends no bearer, so any web route guarded by getAuthenticatedUser/validateChildAccess returned 401.",
+      "fix": "Split resolution into resolveBySupabaseToken (bearer present) and resolveByBetterAuthSession (cookie fallback via auth.api.getSession). Cookie path looks up prisma.user by session.user.id and returns the same AuthenticatedUser shape. Mobile bearer path unchanged.",
+      "tags": [
+        "auth",
+        "better-auth",
+        "supabase",
+        "child-profiles",
+        "reports",
+        "401",
+        "prod"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T00:00:00.000000+00:00"
     }
   ]
 }

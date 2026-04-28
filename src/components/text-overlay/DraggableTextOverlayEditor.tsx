@@ -7,6 +7,7 @@ import {
 } from "@/types/text-overlay";
 import { Toolbar } from "./Toolbar";
 import { PropertyPanel } from "./PropertyPanel";
+import { LayersPanel } from "./LayersPanel";
 import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
 
 type VoiceOption = {
@@ -359,7 +360,7 @@ export function DraggableTextOverlayEditor({
   );
 
   const handleSelectElement = useCallback(
-    (elementId: string) => {
+    (elementId: string | null) => {
       actions.selectElement(elementId);
     },
     [actions]
@@ -427,6 +428,14 @@ export function DraggableTextOverlayEditor({
             </div>
           </div>
         </div>
+
+        {/* Layers Panel */}
+        <LayersPanel
+          elements={elements}
+          selectedElementId={selectedElementId}
+          onSelect={handleSelectElement}
+          onDelete={handleDeleteElement}
+        />
 
         {/* Property Panel */}
         <PropertyPanel

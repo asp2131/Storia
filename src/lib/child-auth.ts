@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -56,8 +57,14 @@ export async function getAuthenticatedUser(): Promise<
   const token =
     extractBearer(hdrs.get("authorization")) ??
     extractBearer(hdrs.get("x-supabase-access-token"));
-  if (!token) return { error: unauthorized("missing bearer token") };
 
+  if (token) return resolveBySupabaseToken(token);
+  return resolveByBetterAuthSession(hdrs);
+}
+
+async function resolveBySupabaseToken(
+  token: string
+): Promise<{ user: AuthenticatedUser } | { error: NextResponse }> {
   let supaUser: Awaited<
     ReturnType<SupabaseClient["auth"]["getUser"]>
   >["data"]["user"];
@@ -100,6 +107,36 @@ export async function getAuthenticatedUser(): Promise<
     console.error("[child-auth] user resolve failed:", err);
     return { error: unauthorized("user resolve failed") };
   }
+}
+
+async function resolveByBetterAuthSession(
+  hdrs: Awaited<ReturnType<typeof headers>>
+): Promise<{ user: AuthenticatedUser } | { error: NextResponse }> {
+  let session: Awaited<ReturnType<typeof auth.api.getSession>>;
+  try {
+    session = await auth.api.getSession({ headers: hdrs });
+  } catch (err) {
+    console.error("[child-auth] better-auth getSession threw:", err);
+    return { error: unauthorized("better-auth session error") };
+  }
+
+  if (!session?.user?.id) {
+    return { error: unauthorized("missing bearer token and no session") };
+  }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!dbUser) {
+    return { error: unauthorized("session user not in database") };
+  }
+
+  return {
+    user: {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      role: dbUser.role,
+    },
+  };
 }
 
 async function resolveUser(params: {

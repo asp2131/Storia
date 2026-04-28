@@ -766,3 +766,20 @@
 | 10:33 | Logged pronunciation order bug and persisted role-normalization learning | .wolf/buglog.json, .wolf/cerebrum.md | bug-129 added | ~tokens |
 | 10:33 | Ran eslint on changed web pronunciation files | src/lib/*, manifest route, hook test | 0 errors, 1 pre-existing unused-var warning in pronunciationGeneration.test.ts | ~tokens |
 | 10:34 | Re-ran final web verification after lint cleanup | targeted vitest, eslint, tsc | 83 tests pass; eslint clean; TypeScript clean | ~tokens |
+
+## Session: 2026-04-28 12:10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:13 | Edited src/lib/child-auth.ts | added 1 import(s) | ~65 |
+| 12:14 | Edited src/lib/child-auth.ts | added 2 condition(s) | ~761 |
+| 12:18 | Fix prod 401 on /api/child-profiles: add Better Auth cookie fallback in getAuthenticatedUser | src/lib/child-auth.ts; .wolf/buglog.json (bug-130) | route tests pass; tsc clean | ~900 |
+| 12:16 | Session end: 2 writes across 1 files (child-auth.ts) | 8 reads | ~7852 tok |
+| 12:17 | Started squad-backed audit of dual-stack auth implementation and searched auth usage | src/,.wolf/memory.md | in progress | ~500 |
+| 12:17 | Read OpenWolf/security guidance and core dual-stack auth files for audit | .wolf/OPENWOLF.md,.wolf/cerebrum.md,.wolf/anatomy.md,src/lib/child-auth.ts,src/lib/auth.ts,child-aware API routes | inspection started | ~18000 |
+| 12:17 | Updated anatomy for newly discovered auth-related routes before reading | .wolf/anatomy.md | added 9 entries | ~300 |
+| 12:17 | Discovered auth route test files and updated anatomy entries | .wolf/anatomy.md | Added missing route.test metadata for auth coverage review | ~250 |
+| 12:18 | Searched route adoption/tests and identified likely authorization hotspots | src/app/api/**,prisma/schema.prisma | candidate findings collected | ~9000 |
+| 12:18 | Ran targeted auth/protected route Vitest suite | src/app/api/*/route.test.ts | 8 files / 29 tests passed; route tests mock child-auth helper | ~900 |
+| 12:19 | Recorded auth audit learning in cerebrum | .wolf/cerebrum.md | learning appended | ~300 |
+| 12:19 | Audited dual-stack parent/child auth helper and web API route adoption | src/lib/child-auth.ts; src/app/api/* | found mixed adoption plus legacy userId/raw Better Auth issues for final report | ~8k |
