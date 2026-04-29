@@ -36,13 +36,11 @@ import type { DropResult } from "@hello-pangea/dnd";
 import { computeActiveWordIndexMobileCompat } from "@/lib/mobile-compat/word-sync";
 import { normalizeOverlayForMobile } from "@/lib/mobile-compat/normalize";
 import {
-  EDITOR_AUTOSAVE_DEBOUNCE_MS,
-  SaveCoordinator,
+  useEditorSave,
   type BookDraft,
   type OverlayDraft,
   type OverlaySaveResult,
-  type SaveSnapshot,
-} from "@/lib/editor/saveCoordinator";
+} from "@/hooks/useEditorSave";
 
 // ─── Local Types ───────────────────────────────────────────────────────────────
 
@@ -249,14 +247,6 @@ export const useBookEditor           = (): BookEditorContextValue => useBookEdit
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-const initialBookSaveSnapshot: SaveSnapshot = {
-  target: "book",
-  phase: "idle",
-  dirty: false,
-  error: null,
-  revision: 0,
-};
-
 export function BookEditorProvider({
   bookId: bookIdParam,
   children,
@@ -283,8 +273,7 @@ export function BookEditorProvider({
 
   const [localPages, setLocalPages] = useState<LocalPageData[]>([]);
   const [activePage, setActivePageState] = useState(1);
-  const [bookSaveSnapshot, setBookSaveSnapshot] =
-    useState<SaveSnapshot>(initialBookSaveSnapshot);
+
 
   // ─── Book meta state ──────────────────────────────────────────────────────
 
@@ -350,53 +339,6 @@ export function BookEditorProvider({
   const libraryPreviewRef = useRef<HTMLAudioElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
-  const bookDraftRef = useRef<BookDraft>({ title: "Untitled Book", author: "", pages: [] });
-  const saveBookPortRef = useRef<
-    (draft: BookDraft, reason: "autosave" | "manual" | "retry") => Promise<void>
-  >(async () => undefined);
-  const saveOverlayPortRef = useRef<
-    (draft: OverlayDraft, reason: "autosave" | "manual" | "retry") => Promise<OverlaySaveResult>
-  >(async () => {
-    throw new Error("Overlay save port is not ready");
-  });
-  const applyOverlayResultRef = useRef<(result: OverlaySaveResult) => void>(() => undefined);
-  const saveCoordinator = useMemo(
-    () =>
-      new SaveCoordinator({
-        debounceMs: EDITOR_AUTOSAVE_DEBOUNCE_MS,
-        getBookDraft: () => bookDraftRef.current,
-        saveBook: (draft, reason) => saveBookPortRef.current(draft, reason),
-        saveOverlay: (draft, reason) => saveOverlayPortRef.current(draft, reason),
-        applyOverlayResult: (result) => applyOverlayResultRef.current(result),
-      }),
-    []
-  );
-
-  useEffect(() => {
-    const unsubscribe = saveCoordinator.subscribe((snapshot, target) => {
-      if (target === "book") {
-        setBookSaveSnapshot(snapshot);
-        return;
-      }
-
-      const pageKey = SaveCoordinator.pageKeyFromOverlayTarget(target);
-      const overlayStore = getExistingOverlayEditorStore(pageKey);
-      const overlayActions = overlayStore?.getState();
-      if (!overlayActions) return;
-
-      if (snapshot.phase === "saving") {
-        overlayActions.markSaving();
-      } else if (snapshot.phase === "saved" && !snapshot.dirty) {
-        overlayActions.markSaved();
-      } else if (snapshot.phase === "error") {
-        overlayActions.markSaveError();
-      }
-    });
-    return () => {
-      unsubscribe();
-      saveCoordinator.dispose();
-    };
-  }, [saveCoordinator]);
 
   // ─── Audio assignments for current page ───────────────────────────────────
 
@@ -512,18 +454,6 @@ export function BookEditorProvider({
 
   const wordTimestamps = activePageData?.narrationTimestamps || [];
 
-  // ─── Derived loading/saving flags ─────────────────────────────────────────
-
-  const loading = bookLoading || pagesLoading;
-  const hasLocalChanges = bookSaveSnapshot.dirty;
-  const autoSaving = bookSaveSnapshot.phase === "saving";
-  const saving =
-    bookSaveSnapshot.phase === "saving" ||
-    savePagesMutation.isPending ||
-    updateBookMutation.isPending;
-  const generatingNarration =
-    generateNarrationMutation.isPending || generatingOverlayNarration;
-
   const currentBookDraft = useMemo<BookDraft>(
     () => ({
       title: localTitle.trim() || "Untitled Book",
@@ -536,14 +466,6 @@ export function BookEditorProvider({
       })),
     }),
     [localAuthor, localPages, localTitle]
-  );
-  bookDraftRef.current = currentBookDraft;
-
-  // ─── markDirty helper ─────────────────────────────────────────────────────
-
-  const markDirty = useCallback(
-    () => saveCoordinator.markBookDirty(),
-    [saveCoordinator]
   );
 
   const saveBookDraft = useCallback(
@@ -562,25 +484,86 @@ export function BookEditorProvider({
     },
     [savePagesMutation, updateBookMutation]
   );
-  saveBookPortRef.current = saveBookDraft;
 
-  const queueActiveOverlayIfDirty = useCallback(() => {
-    const overlayState = getExistingOverlayEditorStore(overlayPageId)?.getState();
-    if (!overlayState?.hasChanges) return;
+  const saveOverlayDraft = useCallback(
+    async (draft: OverlayDraft): Promise<OverlaySaveResult> => {
+      try {
+        const res = await fetch(
+          `/api/admin/books/${bookIdParam}/pages/${draft.pageNumber}/overlay`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              overlay: normalizeOverlayForMobile(
+                draft.overlay as unknown as {
+                  version: number;
+                  elements: Array<Record<string, unknown>>;
+                }
+              ),
+            }),
+          }
+        );
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to save overlay");
+        }
+        const data = await res.json();
+        return {
+          pageKey: draft.pageKey,
+          pageNumber: draft.pageNumber,
+          overlay: data.overlay || draft.overlay,
+          textContent: data.textContent ?? "",
+        };
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save overlay");
+        throw err;
+      }
+    },
+    [bookIdParam]
+  );
 
-    saveCoordinator.requestOverlaySave({
-      pageKey: overlayPageId,
-      pageNumber: activePage,
-      overlay: overlayState.buildConfig(),
-    });
-  }, [activePage, overlayPageId, saveCoordinator]);
+  const applyOverlayResult = useCallback((result: OverlaySaveResult) => {
+    setLocalPages((prev) =>
+      prev.map((p) =>
+        p.number === result.pageNumber
+          ? {
+              ...p,
+              overlay: result.overlay || p.overlay,
+              text: result.textContent ?? "",
+            }
+          : p
+      )
+    );
+  }, []);
 
-  const handleSave = useCallback(() => {
-    queueActiveOverlayIfDirty();
-    return saveCoordinator.flush("manual");
-  }, [queueActiveOverlayIfDirty, saveCoordinator]);
+  const { markDirty, commit, status } = useEditorSave({
+    getBookDraft: () => currentBookDraft,
+    saveBook: saveBookDraft,
+    saveOverlay: saveOverlayDraft,
+    applyOverlayResult,
+    onOverlayPhaseChange: (pageKey, phase, _error) => {
+      const store = getExistingOverlayEditorStore(pageKey);
+      if (!store) return;
+      const actions = store.getState();
+      if (phase === "saving") actions.markSaving();
+      else if (phase === "saved") actions.markSaved();
+      else if (phase === "error") actions.markSaveError();
+    },
+  });
 
-  // ─── setActivePage — single choke-point for cross-cutting side effects ────
+  const handleSave = useCallback(() => commit("manual"), [commit]);
+
+  // ─── Derived loading/saving flags ─────────────────────────────────────────
+
+  const loading = bookLoading || pagesLoading;
+  const hasLocalChanges = status.dirty;
+  const autoSaving = status.phase === "saving";
+  const saving =
+    status.phase === "saving" ||
+    savePagesMutation.isPending ||
+    updateBookMutation.isPending;
+  const generatingNarration =
+    generateNarrationMutation.isPending || generatingOverlayNarration;
 
   const setActivePageInternal = useCallback(
     (
@@ -620,7 +603,7 @@ export function BookEditorProvider({
   // ─── Sync server → local state ────────────────────────────────────────────
 
   useEffect(() => {
-    if (serverPages && serverPages.length > 0 && !hasLocalChanges) {
+    if (serverPages && serverPages.length > 0 && !status.dirty) {
       setLocalPages(
         serverPages.map((p) => ({
           id: p.id,
@@ -633,14 +616,14 @@ export function BookEditorProvider({
         }))
       );
     }
-  }, [serverPages, hasLocalChanges]);
+  }, [serverPages, status.dirty]);
 
   useEffect(() => {
-    if (bookDetails && !hasLocalChanges) {
+    if (bookDetails && !status.dirty) {
       setLocalTitle(bookDetails.title || "Untitled Book");
       setLocalAuthor(bookDetails.author || "Unknown");
     }
-  }, [bookDetails, hasLocalChanges]);
+  }, [bookDetails, status.dirty]);
 
   // ─── Load voices ──────────────────────────────────────────────────────────
 
@@ -1360,86 +1343,28 @@ export function BookEditorProvider({
   const handlePublish = useCallback(async () => {
     setError(null);
     try {
-      queueActiveOverlayIfDirty();
-      await saveCoordinator.flush("manual");
-      const draft = bookDraftRef.current;
+      await commit("manual");
       await updateBookMutation.mutateAsync({
-        title: draft.title,
-        author: draft.author,
+        title: currentBookDraft.title,
+        author: currentBookDraft.author,
         isPublished: true,
         processingStatus: "published",
       });
-      saveCoordinator.markBookClean();
       router.push("/admin/books");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish.");
     }
-  }, [queueActiveOverlayIfDirty, router, saveCoordinator, updateBookMutation]);
+  }, [commit, currentBookDraft, router, updateBookMutation]);
 
   // ─── Overlay handlers ─────────────────────────────────────────────────────
 
-  const saveOverlayDraft = useCallback(
-    async (draft: OverlayDraft): Promise<OverlaySaveResult> => {
-      try {
-        const res = await fetch(
-          `/api/admin/books/${bookIdParam}/pages/${draft.pageNumber}/overlay`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              overlay: normalizeOverlayForMobile(
-                draft.overlay as unknown as {
-                  version: number;
-                  elements: Array<Record<string, unknown>>;
-                }
-              ),
-            }),
-          }
-        );
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || "Failed to save overlay");
-        }
-        const data = await res.json();
-        return {
-          pageKey: draft.pageKey,
-          pageNumber: draft.pageNumber,
-          overlay: data.overlay || draft.overlay,
-          textContent: data.textContent ?? "",
-        };
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to save overlay");
-        throw err;
-      }
-    },
-    [bookIdParam]
-  );
-  saveOverlayPortRef.current = saveOverlayDraft;
-
-  const applyOverlayResult = useCallback((result: OverlaySaveResult) => {
-    setLocalPages((prev) =>
-      prev.map((p) =>
-        p.number === result.pageNumber
-          ? {
-              ...p,
-              overlay: result.overlay || p.overlay,
-              text: result.textContent ?? "",
-            }
-          : p
-      )
-    );
-  }, []);
-  applyOverlayResultRef.current = applyOverlayResult;
-
   const handleOverlaySave = useCallback(
     async (overlayConfig: TextOverlayConfig) => {
-      saveCoordinator.requestOverlaySave({
-        pageKey: overlayPageId,
-        pageNumber: activePage,
-        overlay: overlayConfig,
+      markDirty({
+        overlay: { pageKey: overlayPageId, pageNumber: activePage, overlay: overlayConfig },
       });
     },
-    [activePage, overlayPageId, saveCoordinator]
+    [markDirty, overlayPageId, activePage]
   );
 
   const handleOverlayComposite = useCallback(async () => {
@@ -1671,9 +1596,10 @@ export function BookEditorProvider({
       overlayEditorCompositing,
       localTitle,
       localAuthor,
-      hasLocalChanges,
-      autoSaving,
-      saving,
+      status,
+      markDirty,
+      handleSave,
+      handlePublish,
       error,
       loading,
       activeAssignments,

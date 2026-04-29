@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 2238820,
-    "total_reads": 1025,
-    "total_writes": 1006,
-    "total_sessions": 25,
-    "anatomy_hits": 379,
-    "anatomy_misses": 640,
-    "repeated_reads_blocked": 760,
-    "estimated_savings_vs_bare_cli": 5341548
+    "total_tokens_estimated": 2285073,
+    "total_reads": 1065,
+    "total_writes": 1026,
+    "total_sessions": 27,
+    "anatomy_hits": 399,
+    "anatomy_misses": 660,
+    "repeated_reads_blocked": 767,
+    "estimated_savings_vs_bare_cli": 5363108
   },
   "sessions": [
     {
@@ -13225,6 +13225,397 @@
         "writes_count": 45,
         "repeated_reads_blocked": 3,
         "anatomy_lookups": 13
+      }
+    },
+    {
+      "id": "session-2026-04-28-1210",
+      "started": "2026-04-28T17:10:38.323Z",
+      "ended": "2026-04-28T17:16:38.819Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/child-profiles/route.ts",
+          "tokens_estimated": 1100,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/auth.ts",
+          "tokens_estimated": 1213,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 303,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/auth-client.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reading-progress/route.ts",
+          "tokens_estimated": 3500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.ts",
+          "tokens_estimated": 910,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/child-profiles/route.test.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 65,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 761,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7026,
+        "output_tokens_estimated": 826,
+        "reads_count": 8,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 5
+      }
+    },
+    {
+      "id": "session-2026-04-28-1210",
+      "started": "2026-04-28T17:10:38.323Z",
+      "ended": "2026-04-28T17:30:21.279Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/child-profiles/route.ts",
+          "tokens_estimated": 1100,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/auth.ts",
+          "tokens_estimated": 1213,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 303,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/auth-client.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reading-progress/route.ts",
+          "tokens_estimated": 3500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.ts",
+          "tokens_estimated": 910,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/child-profiles/route.test.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/audits/dual-stack-auth-audit-2026-04-28.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/auth/data/auth_repository.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 65,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 761,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/dual-stack-auth-remediation-2026-04-28.md",
+          "tokens_estimated": 7342,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7026,
+        "output_tokens_estimated": 8168,
+        "reads_count": 10,
+        "writes_count": 3,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 5
+      }
+    },
+    {
+      "id": "session-2026-04-28-1558",
+      "started": "2026-04-28T20:58:49.824Z",
+      "ended": "2026-04-28T21:13:45.665Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/audits/dual-stack-auth-audit-2026-04-28.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 1856,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/1.json",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/2.json",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/3.json",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/audio-assignments/route.ts",
+          "tokens_estimated": 1072,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/uploads/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
+          "tokens_estimated": 3057,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-overlay-narration/route.ts",
+          "tokens_estimated": 940,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+          "tokens_estimated": 2434,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/vitest.config.ts",
+          "tokens_estimated": 95,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/questions/route.ts",
+          "tokens_estimated": 360,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/questions/[questionId]/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/admin-auth.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pages/[pageNumber]/overlay/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/dual-stack-auth-remediation-2026-04-28.md",
+          "tokens_estimated": 6424,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/feedback/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/feedback/status/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/questions/route.test.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reading-progress/route.ts",
+          "tokens_estimated": 3500,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reading-sessions/route.ts",
+          "tokens_estimated": 1800,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reading-sessions/route.test.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 148,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/audio-assignments/route.ts",
+          "tokens_estimated": 20,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/uploads/route.ts",
+          "tokens_estimated": 20,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-narration/route.ts",
+          "tokens_estimated": 20,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/generate-overlay-narration/route.ts",
+          "tokens_estimated": 20,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/generate/route.ts",
+          "tokens_estimated": 20,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/1.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/2.json",
+          "tokens_estimated": 8,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 372,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 56,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/auth-provider-account-mapping-followup.md",
+          "tokens_estimated": 678,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/2.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/3.json",
+          "tokens_estimated": 8,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts",
+          "tokens_estimated": 278,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/3.json",
+          "tokens_estimated": 7,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 21538,
+        "output_tokens_estimated": 1669,
+        "reads_count": 22,
+        "writes_count": 15,
+        "repeated_reads_blocked": 7,
+        "anatomy_lookups": 10
       }
     }
   ],

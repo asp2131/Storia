@@ -3,13 +3,11 @@ import { NextRequest } from "next/server";
 
 const {
   mockValidateChildAccess,
-  mockGetSession,
-  mockHeaders,
+  mockGetAuthenticatedUser,
   mockPrisma,
 } = vi.hoisted(() => ({
   mockValidateChildAccess: vi.fn(),
-  mockGetSession: vi.fn(),
-  mockHeaders: vi.fn(),
+  mockGetAuthenticatedUser: vi.fn(),
   mockPrisma: {
     child_book_progress: {
       findMany: vi.fn(),
@@ -23,19 +21,8 @@ const {
   },
 }));
 
-vi.mock("next/headers", () => ({
-  headers: mockHeaders,
-}));
-
-vi.mock("@/lib/auth", () => ({
-  auth: {
-    api: {
-      getSession: mockGetSession,
-    },
-  },
-}));
-
 vi.mock("@/lib/child-auth", () => ({
+  getAuthenticatedUser: mockGetAuthenticatedUser,
   validateChildAccess: mockValidateChildAccess,
 }));
 
@@ -48,8 +35,7 @@ import { GET, POST } from "@/app/api/reading-progress/route";
 describe("/api/reading-progress", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockHeaders.mockResolvedValue(new Headers());
-    mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
+    mockGetAuthenticatedUser.mockResolvedValue({ user: { id: "user-1" } });
     mockValidateChildAccess.mockResolvedValue({
       user: { id: "user-1" },
       childProfile: { id: "child-1" },
@@ -159,5 +145,92 @@ describe("/api/reading-progress", () => {
     expect(body.progress.completedAt).toBeNull();
     expect(body.progress.status).toBe("in_progress");
     expect(body.progress.completionCount).toBe(2);
+  });
+
+  it("uses dual-stack auth for parent GET progress so mobile bearer users resolve", async () => {
+    mockGetAuthenticatedUser.mockResolvedValue({ user: { id: "mobile-user-1" } });
+    mockPrisma.user_reading_progress.findUnique.mockResolvedValue({
+      userId: "mobile-user-1",
+      bookId: 101n,
+      currentPage: 8,
+      totalPages: 20,
+      lastReadAt: new Date("2026-04-28T13:00:00.000Z"),
+    });
+
+    const request = new NextRequest("http://localhost/api/reading-progress?bookId=101", {
+      headers: { authorization: "Bearer mobile-token" },
+    });
+
+    const response = await GET(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockGetAuthenticatedUser).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.user_reading_progress.findUnique).toHaveBeenCalledWith({
+      where: {
+        userId_bookId: {
+          userId: "mobile-user-1",
+          bookId: 101n,
+        },
+      },
+    });
+    expect(body).toEqual({
+      currentPage: 8,
+      totalPages: 20,
+      lastReadAt: "2026-04-28T13:00:00.000Z",
+      progressPercent: 40,
+    });
+  });
+
+  it("uses dual-stack auth for parent POST progress so Better Auth cookie users resolve", async () => {
+    mockGetAuthenticatedUser.mockResolvedValue({ user: { id: "web-user-1" } });
+    mockPrisma.user_reading_progress.upsert.mockResolvedValue({
+      userId: "web-user-1",
+      bookId: 101n,
+      currentPage: 5,
+      totalPages: 10,
+      lastReadAt: new Date("2026-04-28T13:05:00.000Z"),
+    });
+
+    const request = new NextRequest("http://localhost/api/reading-progress", {
+      method: "POST",
+      headers: { cookie: "better-auth.session_token=cookie-value" },
+      body: JSON.stringify({
+        bookId: "101",
+        currentPage: 5,
+        totalPages: 10,
+      }),
+    });
+
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockGetAuthenticatedUser).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.user_reading_progress.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId_bookId: {
+            userId: "web-user-1",
+            bookId: 101n,
+          },
+        },
+        create: expect.objectContaining({
+          userId: "web-user-1",
+          bookId: 101n,
+          currentPage: 5,
+          totalPages: 10,
+        }),
+      })
+    );
+    expect(body).toEqual({
+      success: true,
+      progress: {
+        currentPage: 5,
+        totalPages: 10,
+        lastReadAt: "2026-04-28T13:05:00.000Z",
+        progressPercent: 50,
+      },
+    });
   });
 });

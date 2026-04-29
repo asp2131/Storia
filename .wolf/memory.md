@@ -766,3 +766,82 @@
 | 10:33 | Logged pronunciation order bug and persisted role-normalization learning | .wolf/buglog.json, .wolf/cerebrum.md | bug-129 added | ~tokens |
 | 10:33 | Ran eslint on changed web pronunciation files | src/lib/*, manifest route, hook test | 0 errors, 1 pre-existing unused-var warning in pronunciationGeneration.test.ts | ~tokens |
 | 10:34 | Re-ran final web verification after lint cleanup | targeted vitest, eslint, tsc | 83 tests pass; eslint clean; TypeScript clean | ~tokens |
+
+## Session: 2026-04-28 12:10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:13 | Edited src/lib/child-auth.ts | added 1 import(s) | ~65 |
+| 12:14 | Edited src/lib/child-auth.ts | added 2 condition(s) | ~761 |
+| 12:18 | Fix prod 401 on /api/child-profiles: add Better Auth cookie fallback in getAuthenticatedUser | src/lib/child-auth.ts; .wolf/buglog.json (bug-130) | route tests pass; tsc clean | ~900 |
+| 12:16 | Session end: 2 writes across 1 files (child-auth.ts) | 8 reads | ~7852 tok |
+| 12:17 | Started squad-backed audit of dual-stack auth implementation and searched auth usage | src/,.wolf/memory.md | in progress | ~500 |
+| 12:17 | Read OpenWolf/security guidance and core dual-stack auth files for audit | .wolf/OPENWOLF.md,.wolf/cerebrum.md,.wolf/anatomy.md,src/lib/child-auth.ts,src/lib/auth.ts,child-aware API routes | inspection started | ~18000 |
+| 12:17 | Updated anatomy for newly discovered auth-related routes before reading | .wolf/anatomy.md | added 9 entries | ~300 |
+| 12:17 | Discovered auth route test files and updated anatomy entries | .wolf/anatomy.md | Added missing route.test metadata for auth coverage review | ~250 |
+| 12:18 | Searched route adoption/tests and identified likely authorization hotspots | src/app/api/**,prisma/schema.prisma | candidate findings collected | ~9000 |
+| 12:18 | Ran targeted auth/protected route Vitest suite | src/app/api/*/route.test.ts | 8 files / 29 tests passed; route tests mock child-auth helper | ~900 |
+| 12:19 | Recorded auth audit learning in cerebrum | .wolf/cerebrum.md | learning appended | ~300 |
+| 12:19 | Audited dual-stack parent/child auth helper and web API route adoption | src/lib/child-auth.ts; src/app/api/* | found mixed adoption plus legacy userId/raw Better Auth issues for final report | ~8k |
+| 12:20 | Recorded auth route adoption audit learning | .wolf/cerebrum.md | added notes about legacy userId/raw Better Auth gaps | ~1k |
+| 12:20 | Recorded auth coverage learning in cerebrum | .wolf/cerebrum.md | Added missing dual-stack auth test coverage note | ~120 |
+| 12:20 | Captured local environment versions for auth QA report | package.json | node v22.21.0 npm 10.9.4 Darwin arm64 | ~50 |
+| 12:35 | /plan_w_team for dual-stack auth audit remediation; team uses general-purpose agents for Pi swarm portability | specs/dual-stack-auth-remediation-2026-04-28.md | plan saved | ~3200 |
+| 12:20 | Completed auth audit reads and recorded auth adoption/security learning | src/lib/child-auth.ts, src/app/api/*, .wolf/cerebrum.md | findings ready | ~2500 |
+| 12:21 | Acknowledged completed auth audit squad and summarized next actions | squad audit | completed, cost $4.4574 | ~200 |
+| 12:23 | Documented dual-stack auth audit findings in specs/audits | specs/audits/dual-stack-auth-audit-2026-04-28.md, .wolf/anatomy.md | created audit doc | ~2200 |
+| 12:29 | Created specs/dual-stack-auth-remediation-2026-04-28.md | — | ~6853 |
+| 12:30 | Session end: 3 writes across 2 files (child-auth.ts, dual-stack-auth-remediation-2026-04-28.md) | 10 reads | ~15194 tok |
+
+## Session: 2026-04-28 15:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 16:06 | Edited src/lib/child-auth.ts | 12→10 lines | ~148 |
+| 16:06 | Edited src/app/api/admin/audio-assignments/route.ts | 4→1 lines | ~20 |
+| 16:06 | Edited src/app/api/admin/uploads/route.ts | 4→1 lines | ~20 |
+| 16:06 | Edited src/app/api/admin/generate-narration/route.ts | 4→1 lines | ~20 |
+| 16:06 | Edited src/app/api/admin/generate-overlay-narration/route.ts | 4→1 lines | ~20 |
+| 16:06 | Edited src/app/api/admin/books/[id]/pronunciations/generate/route.ts | 4→1 lines | ~20 |
+| 16:07 | Edited ../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/1.json | inline fix | ~7 |
+| 16:07 | Edited ../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/2.json | inline fix | ~8 |
+| 16:08 | Edited src/lib/child-auth.ts | added 1 condition(s) | ~372 |
+| 16:08 | Edited src/lib/child-auth.ts | modified if() | ~56 |
+| 16:08 | Created specs/auth-provider-account-mapping-followup.md | — | ~633 |
+| 16:09 | Edited ../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/2.json | inline fix | ~7 |
+| 16:09 | Edited ../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/3.json | inline fix | ~8 |
+| 16:10 | Edited src/lib/child-auth.ts | modified extractAuthorizationBearer() | ~278 |
+| 16:10 | Edited ../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/3.json | inline fix | ~7 |
+| 16:11 | dual-stack auth phase 1 (sec-env-fallback, sec-verified-email, sec-bearer-parsing) | src/lib/child-auth.ts + 5 admin routes + specs/auth-provider-account-mapping-followup.md | passed tsc + targeted vitest | ~3500 |
+| 16:13 | Session end: 15 writes across 6 files (child-auth.ts, route.ts, 1.json, 2.json, auth-provider-account-mapping-followup.md) | 22 reads | ~23207 tok |
+| 16:15 | Started squad to continue dual-stack auth remediation phases 2-4 | specs/dual-stack-auth-remediation-2026-04-28.md; squad | 7 tasks launched | ~0.7k |
+| 16:16 | Read OpenWolf protocol, cerebrum, anatomy, and security skill before reading task files | .wolf/OPENWOLF.md; .wolf/cerebrum.md; .wolf/anatomy.md | ready to inspect route/tests | ~9000 |
+| 16:16 | Started admin-gate question mutation task; read OpenWolf protocol, cerebrum, anatomy before code navigation | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md | context loaded | ~20000 |
+| 16:16 | Read OpenWolf protocol/cerebrum/anatomy/spec and checked recent buglog before Finding 4 work | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md, specs/dual-stack-auth-remediation-2026-04-28.md, .wolf/buglog.json | context loaded | ~20000 |
+| 16:16 | Inspected remediation spec excerpt plus reading-sessions route/test to locate Finding 6 gap | src/app/api/reading-sessions/route.ts; src/app/api/reading-sessions/route.test.ts; specs/dual-stack-auth-remediation-2026-04-28.md | found missing pre-upsert owner check | ~4500 |
+| 16:16 | Reviewed remediation spec Finding 3 and current buglog before fixing auth gap | specs/dual-stack-auth-remediation-2026-04-28.md, .wolf/buglog.json | confirmed requireAdmin gating and no prior question-route bug entry surfaced | ~900 |
+| 16:16 | Implemented reading-session ownership precheck and added foreign-session regression coverage | src/app/api/reading-sessions/route.ts; src/app/api/reading-sessions/route.test.ts; src/app/api/reports/analytics.reader-flow.integration.test.ts | ready for targeted tests | ~2500 |
+| 16:17 | Inspected question routes, admin auth helper, and existing question route tests | src/app/api/books/[id]/questions/route.ts, src/app/api/books/[id]/questions/[questionId]/route.ts, src/lib/admin-auth.ts, src/app/api/books/[id]/questions/route.test.ts | found mutation routes using getAuthenticatedUser instead of requireAdmin and only GET tests present | ~8500 |
+| 16:17 | Ran targeted reading-session and reader-flow integration tests | src/app/api/reading-sessions/route.test.ts; src/app/api/reports/analytics.reader-flow.integration.test.ts | 2 files / 4 tests passed | ~800 |
+| 16:17 | Replaced raw Better Auth session reads with getAuthenticatedUser in Finding 4 routes | src/app/api/feedback/route.ts, src/app/api/feedback/status/route.ts, src/app/api/reading-progress/route.ts | code updated; response shapes preserved | ~3000 |
+| 16:17 | Ran project typecheck for reading-session ownership changes | tsconfig.json | npx tsc --noEmit passed with no output | ~300 |
+| 16:18 | Replaced dual-stack child auth with admin guard on question POST/PATCH/DELETE | src/app/api/books/[id]/questions/route.ts, src/app/api/books/[id]/questions/[questionId]/route.ts | mutations now call requireAdmin and return its NextResponse on 401/403 | ~400 |
+| 16:17 | Updated audit checklist, cerebrum learning/DNR, and buglog entries for Finding 6 | specs/audits/dual-stack-auth-audit-2026-04-28.md; .wolf/cerebrum.md; .wolf/buglog.json | ownership checklist ticked; bug entries appended | ~1800 |
+| 16:18 | Wrapped reading-session follow-up comment for style after review | src/app/api/reading-sessions/route.ts | no behavior change | ~100 |
+| 16:22 | Expanded question route regression tests for GET unchanged plus POST/PATCH/DELETE unauthenticated, non-admin, and admin paths | src/app/api/books/[id]/questions/route.test.ts | tests now mock requireAdmin and Prisma mutation behavior | ~3600 |
+| 16:18 | Session complete: Finding 6 reading-session ownership check implemented and builder validation done | src/app/api/reading-sessions/route.ts; src/app/api/reading-sessions/route.test.ts; src/app/api/reports/analytics.reader-flow.integration.test.ts; specs/audits/dual-stack-auth-audit-2026-04-28.md; .wolf/cerebrum.md; .wolf/buglog.json | targeted vitest + tsc passed; ready for downstream route tests/final validation | ~500 |
+| 16:18 | Ran targeted question route test suite | src/app/api/books/[id]/questions/route.test.ts | npm test passed 11/11 | ~900 |
+| 16:19 | Added Finding 4 route regression tests for feedback/status and parent reading-progress dual-stack auth | src/app/api/feedback/*.test.ts, src/app/api/reading-progress/*.test.ts, .wolf/anatomy.md | tests created and anatomy updated | ~5000 |
+| 16:19 | Targeted validation passed and Finding 4 checklist/bug/cerebrum updated | vitest route tests, tsc, specs/audits/dual-stack-auth-audit-2026-04-28.md, .wolf/buglog.json, .wolf/cerebrum.md | 4 route test files passed (13 tests); tsc clean | ~2000 |
+| 16:20 | Started affected route regression sweep; loaded OpenWolf/QA guidance and located Findings 3/4/6 test targets | .wolf/OPENWOLF.md, .wolf/cerebrum.md, .wolf/anatomy.md, specs/dual-stack-auth-remediation-2026-04-28.md | context loaded | ~3000 |
+| 16:21 | Ran targeted affected route Vitest sweep in verbose mode: reading-progress, reading-sessions, feedback/status, question mutation routes | src/app/api/**/*route.test.ts | 6 files / 27 tests passed; expected child-auth unauthorized stderr in legacy feedback cases | ~1500 |
+| 16:21 | Ran static route auth/ownership grep plus TypeScript and diff whitespace checks | affected API routes, tsconfig.json | no raw Better Auth session imports in targeted routes; tsc and diff --check clean | ~1000 |
+| 16:21 | Marked route-regression audit checklist complete and recorded route-sweep learning | specs/audits/dual-stack-auth-audit-2026-04-28.md, .wolf/cerebrum.md | checklist/cerebrum updated | ~400 |
+| 16:22 | Added missing direct child-auth helper test matrix and updated anatomy | src/lib/child-auth.test.ts; .wolf/anatomy.md | 8/8 targeted tests passed | ~3k |
+| 16:22 | Re-ran direct child-auth helper matrix after lead note to include in regression context | src/lib/child-auth.test.ts | vitest passed 1 file / 8 tests | ~300 |
+| 16:25 | completed mobile auth compatibility audit and created report; updated anatomy/cerebrum | specs/mobile-compat-dual-stack-2026-04-28.md, .wolf/anatomy.md, .wolf/cerebrum.md | PASS with non-blocking mobile .env service-role follow-up noted | ~4k |
+| 20:48 | Fixed validation grep hit in child-auth test by removing public service-role env reference | src/lib/child-auth.test.ts | rg acceptance path now clean pending rerun | ~0.1k |
+| 20:49 | Ran final validation sweep after squad validator failure | tsc, vitest, route sweep, eslint, rg | tsc/full vitest 271/271/route sweep/rg passed; npx eslint . failed on pre-existing broad lint baseline | ~1.5k |
+| 20:50 | Closed auth remediation checklist and OpenWolf learnings/buglog after final validation | specs/audits/dual-stack-auth-audit-2026-04-28.md; .wolf/cerebrum.md; .wolf/buglog.json | all audit items ticked; bug-138..143 appended; lint baseline caveat recorded | ~2k |
+| 20:51 | Logged final validation/command issues per OpenWolf bug policy | .wolf/buglog.json | added bug entries for env grep hit and buglog script shape mistake | ~0.2k |
+| 20:51 | Recorded buglog JSON shape learning in cerebrum | .wolf/cerebrum.md | future scripts should use data['bugs'] | ~0.1k |

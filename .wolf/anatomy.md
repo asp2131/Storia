@@ -1,12 +1,18 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-27T01:45:40.933Z
-> Files: 617 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-28T21:10:57.894Z
+> Files: 639 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
 - `MEMORY.md` — Storia Project Memory (~465 tok)
 - `pronunciation_book_table_decision.md` (~486 tok)
+
+## ../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/
+
+- `1.json` (~176 tok)
+- `2.json` (~177 tok)
+- `3.json` (~177 tok)
 
 ## ./
 
@@ -61,8 +67,31 @@
 ## .wolf/
 
 - `anatomy.md` — Auto-maintained file map and token estimates for project navigation (~9100 tok)
+- `buglog.json` — OpenWolf bug log with historical failures/fixes and root-cause notes (~25000 tok)
 - `cerebrum.md` — Project learning memory: user preferences, key learnings, do-not-repeat items, and decisions (~6400 tok)
+- `memory.md` — Session/action timeline log; recent entries identify where the previous coding session left off (~13000 tok)
 - `OPENWOLF.md` — OpenWolf operating protocol for context, navigation, memory, cerebrum, and bug logging (~1190 tok)
+
+## Discovered during 2026-04-28 auth audit
+
+- `src/app/api/analytics/events/route.test.ts` — Tests for analytics event route validation/auth (~218 tok)
+- `src/app/api/analytics/events/route.ts` — Child-authorized analytics event ingestion endpoint (~349 tok)
+- `src/app/api/books/[id]/questions/[questionId]/route.ts` — Question answer route with auth and scoring logic (~948 tok)
+- `src/app/api/child-profiles/route.test.ts` — Vitest coverage for child profile GET/POST auth/validation paths (~1300 tok)
+- `src/app/api/comprehension/route.test.ts` — Vitest coverage for comprehension POST auth/access/scoring paths (~1500 tok)
+- `src/app/api/continue-reading/route.test.ts` — Vitest coverage for continue-reading GET auth and latest progress selection (~650 tok)
+- `src/app/api/feedback/route.test.ts` — Vitest coverage for feedback POST dual-stack auth via Supabase bearer and Better Auth cookie paths (~1200 tok)
+- `src/app/api/feedback/route.ts` — Feedback submission route using dual-stack authenticated parent user (~188 tok)
+- `src/app/api/feedback/status/route.test.ts` — Vitest coverage for feedback status dual-stack auth and legacy unauthenticated modal shape (~1200 tok)
+- `src/app/api/feedback/status/route.ts` — Feedback status route using dual-stack authenticated parent user (~181 tok)
+- `src/app/api/reading-progress/dual-stack-auth.route.test.ts` — Vitest coverage proving parent-user reading-progress GET/POST accepts Supabase bearer and Better Auth cookie auth (~1300 tok)
+- `src/app/api/reading-progress/route.test.ts` — Vitest coverage for reading-progress GET/POST legacy + child-aware auth paths (~1250 tok)
+- `src/app/api/reading-sessions/route.test.ts` — Vitest coverage for reading session POST auth/access/upsert paths (~800 tok)
+- `src/app/api/reports/analytics.reader-flow.integration.test.ts` — Integration tests for reader analytics flow and report aggregation (~1531 tok)
+- `src/app/api/reports/analytics/route.test.ts` — Tests for analytics report auth/queries (~582 tok)
+- `src/app/api/reports/analytics/route.ts` — Child-authorized analytics report endpoint (~819 tok)
+- `src/app/api/reports/summary/route.test.ts` — Vitest coverage for reports summary auth/access/query behavior (~1100 tok)
+- `src/lib/admin-auth.ts` — Admin-only Better Auth helper/guard for admin routes (~222 tok)
 
 ## _build/
 
@@ -710,6 +739,19 @@
 - `schema.prisma` — Declares String (~4981 tok)
 - `seed.ts` — prisma: main (~3664 tok)
 
+## ../storia-mobile/lib/src/data/
+
+- `analytics_repository.dart` — Mobile analytics HTTP repository; sends Supabase access token as `Authorization: Bearer <token>` for analytics events (~5000 tok)
+- `providers.dart` — Mobile dependency providers, including current Supabase access-token callback passed to repositories (~1200 tok)
+
+## ../storia-mobile/lib/src/features/auth/data/
+
+- `auth_repository.dart` — Mobile Supabase auth repository for OTP magic link, OAuth, and native Apple id-token sign-in flows (~2500 tok)
+
+## ../storia-mobile/lib/src/features/child/data/
+
+- `child_profile_repository.dart` — Mobile child-profile HTTP repository; fetch/create calls require current Supabase access token and send `Authorization: Bearer <token>` (~2200 tok)
+
 ## scripts/
 
 - `backfill-book-pronunciations.ts` — Backfill script: migrate per-page `pages.word_pronunciations` JSON into the (~2700 tok)
@@ -719,12 +761,19 @@
 
 ## specs/
 
+- `auth-provider-account-mapping-followup.md` — Auth Provider/Account Mapping (Follow-up) (~594 tok)
+- `dual-stack-auth-remediation-2026-04-28.md` — Plan: Dual-Stack Auth Remediation (Better Auth Web + Supabase Mobile) (~6424 tok)
+- `mobile-compat-dual-stack-2026-04-28.md` — Read-only Flutter mobile auth compatibility audit for dual-stack auth remediation, covering Bearer headers, Supabase sessions, service-role env usage, and route-shape dependencies (~1100 tok)
 - `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
 - `pronunciation-rich-metadata-and-timing.md` — Plan: Pronunciation Rich Metadata + Per-Segment Audio Timing (~5038 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
 - `web-reader-pronunciation-functional-requirements.md` — Web Reader Pronunciation Functional Requirements (~4131 tok)
 - `word-pronunciation-cross-platform-spec.md` — Product spec, phased engineering tickets, and schema/API proposal for cross-platform broken-down word pronunciation across Storia web and mobile (~5200 tok)
+
+## specs/audits/
+
+- `specs/audits/dual-stack-auth-audit-2026-04-28.md` — Audit findings for Better Auth web + Supabase mobile dual-stack auth implementation, route adoption, security gaps, and test plan (~2200 tok)
 
 ## src/app/
 
@@ -749,7 +798,7 @@
 
 ## src/app/api/admin/audio-assignments/
 
-- `route.ts` — CRUD-like admin endpoint for per-page/range audio assignments, including narration/soundscape cleanup and overlay narration deletions. (~1072 tok)
+- `route.ts` — Delete Storage files from their public URLs (best-effort, won't fail the request). (~3050 tok)
 
 ## src/app/api/admin/books/[id]/pronunciations/
 
@@ -759,15 +808,19 @@
 ## src/app/api/admin/books/[id]/pronunciations/generate/
 
 - `route.test.ts` — Vitest coverage for standalone pronunciation generation summary/coverage responses and input validation. (~1900 tok)
-- `route.ts` — Standalone pronunciation generation endpoint (Phase 2 — Ticket 2.1 & 2.4). (~2434 tok)
+- `route.ts` — Standalone pronunciation generation endpoint (Phase 2 — Ticket 2.1 & 2.4). (~3169 tok)
 
 ## src/app/api/admin/generate-narration/
 
-- `route.ts` — Next.js API route: POST (~3057 tok)
+- `route.ts` — Next.js API route: POST (~3040 tok)
 
 ## src/app/api/admin/generate-overlay-narration/
 
-- `route.ts` — Generates per-overlay-element narration tracks, persists them, and stitches a page-level fallback narration MP3 for legacy/mobile readers. (~940 tok)
+- `route.ts` — Next.js API route: POST (~3010 tok)
+
+## src/app/api/admin/uploads/
+
+- `route.ts` — Next.js API route: POST (~907 tok)
 
 ## src/app/api/auth/[...all]/
 
@@ -860,7 +913,8 @@
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
-- `child-auth.ts` — Exports getAuthenticatedUser, validateChildAccess (~303 tok)
+- `child-auth.test.ts` — Direct dual-stack auth helper tests for Better Auth cookies, Supabase Bearer/raw token parsing, verified-email linking, and child access authorization (~2500 tok)
+- `child-auth.ts` — Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPA (~1856 tok)
 - `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)

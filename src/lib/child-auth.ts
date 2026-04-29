@@ -1,14 +1,13 @@
+// Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL).
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const SUPABASE_SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
-  "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 let supabaseAdmin: SupabaseClient | null = null;
 function getSupabaseAdmin(): SupabaseClient {
@@ -39,25 +38,38 @@ function unauthorized(reason?: string) {
   );
 }
 
-function extractBearer(raw: string | null): string | null {
+function extractAuthorizationBearer(raw: string | null): string | null {
+  if (!raw) return null;
+  const match = /^bearer\s+(.+)$/i.exec(raw.trim());
+  if (!match) return null;
+  const token = match[1].trim();
+  return token || null;
+}
+
+function extractRawToken(raw: string | null): string | null {
   if (!raw) return null;
   const trimmed = raw.trim();
-  if (!trimmed) return null;
-  if (trimmed.toLowerCase().startsWith("bearer ")) {
-    return trimmed.slice(7).trim() || null;
-  }
-  return trimmed;
+  return trimmed || null;
 }
 
 export async function getAuthenticatedUser(): Promise<
   { user: AuthenticatedUser } | { error: NextResponse }
 > {
   const hdrs = await headers();
+  // Authorization header MUST use the Bearer scheme; non-Bearer values (e.g. Basic ...) fall through to
+  // the x-supabase-access-token header and finally to the Better Auth cookie path — never short-circuit.
   const token =
-    extractBearer(hdrs.get("authorization")) ??
-    extractBearer(hdrs.get("x-supabase-access-token"));
-  if (!token) return { error: unauthorized("missing bearer token") };
+    extractAuthorizationBearer(hdrs.get("authorization")) ??
+    extractRawToken(hdrs.get("x-supabase-access-token"));
 
+  if (token) return resolveBySupabaseToken(token);
+  return resolveByBetterAuthSession(hdrs);
+}
+
+async function resolveBySupabaseToken(
+  token: string
+): Promise<{ user: AuthenticatedUser } | { error: NextResponse }> {
+  // Long-term: replace email-based linking with explicit provider/account mapping. See specs/auth-provider-account-mapping-followup.md.
   let supaUser: Awaited<
     ReturnType<SupabaseClient["auth"]["getUser"]>
   >["data"]["user"];
@@ -72,13 +84,17 @@ export async function getAuthenticatedUser(): Promise<
     return { error: unauthorized("supabase verification error") };
   }
 
-  const email = supaUser.email ?? `${supaUser.id}@supabase.local`;
+  if (!supaUser.email || !supaUser.email_confirmed_at) {
+    return { error: unauthorized("unverified Supabase email") };
+  }
+
+  const email = supaUser.email;
   const metadata = (supaUser.user_metadata ?? {}) as Record<string, unknown>;
   const name =
     (typeof metadata.full_name === "string" && metadata.full_name) ||
     (typeof metadata.name === "string" && metadata.name) ||
-    (supaUser.email ? supaUser.email.split("@")[0] : "User");
-  const emailVerified = Boolean(supaUser.email_confirmed_at);
+    email.split("@")[0];
+  const emailVerified = true;
 
   try {
     const dbUser = await resolveUser({
@@ -102,6 +118,36 @@ export async function getAuthenticatedUser(): Promise<
   }
 }
 
+async function resolveByBetterAuthSession(
+  hdrs: Awaited<ReturnType<typeof headers>>
+): Promise<{ user: AuthenticatedUser } | { error: NextResponse }> {
+  let session: Awaited<ReturnType<typeof auth.api.getSession>>;
+  try {
+    session = await auth.api.getSession({ headers: hdrs });
+  } catch (err) {
+    console.error("[child-auth] better-auth getSession threw:", err);
+    return { error: unauthorized("better-auth session error") };
+  }
+
+  if (!session?.user?.id) {
+    return { error: unauthorized("missing bearer token and no session") };
+  }
+
+  const dbUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!dbUser) {
+    return { error: unauthorized("session user not in database") };
+  }
+
+  return {
+    user: {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      role: dbUser.role,
+    },
+  };
+}
+
 async function resolveUser(params: {
   supabaseId: string;
   email: string;
@@ -118,6 +164,7 @@ async function resolveUser(params: {
     });
   }
 
+  // Email linking is only reachable when Supabase reports email_confirmed_at — see resolveBySupabaseToken.
   const byEmail = await prisma.user.findUnique({ where: { email } });
   if (byEmail) {
     return prisma.user.update({

@@ -103,6 +103,12 @@ const { mockValidateChildAccess, mockPrisma, state, resetState } = vi.hoisted(()
 
   const mockPrisma = {
     reading_session: {
+      findUnique: vi.fn(async ({ where }) => {
+        const existing = state.readingSessions.find(
+          (session) => session.sessionId === where.sessionId
+        );
+        return existing ? { childProfileId: existing.childProfileId } : null;
+      }),
       upsert: vi.fn(async ({ where, update, create }) => {
         const existingIndex = state.readingSessions.findIndex(
           (session) => session.sessionId === where.sessionId

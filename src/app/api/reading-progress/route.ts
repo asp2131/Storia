@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { validateChildAccess } from "@/lib/child-auth";
+import { getAuthenticatedUser, validateChildAccess } from "@/lib/child-auth";
 import { prisma } from "@/lib/prisma";
 
 function computeStatus(currentPage: number, completedAt: Date | null): string {
@@ -110,16 +108,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
+    const result = await getAuthenticatedUser();
 
-    if (!session?.user?.id) {
+    if ("error" in result) {
       return NextResponse.json(null);
     }
 
     const progress = await prisma.user_reading_progress.findUnique({
       where: {
         userId_bookId: {
-          userId: session.user.id,
+          userId: result.user.id,
           bookId: parsedBookId,
         },
       },
@@ -237,9 +235,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ progress: formatChildProgress(progress) });
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
+    const result = await getAuthenticatedUser();
 
-    if (!session?.user?.id) {
+    if ("error" in result) {
       return NextResponse.json(
         { error: { code: "unauthorized", message: "Authentication required" } },
         { status: 401 }
@@ -284,7 +282,7 @@ export async function POST(request: NextRequest) {
     const progress = await prisma.user_reading_progress.upsert({
       where: {
         userId_bookId: {
-          userId: session.user.id,
+          userId: result.user.id,
           bookId: parsedBookId,
         },
       },
@@ -294,7 +292,7 @@ export async function POST(request: NextRequest) {
         lastReadAt: now,
       },
       create: {
-        userId: session.user.id,
+        userId: result.user.id,
         bookId: parsedBookId,
         currentPage,
         totalPages,

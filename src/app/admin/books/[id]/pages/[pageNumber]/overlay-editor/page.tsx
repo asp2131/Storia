@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronRight, Loader2, X } from "lucide-react";
@@ -16,12 +16,10 @@ import {
   getExistingOverlayEditorStore,
 } from "@/stores/overlayEditorRegistry";
 import {
-  EDITOR_AUTOSAVE_DEBOUNCE_MS,
-  SaveCoordinator,
-  type BookDraft,
+  useEditorSave,
   type OverlayDraft,
   type OverlaySaveResult,
-} from "@/lib/editor/saveCoordinator";
+} from "@/hooks/useEditorSave";
 
 interface OverlayApiResponse {
   overlay: TextOverlayConfig | null;
@@ -56,56 +54,71 @@ export default function OverlayEditorPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [compositeError, setCompositeError] = useState<string | null>(null);
 
-  const saveOverlayPortRef = useRef<
-    (draft: OverlayDraft, reason: "autosave" | "manual" | "retry") => Promise<OverlaySaveResult>
-  >(async () => {
-    throw new Error("Overlay save port is not ready");
-  });
-  const saveCoordinator = useMemo(
-    () =>
-      new SaveCoordinator({
-        debounceMs: EDITOR_AUTOSAVE_DEBOUNCE_MS,
-        getBookDraft: (): BookDraft => ({ title: "Overlay editor", author: "", pages: [] }),
-        saveBook: async () => undefined,
-        saveOverlay: (draft, reason) => saveOverlayPortRef.current(draft, reason),
-        applyOverlayResult: () => undefined,
-      }),
-    []
+  const saveOverlayDraft = useCallback(
+    async (draft: OverlayDraft): Promise<OverlaySaveResult> => {
+      const res = await fetch(
+        `/api/admin/books/${id}/pages/${draft.pageNumber}/overlay`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ overlay: draft.overlay }),
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to save overlay");
+      }
+
+      // Don't update overlay state after save — DraggableTextOverlayEditor
+      // manages its own element state internally. Setting overlay here would
+      // trigger the reset useEffect in the component, resetting hasChanges and
+      // potentially overwriting in-flight edits if the user is still editing
+      // while the autosave response arrives.
+      const data = await res.json();
+      return {
+        pageKey: draft.pageKey,
+        pageNumber: draft.pageNumber,
+        overlay: data.overlay || draft.overlay,
+        textContent: data.textContent ?? null,
+      };
+    },
+    [id]
   );
 
-  useEffect(() => {
-    const unsubscribe = saveCoordinator.subscribe((snapshot, target) => {
-      if (target !== SaveCoordinator.overlayTarget(overlayPageId)) return;
-
+  const { markDirty } = useEditorSave({
+    getBookDraft: () => ({ title: "Overlay editor", author: "", pages: [] }),
+    saveBook: async () => undefined,
+    saveOverlay: saveOverlayDraft,
+    applyOverlayResult: () => undefined,
+    onOverlayPhaseChange: (pageKey, phase, error) => {
+      if (pageKey !== overlayPageId) return;
       const overlayActions = getExistingOverlayEditorStore(overlayPageId)?.getState();
-      if (snapshot.phase === "saving") {
+      if (phase === "saving") {
         setIsSaving(true);
         setSaveError(null);
         overlayActions?.markSaving();
-      } else if (snapshot.phase === "saved" && !snapshot.dirty) {
+      } else if (phase === "saved") {
         setIsSaving(false);
         overlayActions?.markSaved();
-      } else if (snapshot.phase === "error") {
+      } else if (phase === "error") {
         setIsSaving(false);
         setSaveError(
-          snapshot.error instanceof Error
-            ? snapshot.error.message
-            : "Failed to save overlay"
+          error instanceof Error ? error.message : "Failed to save overlay"
         );
         overlayActions?.markSaveError();
       }
-    });
-
-    return () => unsubscribe();
-  }, [overlayPageId, saveCoordinator]);
+    },
+  });
 
   // Cleanup overlay editor store on unmount
   useEffect(() => {
     return () => {
-      saveCoordinator.dispose();
       destroyOverlayEditorStore(overlayPageId);
     };
-  }, [overlayPageId, saveCoordinator]);
+  }, [overlayPageId]);
 
   // Fetch data on mount
   useEffect(() => {
@@ -149,48 +162,10 @@ export default function OverlayEditorPage() {
     }
   }, [id, pageNumber]);
 
-  const saveOverlayDraft = useCallback(
-    async (draft: OverlayDraft): Promise<OverlaySaveResult> => {
-      const res = await fetch(
-        `/api/admin/books/${id}/pages/${draft.pageNumber}/overlay`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ overlay: draft.overlay }),
-        }
-      );
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to save overlay");
-      }
-
-      // Don't update overlay state after save — DraggableTextOverlayEditor
-      // manages its own element state internally. Setting overlay here would
-      // trigger the reset useEffect in the component, resetting hasChanges and
-      // potentially overwriting in-flight edits if the user is still editing
-      // while the autosave response arrives.
-      const data = await res.json();
-      return {
-        pageKey: draft.pageKey,
-        pageNumber: draft.pageNumber,
-        overlay: data.overlay || draft.overlay,
-        textContent: data.textContent ?? null,
-      };
-    },
-    [id]
-  );
-  saveOverlayPortRef.current = saveOverlayDraft;
-
-  // Handle save request; SaveCoordinator owns the actual debounce and status.
   const handleSave = async (updatedOverlay: TextOverlayConfig) => {
     setSaveError(null);
-    saveCoordinator.requestOverlaySave({
-      pageKey: overlayPageId,
-      pageNumber,
-      overlay: updatedOverlay,
+    markDirty({
+      overlay: { pageKey: overlayPageId, pageNumber, overlay: updatedOverlay },
     });
   };
 

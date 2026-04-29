@@ -51,7 +51,7 @@ export type SaveCoordinatorListener = (
   target: SaveTargetId
 ) => void;
 
-type Scheduler = {
+export type Scheduler = {
   setTimeout(callback: () => void, ms: number): unknown;
   clearTimeout(handle: unknown): void;
 };
@@ -105,6 +105,9 @@ function pageKeyFromOverlayTarget(target: SaveTargetId): string {
  * The coordinator owns the debounce timer, dirty/error phases, retry behavior, and
  * the ordering rule that overlay saves must land before a dirty book/page draft is
  * snapshotted. React Query/fetch calls stay outside as injected ports.
+ *
+ * This class is the internal engine for `useEditorSave`. New code should use the hook
+ * directly; the class is kept exported for tests and advanced use cases.
  */
 export class SaveCoordinator {
   private readonly debounceMs: number;
