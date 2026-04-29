@@ -845,3 +845,19 @@
 | 20:50 | Closed auth remediation checklist and OpenWolf learnings/buglog after final validation | specs/audits/dual-stack-auth-audit-2026-04-28.md; .wolf/cerebrum.md; .wolf/buglog.json | all audit items ticked; bug-138..143 appended; lint baseline caveat recorded | ~2k |
 | 20:51 | Logged final validation/command issues per OpenWolf bug policy | .wolf/buglog.json | added bug entries for env grep hit and buglog script shape mistake | ~0.2k |
 | 20:51 | Recorded buglog JSON shape learning in cerebrum | .wolf/cerebrum.md | future scripts should use data['bugs'] | ~0.1k |
+
+## Session: 2026-04-29 21:28
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 06:20 | Created src/app/api/reports/summary/route.ts | — | ~3133 |
+| 06:21 | Created src/app/api/reports/summary/route.test.ts | — | ~2523 |
+| 06:22 | Created src/app/reports/ReportsClient.tsx | — | ~8501 |
+| 06:23 | Created src/app/reports/ReportsClient.test.tsx | — | ~2462 |
+| 06:24 | Edited src/app/reports/ReportsClient.test.tsx | 4→4 lines | ~74 |
+| 06:24 | Edited src/app/reports/ReportsClient.test.tsx | 2→6 lines | ~25 |
+| 06:24 | Edited src/app/reports/ReportsClient.test.tsx | 4→6 lines | ~104 |
+| 06:24 | Edited src/app/reports/ReportsClient.test.tsx | 8→9 lines | ~137 |
+
+| 06:25 | reports audit + extension | src/app/api/reports/summary/route.ts, src/app/reports/ReportsClient.tsx | added narration/sourceBreakdown/perBook/dailySeries to summary, switched UI to /api/reports/analytics, added events table+recent feed+sparkline+per-book table+second CSV button | ~6000 |
+| 06:35 | Session end: 8 writes across 4 files (route.ts, route.test.ts, ReportsClient.tsx, ReportsClient.test.tsx) | 7 reads | ~22850 tok |

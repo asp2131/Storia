@@ -130,6 +130,7 @@
 - [2026-04-28] Do not link Supabase identities to Better Auth users unless Supabase provides both `email` and `email_confirmed_at`; email matching is only acceptable as a temporary bridge and must be replaced by explicit provider/account mapping.
 - [2026-04-28] Do not treat non-Bearer `Authorization` headers as Supabase tokens; only `Authorization: Bearer <token>` should enter Supabase verification, while unrelated schemes must fall through to Better Auth cookie auth.
 - [2026-04-28] Do not read service-role secrets from `NEXT_PUBLIC_*` env vars in server code; Supabase admin clients must require server-only `SUPABASE_SERVICE_ROLE_KEY`, and mobile/client repos must not ship service-role keys.
+- [2026-04-29] Do not trust agent self-reports of file edits without verifying with `git status`/`git diff`. feature-lead and ui-lead agents both produced detailed, plausible "files changed" sections describing edits that never happened (zero source-file modifications in working tree). Always confirm material code changes with a git diff before reporting work done. See bug-147.
 - [2026-04-28] Do not update child-owned rows through a globally unique client-provided id without checking existing ownership first; `/api/reading-sessions` must reject foreign `sessionId` upserts before mutation.
 
 ## Decision Log

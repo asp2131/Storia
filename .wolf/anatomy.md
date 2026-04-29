@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-28T21:10:57.894Z
-> Files: 639 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-04-29T11:24:46.398Z
+> Files: 653 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -13,6 +13,19 @@
 - `1.json` (~176 tok)
 - `2.json` (~177 tok)
 - `3.json` (~177 tok)
+
+## ../storia-mobile/lib/src/data/
+
+- `analytics_repository.dart` — Mobile analytics HTTP repository; sends Supabase access token as `Authorization: Bearer <token>` for analytics events (~5000 tok)
+- `providers.dart` — Mobile dependency providers, including current Supabase access-token callback passed to repositories (~1200 tok)
+
+## ../storia-mobile/lib/src/features/auth/data/
+
+- `auth_repository.dart` — Mobile Supabase auth repository for OTP magic link, OAuth, and native Apple id-token sign-in flows (~2500 tok)
+
+## ../storia-mobile/lib/src/features/child/data/
+
+- `child_profile_repository.dart` — Mobile child-profile HTTP repository; fetch/create calls require current Supabase access token and send `Authorization: Bearer <token>` (~2200 tok)
 
 ## ./
 
@@ -739,19 +752,6 @@
 - `schema.prisma` — Declares String (~4981 tok)
 - `seed.ts` — prisma: main (~3664 tok)
 
-## ../storia-mobile/lib/src/data/
-
-- `analytics_repository.dart` — Mobile analytics HTTP repository; sends Supabase access token as `Authorization: Bearer <token>` for analytics events (~5000 tok)
-- `providers.dart` — Mobile dependency providers, including current Supabase access-token callback passed to repositories (~1200 tok)
-
-## ../storia-mobile/lib/src/features/auth/data/
-
-- `auth_repository.dart` — Mobile Supabase auth repository for OTP magic link, OAuth, and native Apple id-token sign-in flows (~2500 tok)
-
-## ../storia-mobile/lib/src/features/child/data/
-
-- `child_profile_repository.dart` — Mobile child-profile HTTP repository; fetch/create calls require current Supabase access token and send `Authorization: Bearer <token>` (~2200 tok)
-
 ## scripts/
 
 - `backfill-book-pronunciations.ts` — Backfill script: migrate per-page `pages.word_pronunciations` JSON into the (~2700 tok)
@@ -763,8 +763,8 @@
 
 - `auth-provider-account-mapping-followup.md` — Auth Provider/Account Mapping (Follow-up) (~594 tok)
 - `dual-stack-auth-remediation-2026-04-28.md` — Plan: Dual-Stack Auth Remediation (Better Auth Web + Supabase Mobile) (~6424 tok)
-- `mobile-compat-dual-stack-2026-04-28.md` — Read-only Flutter mobile auth compatibility audit for dual-stack auth remediation, covering Bearer headers, Supabase sessions, service-role env usage, and route-shape dependencies (~1100 tok)
 - `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
+- `mobile-compat-dual-stack-2026-04-28.md` — Read-only Flutter mobile auth compatibility audit for dual-stack auth remediation, covering Bearer headers, Supabase sessions, service-role env usage, and route-shape dependencies (~1100 tok)
 - `pronunciation-rich-metadata-and-timing.md` — Plan: Pronunciation Rich Metadata + Per-Segment Audio Timing (~5038 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
@@ -869,11 +869,17 @@
 
 ## src/app/api/reports/summary/
 
-- `route.ts` — Next.js API route: GET (~910 tok)
+- `route.test.ts` — API routes: GET (1 endpoints) (~2523 tok)
+- `route.ts` — Next.js API route: GET (~3133 tok)
 
 ## src/app/books/[id]/reader/
 
 - `page.tsx` — BookReader (~10974 tok)
+
+## src/app/reports/
+
+- `ReportsClient.test.tsx` — useSessionMock (~2553 tok)
+- `ReportsClient.tsx` — RANGE_OPTIONS (~8501 tok)
 
 ## src/components/
 
