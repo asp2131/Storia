@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { getAuth } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/child-auth";
 
 export async function POST(request: Request) {
   try {
-    const auth = getAuth();
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const result = await getAuthenticatedUser();
 
-    if (!session?.user?.id) {
+    if ("error" in result) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -36,7 +32,7 @@ export async function POST(request: Request) {
 
     const feedbackRecord = await prisma.reader_feedback.create({
       data: {
-        userId: session.user.id,
+        userId: result.user.id,
         rating,
         feedback: feedback || null,
       },

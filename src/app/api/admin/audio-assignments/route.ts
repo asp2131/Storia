@@ -5,10 +5,7 @@ import { extractStoragePath } from "@/lib/elevenlabs";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY ||
-  "";
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const bucket =
   process.env.SUPABASE_STORAGE_BUCKET ||
   process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ||

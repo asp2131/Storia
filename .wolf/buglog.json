@@ -2246,6 +2246,124 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-04-28T00:00:00.000000+00:00"
+    },
+    {
+      "id": "bug-131",
+      "timestamp": "2026-04-28T21:07:54.950Z",
+      "error_message": "Incorrect value in code",
+      "file": "../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/1.json",
+      "root_cause": "Had \"in_progress\"",
+      "fix": "Changed to \"completed\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T21:07:54.950Z"
+    },
+    {
+      "id": "bug-132",
+      "timestamp": "2026-04-28T21:07:57.990Z",
+      "error_message": "Incorrect value in code",
+      "file": "../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/2.json",
+      "root_cause": "Had \"pending\"",
+      "fix": "Changed to \"in_progress\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-28T21:09:54.960Z"
+    },
+    {
+      "id": "bug-133",
+      "timestamp": "2026-04-28T21:09:57.556Z",
+      "error_message": "Incorrect value in code",
+      "file": "../../../.claude/tasks/b1ac0bff-9061-44ae-be0d-880e3cda0ca8/3.json",
+      "root_cause": "Had \"pending\"",
+      "fix": "Changed to \"in_progress\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "json"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-04-28T21:10:57.906Z"
+    },
+    {
+      "id": "bug-134",
+      "timestamp": "2026-04-28T21:10:09.175Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/lib/child-auth.ts",
+      "root_cause": "7 lines replaced/restructured",
+      "fix": "Rewrote 21\u219227 lines (7 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T21:10:09.175Z"
+    },
+    {
+      "id": "bug-135",
+      "timestamp": "2026-04-28T21:17:59.624Z",
+      "error_message": "Finding 6: reading-session upsert ownership gap allowed a foreign sessionId update path",
+      "file": "src/app/api/reading-sessions/route.ts",
+      "root_cause": "The route validated the submitted childProfileId but upserted by globally unique sessionId without checking an existing row owner before the update branch.",
+      "fix": "Added a pre-upsert findUnique({ sessionId }) ownership check against the validated child profile and return 403 forbidden on mismatch; added a foreign sessionId regression test.",
+      "tags": [
+        "authz",
+        "idor",
+        "reading-sessions",
+        "dual-stack-auth",
+        "finding-6"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T21:17:59.624Z"
+    },
+    {
+      "id": "bug-136",
+      "timestamp": "2026-04-28T21:17:59.624Z",
+      "error_message": "rg: tests: No such file or directory (os error 2)",
+      "file": "command-line",
+      "root_cause": "A search command included a non-existent tests path while looking for reading_session mocks.",
+      "fix": "Re-ran the search against existing src/app/api test paths and updated the affected mocks directly.",
+      "tags": [
+        "command-error",
+        "rg",
+        "tests"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T21:17:59.624Z"
+    },
+    {
+      "id": "bug-137",
+      "timestamp": "2026-04-28T21:19:50.175381+00:00",
+      "error_message": "Finding 4 dual-stack auth gap: feedback routes and parent reading-progress branches called raw Better Auth sessions, so Supabase bearer mobile requests could not authenticate.",
+      "file": "src/app/api/feedback/route.ts; src/app/api/feedback/status/route.ts; src/app/api/reading-progress/route.ts",
+      "root_cause": "Routes read auth.api.getSession()/getAuth().api.getSession() directly instead of the project dual-stack getAuthenticatedUser() helper.",
+      "fix": "Swapped parent-user auth reads to getAuthenticatedUser(), preserved legacy unauthenticated response shapes, and added targeted bearer/cookie regression tests for feedback/status and reading-progress parent branches.",
+      "tags": [
+        "dual-stack-auth",
+        "mobile-bearer",
+        "better-auth",
+        "feedback",
+        "reading-progress"
+      ],
+      "related_bugs": [
+        "bug-130"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-28T21:19:50.175381+00:00"
     }
   ]
 }

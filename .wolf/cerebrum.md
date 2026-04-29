@@ -102,6 +102,16 @@
 
 - Auth is dual-stack: web signs in via Better Auth (cookies, `useSession` from `@/lib/auth-client`); mobile signs in via Supabase (Bearer token in `authorization` header). `getAuthenticatedUser()` in `src/lib/child-auth.ts` resolves both: bearer present -> Supabase verification path; otherwise -> Better Auth `auth.api.getSession({ headers })` path. Any new web-facing route that needs the parent user MUST go through `getAuthenticatedUser`/`validateChildAccess`, not raw `auth.api.getSession`, so it works for both clients.
 - 2026-04-28 auth audit learning: current child-auth tests mock the helper in route tests and there is no direct coverage of real bearer parsing/fallback/identity-linking; the helper accepts non-Bearer Authorization as a Supabase token and links Supabase users to Better Auth users by email without a stored `supabaseId`, so future auth changes need explicit conflict/verified-email tests.
+- 2026-04-28 route adoption audit: `/api/books` still has a legacy `userId` query path for `user_reading_progress` with no authentication/ownership check, and `/api/reading-progress`/feedback legacy user paths still call raw Better Auth instead of `getAuthenticatedUser`; treat these as migration blockers for dual-stack auth.
+
+- Auth QA coverage review on 2026-04-28: protected route tests mostly mock `@/lib/child-auth`, and there is no `src/lib/child-auth.test.ts`; missing coverage includes Better Auth cookie resolution, Supabase bearer resolution/user linking, invalid-bearer-with-cookie precedence, and direct `validateChildAccess` own-vs-other-child behavior.
+
+- Auth audit on 2026-04-28 found dual-stack routing is only partially adopted: `src/lib/child-auth.ts` handles Supabase bearer vs Better Auth cookies, but legacy parent-user branches in `/api/reading-progress` and feedback routes still call raw `auth.api.getSession`; `child-auth` also lacks direct tests for bearer/session/linking/error paths, and its `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` fallback should not be used.
+- `reading_session.sessionId` is globally unique in Prisma, so `/api/reading-sessions` must `findUnique({ sessionId })` and compare the existing row's `childProfileId` to the validated child before calling `upsert`; long-term schema hardening should prefer a composite unique key including `childProfileId`.
+
+- Parent-user feedback and reading-progress routes intentionally preserve legacy unauthenticated response shapes while using dual-stack `getAuthenticatedUser()`: feedback POST still returns `{ error: "Unauthorized" }`, feedback status still returns `{ shouldShowFeedback: false, reason: "not_authenticated" }`, and reading-progress parent GET still returns JSON `null`.
+- 2026-04-28 affected auth-route regression sweep is covered by six Vitest files: `reading-progress/route.test.ts`, `reading-progress/dual-stack-auth.route.test.ts`, `reading-sessions/route.test.ts`, `feedback/route.test.ts`, `feedback/status/route.test.ts`, and `books/[id]/questions/route.test.ts`; verbose runs intentionally emit `[child-auth] unauthorized` stderr for legacy unauthenticated feedback/status cases while still passing.
+- 2026-04-28 mobile dual-stack auth audit: `storia-mobile` sends only `Authorization: Bearer <currentSession.accessToken>` for backend HTTP auth (`analytics_repository.dart`, `child_profile_repository.dart`), uses Supabase OTP/OAuth/Apple flows plus auth-state sessions, and has no runtime `NEXT_PUBLIC`/service-role reads under `lib/`; it also does not call the remediated feedback/reading-progress/reading-sessions/question routes. A non-runtime `SUPABASE_SERVICE_ROLE_KEY` exists in `../storia-mobile/.env` and should be removed/rotated as a separate mobile-repo security follow-up.
 
 ## Do-Not-Repeat
 
@@ -115,6 +125,7 @@
 
 - [2026-04-24] When searching paths that include parentheses like `src/app/admin/(editor)`, quote the path in bash commands or the shell will throw a syntax error before `rg` runs.
 - [2026-04-28] Do not gate web-facing API routes on Supabase bearer token alone. Web client uses Better Auth cookies and sends no bearer; bearer-only `getAuthenticatedUser` returned 401 in prod for `/api/child-profiles`, `/api/reports/summary`, and any child-aware web call. Always go through the dual-stack helper that falls back to `auth.api.getSession`.
+- [2026-04-28] Do not update child-owned rows through a globally unique client-provided id without checking existing ownership first; `/api/reading-sessions` must reject foreign `sessionId` upserts before mutation.
 
 ## Decision Log
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/child-auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 type ParsedOption = {
@@ -128,8 +128,8 @@ export async function POST(
     return invalidRequest("bookId must be a positive integer", "bookId");
   }
 
-  const authResult = await getAuthenticatedUser();
-  if ("error" in authResult) return authResult.error;
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) return authResult;
 
   let body: unknown;
   try {

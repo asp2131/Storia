@@ -123,6 +123,25 @@ export async function POST(request: NextRequest) {
 
     const durationSeconds = Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000));
 
+    const existingSession = await prisma.reading_session.findUnique({
+      where: { sessionId },
+      select: { childProfileId: true },
+    });
+
+    if (existingSession && existingSession.childProfileId !== result.childProfile.id) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "forbidden",
+            message: "Reading session does not belong to this child profile",
+          },
+        },
+        { status: 403 }
+      );
+    }
+
+    // Follow-up: prefer a composite unique key including childProfileId so ownership is
+    // enforced at the DB upsert boundary.
     const readingSession = await prisma.reading_session.upsert({
       where: { sessionId },
       update: {
@@ -140,7 +159,7 @@ export async function POST(request: NextRequest) {
       create: {
         sessionId,
         userId: result.user.id,
-        childProfileId,
+        childProfileId: result.childProfile.id,
         bookId: parsedBookId,
         startedAt: start,
         endedAt: end,
