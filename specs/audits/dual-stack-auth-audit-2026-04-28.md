@@ -199,15 +199,15 @@ Also update affected route tests after replacing raw session calls:
 
 ## Remediation Checklist
 
-- [ ] Remove `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` fallback.
-- [ ] Verify deployment envs do not contain public service-role keys.
-- [ ] Require verified Supabase email before email-based linking.
-- [ ] Add explicit Supabase provider/account mapping or document a follow-up migration plan.
-- [ ] Admin-gate book-question mutation endpoints.
+- [x] Remove `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` fallback.
+- [x] Verify deployment envs do not contain public service-role keys. *(Repo/mobile source grep is clean for `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`; actual hosted deployment envs still require out-of-band ops verification. Mobile audit also flagged an unused non-public `SUPABASE_SERVICE_ROLE_KEY` in `../storia-mobile/.env` for removal/rotation.)*
+- [x] Require verified Supabase email before email-based linking.
+- [x] Add explicit Supabase provider/account mapping or document a follow-up migration plan.
+- [x] Admin-gate book-question mutation endpoints.
 - [x] Replace raw Better Auth session calls in dual-stack parent-user routes.
-- [ ] Tighten `Authorization` parsing to require `Bearer` scheme.
+- [x] Tighten `Authorization` parsing to require `Bearer` scheme.
 - [x] Add reading-session ownership check before update/upsert.
-- [ ] Add direct `src/lib/child-auth.test.ts` coverage.
+- [x] Add direct `src/lib/child-auth.test.ts` coverage.
 - [x] Add route regression tests for reading progress, feedback, question mutations, and reading session ownership.
 
 ## Suggested Fix Order

@@ -112,6 +112,8 @@
 - Parent-user feedback and reading-progress routes intentionally preserve legacy unauthenticated response shapes while using dual-stack `getAuthenticatedUser()`: feedback POST still returns `{ error: "Unauthorized" }`, feedback status still returns `{ shouldShowFeedback: false, reason: "not_authenticated" }`, and reading-progress parent GET still returns JSON `null`.
 - 2026-04-28 affected auth-route regression sweep is covered by six Vitest files: `reading-progress/route.test.ts`, `reading-progress/dual-stack-auth.route.test.ts`, `reading-sessions/route.test.ts`, `feedback/route.test.ts`, `feedback/status/route.test.ts`, and `books/[id]/questions/route.test.ts`; verbose runs intentionally emit `[child-auth] unauthorized` stderr for legacy unauthenticated feedback/status cases while still passing.
 - 2026-04-28 mobile dual-stack auth audit: `storia-mobile` sends only `Authorization: Bearer <currentSession.accessToken>` for backend HTTP auth (`analytics_repository.dart`, `child_profile_repository.dart`), uses Supabase OTP/OAuth/Apple flows plus auth-state sessions, and has no runtime `NEXT_PUBLIC`/service-role reads under `lib/`; it also does not call the remediated feedback/reading-progress/reading-sessions/question routes. A non-runtime `SUPABASE_SERVICE_ROLE_KEY` exists in `../storia-mobile/.env` and should be removed/rotated as a separate mobile-repo security follow-up.
+- 2026-04-28 final auth remediation validation: `npx tsc --noEmit -p tsconfig.json`, full `npx vitest run` (271 tests), targeted auth route sweep (53 tests), child-auth matrix (8 tests), and auth env/session greps pass. Full `npx eslint .` does not currently pass because of a broad pre-existing lint baseline (React compiler rules, `any` usage, `.claude/worktrees` files, unrelated UI/hooks); auth remediation should be validated with targeted tests/typecheck until lint baseline is separately fixed.
+- `.wolf/buglog.json` root shape is `{ "version": ..., "bugs": [...] }`, not a raw array; scripts that inspect/append bug entries must use `data["bugs"]` before slicing or appending.
 
 ## Do-Not-Repeat
 
@@ -125,6 +127,9 @@
 
 - [2026-04-24] When searching paths that include parentheses like `src/app/admin/(editor)`, quote the path in bash commands or the shell will throw a syntax error before `rg` runs.
 - [2026-04-28] Do not gate web-facing API routes on Supabase bearer token alone. Web client uses Better Auth cookies and sends no bearer; bearer-only `getAuthenticatedUser` returned 401 in prod for `/api/child-profiles`, `/api/reports/summary`, and any child-aware web call. Always go through the dual-stack helper that falls back to `auth.api.getSession`.
+- [2026-04-28] Do not link Supabase identities to Better Auth users unless Supabase provides both `email` and `email_confirmed_at`; email matching is only acceptable as a temporary bridge and must be replaced by explicit provider/account mapping.
+- [2026-04-28] Do not treat non-Bearer `Authorization` headers as Supabase tokens; only `Authorization: Bearer <token>` should enter Supabase verification, while unrelated schemes must fall through to Better Auth cookie auth.
+- [2026-04-28] Do not read service-role secrets from `NEXT_PUBLIC_*` env vars in server code; Supabase admin clients must require server-only `SUPABASE_SERVICE_ROLE_KEY`, and mobile/client repos must not ship service-role keys.
 - [2026-04-28] Do not update child-owned rows through a globally unique client-provided id without checking existing ownership first; `/api/reading-sessions` must reject foreign `sessionId` upserts before mutation.
 
 ## Decision Log

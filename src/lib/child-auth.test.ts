@@ -43,7 +43,6 @@ async function loadChildAuth() {
   vi.resetModules();
   process.env.SUPABASE_URL = "https://supabase.example.test";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-key";
-  delete process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
   mockCreateClient.mockReturnValue({
     auth: {
       getUser: mockSupabaseGetUser,

@@ -2364,6 +2364,149 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-04-28T21:19:50.175381+00:00"
+    },
+    {
+      "id": "bug-138",
+      "timestamp": "2026-04-29T01:50:23.554178+00:00",
+      "error_message": "Finding 1: Supabase service-role key could fall back to NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY",
+      "file": "src/lib/child-auth.ts; admin Supabase routes",
+      "root_cause": "Server auth verification accepted a public-prefixed service-role env var fallback, risking accidental exposure of an RLS-bypassing credential.",
+      "fix": "Removed all NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY fallbacks from child-auth and admin Supabase clients; validation grep over src is clean.",
+      "tags": [
+        "dual-stack-auth",
+        "service-role",
+        "env",
+        "finding-1"
+      ],
+      "related_bugs": [
+        "bug-130"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:50:23.554178+00:00"
+    },
+    {
+      "id": "bug-139",
+      "timestamp": "2026-04-29T01:50:23.554178+00:00",
+      "error_message": "Finding 2: Supabase users could link to Better Auth accounts by unverified email",
+      "file": "src/lib/child-auth.ts",
+      "root_cause": "resolveBySupabaseToken reached email-based lookup/linking without requiring Supabase email confirmation.",
+      "fix": "Require supaUser.email and supaUser.email_confirmed_at before email lookup/linking; documented explicit provider/account mapping follow-up.",
+      "tags": [
+        "dual-stack-auth",
+        "account-linking",
+        "email-confirmation",
+        "finding-2"
+      ],
+      "related_bugs": [
+        "bug-130"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:50:23.554178+00:00"
+    },
+    {
+      "id": "bug-140",
+      "timestamp": "2026-04-29T01:50:23.554178+00:00",
+      "error_message": "Finding 3: Book question mutation endpoints were authenticated but not admin-authorized",
+      "file": "src/app/api/books/[id]/questions/route.ts; src/app/api/books/[id]/questions/[questionId]/route.ts",
+      "root_cause": "POST/PATCH/DELETE used getAuthenticatedUser(), allowing any authenticated parent/mobile user to mutate global comprehension questions.",
+      "fix": "Swapped mutation guards to requireAdmin() while leaving public GET reads unchanged; added unauthenticated/non-admin/admin route regressions.",
+      "tags": [
+        "authz",
+        "admin",
+        "questions",
+        "finding-3"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:50:23.554178+00:00"
+    },
+    {
+      "id": "bug-141",
+      "timestamp": "2026-04-29T01:50:23.554178+00:00",
+      "error_message": "Finding 5: non-Bearer Authorization headers were treated as Supabase tokens",
+      "file": "src/lib/child-auth.ts",
+      "root_cause": "Bearer extraction accepted any non-empty Authorization header, so Basic or unrelated auth headers could suppress valid Better Auth cookie sessions.",
+      "fix": "Authorization now matches only case-insensitive Bearer <token>; raw-token compatibility is limited to x-supabase-access-token; direct tests cover Basic fallback.",
+      "tags": [
+        "dual-stack-auth",
+        "bearer",
+        "authorization",
+        "finding-5"
+      ],
+      "related_bugs": [
+        "bug-130"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:50:23.554178+00:00"
+    },
+    {
+      "id": "bug-142",
+      "timestamp": "2026-04-29T01:50:23.554178+00:00",
+      "error_message": "Finding 7: dual-stack child-auth helper lacked direct tests",
+      "file": "src/lib/child-auth.test.ts",
+      "root_cause": "Route tests mocked child-auth, leaving real bearer parsing, Better Auth fallback, verified-email linking, and child access behavior untested.",
+      "fix": "Added src/lib/child-auth.test.ts with the eight-case audit matrix; targeted Vitest passes 8/8.",
+      "tags": [
+        "tests",
+        "dual-stack-auth",
+        "child-auth",
+        "finding-7"
+      ],
+      "related_bugs": [
+        "bug-130"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:50:23.554178+00:00"
+    },
+    {
+      "id": "bug-143",
+      "timestamp": "2026-04-29T01:50:23.554178+00:00",
+      "error_message": "npx eslint . failed during final validation",
+      "file": "repository lint baseline",
+      "root_cause": "Full-repo ESLint reports 83 errors and 78 warnings across pre-existing broad repo areas, including .claude/worktrees, React compiler rules, any types, and unrelated UI files; auth remediation tests/typecheck pass.",
+      "fix": "Recorded as a validation blocker outside the dual-stack auth changes; do not treat this auth remediation as lint-clean until the repo-wide lint baseline is separately addressed or scoped.",
+      "tags": [
+        "validation",
+        "eslint",
+        "pre-existing",
+        "blocked"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:50:23.554178+00:00"
+    },
+    {
+      "id": "bug-144",
+      "timestamp": "2026-04-29T01:51:23.545806+00:00",
+      "error_message": "Validation grep `rg NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY src` still matched the new child-auth test",
+      "file": "src/lib/child-auth.test.ts",
+      "root_cause": "The helper test deleted a public service-role env var by literal name, violating the acceptance check that no src file references NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY.",
+      "fix": "Removed the unnecessary literal env deletion from the test; reran rg and it returned no results.",
+      "tags": [
+        "validation",
+        "env",
+        "test",
+        "dual-stack-auth"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:51:23.545806+00:00"
+    },
+    {
+      "id": "bug-145",
+      "timestamp": "2026-04-29T01:51:23.545806+00:00",
+      "error_message": "Buglog inspection script raised KeyError: slice(-20, None, None)",
+      "file": "command-line",
+      "root_cause": "The script assumed .wolf/buglog.json loaded as a list, but the file root is an object with a `bugs` array.",
+      "fix": "Re-ran the inspection using data['bugs'] before slicing.",
+      "tags": [
+        "command-error",
+        "buglog",
+        "python"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-04-29T01:51:23.545806+00:00"
     }
   ]
 }

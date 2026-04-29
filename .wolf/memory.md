@@ -840,3 +840,8 @@
 | 16:22 | Added missing direct child-auth helper test matrix and updated anatomy | src/lib/child-auth.test.ts; .wolf/anatomy.md | 8/8 targeted tests passed | ~3k |
 | 16:22 | Re-ran direct child-auth helper matrix after lead note to include in regression context | src/lib/child-auth.test.ts | vitest passed 1 file / 8 tests | ~300 |
 | 16:25 | completed mobile auth compatibility audit and created report; updated anatomy/cerebrum | specs/mobile-compat-dual-stack-2026-04-28.md, .wolf/anatomy.md, .wolf/cerebrum.md | PASS with non-blocking mobile .env service-role follow-up noted | ~4k |
+| 20:48 | Fixed validation grep hit in child-auth test by removing public service-role env reference | src/lib/child-auth.test.ts | rg acceptance path now clean pending rerun | ~0.1k |
+| 20:49 | Ran final validation sweep after squad validator failure | tsc, vitest, route sweep, eslint, rg | tsc/full vitest 271/271/route sweep/rg passed; npx eslint . failed on pre-existing broad lint baseline | ~1.5k |
+| 20:50 | Closed auth remediation checklist and OpenWolf learnings/buglog after final validation | specs/audits/dual-stack-auth-audit-2026-04-28.md; .wolf/cerebrum.md; .wolf/buglog.json | all audit items ticked; bug-138..143 appended; lint baseline caveat recorded | ~2k |
+| 20:51 | Logged final validation/command issues per OpenWolf bug policy | .wolf/buglog.json | added bug entries for env grep hit and buglog script shape mistake | ~0.2k |
+| 20:51 | Recorded buglog JSON shape learning in cerebrum | .wolf/cerebrum.md | future scripts should use data['bugs'] | ~0.1k |
