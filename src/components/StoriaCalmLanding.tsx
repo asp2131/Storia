@@ -12,22 +12,23 @@ import "./StoriaCalmLanding.css";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const MANIFESTO_WORDS = [
-  "Every",
-  "night,",
-  "around",
-  "the",
-  "world,",
-  "a",
-  "child",
-  "asks",
-  "for",
-  "a",
-  "story.",
   "Storia",
-  "is",
-  "how",
-  "we",
-  { text: "answer.", highlight: true },
+  "helps",
+  "children",
+  "strengthen",
+  "reading,",
+  "speech,",
+  "and",
+  "language",
+  "skills",
+  "through",
+  "stories",
+  "they",
+  "can",
+  "hear,",
+  "feel,",
+  "and",
+  { text: "follow.", highlight: true },
 ];
 
 const BOOKS = [
