@@ -946,3 +946,30 @@
 
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
+## Discovered during 2026-04-30 landing cleanup
+
+- `src/components/StoriaCalmLanding.tsx` — Main calm landing page component with GSAP interactions, story cards, impact copy, founder/community photos, captions, and signup CTA (~9000 tok)
+- `src/components/LandingAnimations.tsx` — Landing animation helpers/effects used by the landing experience (~1200 tok)
+## Discovered during 2026-04-30 brainstorming visual companion
+
+- `.superpowers/brainstorm/51927-1777563562/content/waiting-in-terminal.html` — Visual companion waiting screen generated during landing-page brainstorming (~80 tok)
+- `.superpowers/brainstorm/51927-1777563562/content/press-proof-layout-options.html` — Visual companion mockup comparing three landing-page press/proof layout approaches for Equitech and ALTA podcast links (~900 tok)
+- `.superpowers/brainstorm/51927-1777563562/state/server-info` — Visual companion server metadata with local URL/ports (~50 tok)
+- `src/components/StoriaCalmLanding.css` — Styling for the calm landing page sections, story cards, community image grid, CTA, and responsive behavior (~11000 tok)
+## Discovered during 2026-04-30 visual companion restart
+
+- `.superpowers/brainstorm/68211-1777565610/content/press-proof-layout-options.html` — Republished visual companion A/B/C mockup for Equitech article and ALTA podcast placement after idle timeout (~900 tok)
+- `.superpowers/brainstorm/68211-1777565610/state/server-info` — Restarted visual companion server metadata with local URL/port (~50 tok)
+- `.superpowers/brainstorm/51927-1777563562/state/server-stopped` — Prior visual companion stop marker showing idle timeout (~20 tok)
+## Discovered during 2026-04-30 visual companion LAN retry
+
+- `.superpowers/brainstorm/69668-1777565783/content/press-proof-layout-options.html` — Visual companion press/proof layout options served from LAN-bound retry server (~900 tok)
+- `.superpowers/brainstorm/69668-1777565783/content/waiting-design-confirmation.html` — Visual companion waiting screen after selecting press-strip option B (~60 tok)
+- `.superpowers/brainstorm/69668-1777565783/state/server-info` — LAN-bound visual companion server metadata using host 0.0.0.0 and URL host 192.168.1.177 (~60 tok)
+## Discovered during 2026-04-30 landing design spec
+
+- `docs/superpowers/specs/2026-04-30-landing-cleanup-design.md` — Approved landing-page cleanup design covering copy accuracy, story-card preview UX, community caption updates, and Equitech/ALTA press strip (~900 tok)
+## Discovered during 2026-04-30 landing implementation plan
+
+- `docs/superpowers/plans/2026-04-30-landing-cleanup.md` — Implementation plan for landing cleanup covering TSX copy/press markup, CSS preview/press styling, and QA verification tasks (~2400 tok)
+

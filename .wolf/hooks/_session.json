@@ -1,102 +1,12 @@
 {
-  "session_id": "session-2026-04-29-2128",
-  "started": "2026-04-29T02:28:56.565Z",
-  "files_read": {
-    "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.tsx": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-29T02:31:00.599Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.ts": {
-      "count": 1,
-      "tokens": 910,
-      "first_read": "2026-04-29T02:31:05.599Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/analytics/route.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-29T02:31:08.627Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/analytics/events/route.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-29T02:31:15.821Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma": {
-      "count": 2,
-      "tokens": 4981,
-      "first_read": "2026-04-29T02:31:18.927Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.test.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-29T11:19:30.091Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.test.tsx": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-04-29T11:19:30.626Z"
-    }
-  },
-  "files_written": [
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.ts",
-      "action": "create",
-      "tokens": 3133,
-      "at": "2026-04-29T11:20:27.851Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.test.ts",
-      "action": "create",
-      "tokens": 2523,
-      "at": "2026-04-29T11:21:05.695Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.tsx",
-      "action": "create",
-      "tokens": 8501,
-      "at": "2026-04-29T11:22:54.572Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.test.tsx",
-      "action": "create",
-      "tokens": 2462,
-      "at": "2026-04-29T11:23:29.910Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.test.tsx",
-      "action": "edit",
-      "tokens": 74,
-      "at": "2026-04-29T11:24:23.925Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.test.tsx",
-      "action": "edit",
-      "tokens": 25,
-      "at": "2026-04-29T11:24:28.185Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.test.tsx",
-      "action": "edit",
-      "tokens": 104,
-      "at": "2026-04-29T11:24:34.391Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.test.tsx",
-      "action": "edit",
-      "tokens": 137,
-      "at": "2026-04-29T11:24:46.409Z"
-    }
-  ],
-  "edit_counts": {
-    "src/app/api/reports/summary/route.ts": 1,
-    "src/app/api/reports/summary/route.test.ts": 1,
-    "src/app/reports/ReportsClient.tsx": 1,
-    "src/app/reports/ReportsClient.test.tsx": 5
-  },
-  "anatomy_hits": 2,
-  "anatomy_misses": 5,
-  "repeated_reads_warned": 1,
+  "session_id": "session-2026-04-30-1022",
+  "started": "2026-04-30T15:22:01.794Z",
+  "files_read": {},
+  "files_written": [],
+  "edit_counts": {},
+  "anatomy_hits": 0,
+  "anatomy_misses": 0,
+  "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 3
+  "stop_count": 0
 }

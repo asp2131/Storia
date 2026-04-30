@@ -861,3 +861,30 @@
 
 | 06:25 | reports audit + extension | src/app/api/reports/summary/route.ts, src/app/reports/ReportsClient.tsx | added narration/sourceBreakdown/perBook/dailySeries to summary, switched UI to /api/reports/analytics, added events table+recent feed+sparkline+per-book table+second CSV button | ~6000 |
 | 06:35 | Session end: 8 writes across 4 files (route.ts, route.test.ts, ReportsClient.tsx, ReportsClient.test.tsx) | 7 reads | ~22850 tok |
+
+## Session: 2026-04-30 10:22
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+| 10:32 | Fetched Superpowers OpenCode install instructions and inspected local OpenCode config locations | https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md, ~/.config/opencode | instructions retrieved; no existing opencode.json found | ~1.8k |
+| 10:35 | Installed Superpowers for OpenCode via global plugin and for Pi via skills path | ~/.config/opencode/opencode.json, ~/.pi/superpowers, ~/.pi/agent/settings.json, .wolf/cerebrum.md | OpenCode debug config loads plugin and Pi settings include ~/.pi/superpowers/skills | ~18k |
+| 10:37 | Loaded OpenWolf/brainstorming/debugging context and explored landing-page references/status | .wolf/OPENWOLF.md, .wolf/anatomy.md, .wolf/cerebrum.md, src/components/MorphogenesisHero.tsx, src/components/StoriaCalmLanding.tsx | identified landing text/assets likely in StoriaCalmLanding and existing dirty wolf files | ~80000 |
+| 10:38 | Confirmed home route uses StoriaCalmLanding and identified exact landing cleanup targets | src/app/page.tsx, src/components/StoriaCalmLanding.tsx, public/ | current landing has Over 60 copy, human reader copy, non-clickable story cards, community captions, and existing photo assets | ~15000 |
+| 10:39 | Started brainstorming visual companion server | .superpowers/brainstorm/51927-1777563562 | available at http://localhost:53868 for visual landing-page options | ~2000 |
+| 11:00 | Logged landing copy mismatch and captured user-approved replacement framing | .wolf/buglog.json, .wolf/cerebrum.md, .wolf/anatomy.md | bug-148 records Over 60 mismatch; cerebrum notes use growing-library wording | ~3000 |
+| 11:02 | Captured user-approved softer narration wording | .wolf/cerebrum.md | landing should use warm, expressive narration instead of human-reader claim | ~1000 |
+| 11:04 | Captured story-card UX decision and logged ambiguity bug | .wolf/buglog.json, .wolf/cerebrum.md | bug-149 tracks preview-only card affordance | ~2000 |
+| 11:10 | Captured community caption/press decisions and logged photo/content issues | .wolf/buglog.json, .wolf/cerebrum.md | bug-150 press/captions and bug-151 photo asset issue recorded | ~2500 |
+| 11:12 | Pushed visual options for adding Equitech article and ALTA podcast to landing page | .superpowers/brainstorm/51927-1777563562/content/press-proof-layout-options.html | browser now shows A/B/C press-proof layout choices | ~5000 |
+| 11:14 | Diagnosed visual companion outage and restarted with same press options | .superpowers/brainstorm/68211-1777565610/content/press-proof-layout-options.html, .wolf/buglog.json | old server stopped due to idle timeout; new URL http://localhost:53688 | ~5000 |
+| 11:16 | Investigated unreachable visual companion and started LAN-bound retry | .superpowers/brainstorm/69668-1777565783/content/press-proof-layout-options.html, .wolf/buglog.json | localhost server listened only on 127.0.0.1; new URL http://192.168.1.177:64436 | ~4000 |
+| 11:19 | User selected press-strip option B and confirmed previous landing edits remain in scope | .wolf/cerebrum.md, .wolf/anatomy.md | design direction set for terminal confirmation | ~2000 |
+| 11:21 | Wrote and self-reviewed landing cleanup design spec | docs/superpowers/specs/2026-04-30-landing-cleanup-design.md, .wolf/anatomy.md | no placeholders/TODOs; scope excludes photo edits and larger press page | ~6000 |
+| 11:21 | Committed landing cleanup design spec | docs/superpowers/specs/2026-04-30-landing-cleanup-design.md | commit 7d362e6 docs: add landing cleanup design | ~1000 |
+| 11:25 | Wrote landing cleanup implementation plan for squad execution | docs/superpowers/plans/2026-04-30-landing-cleanup.md, .wolf/anatomy.md | plan covers TSX, CSS, and QA tasks with self-review passing | ~12000 |
+| 11:25 | Fixed implementation plan placeholder-scan wording and reran scan | docs/superpowers/plans/2026-04-30-landing-cleanup.md | no TBD/TODO/implement-later markers remain | ~1000 |
+| 11:25 | Committed landing cleanup implementation plan | docs/superpowers/plans/2026-04-30-landing-cleanup.md | commit 6f72b17 docs: add landing cleanup plan | ~1000 |
+| 11:33 | Applied late landing change to remove Family Day and mascot community tiles | src/components/StoriaCalmLanding.tsx, .wolf/cerebrum.md | removed two figure blocks while leaving photo assets untouched | ~3000 |
+| 11:34 | Logged late landing tile-removal bug and verification | .wolf/buglog.json, src/components/StoriaCalmLanding.tsx | bug-154 records removal of Family Day and mascot tiles | ~2000 |
+| 11:41 | Corrected landing story rail titles from user screenshot | src/components/StoriaCalmLanding.tsx, .wolf/buglog.json, .wolf/cerebrum.md | removed non-library titles; tsc/title greps passed | ~4000 |

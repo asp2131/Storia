@@ -7,6 +7,7 @@
 ## User Preferences
 
 - User may request setup work while on their phone; prefer remote/non-interactive completion paths and avoid blocking on desktop-only clicks when possible.
+- User wants Superpowers skills available in both OpenCode and Pi when setting up agent tooling.
 <!-- How the user likes things done. Code style, tools, patterns, communication. -->
 - User asked to use a team of agents for implementation/audits instead of solo execution when possible.
 - User prefers product/spec markdown files to be updated in place to reflect current implementation progress rather than receiving status only in chat.
@@ -115,6 +116,18 @@
 - 2026-04-28 final auth remediation validation: `npx tsc --noEmit -p tsconfig.json`, full `npx vitest run` (271 tests), targeted auth route sweep (53 tests), child-auth matrix (8 tests), and auth env/session greps pass. Full `npx eslint .` does not currently pass because of a broad pre-existing lint baseline (React compiler rules, `any` usage, `.claude/worktrees` files, unrelated UI/hooks); auth remediation should be validated with targeted tests/typecheck until lint baseline is separately fixed.
 - `.wolf/buglog.json` root shape is `{ "version": ..., "bugs": [...] }`, not a raw array; scripts that inspect/append bug entries must use `data["bugs"]` before slicing or appending.
 
+- 2026-04-30 landing content preference: avoid exact library-size claims for Storia right now; current product has 8 titles with a few more coming soon, so use “a growing library of stories” instead of “Over 60 stories and counting.”
+
+- 2026-04-30 landing content preference: use softer narration wording like “warm, expressive narration” instead of “human reader” claims.
+
+- 2026-04-30 landing UX preference: homepage story cards should be clearly decorative/preview-only, not clickable CTAs.
+
+- 2026-04-30 landing content decisions: community grid should include “Tulane Book Festival with Former Mayor Mitch Landrieu”, an Equitech feature article link, and an “ALTA 2026: Shivang Thakor of the Storia Kids App” podcast link.
+
+- 2026-04-30 landing content decision: remove the “Family Day” and “Meet the mascot” community tiles from the homepage; keep photo asset files untouched for user-managed edits.
+
+- 2026-04-30 current landing story preview titles: The Wizard of Oz; Danny's Cat; My Day at Granny's; The Tortoise and the Hare; Jax & Shini; Bunny Brother; Kumu's Sky; Sweet Potato Sweet Potato. Avoid placeholder titles like The Quiet Owl/Bayou Bell/Moon & Mango/Papa’s Lullaby.
+
 ## Do-Not-Repeat
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
@@ -141,6 +154,7 @@
 - 2026-04-22: In the current web overlay implementation, expose the alternate breakdown action as a per-word secondary "Sound out" button reachable by keyboard/screen readers instead of relying only on modifier-key discovery.
 - 2026-04-22: Treat the web pronunciation spec itself as the source of release QA truth by adding scenario-based acceptance criteria, edge-case coverage, and a manual QA matrix for manifest, narration, accessibility, repeated interaction, network, and feature-flag variants.
 - 2026-04-23: For Ticket 3.3 pronunciation override workflow, migrate storage from per-page `pages.word_pronunciations` JSON to a dedicated `book_pronunciations` Prisma table keyed by `(book_id, normalized_word)`. Chose table over per-page fan-out even though most books are <20 pages because: (a) single source of truth avoids drift between duplicate entries across pages, (b) override UPDATE becomes a single row operation instead of N-page JSON patch, (c) matches published manifest schema shape (spec §3.5), (d) cleaner `human_reviewed`/status indexing for editorial queries. Migration plan: Part A = schema + backfill script + read-path swap (manifest/review/generate endpoints), keep `pages.word_pronunciations` column one release for rollback. Part B = override PUT/DELETE/upload endpoints + edit UI on top of the new table.
+- 2026-04-30: For landing-page press proof, use a small “Featured in” press strip (Equitech article + ALTA 2026 podcast) while preserving earlier copy/caption/story-card tweaks; avoid a larger dedicated press section for this cleanup pass.
 <!-- Significant technical decisions with rationale. Why X was chosen over Y. -->
 - 2026-04-24: For book editor architecture work, start with the editor session/draft orchestration module before narrower subflows like narration or overlay persistence, because it provides the stable boundary those workflows should plug into.
 - 2026-03-25: Keep per-page overlay stores in a registry and remap keys on reorder/delete; for reorder-induced active-page index shifts, preserve current store to avoid deleting remapped keys or losing unsaved overlay edits.

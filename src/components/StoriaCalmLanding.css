@@ -501,6 +501,14 @@
   padding: 0 40px;
 }
 
+.storia-calm .stories-note {
+  margin: 18px 0 0;
+  color: var(--sl-ink-50);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .storia-calm .stories-head h2,
 .storia-calm .community-head h2 {
   margin-bottom: 20px;
@@ -523,6 +531,7 @@
 .storia-calm .book-card {
   flex: 0 0 240px;
   scroll-snap-align: start;
+  cursor: default;
 }
 
 .storia-calm .bc-cover {
@@ -538,11 +547,6 @@
   letter-spacing: -0.01em;
   aspect-ratio: 3 / 4;
   box-shadow: 0 1px 0 var(--sl-border);
-  transition: transform 0.3s;
-}
-
-.storia-calm .book-card:hover .bc-cover {
-  transform: translateY(-4px);
 }
 
 .storia-calm .bc-1 { background: #ed6151; color: #fff6eb; }
@@ -608,6 +612,70 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   backdrop-filter: blur(8px);
+}
+
+.storia-calm .press-strip {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 24px;
+  align-items: stretch;
+  margin-top: 28px;
+  border: 1px solid var(--sl-border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.34);
+  padding: 22px;
+}
+
+.storia-calm .press-eyebrow {
+  margin: 0;
+  color: var(--sl-accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.storia-calm .press-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.storia-calm .press-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--sl-border);
+  border-radius: 14px;
+  background: var(--sl-paper);
+  padding: 18px;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.storia-calm .press-card:hover,
+.storia-calm .press-card:focus-visible {
+  border-color: rgba(237, 97, 81, 0.42);
+  box-shadow: 0 14px 34px rgba(26, 21, 18, 0.08);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.storia-calm .press-card span {
+  color: var(--sl-ink-50);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.storia-calm .press-card strong {
+  color: var(--sl-ink);
+  font-family: var(--sl-display);
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
 }
 
 .storia-calm .cta-section {
@@ -756,6 +824,11 @@
   }
 
   .storia-calm .c-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .storia-calm .press-strip,
+  .storia-calm .press-cards {
     grid-template-columns: 1fr;
   }
 

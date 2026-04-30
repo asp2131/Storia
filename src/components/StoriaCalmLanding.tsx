@@ -31,14 +31,27 @@ const MANIFESTO_WORDS = [
 ];
 
 const BOOKS = [
-  { title: "The Tortoise & the Hare", meta: "Longer adventure · 16 pages", cover: "bc-1" },
-  { title: "Sweet Potato, Sweet Potato", meta: "By Cherelyn Poe · 13 pages", cover: "bc-2" },
-  { title: "My Day at Grandma’s", meta: "Quick read · 8 pages", cover: "bc-3" },
-  { title: "Jax & Shini", meta: "Folk tale · 12 pages", cover: "bc-4" },
-  { title: "The Quiet Owl", meta: "Bedtime · 10 pages", cover: "bc-5" },
-  { title: "The Bayou Bell", meta: "Original · 14 pages", cover: "bc-6" },
-  { title: "Moon & the Mango Tree", meta: "Adventure · 15 pages", cover: "bc-7" },
-  { title: "Papa’s Lullaby", meta: "Short & sweet · 6 pages", cover: "bc-8" },
+  { title: "The Wizard of Oz", meta: "Classic tale", cover: "bc-1" },
+  { title: "Danny's Cat", meta: "Family favorite", cover: "bc-2" },
+  { title: "My Day at Granny's", meta: "Quick read", cover: "bc-3" },
+  { title: "The Tortoise and the Hare", meta: "Classic fable", cover: "bc-4" },
+  { title: "Jax & Shini", meta: "Folk tale", cover: "bc-5" },
+  { title: "Bunny Brother", meta: "Playful story", cover: "bc-6" },
+  { title: "Kumu's Sky", meta: "Adventure", cover: "bc-7" },
+  { title: "Sweet Potato Sweet Potato", meta: "By Cherelyn Poe", cover: "bc-8" },
+];
+
+const PRESS_LINKS = [
+  {
+    label: "Equitech Futures",
+    title: "Shivang Thakor is building the conditions for children to love reading",
+    href: "https://www.equitechfutures.com/articles/shivang-thakor-is-building-the-conditions-for-children-to-love-reading",
+  },
+  {
+    label: "ALTA 2026 Podcast",
+    title: "Shivang Thakor of the Storia Kids App",
+    href: "https://www.youtube.com/watch?v=wmx2MVKhntw&t=2s",
+  },
 ];
 
 export default function StoriaCalmLanding() {
@@ -313,6 +326,14 @@ export default function StoriaCalmLanding() {
         ease: "power3.out",
         stagger: 0.12,
         scrollTrigger: { trigger: ".c-grid", start: "top 80%" },
+      });
+
+      gsap.to(".press-strip.reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        scrollTrigger: { trigger: ".press-strip", start: "top 85%" },
       });
 
       gsap.to(".cta-section .reveal", {
@@ -637,15 +658,16 @@ export default function StoriaCalmLanding() {
                   <h2>A library laid out like a map.</h2>
                   <p>
                     Kids wander a hand-drawn story world and pick tales by mood,
-                    length, or hero. Over 60 stories and counting.
+                    length, or hero. A growing library of stories is live now, with
+                    more coming soon.
                   </p>
                 </div>
                 <div className="pin-step">
                   <p className="eyebrow">02 · Listen</p>
-                  <h2>Real voices. Page by page.</h2>
+                  <h2>Warm narration. Page by page.</h2>
                   <p>
-                    Every story is narrated by a human reader, with pauses,
-                    expression, and care. Kids can read along or simply listen.
+                    Every story includes warm, expressive narration, with pauses,
+                    rhythm, and care. Kids can read along or simply listen.
                   </p>
                 </div>
                 <div className="pin-step">
@@ -690,6 +712,9 @@ export default function StoriaCalmLanding() {
               Classics, folk tales, and originals — narrated with care. New
               titles added each month.
             </p>
+            <p className="stories-note reveal">
+              Preview of the current shelf — 8 titles now, with more on the way.
+            </p>
           </div>
           <div className="stories-rail">
             {BOOKS.map((book) => (
@@ -720,16 +745,26 @@ export default function StoriaCalmLanding() {
             </figure>
             <figure className="c-tile c-b reveal">
               <Image src="/storia-landing/team-festival.png" alt="Storia team at festival" fill sizes="(max-width: 900px) 100vw, 50vw" />
-              <figcaption>Family Lit Fest, 2025</figcaption>
+              <figcaption>Tulane Book Festival with Former Mayor Mitch Landrieu</figcaption>
             </figure>
-            <figure className="c-tile c-c reveal">
-              <Image src="/storia-landing/team-mayor.png" alt="Team at community event" fill sizes="(max-width: 900px) 100vw, 50vw" />
-              <figcaption>Meeting readers in Lafayette Square</figcaption>
-            </figure>
-            <figure className="c-tile c-d reveal">
-              <Image src="/storia-landing/mascot-waving.jpg" alt="Storia mascot" fill sizes="(max-width: 900px) 100vw, 50vw" />
-              <figcaption>Meet the mascot</figcaption>
-            </figure>
+          </div>
+
+          <div className="press-strip reveal" aria-label="Storia press features">
+            <p className="press-eyebrow">Featured in</p>
+            <div className="press-cards">
+              {PRESS_LINKS.map((item) => (
+                <a
+                  className="press-card"
+                  href={item.href}
+                  key={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>{item.label}</span>
+                  <strong>{item.title}</strong>
+                </a>
+              ))}
+            </div>
           </div>
         </section>
 
