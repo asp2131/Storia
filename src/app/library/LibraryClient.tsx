@@ -311,12 +311,6 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
               </button>
               {userMenuOpen && (
                 <div className="absolute right-0 mt-4 w-56 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-zinc-800/95 border border-white/10 overflow-hidden py-2 z-50">
-                  <Link
-                    href="/reports"
-                    className="block px-6 py-4 text-base text-white hover:bg-white/20 font-bold transition-colors"
-                  >
-                    Reading Reports
-                  </Link>
                   {isAdmin && (
                     <Link
                       href="/admin"

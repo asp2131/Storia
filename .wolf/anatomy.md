@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-04-29T11:24:46.398Z
-> Files: 653 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-02T04:02:17.341Z
+> Files: 681 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -105,6 +105,38 @@
 - `src/app/api/reports/analytics/route.ts` — Child-authorized analytics report endpoint (~819 tok)
 - `src/app/api/reports/summary/route.test.ts` — Vitest coverage for reports summary auth/access/query behavior (~1100 tok)
 - `src/lib/admin-auth.ts` — Admin-only Better Auth helper/guard for admin routes (~222 tok)
+
+## Discovered during 2026-04-30 brainstorming visual companion
+
+- `.superpowers/brainstorm/51927-1777563562/content/press-proof-layout-options.html` — Visual companion mockup comparing three landing-page press/proof layout approaches for Equitech and ALTA podcast links (~900 tok)
+- `.superpowers/brainstorm/51927-1777563562/content/waiting-in-terminal.html` — Visual companion waiting screen generated during landing-page brainstorming (~80 tok)
+- `.superpowers/brainstorm/51927-1777563562/state/server-info` — Visual companion server metadata with local URL/ports (~50 tok)
+- `src/components/StoriaCalmLanding.css` — Styling for the calm landing page sections, story cards, community image grid, CTA, and responsive behavior (~11000 tok)
+
+## Discovered during 2026-04-30 landing cleanup
+
+- `src/components/LandingAnimations.tsx` — Landing animation helpers/effects used by the landing experience (~1200 tok)
+- `src/components/StoriaCalmLanding.tsx` — Main calm landing page component with GSAP interactions, story cards, impact copy, founder/community photos, captions, and signup CTA (~9000 tok)
+
+## Discovered during 2026-04-30 landing design spec
+
+- `docs/superpowers/specs/2026-04-30-landing-cleanup-design.md` — Approved landing-page cleanup design covering copy accuracy, story-card preview UX, community caption updates, and Equitech/ALTA press strip (~900 tok)
+
+## Discovered during 2026-04-30 landing implementation plan
+
+- `docs/superpowers/plans/2026-04-30-landing-cleanup.md` — Implementation plan for landing cleanup covering TSX copy/press markup, CSS preview/press styling, and QA verification tasks (~2400 tok)
+
+## Discovered during 2026-04-30 visual companion LAN retry
+
+- `.superpowers/brainstorm/69668-1777565783/content/press-proof-layout-options.html` — Visual companion press/proof layout options served from LAN-bound retry server (~900 tok)
+- `.superpowers/brainstorm/69668-1777565783/content/waiting-design-confirmation.html` — Visual companion waiting screen after selecting press-strip option B (~60 tok)
+- `.superpowers/brainstorm/69668-1777565783/state/server-info` — LAN-bound visual companion server metadata using host 0.0.0.0 and URL host 192.168.1.177 (~60 tok)
+
+## Discovered during 2026-04-30 visual companion restart
+
+- `.superpowers/brainstorm/51927-1777563562/state/server-stopped` — Prior visual companion stop marker showing idle timeout (~20 tok)
+- `.superpowers/brainstorm/68211-1777565610/content/press-proof-layout-options.html` — Republished visual companion A/B/C mockup for Equitech article and ALTA podcast placement after idle timeout (~900 tok)
+- `.superpowers/brainstorm/68211-1777565610/state/server-info` — Restarted visual companion server metadata with local URL/port (~50 tok)
 
 ## _build/
 
@@ -818,6 +850,30 @@
 
 - `route.ts` — Next.js API route: POST (~3010 tok)
 
+## src/app/api/admin/reports/
+
+- `routes.test.ts` — API routes: GET (1 endpoints) (~2016 tok)
+
+## src/app/api/admin/reports/feedback/
+
+- `route.ts` — Next.js API route: GET (~516 tok)
+
+## src/app/api/admin/reports/headline/
+
+- `route.ts` — Next.js API route: GET (~568 tok)
+
+## src/app/api/admin/reports/timeline/
+
+- `route.ts` — Next.js API route: GET (~577 tok)
+
+## src/app/api/admin/reports/top-books/
+
+- `route.ts` — Next.js API route: GET (~623 tok)
+
+## src/app/api/admin/reports/trend/
+
+- `route.ts` — Next.js API route: GET (~386 tok)
+
 ## src/app/api/admin/uploads/
 
 - `route.ts` — Next.js API route: POST (~907 tok)
@@ -942,34 +998,18 @@
 - `saveCoordinator.test.ts` — Boundary tests for SaveCoordinator debounce reset, retry/error, and overlay-before-book ordering (~2200 tok)
 - `saveCoordinator.ts` — Pure editor save coordinator with debounced autosave, dirty/status snapshots, retry, and overlay-before-book save ordering (~3650 tok)
 
+## src/lib/reports/
+
+- `agg.test.ts` — Mock: makePrisma (~2824 tok)
+- `agg.ts` — Exports VALID_RANGES, ReportRange, ParsedRange, HeadlineData + 9 more (~3741 tok)
+- `csv.test.ts` — Declares Row (~354 tok)
+- `csv.ts` — Exports CsvCell, CsvColumn, toCsvRow, toCsv (~186 tok)
+- `eventCatalog.test.ts` — API routes: DELETE (2 endpoints) (~2228 tok)
+- `eventCatalog.ts` — Translate a row from one analytics-bearing table into one or more (~3451 tok)
+- `timeline.test.ts` — Mock: makePrisma, isoMinusMin (~1905 tok)
+- `timeline.ts` — Exports TIMELINE_DEFAULT_LIMIT, TIMELINE_MAX_LIMIT, TimelineFilters, TimelinePage, loadTimeline (~1567 tok)
+
 ## src/stores/
 
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
-## Discovered during 2026-04-30 landing cleanup
-
-- `src/components/StoriaCalmLanding.tsx` — Main calm landing page component with GSAP interactions, story cards, impact copy, founder/community photos, captions, and signup CTA (~9000 tok)
-- `src/components/LandingAnimations.tsx` — Landing animation helpers/effects used by the landing experience (~1200 tok)
-## Discovered during 2026-04-30 brainstorming visual companion
-
-- `.superpowers/brainstorm/51927-1777563562/content/waiting-in-terminal.html` — Visual companion waiting screen generated during landing-page brainstorming (~80 tok)
-- `.superpowers/brainstorm/51927-1777563562/content/press-proof-layout-options.html` — Visual companion mockup comparing three landing-page press/proof layout approaches for Equitech and ALTA podcast links (~900 tok)
-- `.superpowers/brainstorm/51927-1777563562/state/server-info` — Visual companion server metadata with local URL/ports (~50 tok)
-- `src/components/StoriaCalmLanding.css` — Styling for the calm landing page sections, story cards, community image grid, CTA, and responsive behavior (~11000 tok)
-## Discovered during 2026-04-30 visual companion restart
-
-- `.superpowers/brainstorm/68211-1777565610/content/press-proof-layout-options.html` — Republished visual companion A/B/C mockup for Equitech article and ALTA podcast placement after idle timeout (~900 tok)
-- `.superpowers/brainstorm/68211-1777565610/state/server-info` — Restarted visual companion server metadata with local URL/port (~50 tok)
-- `.superpowers/brainstorm/51927-1777563562/state/server-stopped` — Prior visual companion stop marker showing idle timeout (~20 tok)
-## Discovered during 2026-04-30 visual companion LAN retry
-
-- `.superpowers/brainstorm/69668-1777565783/content/press-proof-layout-options.html` — Visual companion press/proof layout options served from LAN-bound retry server (~900 tok)
-- `.superpowers/brainstorm/69668-1777565783/content/waiting-design-confirmation.html` — Visual companion waiting screen after selecting press-strip option B (~60 tok)
-- `.superpowers/brainstorm/69668-1777565783/state/server-info` — LAN-bound visual companion server metadata using host 0.0.0.0 and URL host 192.168.1.177 (~60 tok)
-## Discovered during 2026-04-30 landing design spec
-
-- `docs/superpowers/specs/2026-04-30-landing-cleanup-design.md` — Approved landing-page cleanup design covering copy accuracy, story-card preview UX, community caption updates, and Equitech/ALTA press strip (~900 tok)
-## Discovered during 2026-04-30 landing implementation plan
-
-- `docs/superpowers/plans/2026-04-30-landing-cleanup.md` — Implementation plan for landing cleanup covering TSX copy/press markup, CSS preview/press styling, and QA verification tasks (~2400 tok)
-

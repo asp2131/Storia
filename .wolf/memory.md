@@ -888,3 +888,28 @@
 | 11:33 | Applied late landing change to remove Family Day and mascot community tiles | src/components/StoriaCalmLanding.tsx, .wolf/cerebrum.md | removed two figure blocks while leaving photo assets untouched | ~3000 |
 | 11:34 | Logged late landing tile-removal bug and verification | .wolf/buglog.json, src/components/StoriaCalmLanding.tsx | bug-154 records removal of Family Day and mascot tiles | ~2000 |
 | 11:41 | Corrected landing story rail titles from user screenshot | src/components/StoriaCalmLanding.tsx, .wolf/buglog.json, .wolf/cerebrum.md | removed non-library titles; tsc/title greps passed | ~4000 |
+| 11:53 | Captured user feedback that manifesto copy should shift toward literacy and speech-development focus | .wolf/buglog.json, .wolf/cerebrum.md | bug-156 logged; awaiting approved replacement copy | ~2000 |
+| 11:55 | Updated landing manifesto to approved literacy/speech-development copy | src/components/StoriaCalmLanding.tsx, .wolf/buglog.json, .wolf/cerebrum.md | grep and tsc verification passed | ~3000 |
+| 11:56 | Reran corrected manifesto verification with narrower old-copy grep | src/components/StoriaCalmLanding.tsx | new manifesto words found; old specific words absent; tsc passed | ~1000 |
+
+## Session: 2026-05-02 22:23
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 22:54 | Created src/lib/reports/csv.ts | — | ~186 |
+| 22:54 | Created src/lib/reports/eventCatalog.ts | — | ~877 |
+| 22:54 | Created src/lib/reports/agg.ts | — | ~872 |
+| 22:54 | Created src/lib/reports/csv.test.ts | — | ~354 |
+| 22:56 | Created src/lib/reports/agg.ts | — | ~3741 |
+| 22:57 | Created src/lib/reports/agg.test.ts | — | ~2824 |
+| 22:58 | Created src/lib/reports/eventCatalog.ts | — | ~3451 |
+| 22:59 | Created src/lib/reports/eventCatalog.test.ts | — | ~2228 |
+| 22:59 | Created src/app/api/admin/reports/headline/route.ts | — | ~568 |
+| 22:59 | Created src/app/api/admin/reports/trend/route.ts | — | ~386 |
+| 22:59 | Created src/app/api/admin/reports/top-books/route.ts | — | ~623 |
+| 22:59 | Created src/app/api/admin/reports/feedback/route.ts | — | ~516 |
+| 23:00 | Created src/app/api/admin/reports/routes.test.ts | — | ~2016 |
+| 23:01 | Created src/lib/reports/timeline.ts | — | ~1567 |
+| 23:01 | Created src/app/api/admin/reports/timeline/route.ts | — | ~577 |
+| 23:02 | Created src/lib/reports/timeline.test.ts | — | ~1905 |
+| 23:02 | Session end: 16 writes across 10 files (csv.ts, eventCatalog.ts, agg.ts, csv.test.ts, agg.test.ts) | 35 reads | ~97499 tok |
