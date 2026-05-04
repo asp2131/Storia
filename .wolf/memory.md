@@ -913,3 +913,28 @@
 | 23:01 | Created src/app/api/admin/reports/timeline/route.ts | — | ~577 |
 | 23:02 | Created src/lib/reports/timeline.test.ts | — | ~1905 |
 | 23:02 | Session end: 16 writes across 10 files (csv.ts, eventCatalog.ts, agg.ts, csv.test.ts, agg.test.ts) | 35 reads | ~97499 tok |
+
+## Session: 2026-05-04 21:06
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 21:57 | Investigated STO-7 bootstrap log and confirmed generated worktree lacks bin/bootstrap.sh while source repo has local bin scripts; updated anatomy for bin scripts. | .logs/STO-7.log, bin/, .wolf/anatomy.md | Root cause evidence gathered | ~900 |
+| 21:57 | Checked pi-symphony bootstrap call, git tracking, and bootstrap contents for STO-7 failure. | bin/pi-symphony.sh, bin/bootstrap.sh, git status | Confirmed bin scripts are untracked in source and absent from origin/main worktree | ~650 |
+| 21:58 | Logged STO-7 bootstrap failure in buglog and cerebrum after root-cause analysis. | .wolf/buglog.json, .wolf/cerebrum.md | Added bug-158 and pi-symphony worktree learning | ~350 |
+| 22:07 | Started admin reports scoping investigation; loaded OpenWolf protocol/cerebrum/buglog and dispatched debugger+QA squad | .wolf/*, squad | investigation in progress | ~2000 |
+| 22:07 | Started admin reports scoping root-cause investigation; loaded OpenWolf, cerebrum, anatomy, systematic-debugging guidance | .wolf/* | proceeding with read-only trace | ~25000 |
+| 22:09 | Traced admin report routes/client/aggregator/prisma/auth files; found API agg has no user/child filters and Prisma uses DATABASE_URL | src/app/api/admin/reports/*, src/lib/reports/*, src/lib/prisma.ts, src/lib/admin-auth.ts | preparing DB/RLS evidence query | ~24000 |
+| 22:12 | Checked migrations/env/recent commits and ran targeted admin reports tests | prisma/migrations/*, .env, git history, reports tests | no repo RLS/policy DDL; targeted suite passed 27/27; live Supabase psql check blocked by stale/invalid local DATABASE_URL password | ~17000 |
+| 22:12 | Logged admin reports scoping investigation and local DB diagnostic failure; added admin report data-flow learning | .wolf/buglog.json, .wolf/cerebrum.md | bug-159/160 recorded; cerebrum updated | ~2500 |
+| 22:15 | reviewed OpenWolf context and registered missing admin reports page anatomy entry | .wolf/anatomy.md | ready to inspect reports page/tests | ~tokens |
+| 22:15 | ran baseline targeted admin reports tests | src/lib/reports/agg.test.ts; src/app/api/admin/reports/routes.test.ts | 22 passed before regression additions | ~tokens |
+| 22:16 | Ran local DB/RLS diagnostics via Prisma; local connection is postgres/rolbypassrls=true and affected tables have RLS disabled; live Supabase DB password in .env failed, so production confirmation needs Supabase SQL editor | src/lib/prisma.ts, prisma/schema.prisma, .env | root-cause boundary identified | ~1200 |
+| 22:16 | Added admin reports Prisma boundary and switched reports aggregate/timeline defaults to use it; added regression tests for admin reports client selection and cross-parent report visibility | src/lib/admin-reports-prisma.ts, src/lib/reports/agg.ts, src/lib/reports/timeline.ts, src/lib/**/*default-client.test.ts | implementation complete | ~2200 |
+| 22:16 | Verified admin reports fix with targeted Vitest suites and TypeScript typecheck | src/lib/reports/*.test.ts, src/app/api/admin/reports/routes.test.ts | 31 tests pass; tsc passes | ~1000 |
+| 22:17 | Logged admin reports scoping root cause/fix in cerebrum and buglog | .wolf/cerebrum.md, .wolf/buglog.json | added learning/do-not-repeat and bug-161 | ~700 |
+| 22:18 | added platform-wide headline regression and admin hook endpoint regression; ran targeted tests | src/lib/reports/agg.test.ts; src/hooks/useAdminReports.test.tsx; .wolf/anatomy.md | 13 targeted tests passed | ~tokens |
+
+## Session: 2026-05-04 22:22
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|

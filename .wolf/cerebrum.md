@@ -14,6 +14,7 @@
 
 ## Key Learnings
 
+- 2026-05-03 admin reports scoping investigation: current `/api/admin/reports/*` routes gate with `requireAdmin()` only, and `src/lib/reports/agg.ts` aggregates across `reading_session`, `child_book_progress`, `question_attempt`, and `reader_feedback` by date/book only (no admin `userId`/`childProfileId` filter except optional timeline filters explicitly supplied by query params). Repo migrations for proof-test/mobile analytics tables contain no RLS/policy DDL. If production appears admin-owned, first verify deployed client endpoints and DB rows/RLS with SQL before changing report code.
 - Reader web orchestration is currently concentrated in `src/app/books/[id]/reader/page.tsx` (~1200 LOC, 23 `useEffect`s), where scroll choreography, audio sequencing, pronunciation policy/analytics, progress restore/save, and feedback/login gating all share page state; the clean refactor seams are session/navigation, pronunciation controller, and media session hooks.
 - Browser-harness CLI always runs `ensure_daemon()` before executing stdin code, so remote Browser Use bootstrap on a machine without local Chrome CDP enabled must be started via `python -c 'from admin import start_remote_daemon; ...'` (or another direct `admin.py` import), then invoked later with `BU_NAME=<name> browser-harness`.
 - Standalone editor pronunciation generation endpoint `/api/admin/books/[id]/pronunciations/generate` now accepts stringified `force` / `maxWords` values, returns a `request` echo plus a `summary` object (`missingBookWide`, `requestedTokens`, `limitedByMaxWords`, page counts), and includes per-page `status` / `fullWordOnly` / `missingWords` on both POST and GET responses for editor summary UI without extra client-side aggregation.
@@ -33,6 +34,7 @@
 - In Vitest hook tests for `useWordPronunciation`, keep `wordPronunciations` object references stable across rerenders; the hook resets active playback whenever that dependency reference changes, which can null `onended` and make narration auto-resume assertions flaky/false-negative.
 - In `useWordPronunciation` tests that need to assert decoded buffer provenance, do not track `ArrayBuffer` identity with `WeakMap` alone: `decodeUrl` passes `arrayBuffer.slice(0)` to `decodeAudioData`, so URL tags must survive cloning (e.g. encode an id in buffer bytes).
 - Local dev now boots Prisma against a Dockerized Postgres on `localhost:5433`; `npm run dev` runs `db:prepare` first to ensure `storia_dev` exists and apply migrations before Next starts.
+- pi-symphony creates ticket worktrees from `origin/main` and then runs `./bin/bootstrap.sh` inside the worktree; local untracked `bin/` scripts in the source repo are not available there, so orchestration scripts must either be tracked or copied/invoked from the source repo explicitly.
 - Proof-test comprehension is modeled as **book-level end-of-book questions**, not page-anchored inline prompts; editor UX should therefore use a dedicated Questions tab separate from page/audio editing.
 - `useWordPronunciation` now accepts `Record<string, WordPronunciationEntry>` where entry is `string | { breakdown?, fullWord? }`. Resolver: breakdown mode prefers `entry.breakdown` then falls back to `entry.fullWord`; whole-word prefers `entry.fullWord` then `entry.breakdown`. Legacy string entries are passed through for either mode.
 - `useWordPronunciation` buffer cache is keyed by audio URL (not by word or mode). This dedups preload+playback fetches when breakdown and fullWord share a URL, and prevents re-fetching when breakdown mode falls back to fullWord audio.
@@ -132,6 +134,8 @@
 
 - 2026-04-30 approved landing manifesto replacement: “Storia helps children strengthen reading, speech, and language skills through stories they can hear, feel, and follow.”
 
+- 2026-05-04 admin reports scoping fix: report aggregation/timeline code intentionally uses `src/lib/admin-reports-prisma.ts` instead of the shared `src/lib/prisma.ts`. Set `ADMIN_REPORTS_DATABASE_URL` in production to a direct/server-only Postgres connection role that bypasses Supabase RLS (service-role/postgres, never anon/authenticated/pooler role-scoped JWT) so `/admin/reports` remains platform-wide after `requireAdmin()` verifies Better Auth role.
+
 ## Do-Not-Repeat
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
@@ -149,6 +153,8 @@
 - [2026-04-28] Do not read service-role secrets from `NEXT_PUBLIC_*` env vars in server code; Supabase admin clients must require server-only `SUPABASE_SERVICE_ROLE_KEY`, and mobile/client repos must not ship service-role keys.
 - [2026-04-29] Do not trust agent self-reports of file edits without verifying with `git status`/`git diff`. feature-lead and ui-lead agents both produced detailed, plausible "files changed" sections describing edits that never happened (zero source-file modifications in working tree). Always confirm material code changes with a git diff before reporting work done. See bug-147.
 - [2026-04-28] Do not update child-owned rows through a globally unique client-provided id without checking existing ownership first; `/api/reading-sessions` must reject foreign `sessionId` upserts before mutation.
+
+- [2026-05-04] Do not assume `requireAdmin()` changes database visibility. It only validates Better Auth `user.role === "admin"`; admin/report queries still run under whatever Postgres role `DATABASE_URL` uses, so a Supabase anon/authenticated/RLS-scoped connection can silently return only the current user-owned rows. Use the dedicated admin reports Prisma connection and verify the DB role/RLS policies.
 
 ## Decision Log
 

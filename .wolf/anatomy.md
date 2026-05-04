@@ -41,6 +41,9 @@
 - `components.json` (~129 tok)
 - `docker-compose.yml` — Local Postgres service for Prisma dev workflow (~180 tok)
 - `Dockerfile` — Docker container definition (~566 tok)
+- `bin/bootstrap.sh` — Local/symphony bootstrap script for installing deps, Prisma generate, and preparing env/database checks (~350 tok)
+- `bin/pi-symphony.sh` — Linear ticket orchestration script that creates worktrees, bootstraps, spawns squad/agents, and logs ticket runs (~3200 tok)
+- `bin/verify.sh` — Local/symphony verification wrapper for lint/type/test checks (~160 tok)
 - `eslint.config.mjs` — ESLint flat configuration (~124 tok)
 - `next-env.d.ts` — / <reference types="next" /> (~72 tok)
 - `next.config.ts` — Declares nextConfig (~154 tok)
@@ -781,6 +784,9 @@
 
 ## prisma/
 
+- `migrations/20250205_add_user_reading_progress/migration.sql` — Creates Better Auth-era user reading progress table and indexes; no RLS/policies (~300 tok)
+- `migrations/20260411023443_add_proof_test_models/migration.sql` — Creates child profiles, child book progress, reading sessions, book questions/options, and question attempts; no RLS/policies (~1800 tok)
+- `migrations/20260417120000_add_mobile_analytics_events/migration.sql` — Creates mobile analytics events table/indexes/FKs; no RLS/policies (~600 tok)
 - `schema.prisma` — Declares String (~4981 tok)
 - `seed.ts` — prisma: main (~3664 tok)
 
@@ -827,6 +833,10 @@
 ## src/app/admin/login/
 
 - `page.tsx` — dynamic — renders form (~2433 tok)
+
+## src/app/admin/reports/
+
+- `page.tsx` — Admin reports dashboard client page that fetches headline/trend/top-books/feedback sections from `/api/admin/reports/*` endpoints (~1800 tok)
 
 ## src/app/api/admin/audio-assignments/
 
@@ -964,6 +974,8 @@
 
 ## src/hooks/
 
+- `useAdminReports.test.tsx` — Vitest/React Query coverage that admin reports hooks fetch `/api/admin/reports/*` and never legacy child-scoped `/api/reports/summary|analytics` endpoints (~700 tok)
+- `useAdminReports.ts` — React Query hooks for admin reports dashboard sections; fetches `/api/admin/reports/*` endpoints with range/limit/category params (~320 tok)
 - `useBookData.ts` — React Query hooks for editor book/pages/audio CRUD, narration generation, and shared API types used by `BookEditorContext`. (~1689 tok)
 - `useOverlayEditor.ts` — Zustand-backed overlay editor hook exports and selectors used by the draggable text canvas. (~114 tok)
 - `usePronunciationManifest.test.tsx` — Covers manifest absent, present, and fetch-failure states for the shipping hook (~1900 tok)
@@ -975,6 +987,10 @@
 ## src/lib/
 
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
+- `auth-client.ts` — Better Auth React client wrapper using `NEXT_PUBLIC_APP_URL` with a build-time mock fallback (~250 tok)
+- `admin-reports-prisma.test.ts` — Vitest coverage for dedicated admin reports Prisma connection selection/fallback (~500 tok)
+- `admin-reports-prisma.ts` — Dedicated admin reports Prisma client using ADMIN_REPORTS_DATABASE_URL when configured, otherwise shared Prisma fallback (~220 tok)
+- `prisma.ts` — Shared PrismaClient singleton using DATABASE_URL; logs query/error/warn in development and error in production (~150 tok)
 - `child-auth.test.ts` — Direct dual-stack auth helper tests for Better Auth cookies, Supabase Bearer/raw token parsing, verified-email linking, and child access authorization (~2500 tok)
 - `child-auth.ts` — Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPA (~1856 tok)
 - `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
@@ -1000,12 +1016,14 @@
 
 ## src/lib/reports/
 
+- `agg.default-client.test.ts` — Vitest coverage that default reportAgg uses the admin reports Prisma client for platform-wide headline metrics (~800 tok)
 - `agg.test.ts` — Mock: makePrisma (~2824 tok)
 - `agg.ts` — Exports VALID_RANGES, ReportRange, ParsedRange, HeadlineData + 9 more (~3741 tok)
 - `csv.test.ts` — Declares Row (~354 tok)
 - `csv.ts` — Exports CsvCell, CsvColumn, toCsvRow, toCsv (~186 tok)
 - `eventCatalog.test.ts` — API routes: DELETE (2 endpoints) (~2228 tok)
 - `eventCatalog.ts` — Translate a row from one analytics-bearing table into one or more (~3451 tok)
+- `timeline.default-client.test.ts` — Vitest coverage that loadTimeline uses the admin reports Prisma client for cross-parent admin visibility (~850 tok)
 - `timeline.test.ts` — Mock: makePrisma, isoMinusMin (~1905 tok)
 - `timeline.ts` — Exports TIMELINE_DEFAULT_LIMIT, TIMELINE_MAX_LIMIT, TimelineFilters, TimelinePage, loadTimeline (~1567 tok)
 
