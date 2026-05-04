@@ -14,6 +14,10 @@ extensions/
 !.pi/agents/planner.md
 !.pi/agents/reviewer.md
 !.pi/agents/scout.md
+!.pi/skills/
+.pi/skills/*
+!.pi/skills/linear/
+!.pi/skills/linear/SKILL.md
 .pi/agent-sessions/
 .pi/agent/
 .pi/cache/
