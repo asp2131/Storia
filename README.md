@@ -24,12 +24,14 @@ Storia is an immersive reading platform that combines ebooks, narration, and sou
 ### Install
 
 ```bash
-npm install
+./bin/bootstrap.sh
 ```
+
+`bootstrap.sh` is idempotent. It installs npm dependencies, provisions `.env.local` and `.env` from `STORIA_ENV_FILE`, an existing main-worktree env file, or `.env.example`, then runs `prisma generate` when available. Use `npm install` directly only when you intentionally want to bypass the repo setup script.
 
 ### Environment Variables
 
-Create `.env.local` in the project root (or use your preferred env loading setup):
+Create `.env.local` in the project root (or run `./bin/bootstrap.sh` to create/link `.env.local` and `.env` automatically):
 
 ```bash
 # Database (required by Prisma + auth)
@@ -104,6 +106,12 @@ Open `http://localhost:3000`.
 ## Common Commands
 
 ```bash
+# One-shot setup for humans and agent worktrees
+./bin/bootstrap.sh
+
+# Pre-handoff verification gate
+./bin/verify.sh
+
 # Development
 npm run dev
 
@@ -118,9 +126,44 @@ npm run lint
 npm run test
 npm run test:watch
 
+# Linear/Symphony runner (requires LINEAR_API_KEY)
+./bin/pi-symphony.sh --once
+
 # Database seed
 npm run db:seed
 ```
+
+## Agent Harness (Pi Coding Agent)
+
+This repo tracks a minimal `.pi/` harness so fresh clones and Symphony-created worktrees can run the same local agent chains. Runtime/session/cache data under `.pi/agent-sessions`, `.pi/agent`, `.pi/cache`, `.pi/logs`, `.pi/tmp`, and `.pi/worktrees` stays ignored.
+
+Useful commands:
+
+```bash
+pi chain plan-build-review "Plan/build/review: <ticket>"
+pi chain plan-build "Plan/build only: <ticket>"
+pi chain scout-flow "Explore: <area>"
+```
+
+`bin/pi-symphony.sh` polls Linear, creates isolated worktrees, runs `./bin/bootstrap.sh`, dispatches the configured agent runner, then runs `./bin/verify.sh` before opening a PR.
+
+Default runner configuration:
+
+```bash
+AGENT_RUNNER=pi \
+PI_CHAIN=plan-build-review \
+./bin/pi-symphony.sh --once
+```
+
+Optional fallback runners are supported without shell `eval`; runner commands are invoked as fixed argv arrays. Supported names are `pi`, `claude`, and `opencode`:
+
+```bash
+AGENT_RUNNER=pi \
+AGENT_FALLBACKS=claude,opencode \
+./bin/pi-symphony.sh
+```
+
+For Claude Code fallback, install and authenticate the `claude` CLI. For OpenCode fallback, install and authenticate the `opencode` CLI. Fallback prompts instruct the alternate runner to follow `AGENTS.md` and `WORKFLOW.md` in the current worktree.
 
 ## Background Worker (Audio Preprocessing)
 
@@ -142,6 +185,8 @@ Docker-based local setup is available in `worker/docker-compose.yml`.
 - `prisma` - Prisma schema, migrations, and seed scripts
 - `worker` - Background audio preprocessing worker
 - `docs` - Product, architecture, and implementation docs
+- `bin` - Bootstrap, verification, and Linear/Symphony runner scripts
+- `.pi` - Minimal tracked Pi Coding Agent harness (runtime data ignored)
 
 ## Docs
 
@@ -154,4 +199,4 @@ Docker-based local setup is available in `worker/docker-compose.yml`.
 ## Notes
 
 - This repository currently contains legacy docs that reference previous architecture choices; prefer the docs linked above for the current Next.js stack.
-- Keep secrets in local/hosted environment variables and never commit them to git.
+- Keep secrets in local/hosted environment variables and never commit them to git. `.env.example` is a template only; local `.env*` files remain ignored.

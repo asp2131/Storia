@@ -1,7 +1,26 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 extensions/
-.pi/
+
+# Track the repo-local Pi agent harness, but keep runtime/session/cache data out.
+.pi/*
+!.pi/settings.json
+!.pi/damage-control-rules.yaml
+!.pi/agents/
+.pi/agents/*
+!.pi/agents/agent-chain.yaml
+!.pi/agents/teams.yaml
+!.pi/agents/builder.md
+!.pi/agents/planner.md
+!.pi/agents/reviewer.md
+!.pi/agents/scout.md
+.pi/agent-sessions/
+.pi/agent/
+.pi/cache/
+.pi/logs/
+.pi/tmp/
+.pi/worktrees/
+.pi/evolution/
 
 # dependencies
 /node_modules
@@ -33,8 +52,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (can opt-in for committing templates only)
 .env*
+!.env.example
 
 # vercel
 .vercel

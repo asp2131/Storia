@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint src scripts prisma next.config.ts postcss.config.mjs eslint.config.mjs vitest.config.ts vitest.setup.ts --no-error-on-unmatched-pattern",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f db",

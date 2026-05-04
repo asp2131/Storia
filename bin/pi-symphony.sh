@@ -25,6 +25,8 @@
 #   POLL_S                 default: 15
 #   MAX_PARALLEL           default: 2
 #   PI_CHAIN               default: plan-build-review
+#   AGENT_RUNNER           default: pi                (supported: pi, claude, opencode)
+#   AGENT_FALLBACKS        default: ""                (comma/space list, e.g. claude,opencode)
 #   GIT_REMOTE             default: origin
 #   GIT_BASE               default: main
 #   STATE_TODO             default: Todo
@@ -41,6 +43,8 @@ WORKSPACES="${WORKSPACES:-$HOME/code/storia-web-symphony-workspaces}"
 POLL_S="${POLL_S:-15}"
 MAX_PARALLEL="${MAX_PARALLEL:-2}"
 PI_CHAIN="${PI_CHAIN:-plan-build-review}"
+AGENT_RUNNER="${AGENT_RUNNER:-pi}"
+AGENT_FALLBACKS="${AGENT_FALLBACKS:-}"
 GIT_REMOTE="${GIT_REMOTE:-origin}"
 GIT_BASE="${GIT_BASE:-main}"
 STATE_TODO="${STATE_TODO:-Todo}"
@@ -65,13 +69,122 @@ for arg in "$@"; do
 done
 
 # ---------- deps ----------
-for bin in jq curl gh git pi; do
+for bin in jq curl gh git; do
   command -v "$bin" >/dev/null || { echo "[pi-symphony] missing dep: $bin" >&2; exit 1; }
 done
 
 mkdir -p "$WORKSPACES" "$locks_dir" "$log_dir"
 
 log() { printf '[%s] [pi-symphony] %s\n' "$(date +%H:%M:%S)" "$*"; }
+
+normalize_runner() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "$value" | tr '[:upper:]' '[:lower:]'
+}
+
+runner_command() {
+  case "$(normalize_runner "$1")" in
+    pi) printf '%s\n' "pi" ;;
+    claude) printf '%s\n' "claude" ;;
+    opencode) printf '%s\n' "opencode" ;;
+    *) return 1 ;;
+  esac
+}
+
+runner_plan() {
+  local raw seen="" runner normalized
+  raw="$AGENT_RUNNER ${AGENT_FALLBACKS//,/ }"
+  for runner in $raw; do
+    normalized="$(normalize_runner "$runner")"
+    [ -n "$normalized" ] || continue
+    runner_command "$normalized" >/dev/null || {
+      echo "[pi-symphony] unsupported AGENT_RUNNER/AGENT_FALLBACKS entry: $runner" >&2
+      exit 2
+    }
+    case " $seen " in
+      *" $normalized "*) ;;
+      *)
+        seen="$seen $normalized"
+        printf '%s\n' "$normalized"
+        ;;
+    esac
+  done
+}
+
+fallback_prompt() {
+  local task_text="$1"
+  cat <<EOF
+You are running as a pi-symphony fallback agent for Storia web.
+
+Follow AGENTS.md and WORKFLOW.md. Implement this Linear ticket end-to-end in the current git worktree. Keep changes narrow, do not commit secrets, do not edit .wolf runtime files unless explicitly required, and run ./bin/verify.sh when practical.
+
+Requested Pi chain: $PI_CHAIN
+
+Ticket/task:
+$task_text
+EOF
+}
+
+invoke_agent_runner() {
+  local runner="$1" wt="$2" task_text="$3"
+  local cmd=()
+  case "$runner" in
+    pi)
+      cmd=(pi chain "$PI_CHAIN" --print "$task_text")
+      ;;
+    claude)
+      cmd=(claude --print "$(fallback_prompt "$task_text")")
+      ;;
+    opencode)
+      cmd=(opencode run "$(fallback_prompt "$task_text")")
+      ;;
+    *)
+      log "unsupported runner: $runner"
+      return 2
+      ;;
+  esac
+
+  (cd "$wt" && "${cmd[@]}")
+}
+
+AGENT_RUNNER_USED=""
+run_agent_with_fallbacks() {
+  local wt="$1" task_text="$2" runner bin rc=1
+  while IFS= read -r runner; do
+    [ -n "$runner" ] || continue
+    bin="$(runner_command "$runner")"
+    if ! command -v "$bin" >/dev/null 2>&1; then
+      log "agent runner '$runner' not on PATH; trying next fallback"
+      continue
+    fi
+
+    log "→ agent runner: $runner"
+    if invoke_agent_runner "$runner" "$wt" "$task_text"; then
+      AGENT_RUNNER_USED="$runner"
+      return 0
+    else
+      rc=$?
+      log "agent runner '$runner' exited non-zero ($rc); trying next fallback"
+    fi
+  done < <(runner_plan)
+
+  return "$rc"
+}
+
+agent_label() {
+  local runner
+  runner="$(normalize_runner "${AGENT_RUNNER_USED:-$AGENT_RUNNER}")"
+  if [ "$runner" = "pi" ]; then
+    printf 'pi chain %s' "$PI_CHAIN"
+  else
+    printf '%s' "$runner"
+  fi
+}
+
+# Validate configured runner names before polling.
+runner_plan >/dev/null
 
 # ---------- linear ----------
 linear_gql() {
@@ -261,7 +374,7 @@ ${hostname_short}:${wt}@${short_sha}
 \`\`\`
 
 ### Plan
-- [ ] dispatched via \`pi chain $PI_CHAIN\` (state on entry: $state)
+- [ ] dispatched via \`$(agent_label)\` (state on entry: $state)
 
 ### Notes
 - $(date -Iseconds) pi-symphony picked up ticket"
@@ -274,12 +387,12 @@ URL: $url
 
 $desc$feedback_block"
 
-  log "→ pi chain $PI_CHAIN"
-  if (cd "$wt" && pi chain "$PI_CHAIN" --print "$task_text"); then
-    log "pi chain done — running verify.sh"
+  log "→ agent dispatch (runner=$AGENT_RUNNER fallbacks=${AGENT_FALLBACKS:-none})"
+  if run_agent_with_fallbacks "$wt" "$task_text"; then
+    log "agent runner done ($(agent_label)) — running verify.sh"
   else
-    log "pi chain non-zero exit"
-    finalize_blocker "$id" "$ident" "pi chain '$PI_CHAIN' exited non-zero. See $logf"
+    log "all configured agent runners failed"
+    finalize_blocker "$id" "$ident" "agent runner(s) failed (runner=$AGENT_RUNNER fallbacks=${AGENT_FALLBACKS:-none}). See $logf"
     return 1
   fi
 
@@ -302,7 +415,7 @@ $desc$feedback_block"
 
 Linear: $url
 
-Generated by pi-symphony (chain: $PI_CHAIN).")
+Generated by pi-symphony (runner: $(agent_label)).")
 
   log "→ push $branch + open PR"
   (cd "$wt" && git push -u "$GIT_REMOTE" "$branch")
@@ -313,7 +426,7 @@ Generated by pi-symphony (chain: $PI_CHAIN).")
     --title "[$ident] $title" \
     --body "Linear: $url
 
-Generated by \`pi chain $PI_CHAIN\` via pi-symphony.
+Generated by \`$(agent_label)\` via pi-symphony.
 
 \`\`\`
 $(./bin/verify.sh 2>&1 | tail -20)
@@ -384,7 +497,7 @@ if [ "$ONCE" = "1" ] || [ "$DRY_RUN" = "1" ]; then
   exit 0
 fi
 
-log "starting loop — project=$PROJECT_SLUG poll=${POLL_S}s parallel=$MAX_PARALLEL chain=$PI_CHAIN"
+log "starting loop — project=$PROJECT_SLUG poll=${POLL_S}s parallel=$MAX_PARALLEL chain=$PI_CHAIN runner=$AGENT_RUNNER fallbacks=${AGENT_FALLBACKS:-none}"
 while true; do
   tick
   sleep "$POLL_S"

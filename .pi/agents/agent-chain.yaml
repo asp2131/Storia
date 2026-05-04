@@ -1,0 +1,25 @@
+plan-build-review:
+  description: "Plan, implement, and review the standard Storia web ticket"
+  steps:
+    - agent: planner
+      prompt: "Plan the implementation for this Storia web task. Read AGENTS.md and WORKFLOW.md first:\n\n$INPUT"
+    - agent: builder
+      prompt: "Implement the approved plan for this Storia web task. Keep changes narrow, follow AGENTS.md, and run targeted checks:\n\n$INPUT"
+    - agent: reviewer
+      prompt: "Review this Storia web implementation for correctness, security, lint/test risk, and scope control. Do not modify files:\n\n$INPUT"
+
+plan-build:
+  description: "Plan then build without the review pass"
+  steps:
+    - agent: planner
+      prompt: "Plan the implementation for this Storia web task. Read AGENTS.md and WORKFLOW.md first:\n\n$INPUT"
+    - agent: builder
+      prompt: "Implement the plan for this Storia web task. Keep changes narrow and run targeted checks:\n\n$INPUT"
+
+scout-flow:
+  description: "Explore unfamiliar Storia web code paths before planning"
+  steps:
+    - agent: scout
+      prompt: "Explore the Storia web codebase for this request. Report key files, patterns, risks, and validation hooks. Do not modify files:\n\n$INPUT"
+    - agent: scout
+      prompt: "Cross-check this scout report for missing files or incorrect assumptions. Do not modify files:\n\n$INPUT\n\nOriginal request: $ORIGINAL"

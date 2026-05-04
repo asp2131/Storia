@@ -2,7 +2,8 @@
 # Configuration consumed by ./bin/pi-symphony.sh — a Pi-native Linear orchestrator
 # inspired by OpenAI Symphony but using Pi (`pi chain ...`) instead of Codex.
 # These keys are documentation; the script reads env vars (LINEAR_API_KEY,
-# PROJECT_SLUG, WORKSPACES, POLL_S, MAX_PARALLEL, PI_CHAIN). Override at launch:
+# PROJECT_SLUG, WORKSPACES, POLL_S, MAX_PARALLEL, PI_CHAIN, AGENT_RUNNER,
+# AGENT_FALLBACKS). Override at launch:
 #   PROJECT_SLUG=... POLL_S=15 MAX_PARALLEL=2 ./bin/pi-symphony.sh
 runner: pi-symphony
 tracker:
@@ -30,7 +31,7 @@ agent:
 
 ## How this gets dispatched
 
-`./bin/pi-symphony.sh` polls Linear for tickets in `Todo`, creates an isolated git worktree under `~/code/storia-web-symphony-workspaces/<ID>`, and invokes `pi chain plan-build-review` with the ticket title + URL + description as input. This file is the SOP that pi-and-its-leads should follow inside that worktree. Pi's planner agent should `read` this file as part of its planning step.
+`./bin/pi-symphony.sh` polls Linear for tickets in `Todo`, creates an isolated git worktree under `~/code/storia-web-symphony-workspaces/<ID>`, and invokes the configured agent runner (default: `pi chain plan-build-review`) with the ticket title + URL + description as input. Optional `AGENT_FALLBACKS=claude,opencode` support can try Claude Code or OpenCode if the primary runner is unavailable or fails. This file is the SOP that agents should follow inside that worktree. Pi's planner agent should `read` this file as part of its planning step.
 
 Ticket fields the runner injects into the pi prompt:
 
@@ -76,7 +77,7 @@ Important repo files and conventions:
 
 ### Pi Coding Agent CLI
 
-This repo includes the generic Pi Coding Agent harness. Use the `pi` CLI for repo-local planning, audits, or specialized work.
+This repo includes a minimal tracked Pi Coding Agent harness. Use the `pi` CLI for repo-local planning, audits, or specialized work.
 
 Available chains (see `.pi/agents/agent-chain.yaml`):
 
@@ -88,7 +89,7 @@ pi chain scout-flow         "Triple-scout deep recon"
 pi chain plan-review-plan   "Iterate on a plan via critique"
 ```
 
-The runner has already invoked `pi chain plan-build-review` to start this session. Use additional `pi chain` invocations only if the ticket genuinely needs a different chain (e.g. `scout-flow` for unfamiliar code paths, `plan-review-plan` for risky designs).
+The runner has already invoked the configured agent runner to start this session. Use additional `pi chain` invocations only if the ticket genuinely needs a different chain (e.g. `scout-flow` for unfamiliar code paths).
 
 ### Playwright CLI self-verification
 
