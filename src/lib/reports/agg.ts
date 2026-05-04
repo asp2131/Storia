@@ -114,6 +114,18 @@ function pct(numerator: number, denominator: number): number {
   return Math.round((numerator / denominator) * 100);
 }
 
+type HeadlineRaw = {
+  kids_active: bigint | number;
+  parents_active: bigint | number;
+  total_sessions: bigint | number;
+  total_duration_ms: bigint | number;
+  books_completed: bigint | number;
+  comprehension_attempts: bigint | number;
+  comprehension_correct: bigint | number;
+  narration_sessions: bigint | number;
+  practice_sessions: bigint | number;
+};
+
 type SessionsByDayRaw = {
   bucket: Date;
   sessions: bigint | number;
@@ -134,8 +146,16 @@ type TopBookRaw = {
   practice_sessions: bigint | number;
 };
 
-type DistinctChildRaw = { kids_active: bigint | number };
-type DistinctParentRaw = { parents_active: bigint | number };
+type BookCompletionsRaw = {
+  book_id: bigint;
+  completions: bigint | number;
+};
+
+type BookAttemptsRaw = {
+  book_id: bigint;
+  attempts: bigint | number;
+  correct: bigint | number;
+};
 
 export function createReportAgg(
   deps: { prisma?: typeof defaultPrisma } = {}
@@ -155,82 +175,75 @@ export function createReportAgg(
       const days = parseInt(range, 10);
       const since = new Date(Date.now() - days * 86400000);
 
-      const [
-        sessionAgg,
-        practiceAgg,
-        narrationAgg,
-        booksCompleted,
-        comprehensionAttempts,
-        correctAttempts,
-        intentGroups,
-        kidsRows,
-        parentsRows,
-      ] = await Promise.all([
-        prisma.reading_session.aggregate({
-          where: { startedAt: { gte: since } },
-          _count: true,
-          _sum: { durationSeconds: true },
-        }),
-        prisma.reading_session.aggregate({
-          where: { startedAt: { gte: since }, usedPracticeMode: true },
-          _count: true,
-        }),
-        prisma.reading_session.aggregate({
-          where: { startedAt: { gte: since }, usedNarration: true },
-          _count: true,
-        }),
-        prisma.child_book_progress.count({
-          where: { completedAt: { gte: since } },
-        }),
-        prisma.question_attempt.count({
-          where: { answeredAt: { gte: since } },
-        }),
-        prisma.question_attempt.count({
-          where: { answeredAt: { gte: since }, isCorrect: true },
-        }),
-        prisma.reading_session.groupBy({
-          by: ["entryIntent"],
-          where: { startedAt: { gte: since } },
-          _count: true,
-        }),
-        prisma.$queryRaw<DistinctChildRaw[]>(Prisma.sql`
-          SELECT COUNT(DISTINCT "childProfileId")::bigint AS kids_active
-          FROM reading_session
-          WHERE "startedAt" >= ${since}
-        `),
-        prisma.$queryRaw<DistinctParentRaw[]>(Prisma.sql`
-          SELECT COUNT(DISTINCT "userId")::bigint AS parents_active
-          FROM reading_session
-          WHERE "startedAt" >= ${since}
-        `),
-      ]);
+      const rows = await prisma.$queryRaw<HeadlineRaw[]>(Prisma.sql`
+        WITH starts AS (
+          SELECT session_id, child_profile_id, user_id, book_id
+          FROM mobile_analytics_events
+          WHERE event_name = 'reading_session_started'
+            AND occurred_at >= ${since}
+        ), durations AS (
+          SELECT session_id, MAX((properties->>'durationMs')::bigint) AS ms
+          FROM mobile_analytics_events
+          WHERE event_name IN ('reading_session_ended', 'reading_session_drop_off')
+            AND occurred_at >= ${since}
+          GROUP BY session_id
+        ), narration AS (
+          SELECT DISTINCT session_id FROM mobile_analytics_events
+          WHERE event_name = 'narration_played' AND occurred_at >= ${since}
+        ), practice AS (
+          SELECT DISTINCT session_id FROM mobile_analytics_events
+          WHERE event_name = 'speech_attempt_started' AND occurred_at >= ${since}
+        ), completed AS (
+          SELECT DISTINCT child_profile_id, book_id
+          FROM mobile_analytics_events
+          WHERE event_name = 'book_completed' AND occurred_at >= ${since}
+        ), attempts AS (
+          SELECT
+            COUNT(*)::bigint AS attempts,
+            COUNT(*) FILTER (WHERE (properties->>'matchedWordCount')::int > 0)::bigint AS correct
+          FROM mobile_analytics_events
+          WHERE event_name = 'speech_attempt_completed' AND occurred_at >= ${since}
+        )
+        SELECT
+          (SELECT COUNT(DISTINCT child_profile_id) FROM starts)::bigint AS kids_active,
+          (SELECT COUNT(DISTINCT user_id) FROM starts)::bigint AS parents_active,
+          (SELECT COUNT(DISTINCT session_id) FROM starts)::bigint AS total_sessions,
+          COALESCE((SELECT SUM(ms) FROM durations), 0)::bigint AS total_duration_ms,
+          (SELECT COUNT(*) FROM completed)::bigint AS books_completed,
+          (SELECT attempts FROM attempts)::bigint AS comprehension_attempts,
+          (SELECT correct FROM attempts)::bigint AS comprehension_correct,
+          (SELECT COUNT(DISTINCT s.session_id)
+             FROM starts s JOIN narration n ON n.session_id = s.session_id)::bigint AS narration_sessions,
+          (SELECT COUNT(DISTINCT s.session_id)
+             FROM starts s JOIN practice p ON p.session_id = s.session_id)::bigint AS practice_sessions
+      `);
 
-      const totalSessions = sessionAgg._count;
+      const row = rows[0] ?? ({} as Partial<HeadlineRaw>);
+      const totalSessions = Number(row.total_sessions ?? 0);
       const totalReadingMinutes = Math.round(
-        (sessionAgg._sum.durationSeconds || 0) / 60
+        Number(row.total_duration_ms ?? 0) / 60000
       );
       const averageSessionMinutes =
         totalSessions > 0 ? Math.round(totalReadingMinutes / totalSessions) : 0;
-
-      const intentRatio: Record<string, number> = {};
-      for (const row of intentGroups) {
-        intentRatio[row.entryIntent || "unknown"] = row._count;
-      }
+      const comprehensionAttempts = Number(row.comprehension_attempts ?? 0);
+      const comprehensionCorrect = Number(row.comprehension_correct ?? 0);
+      const narrationSessions = Number(row.narration_sessions ?? 0);
+      const practiceSessions = Number(row.practice_sessions ?? 0);
 
       return {
         range,
         generatedAt: new Date().toISOString(),
-        kidsActive: Number(kidsRows[0]?.kids_active ?? 0),
-        parentsActive: Number(parentsRows[0]?.parents_active ?? 0),
+        kidsActive: Number(row.kids_active ?? 0),
+        parentsActive: Number(row.parents_active ?? 0),
         totalSessions,
         totalReadingMinutes,
         averageSessionMinutes,
-        booksCompleted,
+        booksCompleted: Number(row.books_completed ?? 0),
         comprehensionAttempts,
-        averageComprehensionPercent: pct(correctAttempts, comprehensionAttempts),
-        narrationAdoptionPercent: pct(narrationAgg._count, totalSessions),
-        practiceAdoptionPercent: pct(practiceAgg._count, totalSessions),
-        intentRatio,
+        averageComprehensionPercent: pct(comprehensionCorrect, comprehensionAttempts),
+        narrationAdoptionPercent: pct(narrationSessions, totalSessions),
+        practiceAdoptionPercent: pct(practiceSessions, totalSessions),
+        intentRatio: {},
       };
     },
 
@@ -241,21 +254,34 @@ export function createReportAgg(
 
       const [sessionsByDay, attemptsByDay] = await Promise.all([
         prisma.$queryRaw<SessionsByDayRaw[]>(Prisma.sql`
+          WITH starts AS (
+            SELECT session_id, occurred_at
+            FROM mobile_analytics_events
+            WHERE event_name = 'reading_session_started'
+              AND occurred_at >= ${since}
+          ), durations AS (
+            SELECT session_id, MAX((properties->>'durationMs')::bigint) AS ms
+            FROM mobile_analytics_events
+            WHERE event_name IN ('reading_session_ended', 'reading_session_drop_off')
+              AND occurred_at >= ${since}
+            GROUP BY session_id
+          )
           SELECT
-            DATE_TRUNC('day', "startedAt" AT TIME ZONE 'UTC') AS bucket,
-            COUNT(*)::bigint AS sessions,
-            COALESCE(SUM("durationSeconds"), 0)::bigint AS duration_seconds
-          FROM reading_session
-          WHERE "startedAt" >= ${since}
+            DATE_TRUNC('day', s.occurred_at AT TIME ZONE 'UTC') AS bucket,
+            COUNT(DISTINCT s.session_id)::bigint AS sessions,
+            (COALESCE(SUM(d.ms), 0) / 1000)::bigint AS duration_seconds
+          FROM starts s
+          LEFT JOIN durations d ON d.session_id = s.session_id
           GROUP BY bucket
           ORDER BY bucket ASC
         `),
         prisma.$queryRaw<AttemptsByDayRaw[]>(Prisma.sql`
           SELECT
-            DATE_TRUNC('day', "answeredAt" AT TIME ZONE 'UTC') AS bucket,
+            DATE_TRUNC('day', occurred_at AT TIME ZONE 'UTC') AS bucket,
             COUNT(*)::bigint AS attempts
-          FROM question_attempt
-          WHERE "answeredAt" >= ${since}
+          FROM mobile_analytics_events
+          WHERE event_name = 'speech_attempt_completed'
+            AND occurred_at >= ${since}
           GROUP BY bucket
           ORDER BY bucket ASC
         `),
@@ -285,16 +311,37 @@ export function createReportAgg(
       const safeLimit = Math.max(1, Math.min(50, Math.floor(limit)));
 
       const bookRows = await prisma.$queryRaw<TopBookRaw[]>(Prisma.sql`
+        WITH starts AS (
+          SELECT session_id, child_profile_id, book_id
+          FROM mobile_analytics_events
+          WHERE event_name = 'reading_session_started'
+            AND occurred_at >= ${since}
+            AND book_id IS NOT NULL
+        ), durations AS (
+          SELECT session_id, MAX((properties->>'durationMs')::bigint) AS ms
+          FROM mobile_analytics_events
+          WHERE event_name IN ('reading_session_ended', 'reading_session_drop_off')
+            AND occurred_at >= ${since}
+          GROUP BY session_id
+        ), narration AS (
+          SELECT DISTINCT session_id FROM mobile_analytics_events
+          WHERE event_name = 'narration_played' AND occurred_at >= ${since}
+        ), practice AS (
+          SELECT DISTINCT session_id FROM mobile_analytics_events
+          WHERE event_name = 'speech_attempt_started' AND occurred_at >= ${since}
+        )
         SELECT
-          "bookId" AS book_id,
-          COUNT(*)::bigint AS sessions,
-          COALESCE(SUM("durationSeconds"), 0)::bigint AS duration_seconds,
-          COUNT(DISTINCT "childProfileId")::bigint AS unique_readers,
-          SUM(CASE WHEN "usedNarration" THEN 1 ELSE 0 END)::bigint AS narration_sessions,
-          SUM(CASE WHEN "usedPracticeMode" THEN 1 ELSE 0 END)::bigint AS practice_sessions
-        FROM reading_session
-        WHERE "startedAt" >= ${since}
-        GROUP BY "bookId"
+          s.book_id AS book_id,
+          COUNT(DISTINCT s.session_id)::bigint AS sessions,
+          (COALESCE(SUM(d.ms), 0) / 1000)::bigint AS duration_seconds,
+          COUNT(DISTINCT s.child_profile_id)::bigint AS unique_readers,
+          (COUNT(DISTINCT s.session_id) FILTER (WHERE n.session_id IS NOT NULL))::bigint AS narration_sessions,
+          (COUNT(DISTINCT s.session_id) FILTER (WHERE p.session_id IS NOT NULL))::bigint AS practice_sessions
+        FROM starts s
+        LEFT JOIN durations d ON d.session_id = s.session_id
+        LEFT JOIN narration n ON n.session_id = s.session_id
+        LEFT JOIN practice p ON p.session_id = s.session_id
+        GROUP BY s.book_id
         ORDER BY sessions DESC
         LIMIT ${safeLimit}
       `);
@@ -304,44 +351,43 @@ export function createReportAgg(
         return { range, books: [] };
       }
 
-      const [titles, completionRows, attemptRows, correctRows] =
-        await Promise.all([
-          prisma.books.findMany({
-            where: { id: { in: bookIds } },
-            select: { id: true, title: true },
-          }),
-          prisma.child_book_progress.groupBy({
-            by: ["bookId"],
-            where: { bookId: { in: bookIds }, completedAt: { gte: since } },
-            _count: true,
-          }),
-          prisma.question_attempt.groupBy({
-            by: ["bookId"],
-            where: { bookId: { in: bookIds }, answeredAt: { gte: since } },
-            _count: true,
-          }),
-          prisma.question_attempt.groupBy({
-            by: ["bookId"],
-            where: {
-              bookId: { in: bookIds },
-              answeredAt: { gte: since },
-              isCorrect: true,
-            },
-            _count: true,
-          }),
-        ]);
+      const [titles, completionRows, attemptRows] = await Promise.all([
+        prisma.books.findMany({
+          where: { id: { in: bookIds } },
+          select: { id: true, title: true },
+        }),
+        prisma.$queryRaw<BookCompletionsRaw[]>(Prisma.sql`
+          SELECT book_id, COUNT(DISTINCT child_profile_id)::bigint AS completions
+          FROM mobile_analytics_events
+          WHERE event_name = 'book_completed'
+            AND occurred_at >= ${since}
+            AND book_id IN (${Prisma.join(bookIds)})
+          GROUP BY book_id
+        `),
+        prisma.$queryRaw<BookAttemptsRaw[]>(Prisma.sql`
+          SELECT
+            book_id,
+            COUNT(*)::bigint AS attempts,
+            COUNT(*) FILTER (WHERE (properties->>'matchedWordCount')::int > 0)::bigint AS correct
+          FROM mobile_analytics_events
+          WHERE event_name = 'speech_attempt_completed'
+            AND occurred_at >= ${since}
+            AND book_id IN (${Prisma.join(bookIds)})
+          GROUP BY book_id
+        `),
+      ]);
 
       const titleById = new Map(
         titles.map((row) => [row.id.toString(), row.title])
       );
       const completionsById = new Map(
-        completionRows.map((row) => [row.bookId.toString(), row._count])
+        completionRows.map((row) => [row.book_id.toString(), Number(row.completions)])
       );
       const attemptsById = new Map(
-        attemptRows.map((row) => [row.bookId.toString(), row._count])
-      );
-      const correctById = new Map(
-        correctRows.map((row) => [row.bookId.toString(), row._count])
+        attemptRows.map((row) => [
+          row.book_id.toString(),
+          { attempts: Number(row.attempts), correct: Number(row.correct) },
+        ])
       );
 
       const books: TopBookRow[] = bookRows.map((row) => {
@@ -349,8 +395,7 @@ export function createReportAgg(
         const sessions = Number(row.sessions);
         const uniqueReaders = Number(row.unique_readers);
         const completions = completionsById.get(idStr) ?? 0;
-        const attempts = attemptsById.get(idStr) ?? 0;
-        const correct = correctById.get(idStr) ?? 0;
+        const attempt = attemptsById.get(idStr) ?? { attempts: 0, correct: 0 };
         const narrationSessions = Number(row.narration_sessions);
         const practiceSessions = Number(row.practice_sessions);
         return {
@@ -361,7 +406,7 @@ export function createReportAgg(
           totalMinutes: Math.round(Number(row.duration_seconds || 0) / 60),
           completions,
           completionRatePercent: pct(completions, uniqueReaders),
-          averageComprehensionPercent: pct(correct, attempts),
+          averageComprehensionPercent: pct(attempt.correct, attempt.attempts),
           narrationSessionPercent: pct(narrationSessions, sessions),
           practiceSessionPercent: pct(practiceSessions, sessions),
         };

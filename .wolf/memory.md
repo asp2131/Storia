@@ -938,3 +938,9 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+| 22:28 | Session end: 16 writes across 10 files (csv.ts, eventCatalog.ts, agg.ts, csv.test.ts, agg.test.ts) | 35 reads | ~97499 tok |
+| 22:34 | Created src/lib/reports/agg.ts | — | ~4649 |
+| 22:35 | Created src/lib/reports/agg.test.ts | — | ~2538 |
+
+| 22:35 | Rewrote agg.headline/trend/topBooks against mobile_analytics_events (admin reports were querying empty reading_session table; mobile data lives in mobile_analytics_events) — 28 tests pass, tsc clean | src/lib/reports/agg.ts, src/lib/reports/agg.test.ts | success | ~3200 |
+| 22:37 | Session end: 18 writes across 10 files (csv.ts, eventCatalog.ts, agg.ts, csv.test.ts, agg.test.ts) | 39 reads | ~112818 tok |

@@ -4,18 +4,6 @@ import { createReportAgg, isReportRange, VALID_RANGES } from "./agg";
 type Mock = ReturnType<typeof vi.fn>;
 
 type MockPrisma = {
-  reading_session: {
-    aggregate: Mock;
-    groupBy: Mock;
-  };
-  child_book_progress: {
-    count: Mock;
-    groupBy: Mock;
-  };
-  question_attempt: {
-    count: Mock;
-    groupBy: Mock;
-  };
   books: { findMany: Mock };
   reader_feedback: {
     findMany: Mock;
@@ -26,9 +14,6 @@ type MockPrisma = {
 
 function makePrisma(): MockPrisma {
   return {
-    reading_session: { aggregate: vi.fn(), groupBy: vi.fn() },
-    child_book_progress: { count: vi.fn(), groupBy: vi.fn() },
-    question_attempt: { count: vi.fn(), groupBy: vi.fn() },
     books: { findMany: vi.fn() },
     reader_feedback: { findMany: vi.fn(), aggregate: vi.fn() },
     $queryRaw: vi.fn(),
@@ -69,57 +54,54 @@ describe("headline", () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    // 3 reading_session.aggregate calls in fixed order:
-    // total, practice, narration
-    prisma.reading_session.aggregate
-      .mockResolvedValueOnce({ _count: 10, _sum: { durationSeconds: 6000 } })
-      .mockResolvedValueOnce({ _count: 4, _sum: { durationSeconds: 0 } })
-      .mockResolvedValueOnce({ _count: 6, _sum: { durationSeconds: 0 } });
-    prisma.child_book_progress.count.mockResolvedValueOnce(2);
-    prisma.question_attempt.count
-      .mockResolvedValueOnce(20) // total attempts
-      .mockResolvedValueOnce(15); // correct
-    prisma.reading_session.groupBy.mockResolvedValueOnce([
-      { entryIntent: "standard", _count: 7 },
-      { entryIntent: "practice", _count: 3 },
-    ]);
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ kids_active: 5n }])
-      .mockResolvedValueOnce([{ parents_active: 3n }]);
   });
 
-  it("computes platform-wide totals and adoption percentages", async () => {
+  it("derives platform-wide totals from mobile_analytics_events aggregate", async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([
+      {
+        kids_active: 4n,
+        parents_active: 4n,
+        total_sessions: 53n,
+        total_duration_ms: 2_092_069n,
+        books_completed: 7n,
+        comprehension_attempts: 12n,
+        comprehension_correct: 9n,
+        narration_sessions: 19n,
+        practice_sessions: 4n,
+      },
+    ]);
+
     const agg = createReportAgg({ prisma: prisma as never });
     const out = await agg.headline("30d");
 
     expect(out.range).toBe("30d");
-    expect(out.kidsActive).toBe(5);
-    expect(out.parentsActive).toBe(3);
-    expect(out.totalSessions).toBe(10);
-    expect(out.totalReadingMinutes).toBe(100); // 6000s = 100m
-    expect(out.averageSessionMinutes).toBe(10);
-    expect(out.booksCompleted).toBe(2);
-    expect(out.comprehensionAttempts).toBe(20);
-    expect(out.averageComprehensionPercent).toBe(75); // 15/20
-    expect(out.narrationAdoptionPercent).toBe(60); // 6/10
-    expect(out.practiceAdoptionPercent).toBe(40); // 4/10
-    expect(out.intentRatio).toEqual({ standard: 7, practice: 3 });
+    expect(out.kidsActive).toBe(4);
+    expect(out.parentsActive).toBe(4);
+    expect(out.totalSessions).toBe(53);
+    expect(out.totalReadingMinutes).toBe(35); // round(2092069 / 60000)
+    expect(out.averageSessionMinutes).toBe(1); // round(35 / 53)
+    expect(out.booksCompleted).toBe(7);
+    expect(out.comprehensionAttempts).toBe(12);
+    expect(out.averageComprehensionPercent).toBe(75); // 9/12
+    expect(out.narrationAdoptionPercent).toBe(36); // 19/53
+    expect(out.practiceAdoptionPercent).toBe(8); // 4/53
+    expect(out.intentRatio).toEqual({});
   });
 
   it("handles zero sessions without dividing by zero", async () => {
-    prisma = makePrisma();
-    prisma.reading_session.aggregate
-      .mockResolvedValueOnce({ _count: 0, _sum: { durationSeconds: 0 } })
-      .mockResolvedValueOnce({ _count: 0, _sum: { durationSeconds: 0 } })
-      .mockResolvedValueOnce({ _count: 0, _sum: { durationSeconds: 0 } });
-    prisma.child_book_progress.count.mockResolvedValueOnce(0);
-    prisma.question_attempt.count
-      .mockResolvedValueOnce(0)
-      .mockResolvedValueOnce(0);
-    prisma.reading_session.groupBy.mockResolvedValueOnce([]);
-    prisma.$queryRaw
-      .mockResolvedValueOnce([{ kids_active: 0n }])
-      .mockResolvedValueOnce([{ parents_active: 0n }]);
+    prisma.$queryRaw.mockResolvedValueOnce([
+      {
+        kids_active: 0n,
+        parents_active: 0n,
+        total_sessions: 0n,
+        total_duration_ms: 0n,
+        books_completed: 0n,
+        comprehension_attempts: 0n,
+        comprehension_correct: 0n,
+        narration_sessions: 0n,
+        practice_sessions: 0n,
+      },
+    ]);
 
     const agg = createReportAgg({ prisma: prisma as never });
     const out = await agg.headline("7d");
@@ -129,6 +111,15 @@ describe("headline", () => {
     expect(out.narrationAdoptionPercent).toBe(0);
     expect(out.practiceAdoptionPercent).toBe(0);
     expect(out.intentRatio).toEqual({});
+  });
+
+  it("defaults to zeros when query returns no rows", async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([]);
+    const agg = createReportAgg({ prisma: prisma as never });
+    const out = await agg.headline("7d");
+    expect(out.kidsActive).toBe(0);
+    expect(out.totalSessions).toBe(0);
+    expect(out.totalReadingMinutes).toBe(0);
   });
 });
 
@@ -143,15 +134,13 @@ describe("trend", () => {
       .mockResolvedValueOnce([
         { bucket: today, sessions: 4n, duration_seconds: 1200n },
       ])
-      .mockResolvedValueOnce([
-        { bucket: yesterday, attempts: 6n },
-      ]);
+      .mockResolvedValueOnce([{ bucket: yesterday, attempts: 6n }]);
 
     const agg = createReportAgg({ prisma: prisma as never });
     const out = await agg.trend("7d");
 
     expect(out.range).toBe("7d");
-    expect(out.series.length).toBe(8); // 7d window inclusive of today
+    expect(out.series.length).toBe(8);
     const todayKey = today.toISOString().slice(0, 10);
     const todayPoint = out.series.find((p) => p.date === todayKey);
     expect(todayPoint).toBeDefined();
@@ -166,40 +155,34 @@ describe("trend", () => {
 describe("topBooks", () => {
   it("merges sessions, completions, comprehension into ranked rows", async () => {
     const prisma = makePrisma();
-    prisma.$queryRaw.mockResolvedValueOnce([
-      {
-        book_id: 101n,
-        sessions: 8n,
-        duration_seconds: 4800n,
-        unique_readers: 4n,
-        narration_sessions: 4n,
-        practice_sessions: 2n,
-      },
-      {
-        book_id: 202n,
-        sessions: 3n,
-        duration_seconds: 900n,
-        unique_readers: 3n,
-        narration_sessions: 0n,
-        practice_sessions: 3n,
-      },
-    ]);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([
+        {
+          book_id: 101n,
+          sessions: 8n,
+          duration_seconds: 4800n,
+          unique_readers: 4n,
+          narration_sessions: 4n,
+          practice_sessions: 2n,
+        },
+        {
+          book_id: 202n,
+          sessions: 3n,
+          duration_seconds: 900n,
+          unique_readers: 3n,
+          narration_sessions: 0n,
+          practice_sessions: 3n,
+        },
+      ])
+      .mockResolvedValueOnce([{ book_id: 101n, completions: 2n }])
+      .mockResolvedValueOnce([
+        { book_id: 101n, attempts: 10n, correct: 8n },
+        { book_id: 202n, attempts: 4n, correct: 1n },
+      ]);
     prisma.books.findMany.mockResolvedValueOnce([
       { id: 101n, title: "Bunny Brother" },
       { id: 202n, title: "Kumu's Sky" },
     ]);
-    prisma.child_book_progress.groupBy.mockResolvedValueOnce([
-      { bookId: 101n, _count: 2 },
-    ]);
-    prisma.question_attempt.groupBy
-      .mockResolvedValueOnce([
-        { bookId: 101n, _count: 10 },
-        { bookId: 202n, _count: 4 },
-      ])
-      .mockResolvedValueOnce([
-        { bookId: 101n, _count: 8 },
-        { bookId: 202n, _count: 1 },
-      ]);
 
     const agg = createReportAgg({ prisma: prisma as never });
     const out = await agg.topBooks("30d", 10);
@@ -212,17 +195,17 @@ describe("topBooks", () => {
     expect(bunny.totalSessions).toBe(8);
     expect(bunny.totalMinutes).toBe(80);
     expect(bunny.completions).toBe(2);
-    expect(bunny.completionRatePercent).toBe(50); // 2/4
-    expect(bunny.averageComprehensionPercent).toBe(80); // 8/10
-    expect(bunny.narrationSessionPercent).toBe(50); // 4/8
-    expect(bunny.practiceSessionPercent).toBe(25); // 2/8
+    expect(bunny.completionRatePercent).toBe(50);
+    expect(bunny.averageComprehensionPercent).toBe(80);
+    expect(bunny.narrationSessionPercent).toBe(50);
+    expect(bunny.practiceSessionPercent).toBe(25);
 
     const kumu = out.books[1];
     expect(kumu.completions).toBe(0);
     expect(kumu.completionRatePercent).toBe(0);
-    expect(kumu.averageComprehensionPercent).toBe(25); // 1/4
+    expect(kumu.averageComprehensionPercent).toBe(25);
     expect(kumu.narrationSessionPercent).toBe(0);
-    expect(kumu.practiceSessionPercent).toBe(100); // 3/3
+    expect(kumu.practiceSessionPercent).toBe(100);
   });
 
   it("returns empty list and skips lookups when no sessions in range", async () => {

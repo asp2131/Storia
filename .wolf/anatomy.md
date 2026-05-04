@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-02T04:02:17.341Z
-> Files: 681 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-04T03:35:05.012Z
+> Files: 696 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -37,13 +37,13 @@
 - `.ralph_session_history` (~45 tok)
 - `@AGENT.md` — Storia - Build and Execution Instructions (~803 tok)
 - `@fix_plan.md` — Storia Migration Plan (~420 tok)
+- `bin/bootstrap.sh` — Local/symphony bootstrap script for installing deps, Prisma generate, and preparing env/database checks (~350 tok)
+- `bin/pi-symphony.sh` — Linear ticket orchestration script that creates worktrees, bootstraps, spawns squad/agents, and logs ticket runs (~3200 tok)
+- `bin/verify.sh` — Local/symphony verification wrapper for lint/type/test checks (~160 tok)
 - `CLAUDE.md` — OpenWolf (~57 tok)
 - `components.json` (~129 tok)
 - `docker-compose.yml` — Local Postgres service for Prisma dev workflow (~180 tok)
 - `Dockerfile` — Docker container definition (~566 tok)
-- `bin/bootstrap.sh` — Local/symphony bootstrap script for installing deps, Prisma generate, and preparing env/database checks (~350 tok)
-- `bin/pi-symphony.sh` — Linear ticket orchestration script that creates worktrees, bootstraps, spawns squad/agents, and logs ticket runs (~3200 tok)
-- `bin/verify.sh` — Local/symphony verification wrapper for lint/type/test checks (~160 tok)
 - `eslint.config.mjs` — ESLint flat configuration (~124 tok)
 - `next-env.d.ts` — / <reference types="next" /> (~72 tok)
 - `next.config.ts` — Declares nextConfig (~154 tok)
@@ -986,15 +986,15 @@
 
 ## src/lib/
 
-- `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
-- `auth-client.ts` — Better Auth React client wrapper using `NEXT_PUBLIC_APP_URL` with a build-time mock fallback (~250 tok)
 - `admin-reports-prisma.test.ts` — Vitest coverage for dedicated admin reports Prisma connection selection/fallback (~500 tok)
 - `admin-reports-prisma.ts` — Dedicated admin reports Prisma client using ADMIN_REPORTS_DATABASE_URL when configured, otherwise shared Prisma fallback (~220 tok)
-- `prisma.ts` — Shared PrismaClient singleton using DATABASE_URL; logs query/error/warn in development and error in production (~150 tok)
+- `auth-client.ts` — Better Auth React client wrapper using `NEXT_PUBLIC_APP_URL` with a build-time mock fallback (~250 tok)
+- `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
 - `child-auth.test.ts` — Direct dual-stack auth helper tests for Better Auth cookies, Supabase Bearer/raw token parsing, verified-email linking, and child access authorization (~2500 tok)
 - `child-auth.ts` — Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPA (~1856 tok)
 - `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
+- `prisma.ts` — Shared PrismaClient singleton using DATABASE_URL; logs query/error/warn in development and error in production (~150 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
 - `pronunciation.ts` — True if the entry has at least one usable audio URL. (~1632 tok)
 - `pronunciationAnalytics.test.ts` — PronunciationAnalyticsEvent: makeUmamiSpy (~1922 tok)
@@ -1017,8 +1017,8 @@
 ## src/lib/reports/
 
 - `agg.default-client.test.ts` — Vitest coverage that default reportAgg uses the admin reports Prisma client for platform-wide headline metrics (~800 tok)
-- `agg.test.ts` — Mock: makePrisma (~2824 tok)
-- `agg.ts` — Exports VALID_RANGES, ReportRange, ParsedRange, HeadlineData + 9 more (~3741 tok)
+- `agg.test.ts` — Mock: makePrisma (~2538 tok)
+- `agg.ts` — Exports VALID_RANGES, ReportRange, ParsedRange, HeadlineData + 9 more (~4649 tok)
 - `csv.test.ts` — Declares Row (~354 tok)
 - `csv.ts` — Exports CsvCell, CsvColumn, toCsvRow, toCsv (~186 tok)
 - `eventCatalog.test.ts` — API routes: DELETE (2 endpoints) (~2228 tok)
