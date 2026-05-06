@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { WordPronunciationEntry } from "@/lib/pronunciation";
+import type { OverlayTextEntry } from "@/lib/overlayText";
 import type { TextOverlayConfig } from "@/types/text-overlay";
 
 // Types
@@ -165,6 +166,7 @@ export type PageData = {
   wordPronunciations: Record<string, WordPronunciationEntry> | null;
   compositedImageUrl: string | null;
   overlay: TextOverlayConfig | null;
+  overlayTextEntries?: OverlayTextEntry[];
   assignments?: AudioAssignment[];
   overlayNarrations?: OverlayNarrationTrack[];
 };
@@ -337,6 +339,52 @@ export function usePronunciationReview(
       return response.json() as Promise<PronunciationReviewResponse>;
     },
     enabled: !!bookId,
+  });
+}
+
+export function useSaveOverlayTextEntries(bookId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      pageNumber,
+      entries,
+    }: {
+      pageNumber: number;
+      entries: OverlayTextEntry[];
+    }) => {
+      if (!bookId) throw new Error("No book ID");
+      const response = await fetch(
+        `/api/admin/books/${bookId}/pages/${pageNumber}/overlay-text`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entries }),
+        }
+      );
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to save overlay text");
+      }
+
+      return response.json() as Promise<{ entries: OverlayTextEntry[] }>;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(
+        ["editor-pages", bookId],
+        (oldPages: PageData[] | undefined) => {
+          if (!oldPages) return oldPages;
+          return oldPages.map((page) =>
+            page.pageNumber === variables.pageNumber
+              ? { ...page, overlayTextEntries: data.entries }
+              : page
+          );
+        }
+      );
+      queryClient.invalidateQueries({ queryKey: ["pronunciation-coverage", bookId] });
+      queryClient.invalidateQueries({ queryKey: ["pronunciation-review", bookId] });
+    },
   });
 }
 

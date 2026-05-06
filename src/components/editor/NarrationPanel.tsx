@@ -15,10 +15,10 @@ import {
   Loader2,
   Wand2,
   Sparkles,
-  Mic,
   PlayCircle,
 } from "lucide-react";
-import { useNarrationContext } from "@/contexts/BookEditorContext";
+import { useNarrationContext, useOverlayTextContext } from "@/contexts/BookEditorContext";
+import { OverlayTextPanel } from "@/components/editor/OverlayTextPanel";
 
 /**
  * NarrationPanel — the Voice Narration section of the editor right rail.
@@ -70,6 +70,7 @@ export function NarrationPanel({
     showSyncPreview,
     setShowSyncPreview,
   } = useNarrationContext();
+  const { hasIncludedEntries } = useOverlayTextContext();
 
   const activePageData = activeView.data;
   const narrationActiveUrl = activeView.narrationUrl;
@@ -236,16 +237,18 @@ export function NarrationPanel({
             </label>
           </div>
 
-          {!activePageData?.text?.trim() && (
+          <OverlayTextPanel />
+
+          {!activePageData?.text?.trim() && !hasIncludedEntries && (
             <p className="text-[10px] text-orange-600/70 italic">
-              Add text overlay first to generate narration.
+              Add page text or include overlay text first to generate narration.
             </p>
           )}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => handleGenerateNarration()}
-              disabled={generatingNarration || !activePageData?.text?.trim()}
+              disabled={generatingNarration || (!activePageData?.text?.trim() && !hasIncludedEntries)}
               className="flex-1 flex items-center justify-center gap-2 rounded-md bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-semibold py-2.5 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {generatingNarration ? (

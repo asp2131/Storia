@@ -18,6 +18,7 @@ import {
 } from "@/lib/pronunciation";
 import { generatePronunciationEntries } from "@/lib/pronunciationGeneration";
 import { validatePronunciationManifest } from "@/lib/pronunciationValidation";
+import { assemblePageNarrationText } from "@/lib/overlayText";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { text, bookId, pageNumber, voice, voiceSettings } = body;
 
-    if (!text || typeof text !== "string") {
+    if (typeof text !== "string") {
       return NextResponse.json(
         { error: "Text content is required." },
         { status: 400 }
@@ -77,7 +78,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const trimmedText = text.trim();
+    let overlayEntries: Array<{
+      text: string | null;
+      includeInNarration: boolean | null;
+      sortOrder: number | null;
+    }> = [];
+    try {
+      const pageForOverlayText = await prisma.pages.findUnique({
+        where: {
+          book_id_page_number: {
+            book_id: BigInt(bookId),
+            page_number: Number(pageNumber),
+          },
+        },
+        include: {
+          page_overlay_text_entries: {
+            where: { include_in_narration: true },
+            orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+            select: {
+              text_content: true,
+              include_in_narration: true,
+              sort_order: true,
+            },
+          },
+        },
+      });
+      overlayEntries =
+        pageForOverlayText?.page_overlay_text_entries.map((entry) => ({
+          text: entry.text_content,
+          includeInNarration: entry.include_in_narration,
+          sortOrder: entry.sort_order,
+        })) || [];
+    } catch (overlayTextError) {
+      console.warn(
+        "[generate-narration] Failed to load overlay text entries; continuing with request text:",
+        overlayTextError instanceof Error ? overlayTextError.message : overlayTextError
+      );
+    }
+
+    const trimmedText = assemblePageNarrationText(text, overlayEntries).trim();
     if (trimmedText.length === 0) {
       return NextResponse.json(
         { error: "Text content cannot be empty." },

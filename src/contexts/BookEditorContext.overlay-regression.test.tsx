@@ -43,6 +43,7 @@ vi.mock("@/hooks/useBookData", () => {
     useAssignAudio: () => mutationResult,
     useDeleteAudioAssignment: () => mutationResult,
     useSavePages: () => mutationResult,
+    useSaveOverlayTextEntries: () => mutationResult,
     useUpdateBook: () => mutationResult,
   };
 });

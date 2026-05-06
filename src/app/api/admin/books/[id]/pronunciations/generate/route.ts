@@ -23,7 +23,7 @@ import {
   normalizeVoiceSettings,
   resolveElevenLabsVoice,
 } from "@/lib/elevenlabs";
-import { extractUniquePronunciationTokens } from "@/lib/pronunciation";
+import { extractPageNarrationTokens } from "@/lib/overlayText";
 import {
   collectMissingTokens,
   entryCoverageStatus,
@@ -78,6 +78,11 @@ type CoveragePageInput = {
   id: bigint;
   page_number: number;
   text_content: string | null;
+  page_overlay_text_entries?: Array<{
+    text_content: string | null;
+    include_in_narration: boolean | null;
+    sort_order: number | null;
+  }>;
 };
 
 function summarizeCoverage(
@@ -136,7 +141,14 @@ function buildCoverageReport(
   const perPage: CoveragePageReport[] = [];
 
   for (const page of pages) {
-    const pageTokens = extractUniquePronunciationTokens(page.text_content ?? "");
+    const pageTokens = extractPageNarrationTokens(
+      page.text_content ?? "",
+      page.page_overlay_text_entries?.map((entry) => ({
+        text: entry.text_content,
+        includeInNarration: entry.include_in_narration,
+        sortOrder: entry.sort_order,
+      }))
+    );
     let covered = 0;
     let fullWordOnly = 0;
     const missingWords: string[] = [];
@@ -249,6 +261,15 @@ export async function POST(
         id: true,
         page_number: true,
         text_content: true,
+        page_overlay_text_entries: {
+          where: { include_in_narration: true },
+          orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+          select: {
+            text_content: true,
+            include_in_narration: true,
+            sort_order: true,
+          },
+        },
       },
     });
 
@@ -264,7 +285,14 @@ export async function POST(
     })) as BookPronunciationRow[];
 
     const tokensByPage = pages.map((page) =>
-      extractUniquePronunciationTokens(page.text_content ?? "")
+      extractPageNarrationTokens(
+        page.text_content ?? "",
+        page.page_overlay_text_entries?.map((entry) => ({
+          text: entry.text_content,
+          includeInNarration: entry.include_in_narration,
+          sortOrder: entry.sort_order,
+        }))
+      )
     );
     let tokensToProcess = collectMissingTokens(tokensByPage, existingRows, {
       force,
@@ -363,6 +391,15 @@ export async function GET(
         id: true,
         page_number: true,
         text_content: true,
+        page_overlay_text_entries: {
+          where: { include_in_narration: true },
+          orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+          select: {
+            text_content: true,
+            include_in_narration: true,
+            sort_order: true,
+          },
+        },
       },
     });
 

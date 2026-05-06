@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { TextOverlayConfig } from "@/types/text-overlay";
 
@@ -16,6 +17,26 @@ type SavePageInput = {
   narrationTimestamps?: any;
 };
 
+function mapOverlayTextEntry(entry: {
+  id: bigint;
+  text_content: string;
+  include_in_narration: boolean;
+  sort_order: number;
+  bbox: Prisma.JsonValue | null;
+  confidence: number | null;
+  source: string;
+}) {
+  return {
+    id: entry.id.toString(),
+    text: entry.text_content,
+    includeInNarration: entry.include_in_narration,
+    sortOrder: entry.sort_order,
+    bbox: entry.bbox,
+    confidence: entry.confidence,
+    source: entry.source,
+  };
+}
+
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
@@ -24,6 +45,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const pages = await prisma.pages.findMany({
       where: { book_id: bookId },
       orderBy: { page_number: "asc" },
+      include: {
+        page_overlay_text_entries: {
+          orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+        },
+      },
     });
 
     return NextResponse.json({
@@ -36,6 +62,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
         narrationTimestamps: page.narration_timestamps,
         compositedImageUrl: page.composited_image_url,
         overlay: page.text_overlay as TextOverlayConfig | null,
+        overlayTextEntries: page.page_overlay_text_entries.map(mapOverlayTextEntry),
       })),
     });
   } catch (error) {
@@ -94,6 +121,11 @@ export async function POST(request: NextRequest, { params }: Params) {
     const pages = await prisma.pages.findMany({
       where: { book_id: bookId },
       orderBy: { page_number: "asc" },
+      include: {
+        page_overlay_text_entries: {
+          orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+        },
+      },
     });
 
     return NextResponse.json({
@@ -102,6 +134,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         pageNumber: page.page_number,
         textContent: page.text_content,
         imageUrl: page.image_url,
+        overlayTextEntries: page.page_overlay_text_entries.map(mapOverlayTextEntry),
       })),
     });
   } catch (error) {
@@ -259,6 +292,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const pages = await prisma.pages.findMany({
       where: { book_id: bookId },
       orderBy: { page_number: "asc" },
+      include: {
+        page_overlay_text_entries: {
+          orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+        },
+      },
     });
 
     return NextResponse.json({
@@ -267,6 +305,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         pageNumber: page.page_number,
         textContent: page.text_content,
         imageUrl: page.image_url,
+        overlayTextEntries: page.page_overlay_text_entries.map(mapOverlayTextEntry),
       })),
     });
   } catch (error) {
