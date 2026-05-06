@@ -3,11 +3,11 @@
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
     "total_tokens_estimated": 3256220,
-    "total_reads": 1506,
+    "total_reads": 1518,
     "total_writes": 1050,
-    "total_sessions": 30,
+    "total_sessions": 32,
     "anatomy_hits": 708,
-    "anatomy_misses": 792,
+    "anatomy_misses": 804,
     "repeated_reads_blocked": 1229,
     "estimated_savings_vs_bare_cli": 6422096
   },
@@ -16656,6 +16656,142 @@
         "writes_count": 16,
         "repeated_reads_blocked": 50,
         "anatomy_lookups": 24
+      }
+    },
+    {
+      "id": "session-2026-05-06-1012",
+      "started": "2026-05-06T15:12:55.851Z",
+      "ended": "2026-05-06T15:19:28.993Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/linear/SKILL.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 1,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-05-06-1048",
+      "started": "2026-05-06T15:48:54.610Z",
+      "ended": "2026-05-06T15:55:30.776Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/linear/SKILL.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 1,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-05-06-1048",
+      "started": "2026-05-06T15:48:54.610Z",
+      "ended": "2026-05-06T16:02:06.920Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/linear/SKILL.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_frame.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/text_overlay_utils.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 5,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-05-06-1048",
+      "started": "2026-05-06T15:48:54.610Z",
+      "ended": "2026-05-06T16:06:23.992Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/.pi/skills/linear/SKILL.md",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_frame.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/text_overlay_utils.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 5,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
       }
     }
   ],

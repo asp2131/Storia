@@ -2,24 +2,80 @@ plan-build-review:
   description: "Plan, implement, and review the standard Storia web ticket"
   steps:
     - agent: planner
-      prompt: "Plan the implementation for this Storia web task. Read AGENTS.md and WORKFLOW.md first:\n\n$INPUT"
+      prompt: |
+        Plan the implementation for this Storia web task. Read AGENTS.md and WORKFLOW.md first.
+
+        This is an unattended workflow. Do not ask for human approval on routine design,
+        spec, or implementation decisions. If a skill asks which safe execution mode to
+        use, choose the narrowest inline/local option unless parallel work is clearly better.
+        If multiple approaches exist, choose the narrowest safe approach under WORKFLOW.md's
+        unattended decision policy, document rejected alternatives and rationale, then continue.
+
+        $INPUT
     - agent: builder
-      prompt: "Implement the approved plan for this Storia web task. Keep changes narrow, follow AGENTS.md, and run targeted checks:\n\n$INPUT"
+      prompt: |
+        Implement the selected plan for this Storia web task. Keep changes narrow,
+        follow AGENTS.md and WORKFLOW.md, and run targeted checks.
+
+        Treat the planner's selected approach as approved unless it violates WORKFLOW.md's
+        blocker criteria. Do not pause for human approval on routine decisions; document
+        assumptions and continue.
+
+        $INPUT
     - agent: reviewer
-      prompt: "Review this Storia web implementation for correctness, security, lint/test risk, and scope control. Do not modify files:\n\n$INPUT"
+      prompt: |
+        Review this Storia web implementation for correctness, security, lint/test risk,
+        and scope control. Do not modify files.
+
+        Apply WORKFLOW.md's unattended decision policy: accept bounded implementation
+        decisions with documented rationale, and only block for true external blockers.
+
+        $INPUT
 
 plan-build:
   description: "Plan then build without the review pass"
   steps:
     - agent: planner
-      prompt: "Plan the implementation for this Storia web task. Read AGENTS.md and WORKFLOW.md first:\n\n$INPUT"
+      prompt: |
+        Plan the implementation for this Storia web task. Read AGENTS.md and WORKFLOW.md first.
+
+        This is an unattended workflow. Do not ask for human approval on routine design,
+        spec, or implementation decisions. If a skill asks which safe execution mode to
+        use, choose the narrowest inline/local option unless parallel work is clearly better.
+        If multiple approaches exist, choose the narrowest safe approach under WORKFLOW.md's
+        unattended decision policy, document rejected alternatives and rationale, then continue.
+
+        $INPUT
     - agent: builder
-      prompt: "Implement the plan for this Storia web task. Keep changes narrow and run targeted checks:\n\n$INPUT"
+      prompt: |
+        Implement the plan for this Storia web task. Keep changes narrow and run targeted checks.
+
+        Treat the plan as approved unless it violates WORKFLOW.md's blocker criteria.
+        Do not pause for human approval on routine decisions; document assumptions and continue.
+
+        $INPUT
 
 scout-flow:
   description: "Explore unfamiliar Storia web code paths before planning"
   steps:
     - agent: scout
-      prompt: "Explore the Storia web codebase for this request. Report key files, patterns, risks, and validation hooks. Do not modify files:\n\n$INPUT"
+      prompt: |
+        Explore the Storia web codebase for this request. Report key files, patterns,
+        risks, and validation hooks. Do not modify files.
+
+        This is an unattended workflow. If investigation surfaces multiple plausible
+        approaches, recommend the narrowest safe approach under WORKFLOW.md's unattended
+        decision policy rather than asking for approval.
+
+        $INPUT
     - agent: scout
-      prompt: "Cross-check this scout report for missing files or incorrect assumptions. Do not modify files:\n\n$INPUT\n\nOriginal request: $ORIGINAL"
+      prompt: |
+        Cross-check this scout report for missing files or incorrect assumptions.
+        Do not modify files.
+
+        Apply WORKFLOW.md's unattended decision policy when assessing whether a question
+        is a true blocker or a bounded decision the implementer can make.
+
+        $INPUT
+
+        Original request: $ORIGINAL

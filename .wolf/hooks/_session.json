@@ -1,300 +1,38 @@
 {
-  "session_id": "session-2026-05-02-2223",
-  "started": "2026-05-02T03:23:03.074Z",
+  "session_id": "session-2026-05-06-1048",
+  "started": "2026-05-06T15:48:54.610Z",
   "files_read": {
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useWordPronunciation.ts": {
-      "count": 1,
-      "tokens": 6529,
-      "first_read": "2026-05-02T03:24:12.489Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts": {
-      "count": 1,
-      "tokens": 1689,
-      "first_read": "2026-05-02T03:24:12.680Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useAudioCrossFade.ts": {
+    "/Users/akinpound/Documents/experiments/storia/.pi/skills/linear/SKILL.md": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-02T03:24:12.813Z"
+      "first_read": "2026-05-06T15:53:25.156Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useReadingProgress.ts": {
+    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-02T03:24:13.262Z"
+      "first_read": "2026-05-06T16:01:18.744Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/usePronunciationManifest.ts": {
-      "count": 1,
-      "tokens": 708,
-      "first_read": "2026-05-02T03:24:13.448Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/books/[id]/reader/page.tsx": {
-      "count": 1,
-      "tokens": 10974,
-      "first_read": "2026-05-02T03:24:24.086Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/child-auth.ts": {
-      "count": 2,
-      "tokens": 1856,
-      "first_read": "2026-05-02T03:24:26.211Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciation.ts": {
-      "count": 1,
-      "tokens": 1632,
-      "first_read": "2026-05-02T03:24:26.571Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reading-progress/route.ts": {
-      "count": 1,
-      "tokens": 3500,
-      "first_read": "2026-05-02T03:24:29.044Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/route.ts": {
-      "count": 1,
-      "tokens": 1565,
-      "first_read": "2026-05-02T03:24:29.497Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/pronunciations/route.ts": {
-      "count": 1,
-      "tokens": 1487,
-      "first_read": "2026-05-02T03:24:34.018Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useLocalPreferences.ts": {
+    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_frame.dart": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-02T03:24:36.832Z"
+      "first_read": "2026-05-06T16:01:19.190Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useOverlayEditor.ts": {
-      "count": 2,
-      "tokens": 114,
-      "first_read": "2026-05-02T03:24:37.061Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/editor/saveCoordinator.ts": {
-      "count": 5,
-      "tokens": 3650,
-      "first_read": "2026-05-02T03:24:39.809Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/mobile-compat/normalize.ts": {
-      "count": 3,
-      "tokens": 189,
-      "first_read": "2026-05-02T03:24:40.035Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.tsx": {
-      "count": 5,
-      "tokens": 4422,
-      "first_read": "2026-05-02T03:24:42.556Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx": {
-      "count": 3,
-      "tokens": 3859,
-      "first_read": "2026-05-02T03:24:47.963Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/PropertyPanel.tsx": {
+    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-02T03:24:48.362Z"
+      "first_read": "2026-05-06T16:01:19.519Z"
     },
-    "/Users/akinpound/Documents/experiments/storia/src/stores/overlayEditorStore.ts": {
-      "count": 5,
-      "tokens": 377,
-      "first_read": "2026-05-02T03:24:50.633Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationGeneration.ts": {
-      "count": 1,
-      "tokens": 5385,
-      "first_read": "2026-05-02T03:24:53.989Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/pronunciationReview.ts": {
-      "count": 1,
-      "tokens": 3566,
-      "first_read": "2026-05-02T03:24:54.172Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/[id]/pronunciations/generate/route.ts": {
-      "count": 1,
-      "tokens": 3169,
-      "first_read": "2026-05-02T03:25:00.460Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/hooks/useEditorSave.ts": {
-      "count": 5,
-      "tokens": 0,
-      "first_read": "2026-05-02T03:25:05.040Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/page.tsx": {
-      "count": 4,
-      "tokens": 815,
-      "first_read": "2026-05-02T03:28:08.975Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/stores/overlayEditorRegistry.ts": {
-      "count": 1,
-      "tokens": 184,
-      "first_read": "2026-05-02T03:29:37.007Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/admin/books": {
+    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/text_overlay_utils.dart": {
       "count": 1,
       "tokens": 0,
-      "first_read": "2026-05-02T03:29:57.619Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/reports/page.tsx": {
-      "count": 3,
-      "tokens": 0,
-      "first_read": "2026-05-02T03:37:44.091Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/reports/ReportsClient.tsx": {
-      "count": 4,
-      "tokens": 8501,
-      "first_read": "2026-05-02T03:37:44.151Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.ts": {
-      "count": 5,
-      "tokens": 3133,
-      "first_read": "2026-05-02T03:37:44.370Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/analytics/route.ts": {
-      "count": 5,
-      "tokens": 0,
-      "first_read": "2026-05-02T03:37:44.404Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/analytics.reader-flow.integration.test.ts": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-02T03:37:47.155Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/analytics/events/route.ts": {
-      "count": 4,
-      "tokens": 0,
-      "first_read": "2026-05-02T03:37:47.333Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma": {
-      "count": 7,
-      "tokens": 4981,
-      "first_read": "2026-05-02T03:37:47.522Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/lib/admin-auth.ts": {
-      "count": 4,
-      "tokens": 0,
-      "first_read": "2026-05-02T03:41:37.977Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia/src/app/api/reports/summary/route.test.ts": {
-      "count": 1,
-      "tokens": 2523,
-      "first_read": "2026-05-02T03:55:24.191Z"
+      "first_read": "2026-05-06T16:01:20.059Z"
     }
   },
-  "files_written": [
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/csv.ts",
-      "action": "create",
-      "tokens": 186,
-      "at": "2026-05-02T03:54:06.341Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/eventCatalog.ts",
-      "action": "create",
-      "tokens": 877,
-      "at": "2026-05-02T03:54:16.484Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/agg.ts",
-      "action": "create",
-      "tokens": 872,
-      "at": "2026-05-02T03:54:25.293Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/csv.test.ts",
-      "action": "create",
-      "tokens": 354,
-      "at": "2026-05-02T03:54:39.675Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/agg.ts",
-      "action": "create",
-      "tokens": 3741,
-      "at": "2026-05-02T03:56:31.632Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/agg.test.ts",
-      "action": "create",
-      "tokens": 2824,
-      "at": "2026-05-02T03:57:29.478Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/eventCatalog.ts",
-      "action": "create",
-      "tokens": 3451,
-      "at": "2026-05-02T03:58:36.833Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/eventCatalog.test.ts",
-      "action": "create",
-      "tokens": 2228,
-      "at": "2026-05-02T03:59:11.915Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/reports/headline/route.ts",
-      "action": "create",
-      "tokens": 568,
-      "at": "2026-05-02T03:59:42.325Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/reports/trend/route.ts",
-      "action": "create",
-      "tokens": 386,
-      "at": "2026-05-02T03:59:46.080Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/reports/top-books/route.ts",
-      "action": "create",
-      "tokens": 623,
-      "at": "2026-05-02T03:59:52.951Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/reports/feedback/route.ts",
-      "action": "create",
-      "tokens": 516,
-      "at": "2026-05-02T03:59:57.931Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/reports/routes.test.ts",
-      "action": "create",
-      "tokens": 2016,
-      "at": "2026-05-02T04:00:36.620Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/timeline.ts",
-      "action": "create",
-      "tokens": 1567,
-      "at": "2026-05-02T04:01:33.266Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/reports/timeline/route.ts",
-      "action": "create",
-      "tokens": 577,
-      "at": "2026-05-02T04:01:41.253Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/storia/src/lib/reports/timeline.test.ts",
-      "action": "create",
-      "tokens": 1905,
-      "at": "2026-05-02T04:02:17.350Z"
-    }
-  ],
-  "edit_counts": {
-    "src/lib/reports/csv.ts": 1,
-    "src/lib/reports/eventCatalog.ts": 2,
-    "src/lib/reports/agg.ts": 2,
-    "src/lib/reports/csv.test.ts": 1,
-    "src/lib/reports/agg.test.ts": 1,
-    "src/lib/reports/eventCatalog.test.ts": 1,
-    "src/app/api/admin/reports/headline/route.ts": 1,
-    "src/app/api/admin/reports/trend/route.ts": 1,
-    "src/app/api/admin/reports/top-books/route.ts": 1,
-    "src/app/api/admin/reports/feedback/route.ts": 1,
-    "src/app/api/admin/reports/routes.test.ts": 1,
-    "src/lib/reports/timeline.ts": 1,
-    "src/app/api/admin/reports/timeline/route.ts": 1,
-    "src/lib/reports/timeline.test.ts": 1
-  },
-  "anatomy_hits": 24,
-  "anatomy_misses": 11,
-  "repeated_reads_warned": 50,
+  "files_written": [],
+  "edit_counts": {},
+  "anatomy_hits": 0,
+  "anatomy_misses": 5,
+  "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 14
+  "stop_count": 3
 }

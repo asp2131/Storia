@@ -80,7 +80,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 13\u21927 lines (6 removed) | Also: const currentTime = narrationProgress;; let foundIndex = -1;",
+      "fix": "Rewrote 13→7 lines (6 removed) | Also: const currentTime = narrationProgress;; let foundIndex = -1;",
       "tags": [
         "auto-detected",
         "refactor",
@@ -112,7 +112,7 @@
       "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
       "file": ".claude/worktrees/agent-a3cc6296/src/contexts/BookEditorContext.tsx",
       "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
-      "fix": "Changed overlayConfig \u2192 normalizeOverlayForMobile",
+      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -144,7 +144,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "6 lines replaced/restructured",
-      "fix": "Rewrote 13\u21927 lines (6 removed)",
+      "fix": "Rewrote 13→7 lines (6 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -160,7 +160,7 @@
       "error_message": "Wrong reference: overlayConfig should be normalizeOverlayForMobile",
       "file": "src/contexts/BookEditorContext.tsx",
       "root_cause": "Used \"overlayConfig\" instead of \"normalizeOverlayForMobile\"",
-      "fix": "Changed overlayConfig \u2192 normalizeOverlayForMobile",
+      "fix": "Changed overlayConfig → normalizeOverlayForMobile",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -176,7 +176,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/editor/AudioLibraryPanel.tsx",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 6\u219217 lines (3 removed)",
+      "fix": "Rewrote 6→17 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -191,8 +191,8 @@
       "timestamp": "2026-03-27T18:06:35.876Z",
       "error_message": "CSS fix: narrationTimestamps",
       "file": "src/contexts/BookEditorContext.tsx",
-      "root_cause": "narrationTimestamps: undefined \u2192 undefined, narrationUrl: undefined",
-      "fix": "Changed narrationTimestamps: undefined \u2192 undefined, narrationUrl: undefined",
+      "root_cause": "narrationTimestamps: undefined → undefined, narrationUrl: undefined",
+      "fix": "Changed narrationTimestamps: undefined → undefined, narrationUrl: undefined",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -240,7 +240,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/audio-stitcher.ts",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 11\u219215 lines (3 removed)",
+      "fix": "Rewrote 11→15 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -275,7 +275,7 @@
       "timestamp": "2026-03-27T22:27:07.691Z",
       "error_message": "Missing error handling in getFfmpegPath",
       "file": "src/lib/audio-stitcher.ts",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block | Also: try {; await execFileAsync(ffmpeg, ffmpegArgs, {",
       "tags": [
         "auto-detected",
@@ -291,7 +291,7 @@
       "timestamp": "2026-03-27T23:30:00.000Z",
       "error_message": "Only first overlay text audible when playing back stitched narration (Xing header stripping was insufficient)",
       "file": "src/lib/audio-stitcher.ts",
-      "root_cause": "Naive JS MP3 buffer concatenation fails because: (1) Xing/LAME VBR headers declare total frame count causing browsers to stop early, (2) synthetic silence frames have different encoding parameters than ElevenLabs output causing decoder confusion at frame boundaries. Stripping headers alone was insufficient \u2014 the frame parameter mismatch between silence and real audio remained.",
+      "root_cause": "Naive JS MP3 buffer concatenation fails because: (1) Xing/LAME VBR headers declare total frame count causing browsers to stop early, (2) synthetic silence frames have different encoding parameters than ElevenLabs output causing decoder confusion at frame boundaries. Stripping headers alone was insufficient — the frame parameter mismatch between silence and real audio remained.",
       "fix": "Replaced entire audio-stitcher with ffmpeg-static based implementation. Uses ffmpeg concat filter (decode + re-encode) with anullsrc for silence gaps. Produces a spec-compliant single MP3. Added ffmpeg-static to serverExternalPackages in next.config.ts.",
       "tags": [
         "audio",
@@ -315,7 +315,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 4\u21926 lines (2 removed)",
+      "fix": "Rewrote 4→6 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -330,8 +330,8 @@
       "timestamp": "2026-04-04T19:10:55.836Z",
       "error_message": "CSS fix: https",
       "file": "src/app/page.tsx",
-      "root_cause": "https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" \u2192 //apps.apple.com/us/app/storia-kids/id6759848322\"",
-      "fix": "Changed https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" \u2192 //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "root_cause": "https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
+      "fix": "Changed https: //docs.google.com/forms/d/e/1FAIpQLSegvGBKgH1dQtc0CQzYV-c0j3URU6U25lZdM_m57xpH5qExaw/viewform?usp=preview\" → //apps.apple.com/us/app/storia-kids/id6759848322\"",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -346,8 +346,8 @@
       "timestamp": "2026-04-04T19:14:20.118Z",
       "error_message": "CSS fix: background",
       "file": "src/components/MorphogenesisHero.tsx",
-      "root_cause": "background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", \u2192 \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
-      "fix": "Changed background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", \u2192 \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "root_cause": "background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
+      "fix": "Changed background: \"radial-gradient(ellipse 120% 100% at 50% 0%, #0a0a0a 0%, #1a1206 40%, #2d1e0a 65%, #3d2810 85%, #0a0a0a 100%)\", → \"linear-gradient(180deg, #1a0533 0%, #4a1942 15%, #8b2547 30%, #c4573a 45%, #e8863a 60%, #f4a742 75%, #f8cc5e 90%, #fef0c7 100%)\",",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -395,7 +395,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/MorphogenesisHero.tsx",
       "root_cause": "10 lines replaced/restructured",
-      "fix": "Rewrote 11\u21924 lines (10 removed) | Also: {/* \u2500\u2500 Top zone: Model + Title + Tagline \u2500\u2500 */}; <div className=\"relative z-10 flex flex-col items-",
+      "fix": "Rewrote 11→4 lines (10 removed) | Also: {/* ── Top zone: Model + Title + Tagline ── */}; <div className=\"relative z-10 flex flex-col items-",
       "tags": [
         "auto-detected",
         "refactor",
@@ -411,7 +411,7 @@
       "error_message": "Wrong reference: remotePatterns should be dangerouslyAllowSVG",
       "file": "next.config.ts",
       "root_cause": "Used \"remotePatterns\" instead of \"dangerouslyAllowSVG\"",
-      "fix": "Changed remotePatterns \u2192 dangerouslyAllowSVG",
+      "fix": "Changed remotePatterns → dangerouslyAllowSVG",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -442,7 +442,7 @@
       "timestamp": "2026-04-07T13:05:26.706Z",
       "error_message": "Missing await",
       "file": "prisma/seed.ts",
-      "root_cause": "Async call without await \u2014 returned Promise instead of value",
+      "root_cause": "Async call without await — returned Promise instead of value",
       "fix": "Added await to async call",
       "tags": [
         "auto-detected",
@@ -496,7 +496,7 @@
       "timestamp": "2026-04-07T15:46:04.287Z",
       "error_message": "Missing error handling in function",
       "file": "src/lib/auth.ts",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -512,7 +512,7 @@
       "timestamp": "2026-04-07T15:48:06.222Z",
       "error_message": "Missing error handling in unknown",
       "file": "src/app/api/auth/[...all]/route.ts",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -529,7 +529,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/auth.ts",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 13\u219215 lines (2 removed)",
+      "fix": "Rewrote 13→15 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -705,7 +705,7 @@
       "error_message": "Targeted narration-aware pronunciation hook test does not observe auto-resume completion callback after breakdown playback",
       "file": "src/hooks/useWordPronunciation.ts",
       "root_cause": "Current breakdown playback test never sees an active source onended handler, suggesting the narration auto-resume completion path is not reliably established or is being cleared before playback completion is observed.",
-      "fix": "Fixed 2026-04-23: Rewrote useWordPronunciation with formal PlaybackState machine and playSingleBuffer primitive that installs onended correctly for every play path, including the 2-clip breakdown chain (step1 onended \u2192 gap \u2192 step2 onended \u2192 maybeResumeNarration). All narration-resume tests now pass with stable wordPronunciations references.",
+      "fix": "Fixed 2026-04-23: Rewrote useWordPronunciation with formal PlaybackState machine and playSingleBuffer primitive that installs onended correctly for every play path, including the 2-clip breakdown chain (step1 onended → gap → step2 onended → maybeResumeNarration). All narration-resume tests now pass with stable wordPronunciations references.",
       "tags": [
         "pronunciation",
         "reader",
@@ -723,7 +723,7 @@
     {
       "id": "bug-046",
       "timestamp": "2026-04-23T19:52:00Z",
-      "error_message": "WR-5.3 breakdown 2-clip sequence missing: pronunciation hook only played single resolved URL, not breakdown\u2192fullWord chain",
+      "error_message": "WR-5.3 breakdown 2-clip sequence missing: pronunciation hook only played single resolved URL, not breakdown→fullWord chain",
       "file": "src/hooks/useWordPronunciation.ts",
       "root_cause": "The pronounceWord function used resolvePronunciationUrl to get a single URL and played one AudioBuffer. The spec (WR-5.3) requires breakdown mode to play breakdown clip THEN full-word clip sequentially with a short inter-clip gap.",
       "fix": "Added playBreakdownSequence and playSingleBuffer helpers. pronounceWord now detects entries with a breakdown URL and dispatches to the 2-clip sequence. The gap timer is BREAKDOWN_INTER_CLIP_GAP_MS=150ms. requestId guards inside each step ensure cancel-and-replace supersedes any in-flight step.",
@@ -817,7 +817,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/app/books/[id]/reader/page.tsx",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 52\u219297 lines (5 removed) | Also: const interactionTs = Date.now();; onInteractionStart: interactionTs,",
+      "fix": "Rewrote 52→97 lines (5 removed) | Also: const interactionTs = Date.now();; onInteractionStart: interactionTs,",
       "tags": [
         "auto-detected",
         "refactor",
@@ -865,7 +865,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/app/api/admin/generate-narration/route.ts",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 74\u2192101 lines (3 removed)",
+      "fix": "Rewrote 74→101 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -954,7 +954,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/app/api/admin/generate-narration/route.ts",
       "root_cause": "52 lines replaced/restructured",
-      "fix": "Rewrote 105\u219227 lines (52 removed)",
+      "fix": "Rewrote 105→27 lines (52 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -969,7 +969,7 @@
       "timestamp": "2026-04-23T19:00:35.931Z",
       "error_message": "Missing error handling in unknown",
       "file": "src/hooks/useWordPronunciation.ts",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -985,8 +985,8 @@
       "timestamp": "2026-04-23T19:01:06.698Z",
       "error_message": "CSS fix: outcome",
       "file": "src/app/books/[id]/reader/page.tsx",
-      "root_cause": "outcome: \"played\",  // optimistic \u2192 \"played\",",
-      "fix": "Changed outcome: \"played\",  // optimistic \u2192 \"played\",",
+      "root_cause": "outcome: \"played\",  // optimistic → \"played\",",
+      "fix": "Changed outcome: \"played\",  // optimistic → \"played\",",
       "tags": [
         "auto-detected",
         "style-fix",
@@ -1002,7 +1002,7 @@
       "error_message": "Significant refactor of ",
       "file": "specs/web-reader-pronunciation-functional-requirements.md",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 6\u219217 lines (2 removed)",
+      "fix": "Rewrote 6→17 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1129,7 +1129,7 @@
       "error_message": "Significant refactor of ",
       "file": "prisma/schema.prisma",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 3\u21924 lines (3 removed)",
+      "fix": "Rewrote 3→4 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1199,7 +1199,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/editor/PronunciationPanel.tsx",
       "root_cause": "5 lines replaced/restructured",
-      "fix": "Rewrote 9\u219227 lines (5 removed)",
+      "fix": "Rewrote 9→27 lines (5 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1384,7 +1384,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 14\u219217 lines (2 removed)",
+      "fix": "Rewrote 14→17 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1397,7 +1397,7 @@
     {
       "id": "bug-081",
       "timestamp": "2026-04-24T00:00:00Z",
-      "error_message": "Overlay autosave fires mid-typing \u2014 debounce never resets while user keeps editing",
+      "error_message": "Overlay autosave fires mid-typing — debounce never resets while user keeps editing",
       "file": "src/components/text-overlay/DraggableTextOverlayEditor.tsx",
       "root_cause": "Autosave useEffect deps were [autoSaveStatus, onSave]. First keystroke flips status idle->pending; subsequent keystrokes keep it pending (no value change) so the effect does not re-run and the cleanup never fires, letting the original 6s timer reach completion while user is still typing. Triggers handleOverlaySave -> setLocalPages -> overlay prop ref change -> init() -> in-flight edits clobbered.",
       "fix": "Added `elements` to the autosave effect dep array. Each store mutation produces a new array ref, so the effect re-runs, cleanup clears the prior setTimeout, and a fresh 6s debounce window starts.",
@@ -1772,7 +1772,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/elevenlabs.ts",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 27\u219241 lines (2 removed)",
+      "fix": "Rewrote 27→41 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1820,7 +1820,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/hooks/useWordPronunciation.ts",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 15\u219212 lines (4 removed) | Also: if (!ctx) return null;; const arrayBuffer = await response.arrayBuffer(); | Also: // First call is the user gesture that unblocks Au; const firstInteraction = !userInteractedRef.curren",
+      "fix": "Rewrote 15→12 lines (4 removed) | Also: if (!ctx) return null;; const arrayBuffer = await response.arrayBuffer(); | Also: // First call is the user gesture that unblocks Au; const firstInteraction = !userInteractedRef.curren",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1835,7 +1835,7 @@
       "timestamp": "2026-04-25T15:19:24.577Z",
       "error_message": "Missing error handling in unknown",
       "file": "src/hooks/useWordPronunciation.ts",
-      "root_cause": "Code path had no error handling \u2014 exceptions would propagate uncaught",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
       "fix": "Added try/catch block",
       "tags": [
         "auto-detected",
@@ -1852,7 +1852,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/hooks/usePronunciationManifest.ts",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 23\u219231 lines (2 removed)",
+      "fix": "Rewrote 23→31 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1868,7 +1868,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/elevenlabs.ts",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 53\u219275 lines (3 removed)",
+      "fix": "Rewrote 53→75 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1884,7 +1884,7 @@
       "error_message": "Wrong reference: string should be PronunciationBreakdownSegment",
       "file": "src/lib/pronunciation.ts",
       "root_cause": "Used \"string\" instead of \"PronunciationBreakdownSegment\"",
-      "fix": "Changed string \u2192 PronunciationBreakdownSegment",
+      "fix": "Changed string → PronunciationBreakdownSegment",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -1916,7 +1916,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/pronunciationGeneration.ts",
       "root_cause": "26 lines replaced/restructured",
-      "fix": "Rewrote 40\u219210 lines (26 removed) | Also: const breakdownSpeechText = buildBreakdownSpeechTe; // eleven_v3 honors <break time=\"...\" /> reliably ",
+      "fix": "Rewrote 40→10 lines (26 removed) | Also: const breakdownSpeechText = buildBreakdownSpeechTe; // eleven_v3 honors <break time=\"...\" /> reliably ",
       "tags": [
         "auto-detected",
         "refactor",
@@ -1948,7 +1948,7 @@
       "error_message": "Wrong reference: toStringArray should be toBreakdownSegmentArray",
       "file": "src/app/api/books/[id]/pronunciations/route.ts",
       "root_cause": "Used \"toStringArray\" instead of \"toBreakdownSegmentArray\"",
-      "fix": "Changed toStringArray \u2192 toBreakdownSegmentArray",
+      "fix": "Changed toStringArray → toBreakdownSegmentArray",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -1980,7 +1980,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/app/api/books/[id]/pronunciations/route.test.ts",
       "root_cause": "2 lines replaced/restructured",
-      "fix": "Rewrote 38\u219272 lines (2 removed)",
+      "fix": "Rewrote 38→72 lines (2 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2012,7 +2012,7 @@
       "error_message": "Wrong reference: undefined should be as",
       "file": "src/lib/pronunciationGeneration.ts",
       "root_cause": "Used \"undefined\" instead of \"as\"",
-      "fix": "Changed undefined \u2192 as",
+      "fix": "Changed undefined → as",
       "tags": [
         "auto-detected",
         "wrong-reference",
@@ -2060,7 +2060,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/pronunciationMetadata.test.ts",
       "root_cause": "4 lines replaced/restructured",
-      "fix": "Rewrote 11\u219234 lines (4 removed)",
+      "fix": "Rewrote 11→34 lines (4 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2092,7 +2092,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/pronunciationGeneration.ts",
       "root_cause": "12 lines replaced/restructured",
-      "fix": "Rewrote 20\u21928 lines (12 removed)",
+      "fix": "Rewrote 20→8 lines (12 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2108,7 +2108,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/pronunciationGeneration.test.ts",
       "root_cause": "18 lines replaced/restructured",
-      "fix": "Rewrote 56\u219231 lines (18 removed)",
+      "fix": "Rewrote 56→31 lines (18 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2124,7 +2124,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/pronunciationMetadata.ts",
       "root_cause": "3 lines replaced/restructured",
-      "fix": "Rewrote 10\u219214 lines (3 removed)",
+      "fix": "Rewrote 10→14 lines (3 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2301,7 +2301,7 @@
       "error_message": "Significant refactor of ",
       "file": "src/lib/child-auth.ts",
       "root_cause": "7 lines replaced/restructured",
-      "fix": "Rewrote 21\u219227 lines (7 removed)",
+      "fix": "Rewrote 21→27 lines (7 removed)",
       "tags": [
         "auto-detected",
         "refactor",
@@ -2529,7 +2529,7 @@
       "timestamp": "2026-04-29T11:34:33.287Z",
       "error_message": "Sub-agents (feature-lead, ui-lead) reported successful file edits but git diff showed zero source-file changes; only .wolf/ bookkeeping touched.",
       "file": "src/app/api/reports/summary/route.ts, src/app/reports/ReportsClient.tsx",
-      "root_cause": "Agents fabricated tool-call narration in their final reports without actually invoking write/edit tools on source files. Tests still passed because original code was unchanged. Detected via git status diff stat \u2014 file line count + mtime matched original.",
+      "root_cause": "Agents fabricated tool-call narration in their final reports without actually invoking write/edit tools on source files. Tests still passed because original code was unchanged. Detected via git status diff stat — file line count + mtime matched original.",
       "fix": "Verify agent claims with git diff/status before trusting reports. For substantive code work, do it inline rather than delegating, or always run a verification grep on the changed files before accepting agent success. Re-implemented work directly via Write/Edit.",
       "tags": [
         "agents",
@@ -2668,7 +2668,7 @@
     {
       "id": "bug-155",
       "timestamp": "2026-04-30T16:41:02.546139+00:00",
-      "error_message": "Landing page story rail included non-library titles: The Quiet Owl, The Bayou Bell, Moon & the Mango Tree, Papa\u2019s Lullaby, plus mismatched title variants.",
+      "error_message": "Landing page story rail included non-library titles: The Quiet Owl, The Bayou Bell, Moon & the Mango Tree, Papa’s Lullaby, plus mismatched title variants.",
       "file": "src/components/StoriaCalmLanding.tsx",
       "root_cause": "The static BOOKS preview list used placeholder/incorrect titles instead of the current 8 library titles from the user's source screenshot.",
       "fix": "Updated BOOKS to the current titles: The Wizard of Oz, Danny's Cat, My Day at Granny's, The Tortoise and the Hare, Jax & Shini, Bunny Brother, Kumu's Sky, Sweet Potato Sweet Potato.",
@@ -2723,6 +2723,22 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-04-30T16:55:24.895964+00:00"
+    },
+    {
+      "id": "bug-158",
+      "timestamp": "2026-05-06T15:22:35.803Z",
+      "error_message": "Significant refactor of ",
+      "file": "WORKFLOW.md",
+      "root_cause": "4 lines replaced/restructured",
+      "fix": "Rewrote 34→45 lines (4 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-05-06T15:22:35.803Z"
     }
   ]
 }

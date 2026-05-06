@@ -113,12 +113,25 @@ runner_plan() {
   done
 }
 
+autonomy_policy() {
+  cat <<'EOF'
+Autonomy policy:
+- This is an unattended pi-symphony workflow; do not ask for human approval on routine design, spec, plan, or implementation decisions.
+- If another skill/workflow asks for design approval or offers an interactive choice between safe execution modes, treat the Linear ticket plus WORKFLOW.md as pre-approval unless the decision meets the blocker criteria below.
+- Choose the narrowest safe approach that stays within the ticket, preserves existing behavior/contracts unless explicitly changed, is localized/reversible, and can be validated; prefer inline/local execution over spawning extra agents unless the task is clearly parallelizable.
+- Document assumptions, rejected alternatives, and rationale in the workpad/PR instead of pausing.
+- Block only for contradictory requirements, unavailable credentials/services, destructive data-loss risk, security/privacy/payment/legal ambiguity, or material scope expansion.
+EOF
+}
+
 fallback_prompt() {
   local task_text="$1"
   cat <<EOF
 You are running as a pi-symphony fallback agent for Storia web.
 
 Follow AGENTS.md and WORKFLOW.md. Implement this Linear ticket end-to-end in the current git worktree. Keep changes narrow, do not commit secrets, do not edit .wolf runtime files unless explicitly required, and run ./bin/verify.sh when practical.
+
+$(autonomy_policy)
 
 Requested Pi chain: $PI_CHAIN
 
@@ -384,6 +397,8 @@ ${hostname_short}:${wt}@${short_sha}
 
 Linear ticket: $ident
 URL: $url
+
+$(autonomy_policy)
 
 $desc$feedback_block"
 

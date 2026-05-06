@@ -48,6 +48,29 @@ Ticket fields the runner injects into the pi prompt:
 4. Use one persistent Linear workpad comment as the source of truth for plan, acceptance criteria, validation, notes, and blockers. Marker header: `## Symphony Workpad`.
 5. Final response must report completed actions and blockers only. Do not include optional next steps for the user.
 
+## Unattended decision policy
+
+Linear tickets processed by `pi-symphony` are pre-authorized for bounded product and technical decisions. If another repo skill or workflow says to ask for design/spec/plan approval or offers an interactive choice between safe execution modes, treat this policy plus the Linear ticket as that approval unless the decision meets the blocker criteria below.
+
+Agents may choose an approach and continue when all of these are true:
+
+- the choice stays within the Linear ticket scope,
+- existing product behavior and public data contracts are preserved unless the ticket asks to change them,
+- the implementation is localized and reversible,
+- the decision can be validated with tests, typecheck/lint, or a smoke check,
+- it does not require secrets, payment/billing changes, destructive data migrations, legal/policy judgment, or broad product expansion.
+
+When multiple approaches are plausible:
+
+1. Choose the narrowest safe implementation.
+2. Prefer backward-compatible data/API shapes.
+3. Prefer inline/local execution over spawning extra agents unless the task is clearly parallelizable.
+4. Avoid coupling unrelated systems.
+5. Add or update validation for the chosen behavior when practical.
+6. Record the decision, rejected alternatives, and rationale in the workpad/PR instead of pausing for approval.
+
+Only mark a ticket blocked when requirements are contradictory, required credentials/services are unavailable, destructive data-loss risk exists, security/privacy/payment/legal policy is unclear, or the ticket cannot be completed without materially expanding scope.
+
 ## Linear access
 
 The runner (`bin/pi-symphony.sh`) handles Linear state transitions, workpad comment creation, and PR opening. Pi agents do not need direct Linear API access. If pi needs to add notes during execution, write them to the workpad section of the working branch's commit message — the runner appends them.
