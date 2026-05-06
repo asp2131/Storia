@@ -94,3 +94,13 @@ Dockerfile*
 docker-compose*
 .dockerignore
 .env*.local
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
+# Playwright test artifacts
+/recordings/
+/test-results/
+/playwright-report/

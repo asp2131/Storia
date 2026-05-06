@@ -15,7 +15,10 @@
     "db:prepare": "npm run db:ensure && prisma migrate deploy && prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@better-auth/expo": "^1.4.19",
@@ -42,6 +45,7 @@
     "lucide-react": "^0.562.0",
     "motion": "^12.27.5",
     "next": "^16.1.3",
+    "nodemailer": "^8.0.7",
     "pg": "^8.17.1",
     "react": "^19.2.3",
     "react-dnd": "^16.0.1",
@@ -54,11 +58,13 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@prisma/client": "^5.22.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -139,4 +139,10 @@ if [ -d prisma ] && [ -x node_modules/.bin/prisma ]; then
   npx prisma generate >/dev/null
 fi
 
+# Install Playwright browsers if e2e is available
+if [ -f playwright.config.ts ] && [ -d e2e ]; then
+  echo "[bootstrap] installing playwright chromium"
+  npx playwright install chromium 2>/dev/null || true
+fi
+
 echo "[bootstrap] done"

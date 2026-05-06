@@ -109,8 +109,11 @@ Open `http://localhost:3000`.
 # One-shot setup for humans and agent worktrees
 ./bin/bootstrap.sh
 
-# Pre-handoff verification gate
+# Pre-handoff verification gate (tsc + lint + vitest)
 ./bin/verify.sh
+
+# Playwright E2E tests (mandatory for symphony PRs)
+./bin/e2e.sh
 
 # Development
 npm run dev
@@ -133,9 +136,83 @@ npm run test:watch
 npm run db:seed
 ```
 
-## Agent Harness (Pi Coding Agent)
+## Playwright E2E Tests
 
-This repo tracks a minimal `.pi/` harness so fresh clones and Symphony-created worktrees can run the same local agent chains. Runtime/session/cache data under `.pi/agent-sessions`, `.pi/agent`, `.pi/cache`, `.pi/logs`, `.pi/tmp`, and `.pi/worktrees` stays ignored.
+```bash
+# Prerequisites (start these before running e2e.sh)
+docker compose up -d          # starts Postgres + Mailpit
+npm run dev &                   # starts Next.js on :3000
+
+# Run E2E tests (exits non-zero if any spec fails)
+./bin/e2e.sh
+
+# Run headed / with UI
+npx playwright test --ui
+
+# Run a specific spec
+npx playwright test e2e/admin-login.spec.ts --headed
+```
+
+**Services required by `e2e.sh`:**
+- Postgres at `localhost:5433` (storia_dev DB)
+- Mailpit at `localhost:8025` (web UI) / `localhost:1025` (SMTP)
+- Next.js dev server at `localhost:3000`
+
+**SMTP fallback:** Auth OTPs route via Mailpit when `RESEND_API_KEY` is empty. Set `RESEND_API_KEY=""` in `.env.local` to use Mailpit locally instead of Resend.
+
+
+**Test artifacts:** `test-results/` (videos on retry), `playwright-report/` (HTML report). Both are gitignored.
+
+## Linear/Symphony Runner
+
+`./bin/pi-symphony.sh` polls Linear for `Todo` tickets, creates isolated git worktrees, runs the full validation pipeline, opens a PR, and moves the ticket to `In Review`.
+
+### Pipeline order
+
+```
+./bin/bootstrap.sh       → npm ci + prisma generate + playwright install
+./bin/verify.sh         → tsc + lint + vitest  (blocker if fail → no PR)
+./bin/e2e.sh            → playwright specs      (blocker if fail → no PR)
+REQUIRE_VIDEO=1         → recordings/*.webm must exist (blocker if missing → no PR)
+PR opened
+```
+
+### Video recordings
+
+Every symphony ticket must produce at least one `.webm` video that exercises the changed flow. Files go in `recordings/<TICKET-ID>-<flow>.webm`.
+
+```bash
+npm run dev &
+# wait for server...
+mkdir -p recordings
+playwright-cli open http://localhost:3000
+playwright-cli tracing-start
+playwright-cli video-start
+# drive the changed flow end-to-end
+playwright-cli video-stop --filename=recordings/<TICKET-ID>-<flow>.webm
+playwright-cli tracing-stop
+playwright-cli close
+```
+
+Set `REQUIRE_VIDEO=0` in the runner env **only** for tickets with genuinely no reachable UI — document the justification in the Linear workpad comment. Without that, a missing recording blocks the PR.
+
+> Do not commit `recordings/` unless asked — it is for symphony artifacts and PR review only. It is gitignored.
+
+### Default config
+
+```bash
+AGENT_RUNNER=pi PI_CHAIN=plan-build-review ./bin/pi-symphony.sh --once
+```
+
+Supported runners: `pi`, `claude`, `opencode`. Fallback runners are tried in sequence if the primary fails:
+
+```bash
+AGENT_RUNNER=pi AGENT_FALLBACKS=claude,opencode ./bin/pi-symphony.sh
+```
+
+For full configuration options, see `WORKFLOW.md`.
+
+## Agent Harness (Pi Coding Agent)
 
 Useful commands:
 
@@ -143,24 +220,6 @@ Useful commands:
 pi chain plan-build-review "Plan/build/review: <ticket>"
 pi chain plan-build "Plan/build only: <ticket>"
 pi chain scout-flow "Explore: <area>"
-```
-
-`bin/pi-symphony.sh` polls Linear, creates isolated worktrees, runs `./bin/bootstrap.sh`, dispatches the configured agent runner, then runs `./bin/verify.sh` before opening a PR.
-
-Default runner configuration:
-
-```bash
-AGENT_RUNNER=pi \
-PI_CHAIN=plan-build-review \
-./bin/pi-symphony.sh --once
-```
-
-Optional fallback runners are supported without shell `eval`; runner commands are invoked as fixed argv arrays. Supported names are `pi`, `claude`, and `opencode`:
-
-```bash
-AGENT_RUNNER=pi \
-AGENT_FALLBACKS=claude,opencode \
-./bin/pi-symphony.sh
 ```
 
 For Claude Code fallback, install and authenticate the `claude` CLI. For OpenCode fallback, install and authenticate the `opencode` CLI. Fallback prompts instruct the alternate runner to follow `AGENTS.md` and `WORKFLOW.md` in the current worktree.

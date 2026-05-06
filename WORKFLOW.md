@@ -27,6 +27,7 @@ agent:
   pi_chain: plan-build-review
   bootstrap: ./bin/bootstrap.sh
   verify: ./bin/verify.sh
+  e2e: ./bin/e2e.sh
 ---
 
 ## How this gets dispatched
@@ -187,6 +188,7 @@ Primary web validation (canonical pre-handoff gate):
 
 ```bash
 ./bin/verify.sh    # tsc --noEmit + npm run lint + npm test
+./bin/e2e.sh       # playwright E2E tests (mandatory — must pass before PR)
 ```
 
 Targeted runs while iterating:
@@ -204,19 +206,21 @@ npm run dev        # localhost:3000 (Next.js dev server)
 npm run build      # production build incl. prisma generate + next build
 ```
 
-### Mandatory: Playwright video proof
+### Mandatory: Playwright video proof + E2E tests
 
-Every symphony ticket MUST produce at least one Playwright CLI `.webm` video that exercises the change. The runner enforces this after `./bin/verify.sh` passes — a missing recording is a blocker and the ticket does not get a PR. File the recording at `recordings/<TICKET-ID>-<flow>.webm` (e.g. `recordings/STO-10-overlay-text.webm`) so it is unambiguous which artifact belongs to which ticket.
+Every symphony ticket MUST produce:
 
-Required capture sequence (run inside the worktree):
+1. **E2E tests passing** — `./bin/e2e.sh` runs Playwright specs in `e2e/` and is enforced by the runner. A failing E2E test is a blocker; no PR is opened.
+2. **At least one Playwright `.webm` video** recording the changed flow. File it at `recordings/<TICKET-ID>-<flow>.webm`.
 
 ```bash
-npm run dev &                                 # leave running on :3000
+npm run dev &
+# Wait for server to be ready, then:
 mkdir -p recordings
 playwright-cli open http://localhost:3000
 playwright-cli tracing-start
 playwright-cli video-start
-# drive the changed flow end-to-end (golden path + at least one edge case)
+# drive the changed flow end-to-end
 playwright-cli video-stop --filename=recordings/<TICKET-ID>-<flow>.webm
 playwright-cli tracing-stop
 playwright-cli close
@@ -224,10 +228,10 @@ playwright-cli close
 
 Rules:
 
-- Backend-only / non-UI tickets still need a video that demonstrates the smallest user-visible surface impacted (e.g. a page that consumes the changed API). Set `REQUIRE_VIDEO=0` in the runner env only if there is genuinely no reachable UI path — and explain why in the workpad.
-- The video must reflect the post-change behavior. If you re-run the agent, re-record.
-- Record the exact filename(s) in the workpad `### Validation` section and in the PR body. The runner reads `recordings/*.webm` and inlines the paths in the PR.
-- Do not commit `recordings/` unless the user explicitly asks — it is for symphony artifacts and PR review only. If `.gitignore` does not already cover it, leave the files untracked.
+- Backend-only / non-UI tickets still need a video demonstrating the smallest user-visible surface impacted, or `REQUIRE_VIDEO=0` set with written justification in the workpad.
+- The video must reflect post-change behavior. Re-record if the agent re-runs.
+- Record exact filename(s) in the workpad `### Validation` section and in the PR body.
+- Do not commit `recordings/` unless asked — it is for symphony artifacts and PR review only.
 
 Database-touching changes:
 
