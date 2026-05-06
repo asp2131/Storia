@@ -82,6 +82,7 @@ vi.mock("@/hooks/useBookData", () => {
     }),
     useDeleteAudioAssignment: () => ({ isPending: false, mutateAsync: vi.fn() }),
     useSavePages: () => ({ isPending: false, mutateAsync: vi.fn() }),
+    useSaveOverlayTextEntries: () => ({ isPending: false, mutateAsync: vi.fn() }),
     useUpdateBook: () => ({ isPending: false, mutateAsync: vi.fn() }),
   };
 });

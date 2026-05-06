@@ -956,3 +956,5 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+| 2026-05-06 12:45 | Implemented STO-10 overlay text OCR feature: added `page_overlay_text_entries` table/migration, Replicate OCR route, overlay-text CRUD route, `overlayText.ts` parser/assembly lib with tests, `OverlayTextPanel.tsx` UI, wired into `BookEditorContext` and narration/pronunciation pipelines. 324 tests pass, tsc clean. OCR route tests cover validation, success, empty, failure, polling, and timeout paths. Overlay text parser tests cover preamble strip, quoted-line extraction, empty cases, deduplication, and whitespace normalization. | prisma/schema.prisma, prisma/migrations/20260506153300_add_page_overlay_text_entries, src/app/api/admin/books/[id]/pages/[pageNumber]/ocr/*, src/app/api/admin/books/[id]/pages/[pageNumber]/overlay-text/*, src/lib/overlayText.ts, src/lib/overlayText.test.ts, src/components/editor/OverlayTextPanel.tsx, src/contexts/BookEditorContext.tsx, src/hooks/useBookData.ts | complete | ~8500 |

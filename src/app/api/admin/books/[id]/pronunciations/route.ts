@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { assemblePageNarrationText } from "@/lib/overlayText";
 import {
   buildPronunciationReviewData,
   type PronunciationReviewCoverageStatus,
@@ -148,6 +149,15 @@ export async function GET(
           id: true,
           page_number: true,
           text_content: true,
+          page_overlay_text_entries: {
+            where: { include_in_narration: true },
+            orderBy: [{ sort_order: "asc" }, { id: "asc" }],
+            select: {
+              text_content: true,
+              include_in_narration: true,
+              sort_order: true,
+            },
+          },
         },
       }),
       prisma.book_pronunciations.findMany({
@@ -175,7 +185,14 @@ export async function GET(
         pages: pages.map((page) => ({
           id: page.id,
           pageNumber: page.page_number,
-          textContent: page.text_content,
+          textContent: assemblePageNarrationText(
+            page.text_content,
+            page.page_overlay_text_entries?.map((entry) => ({
+              text: entry.text_content,
+              includeInNarration: entry.include_in_narration,
+              sortOrder: entry.sort_order,
+            }))
+          ),
         })),
         pronunciations,
       },

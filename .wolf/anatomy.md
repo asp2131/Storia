@@ -843,6 +843,16 @@
 
 - `route.ts` — Delete Storage files from their public URLs (best-effort, won't fail the request). (~3050 tok)
 
+## src/app/api/admin/books/[id]/pages/[pageNumber]/ocr/
+
+- `route.ts` — Next.js API route: POST — runs Replicate OCR on an uploaded illustration, parses detected text, persists `page_overlay_text_entries`. (~3010 tok)
+- `route.test.ts` — Vitest coverage for OCR route validation, Replicate mocking, empty-text handling, and timeout paths. (~2800 tok)
+
+## src/app/api/admin/books/[id]/pages/[pageNumber]/overlay-text/
+
+- `route.ts` — Next.js API route: GET/PATCH for `page_overlay_text_entries` CRUD. (~1800 tok)
+- `route.test.ts` — Vitest coverage for overlay-text GET and PATCH (replace semantics, include/exclude preservation). (~1500 tok)
+
 ## src/app/api/admin/books/[id]/pronunciations/
 
 - `route.test.ts` — Vitest coverage for editor pronunciation review data aggregation, filter validation, and search/pagination. (~2200 tok)
@@ -960,6 +970,7 @@
 - `BookMetaPanel.tsx` — Book editor header panel for title/author inline editing plus save/publish status/actions. (~560 tok)
 - `NarrationPanel.tsx` — Book editor panel for per-page narration generation, preview, and progress/error controls. (~1036 tok)
 - `OverlayEditorPanel.tsx` — Wraps overlay editor launch/composite status for the active page inside the main editor. (~657 tok)
+- `OverlayTextPanel.tsx` — Editable overlay-text list for OCR-detected on-image text: edit, reorder, include/exclude from narration, retry OCR. (~520 tok)
 - `PronunciationPanel.tsx` — pageStatusDot (~8274 tok)
 
 ## src/components/text-overlay/
@@ -1008,6 +1019,8 @@
 - `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3566 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
+- `overlayText.test.ts` — Vitest coverage for Replicate OCR output parser (preamble strip, quoted-line extraction, empty case) and narration-input assembly. (~800 tok)
+- `overlayText.ts` — Pure helpers for overlay text: `parseReplicateOcrOutput`, `assemblePageNarrationText`, `extractPageNarrationTokens`, `includedOverlayText`. (~520 tok)
 - `saveCoordinator.ts` — Barrel export for the editor SaveCoordinator boundary in `src/lib/editor/saveCoordinator.ts` (~10 tok)
 
 ## src/lib/editor/

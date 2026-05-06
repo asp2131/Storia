@@ -19,12 +19,14 @@ import {
   useAssignAudio,
   useDeleteAudioAssignment,
   useSavePages,
+  useSaveOverlayTextEntries,
   useUpdateBook,
   type WordTimestamp,
   type VoiceSettings,
   type AudioAssignment,
 } from "@/hooks/useBookData";
 import { useSoundLibrary, useUploadAudio, type SoundAsset } from "@/hooks/useSoundLibrary";
+import { assemblePageNarrationText, includedOverlayText, type OverlayTextEntry } from "@/lib/overlayText";
 import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
 import {
   destroyOverlayEditorStore,
@@ -51,6 +53,7 @@ export type LocalPageData = {
   imageUrl: string;
   compositedImageUrl?: string;
   overlay?: TextOverlayConfig | null;
+  overlayTextEntries?: OverlayTextEntry[];
   narrationTimestamps?: WordTimestamp[];
 };
 
@@ -103,6 +106,23 @@ export type PageManagerContext = {
   uploading: boolean;
   setActiveImage: (imageUrl: string) => void;
   handleImageFile: (file: File) => Promise<void>;
+};
+
+export type OverlayTextOcrState = {
+  status: "idle" | "detecting" | "ready" | "empty" | "error";
+  message?: string;
+};
+
+export type OverlayTextContext = {
+  activeEntries: OverlayTextEntry[];
+  ocrState: OverlayTextOcrState;
+  saving: boolean;
+  hasIncludedEntries: boolean;
+  updateEntry: (entryId: string, patch: Partial<OverlayTextEntry>, options?: { persist?: boolean }) => void;
+  persistActiveEntries: (entries?: OverlayTextEntry[]) => Promise<void>;
+  removeEntry: (entryId: string) => Promise<void>;
+  moveEntry: (entryId: string, direction: "up" | "down") => Promise<void>;
+  retryOcr: () => Promise<void>;
 };
 
 export type NarrationContext = {
@@ -215,6 +235,7 @@ export type BookEditorContextValue = {
   narration: NarrationContext;
   audioLibrary: AudioLibraryContext;
   overlayEditor: OverlayEditorContext;
+  overlayText: OverlayTextContext;
   bookMeta: BookMetaContext;
   error: string | null;
   clearError: () => void;
@@ -242,6 +263,7 @@ export const usePageManagerContext   = (): PageManagerContext   => useBookEditor
 export const useNarrationContext     = (): NarrationContext     => useBookEditorCtx().narration;
 export const useAudioLibraryContext  = (): AudioLibraryContext  => useBookEditorCtx().audioLibrary;
 export const useOverlayEditorContext = (): OverlayEditorContext => useBookEditorCtx().overlayEditor;
+export const useOverlayTextContext   = (): OverlayTextContext   => useBookEditorCtx().overlayText;
 export const useBookMetaContext      = (): BookMetaContext      => useBookEditorCtx().bookMeta;
 export const useBookEditor           = (): BookEditorContextValue => useBookEditorCtx();
 
@@ -267,6 +289,7 @@ export function BookEditorProvider({
   const assignAudioMutation = useAssignAudio(bookIdParam);
   const deleteAudioMutation = useDeleteAudioAssignment(bookIdParam);
   const savePagesMutation = useSavePages(bookIdParam);
+  const saveOverlayTextMutation = useSaveOverlayTextEntries(bookIdParam);
   const updateBookMutation = useUpdateBook(bookIdParam);
 
   // ─── Core page state ──────────────────────────────────────────────────────
@@ -323,6 +346,10 @@ export function BookEditorProvider({
   // ─── Overlay state ────────────────────────────────────────────────────────
 
   const [overlayEditorCompositing, setOverlayEditorCompositing] = useState(false);
+
+  // ─── OCR overlay text state ───────────────────────────────────────────────
+
+  const [ocrStateByPage, setOcrStateByPage] = useState<Record<number, OverlayTextOcrState>>({});
 
   // ─── Upload state ─────────────────────────────────────────────────────────
 
@@ -561,6 +588,7 @@ export function BookEditorProvider({
   const saving =
     status.phase === "saving" ||
     savePagesMutation.isPending ||
+    saveOverlayTextMutation.isPending ||
     updateBookMutation.isPending;
   const generatingNarration =
     generateNarrationMutation.isPending || generatingOverlayNarration;
@@ -612,6 +640,7 @@ export function BookEditorProvider({
           imageUrl: p.imageUrl || "",
           compositedImageUrl: p.compositedImageUrl || undefined,
           overlay: p.overlay || undefined,
+          overlayTextEntries: p.overlayTextEntries || [],
           narrationTimestamps: p.narrationTimestamps || undefined,
         }))
       );
@@ -874,6 +903,61 @@ export function BookEditorProvider({
     [activePage, markDirty]
   );
 
+  const runOcrForPage = useCallback(
+    async (pageNumber: number, imageUrl: string) => {
+      if (!bookIdParam || !imageUrl) return;
+      setOcrStateByPage((prev) => ({
+        ...prev,
+        [pageNumber]: { status: "detecting", message: "Detecting on-image text…" },
+      }));
+
+      try {
+        const response = await fetch(
+          `/api/admin/books/${bookIdParam}/pages/${pageNumber}/ocr`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageUrl }),
+          }
+        );
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload?.error || "OCR failed.");
+        }
+
+        const entries = Array.isArray(payload.entries)
+          ? (payload.entries as OverlayTextEntry[])
+          : [];
+        setLocalPages((prev) =>
+          prev.map((page) =>
+            page.number === pageNumber
+              ? {
+                  ...page,
+                  id: typeof payload.pageId === "string" ? payload.pageId : page.id,
+                  overlayTextEntries: entries,
+                }
+              : page
+          )
+        );
+        setOcrStateByPage((prev) => ({
+          ...prev,
+          [pageNumber]: entries.length > 0
+            ? { status: "ready", message: `${entries.length} overlay text item${entries.length === 1 ? "" : "s"} detected.` }
+            : { status: "empty", message: "No on-image text detected." },
+        }));
+      } catch (err) {
+        setOcrStateByPage((prev) => ({
+          ...prev,
+          [pageNumber]: {
+            status: "error",
+            message: err instanceof Error ? err.message : "OCR failed.",
+          },
+        }));
+      }
+    },
+    [bookIdParam]
+  );
+
   const handleImageFile = useCallback(
     async (file: File) => {
       if (!file.type.startsWith("image/")) {
@@ -903,14 +987,109 @@ export function BookEditorProvider({
         }
         const data = await response.json();
         setActiveImage(data.url);
+        void runOcrForPage(activePage, data.url);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to upload image.");
       } finally {
         setUploading(false);
       }
     },
-    [activePage, bookIdParam, setActiveImage]
+    [activePage, bookIdParam, runOcrForPage, setActiveImage]
   );
+
+  const activeOverlayTextEntries = useMemo(
+    () => activePageData?.overlayTextEntries || [],
+    [activePageData?.overlayTextEntries]
+  );
+
+  const persistOverlayTextEntries = useCallback(
+    async (entries: OverlayTextEntry[] = activeOverlayTextEntries) => {
+      const normalized = entries.map((entry, index) => ({
+        ...entry,
+        text: entry.text.trim(),
+        sortOrder: index,
+      })).filter((entry) => entry.text.length > 0);
+
+      const result = await saveOverlayTextMutation.mutateAsync({
+        pageNumber: activePage,
+        entries: normalized,
+      });
+
+      setLocalPages((prev) =>
+        prev.map((page) =>
+          page.number === activePage
+            ? { ...page, overlayTextEntries: result.entries }
+            : page
+        )
+      );
+    },
+    [activeOverlayTextEntries, activePage, saveOverlayTextMutation]
+  );
+
+  const updateOverlayTextEntry = useCallback(
+    (entryId: string, patch: Partial<OverlayTextEntry>, options?: { persist?: boolean }) => {
+      let nextEntries: OverlayTextEntry[] = [];
+      setLocalPages((prev) =>
+        prev.map((page) => {
+          if (page.number !== activePage) return page;
+          nextEntries = (page.overlayTextEntries || []).map((entry) =>
+            entry.id === entryId ? { ...entry, ...patch } : entry
+          );
+          return { ...page, overlayTextEntries: nextEntries };
+        })
+      );
+      if (options?.persist) {
+        void persistOverlayTextEntries(nextEntries);
+      }
+    },
+    [activePage, persistOverlayTextEntries]
+  );
+
+  const removeOverlayTextEntry = useCallback(
+    async (entryId: string) => {
+      const nextEntries = activeOverlayTextEntries.filter((entry) => entry.id !== entryId);
+      setLocalPages((prev) =>
+        prev.map((page) =>
+          page.number === activePage ? { ...page, overlayTextEntries: nextEntries } : page
+        )
+      );
+      await persistOverlayTextEntries(nextEntries);
+    },
+    [activeOverlayTextEntries, activePage, persistOverlayTextEntries]
+  );
+
+  const moveOverlayTextEntry = useCallback(
+    async (entryId: string, direction: "up" | "down") => {
+      const currentIndex = activeOverlayTextEntries.findIndex((entry) => entry.id === entryId);
+      const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+      if (currentIndex < 0 || targetIndex < 0 || targetIndex >= activeOverlayTextEntries.length) {
+        return;
+      }
+      const nextEntries = [...activeOverlayTextEntries];
+      const [item] = nextEntries.splice(currentIndex, 1);
+      nextEntries.splice(targetIndex, 0, item);
+      const ordered = nextEntries.map((entry, index) => ({ ...entry, sortOrder: index }));
+      setLocalPages((prev) =>
+        prev.map((page) =>
+          page.number === activePage ? { ...page, overlayTextEntries: ordered } : page
+        )
+      );
+      await persistOverlayTextEntries(ordered);
+    },
+    [activeOverlayTextEntries, activePage, persistOverlayTextEntries]
+  );
+
+  const retryActiveOcr = useCallback(async () => {
+    const imageUrl = activePageData?.imageUrl || activePageData?.compositedImageUrl || "";
+    if (!imageUrl) {
+      setOcrStateByPage((prev) => ({
+        ...prev,
+        [activePage]: { status: "error", message: "Upload an illustration before running OCR." },
+      }));
+      return;
+    }
+    await runOcrForPage(activePage, imageUrl);
+  }, [activePage, activePageData, runOcrForPage]);
 
   // ─── Audio upload ─────────────────────────────────────────────────────────
 
@@ -1174,9 +1353,17 @@ export function BookEditorProvider({
     async (pageNumber?: number) => {
       const targetPage = pageNumber ?? activePage;
       const pageData = localPages.find((p) => p.number === targetPage);
-      if (!pageData?.text?.trim()) {
+      if (!pageData) {
+        setError("No active page selected.");
+        return;
+      }
+      const narrationText = assemblePageNarrationText(
+        pageData?.text,
+        pageData?.overlayTextEntries
+      );
+      if (!narrationText.trim()) {
         setError(
-          "No text content to generate narration from. Add text via the overlay editor first."
+          "No text content to generate narration from. Add page text or include overlay text first."
         );
         return;
       }
@@ -1188,7 +1375,7 @@ export function BookEditorProvider({
         }
 
         const data = await generateNarrationMutation.mutateAsync({
-          text: pageData.text,
+          text: pageData.text || "",
           pageNumber: targetPage,
           voice: selectedVoiceId || undefined,
           voiceSettings,
@@ -1533,6 +1720,17 @@ export function BookEditorProvider({
         handleOverlayComposite,
         selectedOverlayElement,
       },
+      overlayText: {
+        activeEntries: activeOverlayTextEntries,
+        ocrState: ocrStateByPage[activePage] || { status: "idle" },
+        saving: saveOverlayTextMutation.isPending,
+        hasIncludedEntries: includedOverlayText(activeOverlayTextEntries).length > 0,
+        updateEntry: updateOverlayTextEntry,
+        persistActiveEntries: persistOverlayTextEntries,
+        removeEntry: removeOverlayTextEntry,
+        moveEntry: moveOverlayTextEntry,
+        retryOcr: retryActiveOcr,
+      },
       bookMeta: {
         localTitle,
         setLocalTitle: (v: string) => { setLocalTitle(v); markDirty(); },
@@ -1594,6 +1792,14 @@ export function BookEditorProvider({
       isSoundscapePlaying,
       soundscapeVolume,
       overlayEditorCompositing,
+      activeOverlayTextEntries,
+      ocrStateByPage,
+      saveOverlayTextMutation.isPending,
+      updateOverlayTextEntry,
+      persistOverlayTextEntries,
+      removeOverlayTextEntry,
+      moveOverlayTextEntry,
+      retryActiveOcr,
       localTitle,
       localAuthor,
       status,
