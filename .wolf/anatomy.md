@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-04T03:35:05.012Z
-> Files: 696 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-05-06T15:22:41.868Z
+> Files: 697 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -57,6 +57,7 @@
 - `tsconfig.json` — TypeScript configuration (~192 tok)
 - `tsconfig.tsbuildinfo` (~155219 tok)
 - `vitest.config.ts` — Vitest test configuration (~95 tok)
+- `WORKFLOW.md` — Configuration consumed by ./bin/pi-symphony.sh — a Pi-native Linear orchestrator (~3482 tok)
 
 ## .claude/worktrees/agent-a440932b/src/app/api/books/
 

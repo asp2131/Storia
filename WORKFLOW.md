@@ -181,19 +181,30 @@ npm run dev        # localhost:3000 (Next.js dev server)
 npm run build      # production build incl. prisma generate + next build
 ```
 
-For browser-verifiable UI proof, run the dev server then capture with Playwright CLI:
+### Mandatory: Playwright video proof
+
+Every symphony ticket MUST produce at least one Playwright CLI `.webm` video that exercises the change. The runner enforces this after `./bin/verify.sh` passes — a missing recording is a blocker and the ticket does not get a PR. File the recording at `recordings/<TICKET-ID>-<flow>.webm` (e.g. `recordings/STO-10-overlay-text.webm`) so it is unambiguous which artifact belongs to which ticket.
+
+Required capture sequence (run inside the worktree):
 
 ```bash
-npm run dev &      # leave running on :3000
+npm run dev &                                 # leave running on :3000
 mkdir -p recordings
 playwright-cli open http://localhost:3000
 playwright-cli tracing-start
 playwright-cli video-start
-# perform flow
-playwright-cli video-stop --filename=recordings/<ticket>-proof.webm
+# drive the changed flow end-to-end (golden path + at least one edge case)
+playwright-cli video-stop --filename=recordings/<TICKET-ID>-<flow>.webm
 playwright-cli tracing-stop
 playwright-cli close
 ```
+
+Rules:
+
+- Backend-only / non-UI tickets still need a video that demonstrates the smallest user-visible surface impacted (e.g. a page that consumes the changed API). Set `REQUIRE_VIDEO=0` in the runner env only if there is genuinely no reachable UI path — and explain why in the workpad.
+- The video must reflect the post-change behavior. If you re-run the agent, re-record.
+- Record the exact filename(s) in the workpad `### Validation` section and in the PR body. The runner reads `recordings/*.webm` and inlines the paths in the PR.
+- Do not commit `recordings/` unless the user explicitly asks — it is for symphony artifacts and PR review only. If `.gitignore` does not already cover it, leave the files untracked.
 
 Database-touching changes:
 
@@ -214,6 +225,7 @@ Record exact commands and outcomes in the workpad. If validation fails, fix or d
 5. Before moving to `In Review`:
    - all acceptance criteria are checked,
    - required validation is checked with command evidence,
+   - **at least one `recordings/<TICKET-ID>-*.webm` Playwright video exists and is referenced in the PR body and workpad** (or `REQUIRE_VIDEO=0` is set with a written justification),
    - PR checks are green or blocker is documented,
    - PR comments/reviews have no outstanding actionable feedback,
    - the workpad reflects the latest plan, validation, and handoff notes.
