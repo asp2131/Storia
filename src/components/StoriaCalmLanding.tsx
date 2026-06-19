@@ -12,7 +12,7 @@ import "./StoriaCalmLanding.css";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const MANIFESTO_WORDS = [
-  "Storia",
+  "Loratone",
   "helps",
   "children",
   "strengthen",
@@ -50,7 +50,7 @@ const PRESS_LINKS = [
   },
   {
     label: "ALTA 2026 Podcast",
-    title: "Shivang Thakor of the Storia Kids App",
+    title: "Shivang Thakor of the Loratone Kids App",
     href: "https://www.youtube.com/watch?v=wmx2MVKhntw&t=2s",
   },
 ];
@@ -489,7 +489,7 @@ export default function StoriaCalmLanding() {
           <span className="dot">
             <Image src="/storia-landing/mascot-idle.png" alt="" width={32} height={32} />
           </span>
-          <span>storia</span>
+          <span>loratone</span>
         </Link>
         <div className="links">
           <a href="#mission">Why we built this</a>
@@ -511,7 +511,7 @@ export default function StoriaCalmLanding() {
               for stories.
             </h1>
             <p className="lede reveal">
-              Storia is a read-aloud storybook app for children — warm narration,
+              Loratone is a read-aloud storybook app for children — warm narration,
               gentle soundscapes, and tales made to be heard.
             </p>
             <div className="actions reveal">
@@ -533,7 +533,7 @@ export default function StoriaCalmLanding() {
             <div className="hero-media">
               <Image
                 src="/storia-landing/kid-ipad.jpg"
-                alt="A child reading Storia"
+                alt="A child reading Loratone"
                 fill
                 priority
                 sizes="(max-width: 900px) 100vw, 44vw"
@@ -576,7 +576,7 @@ export default function StoriaCalmLanding() {
                 </a>
               </h2>
               <p className="lede">
-                We&apos;re building Storia in response to that reality—because every
+                We&apos;re building Loratone in response to that reality—because every
                 story deserves to be heard, felt, and experienced in a way that
                 helps kids stay engaged with reading.
               </p>
@@ -606,15 +606,15 @@ export default function StoriaCalmLanding() {
                   children with disabilities. He and his brother come from a
                   third-generation family of educators, and with 5+ years
                   teaching computer science, he brings both lived empathy and
-                  classroom experience to how Storia is built.
+                  classroom experience to how Loratone is built.
                 </p>
               </article>
 
               <article className="mission-card reveal mission-card-wide">
                 <p className="mission-kicker">03 / Motivation</p>
-                <h3>Why We Built Storia</h3>
+                <h3>Why We Built Loratone</h3>
                 <p>
-                  We built Storia to redefine what a book can be. Our immersive
+                  We built Loratone to redefine what a book can be. Our immersive
                   sensory audiobooks are designed to strengthen foundational
                   reading skills in children by supporting orthographic
                   representation, phonological representation, and semantic
@@ -686,7 +686,7 @@ export default function StoriaCalmLanding() {
 
         <section className="bleed">
           <div className="bleed-overline">
-            Storia at NMI Microschool in Uptown New Orleans reading our curated
+            Loratone at NMI Microschool in Uptown New Orleans reading our curated
             stories to K–2nd graders
           </div>
           <div className="bleed-img">
@@ -700,7 +700,7 @@ export default function StoriaCalmLanding() {
             </div>
           </div>
           <div className="bleed-caption">
-            <p>“My kid loves Storia. Her fav story so far is Danny&apos;s Cat.”</p>
+            <p>“My kid loves Loratone. Her fav story so far is Danny&apos;s Cat.”</p>
             <cite>— Shay Claiborne, parent and founder &amp; CEO of MilestoneMate</cite>
           </div>
         </section>
@@ -734,7 +734,7 @@ export default function StoriaCalmLanding() {
             <p className="eyebrow reveal">Our story</p>
             <h2 className="reveal">Built by readers, for readers.</h2>
             <p className="lede reveal">
-              Storia is a small team in New Orleans, making a slow, careful app
+              Loratone is a small team in New Orleans, making a slow, careful app
               with authors, librarians, and the kids who test every page.
             </p>
           </div>
@@ -745,12 +745,12 @@ export default function StoriaCalmLanding() {
               <figcaption>With author Cherelyn Poe</figcaption>
             </figure>
             <figure className="c-tile c-b reveal">
-              <Image src="/storia-landing/team-festival.png" alt="Storia team at festival" fill sizes="(max-width: 900px) 100vw, 50vw" />
+              <Image src="/storia-landing/team-festival.png" alt="Loratone team at festival" fill sizes="(max-width: 900px) 100vw, 50vw" />
               <figcaption>Tulane Book Festival with Former Mayor Mitch Landrieu</figcaption>
             </figure>
           </div>
 
-          <div className="press-strip reveal" aria-label="Storia press features">
+          <div className="press-strip reveal" aria-label="Loratone press features">
             <p className="press-eyebrow">Featured in</p>
             <div className="press-cards">
               {PRESS_LINKS.map((item) => (
@@ -771,7 +771,7 @@ export default function StoriaCalmLanding() {
 
         <section className="cta-section" id="download">
           <div className="cta-inner">
-            <Image className="cta-mascot reveal" src="/storia-landing/mascot-idle.png" alt="Storia mascot" width={120} height={120} />
+            <Image className="cta-mascot reveal" src="/storia-landing/mascot-idle.png" alt="Loratone mascot" width={120} height={120} />
             <h2 className="reveal">Start tonight’s story.</h2>
             <p className="lede reveal">
               Free to try with a handful of tales. A family subscription unlocks
@@ -792,7 +792,7 @@ export default function StoriaCalmLanding() {
 
       <footer className="storia-footer">
         <div className="footer-inner">
-          <span>© 2026 Storia, Inc. · Made in New Orleans</span>
+          <span>© 2026 Loratone, Inc. · Made in New Orleans</span>
           <div className="footer-links">
             <Link href="/privacy-policy">Privacy</Link>
             <a href="mailto:hello@storia.kids">Contact</a>
