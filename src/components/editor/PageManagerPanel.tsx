@@ -35,7 +35,7 @@ export function PageManagerPanel() {
         <a href="/admin/books" className="flex items-center gap-2 text-teal-600 hover:text-teal-700">
           <ArrowLeft className="w-4 h-4" />
           <BookOpen className="w-6 h-6" />
-          <span className="font-bold tracking-tight text-slate-900">Storia</span>
+          <span className="font-bold tracking-tight text-slate-900">Loratone</span>
         </a>
       </div>
 

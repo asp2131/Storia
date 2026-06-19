@@ -1,7 +1,7 @@
 export const HERO_CONTENT = {
   eyebrow: "For ages 4–10 · Made in New Orleans",
   headline: "A quiet place\nfor stories.",
-  lede: "Storia is a read-aloud storybook app for children — warm narration, gentle soundscapes, and tales made to be heard.",
+  lede: "Loratone is a read-aloud storybook app for children — warm narration, gentle soundscapes, and tales made to be heard.",
   primaryCta: {
     label: "Download on iOS",
     href: "https://apps.apple.com/us/app/storia-kids/id6759848322",
@@ -10,7 +10,7 @@ export const HERO_CONTENT = {
     label: "See how it works",
     href: "#how",
   },
-  imageAlt: "A child reading Storia",
+  imageAlt: "A child reading Loratone",
   imageSrc: "/storia-landing/kid-ipad.jpg",
 };
 
@@ -18,7 +18,7 @@ export const PROBLEM_CONTENT = {
   eyebrow: "Why this matters",
   stat: "67%",
   statContext: "of fourth-graders aren't reading at grade level.",
-  lede: "We're building Storia in response to that reality—because every story deserves to be heard, felt, and experienced in a way that helps kids stay engaged with reading.",
+  lede: "We're building Loratone in response to that reality—because every story deserves to be heard, felt, and experienced in a way that helps kids stay engaged with reading.",
   sourceHref: "https://brighterly.com/blog/literacy-statistics/",
   sourceLabel: "Literacy statistics via Brighterly",
 };
@@ -26,7 +26,7 @@ export const PROBLEM_CONTENT = {
 export const MISSION_CONTENT = {
   eyebrow: "Why we built this",
   headline: "Built by readers, for readers.",
-  lede: "Storia is a small team in New Orleans, making a slow, careful app with authors, librarians, and the kids who test every page.",
+  lede: "Loratone is a small team in New Orleans, making a slow, careful app with authors, librarians, and the kids who test every page.",
   founders: [
     {
       kicker: "01 / Founder",
@@ -38,15 +38,15 @@ export const MISSION_CONTENT = {
     {
       kicker: "02 / Founder + Software Architect",
       name: "Akintunde Pounds",
-      body: "As a parent to a daughter with autism, Akintunde is on a mission to bridge literacy gaps for all kids—especially children with disabilities. He and his brother come from a third-generation family of educators, and with 5+ years teaching computer science, he brings both lived empathy and classroom experience to how Storia is built.",
+      body: "As a parent to a daughter with autism, Akintunde is on a mission to bridge literacy gaps for all kids—especially children with disabilities. He and his brother come from a third-generation family of educators, and with 5+ years teaching computer science, he brings both lived empathy and classroom experience to how Loratone is built.",
       imageSrc: "https://avatars.githubusercontent.com/u/42776703?v=4",
       imageAlt: "Akintunde Pounds",
     },
   ],
   motivation: {
     kicker: "03 / Motivation",
-    title: "Why We Built Storia",
-    body: "We built Storia to redefine what a book can be. Our immersive sensory audiobooks are designed to strengthen foundational reading skills in children by supporting orthographic representation, phonological representation, and semantic representation in every story.",
+    title: "Why We Built Loratone",
+    body: "We built Loratone to redefine what a book can be. Our immersive sensory audiobooks are designed to strengthen foundational reading skills in children by supporting orthographic representation, phonological representation, and semantic representation in every story.",
   },
 };
 
@@ -83,7 +83,7 @@ export const HOW_IT_WORKS_CONTENT = {
 export const COMMUNITY_CONTENT = {
   eyebrow: "Our story",
   headline: "Built by readers, for readers.",
-  lede: "Storia is a small team in New Orleans, making a slow, careful app with authors, librarians, and the kids who test every page.",
+  lede: "Loratone is a small team in New Orleans, making a slow, careful app with authors, librarians, and the kids who test every page.",
   tiles: [
     { src: "/storia-landing/team-author.jpg", caption: "With author Cherelyn Poe" },
     { src: "/storia-landing/team-festival.png", caption: "Family Lit Fest, 2025" },
@@ -91,14 +91,14 @@ export const COMMUNITY_CONTENT = {
     { src: "/storia-landing/mascot-waving.jpg", caption: "Meet the mascot" },
   ],
   quote: {
-    text: "My kid loves Storia. Her fav story so far is Danny's Cat.",
+    text: "My kid loves Loratone. Her fav story so far is Danny's Cat.",
     attribution: "Shay Claiborne, parent and founder & CEO of MilestoneMate",
   },
 };
 
 export const FINAL_CTA_CONTENT = {
   mascotSrc: "/storia-landing/mascot-idle.png",
-  mascotAlt: "Storia mascot",
+  mascotAlt: "Loratone mascot",
   headline: "Start tonight's story.",
   lede: "Free to try with a handful of tales. A family subscription unlocks the full library.",
   primaryCta: {

@@ -25,7 +25,7 @@ function createAuth() {
 
   const RESEND_KEY = process.env.RESEND_API_KEY || "";
   const RESEND_FROM =
-    process.env.RESEND_FROM_EMAIL || "Storia <onboarding@resend.dev>";
+    process.env.RESEND_FROM_EMAIL || "Loratone <onboarding@resend.dev>";
 
   const resend =
     RESEND_KEY && RESEND_KEY.startsWith("re_") ? new Resend(RESEND_KEY) : null;
@@ -33,7 +33,7 @@ function createAuth() {
   // Local/dev SMTP fallback (Mailpit)
   const smtpHost = process.env.SMTP_HOST || "localhost";
   const smtpPort = Number(process.env.SMTP_PORT || "1025");
-  const smtpFrom = process.env.SMTP_FROM || "Storia <admin@storia.local>";
+  const smtpFrom = process.env.SMTP_FROM || "Loratone <admin@loratone.local>";
   const smtpSecure = process.env.SMTP_SECURE === "true";
   const smtpUser = process.env.SMTP_USER || "";
   const smtpPass = process.env.SMTP_PASS || "";
@@ -53,8 +53,8 @@ function createAuth() {
     }),
     trustedOrigins: [
       "http://localhost:3000",
-      "https://storia.kids",
-      "https://www.storia.kids",
+      "https://loratone.kids",
+      "https://www.loratone.kids",
       "https://storia-gray.vercel.app",
       "https://*.vercel.app",           // all Vercel preview deployments
       "storia://",
@@ -85,15 +85,15 @@ function createAuth() {
         async sendVerificationOTP({ email, otp, type }) {
           const subject =
             type === "sign-in"
-              ? "Your Storia sign-in code"
+              ? "Your Loratone sign-in code"
               : type === "email-verification"
-                ? "Verify your Storia email"
-                : "Reset your Storia password";
+                ? "Verify your Loratone email"
+                : "Reset your Loratone password";
 
           const text = `Your verification code is: ${otp}`;
           const html = `
             <div style="font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #111827; margin-bottom: 20px;">Storia</h2>
+              <h2 style="color: #111827; margin-bottom: 20px;">Loratone</h2>
               <p style="color: #374151; margin-bottom: 20px;">Your verification code is:</p>
               <div style="background: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px;">
                 <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #111827;">${otp}</span>

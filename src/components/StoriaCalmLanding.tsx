@@ -795,7 +795,7 @@ export default function StoriaCalmLanding() {
           <span>© 2026 Loratone, Inc. · Made in New Orleans</span>
           <div className="footer-links">
             <Link href="/privacy-policy">Privacy</Link>
-            <a href="mailto:hello@storia.kids">Contact</a>
+            <a href="mailto:hello@loratone.kids">Contact</a>
             <Link href="/library">Library</Link>
           </div>
         </div>

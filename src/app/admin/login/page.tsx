@@ -98,7 +98,7 @@ function AdminLoginPageInner() {
           </div>
 
           <h1 className="text-2xl font-serif font-black text-center text-white mb-1">
-            Storia Admin
+            Loratone Admin
           </h1>
           <p className="text-center text-sm text-[#929bc9] mb-8">
             Sign in to access the admin console.
@@ -165,7 +165,7 @@ function AdminLoginPageInner() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full h-12 rounded-lg bg-[#0a0e1a] border border-[#1a1f2e] text-white px-4 focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
-                    placeholder="you@storia.kids"
+                    placeholder="you@loratone.kids"
                     disabled={loading}
                   />
                 </div>

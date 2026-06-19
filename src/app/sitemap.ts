@@ -8,16 +8,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   const bookEntries: MetadataRoute.Sitemap = books.map((book) => ({
-    url: `https://storia.kids/books/${book.id}/reader`,
+    url: `https://loratone.kids/books/${book.id}/reader`,
     lastModified: book.updated_at ?? undefined,
     changeFrequency: "weekly",
     priority: 0.8,
   }));
 
   return [
-    { url: "https://storia.kids", changeFrequency: "weekly", priority: 1.0 },
-    { url: "https://storia.kids/library", changeFrequency: "daily", priority: 0.9 },
-    { url: "https://storia.kids/privacy-policy", changeFrequency: "monthly", priority: 0.4 },
+    { url: "https://loratone.kids", changeFrequency: "weekly", priority: 1.0 },
+    { url: "https://loratone.kids/library", changeFrequency: "daily", priority: 0.9 },
+    { url: "https://loratone.kids/privacy-policy", changeFrequency: "monthly", priority: 0.4 },
     ...bookEntries,
   ];
 }

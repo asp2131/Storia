@@ -1,6 +1,6 @@
-# Storia
+# Loratone
 
-Storia is an immersive reading platform that combines ebooks, narration, and soundscapes into a single reader experience.
+Loratone is an immersive reading platform that combines ebooks, narration, and soundscapes into a single reader experience.
 
 ## Tech Stack
 
@@ -61,7 +61,7 @@ REPLICATE_KEY=<replicate-token>
 
 # Auth / email
 RESEND_API_KEY=<resend-key>
-RESEND_FROM_EMAIL=Storia <onboarding@resend.dev>
+RESEND_FROM_EMAIL=Loratone <onboarding@resend.dev>
 GOOGLE_CLIENT_ID=<google-client-id>
 GOOGLE_CLIENT_SECRET=<google-client-secret>
 

@@ -89,10 +89,10 @@ test.describe("Admin Login", () => {
     // Step 1: create user + get OTP → rejected (role=user by default)
     await page.goto(`${APP_URL}/admin/login`);
     await expect(
-      page.getByRole("heading", { name: /Storia Admin/i })
+      page.getByRole("heading", { name: /Loratone Admin/i })
     ).toBeVisible();
 
-    await page.getByPlaceholder(/you@storia\.kids/i).fill(adminEmail);
+    await page.getByPlaceholder(/you@loratone\.kids/i).fill(adminEmail);
     await page.getByRole("button", { name: /Send Verification Code/i }).click();
 
     const otp1 = await getLatestOtp(adminEmail);
@@ -120,7 +120,7 @@ test.describe("Admin Login", () => {
     const nonAdminEmail = `nonadmin_${Date.now()}@storia.local`;
 
     await page.goto(`${APP_URL}/admin/login`);
-    await page.getByPlaceholder(/you@storia\.kids/i).fill(nonAdminEmail);
+    await page.getByPlaceholder(/you@loratone\.kids/i).fill(nonAdminEmail);
     await page.getByRole("button", { name: /Send Verification Code/i }).click();
 
     const otp = await getLatestOtp(nonAdminEmail);

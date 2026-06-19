@@ -78,7 +78,7 @@ The runner (`bin/pi-symphony.sh`) handles Linear state transitions, workpad comm
 
 ## Repo context
 
-Storia (web) is a Next.js 16 app for Storia Kids — App Router, React 19, Prisma + Postgres, Better Auth, Supabase, Tailwind, GSAP/Three/Framer Motion for the reader UI, Vitest for tests.
+Loratone (web) is a Next.js 16 app for Loratone Kids — App Router, React 19, Prisma + Postgres, Better Auth, Supabase, Tailwind, GSAP/Three/Framer Motion for the reader UI, Vitest for tests.
 
 Important repo files and conventions:
 
@@ -117,7 +117,7 @@ The runner has already invoked the configured agent runner to start this session
 
 ### Playwright CLI self-verification
 
-`playwright-cli` is available globally for browser-verifiable flows, screenshots, traces, and WebM video proof. Storia is a web app — Playwright is the primary visual-proof tool.
+`playwright-cli` is available globally for browser-verifiable flows, screenshots, traces, and WebM video proof. Loratone is a web app — Playwright is the primary visual-proof tool.
 
 ```bash
 playwright-cli open http://localhost:3000

@@ -5,9 +5,9 @@ import LibraryClient from "./LibraryClient";
 export const metadata: Metadata = {
   title: "Library",
   description:
-    "Browse Storia's collection of interactive children's books with AI-generated narration and immersive soundscapes. Find your next read aloud adventure.",
+    "Browse Loratone's collection of interactive children's books with AI-generated narration and immersive soundscapes. Find your next read aloud adventure.",
   openGraph: {
-    title: "Library | Storia",
+    title: "Library | Loratone",
     description:
       "Browse interactive children's books with AI narration and soundscapes.",
   },
@@ -78,7 +78,7 @@ export default async function LibraryPage() {
       <noscript>
         <section className="max-w-4xl mx-auto px-6 py-12">
           <h1 className="text-2xl font-bold mb-6">
-            Storia Library — Interactive Children&apos;s Books
+            Loratone Library — Interactive Children&apos;s Books
           </h1>
           <p className="mb-8 text-gray-600">
             Browse our collection of illustrated children&apos;s books with AI-generated
@@ -102,7 +102,7 @@ export default async function LibraryPage() {
 
       {/* Hidden structured content for search engines (visible in DOM, off-screen) */}
       <div className="sr-only" aria-hidden="true">
-        <h2>Children&apos;s Books Available on Storia</h2>
+        <h2>Children&apos;s Books Available on Loratone</h2>
         <ul>
           {initialBooks.map((book) => (
             <li key={book.id}>

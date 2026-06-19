@@ -43,10 +43,10 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://storia.kids"),
+  metadataBase: new URL("https://loratone.kids"),
   title: {
-    default: "Storia - Books That Sound Amazing",
-    template: "%s | Storia",
+    default: "Loratone - Books That Sound Amazing",
+    template: "%s | Loratone",
   },
   description:
     "Interactive children's books with immersive soundscapes and expressive narration tailored to every scene. Read, listen, and explore stories like never before.",
@@ -63,16 +63,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://storia.kids",
-    siteName: "Storia",
-    title: "Storia - Books That Sound Amazing",
+    url: "https://loratone.kids",
+    siteName: "Loratone",
+    title: "Loratone - Books That Sound Amazing",
     description:
       "Interactive children's books with immersive soundscapes and expressive narration tailored to every scene.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Storia - Books That Sound Amazing" }],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Loratone - Books That Sound Amazing" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Storia - Books That Sound Amazing",
+    title: "Loratone - Books That Sound Amazing",
     description:
       "Interactive children's books with immersive soundscapes and expressive narration.",
     images: ["/og-image.png"],
@@ -97,8 +97,8 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
-              name: "Storia",
-              url: "https://storia.kids",
+              name: "Loratone",
+              url: "https://loratone.kids",
               description:
                 "Interactive children's books with immersive soundscapes and expressive narration tailored to every scene.",
             }),

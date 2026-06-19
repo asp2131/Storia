@@ -239,7 +239,7 @@ export default function AdminLayout({
       {/* Mobile Header & Overlay */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0e1a] border-b border-[#1a1f2e] px-4 py-3 flex items-center justify-between">
         <Link href="/admin" className="text-lg font-black font-serif tracking-tight">
-          Storia Admin
+          Loratone Admin
         </Link>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

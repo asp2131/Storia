@@ -323,7 +323,7 @@ export default function MorphogenesisHero({
                 textShadow: '0 4px 8px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.3)'
               }}
             >
-              Storia
+              Loratone
             </h1>
             
             <h4
@@ -464,7 +464,7 @@ export default function MorphogenesisHero({
                 As a parent to a daughter with autism, Akintunde is on a mission to bridge literacy
                 gaps for all kids—especially children with disabilities. He and his brother come from
                 a third-generation family of educators, and with 5+ years teaching computer science,
-                he brings both lived empathy and classroom experience to how Storia is built.
+                he brings both lived empathy and classroom experience to how Loratone is built.
               </p>
             </div>
           </div>
@@ -486,10 +486,10 @@ export default function MorphogenesisHero({
             <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
               <div className="font-mono text-xs opacity-40">03 / Motivation</div>
               <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
-                Why We Built Storia
+                Why We Built Loratone
               </h2>
               <p className="text-base md:text-lg font-light opacity-70 leading-relaxed">
-                We built Storia to redefine what a book can be. Our immersive sensory audiobooks are
+                We built Loratone to redefine what a book can be. Our immersive sensory audiobooks are
                 designed to strengthen foundational reading skills in children by supporting orthographic
                 representation, phonological representation, and semantic representation in every story.
               </p>
@@ -531,7 +531,7 @@ export default function MorphogenesisHero({
 
       {/* Footer */}
       <footer className="px-4 py-8 md:p-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-8 opacity-40 text-xs font-mono tracking-wider md:tracking-widest uppercase bg-[#0a0a0a]">
-        <div className="text-center md:text-left">&copy; 2026 Storia</div>
+        <div className="text-center md:text-left">&copy; 2026 Loratone</div>
         <div className="flex gap-6 md:gap-8">
           <a href="/admin/books" className="hover:opacity-100 transition-opacity">
             Admin

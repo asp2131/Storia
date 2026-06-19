@@ -11,7 +11,7 @@ const MorphogenesisHero = dynamic(
     loading: () => (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-4xl font-serif font-black tracking-tighter text-amber-100 animate-pulse">
-          Storia
+          Loratone
         </div>
       </div>
     ),
@@ -139,7 +139,7 @@ export default function HomeClient() {
             <div className="px-8 py-10">
               <div className="flex items-center justify-center mb-6">
                 <div className="w-10 h-10 rounded-full bg-[#111827] text-white flex items-center justify-center font-serif font-bold">
-                  S
+                  L
                 </div>
               </div>
 
@@ -332,7 +332,7 @@ export default function HomeClient() {
       <header className="fixed top-0 left-0 right-0 px-4 py-4 md:px-8 md:py-6 flex justify-between items-center z-[60]">
         <div className="flex items-center gap-2">
           <span className="text-2xl font-serif font-black tracking-tighter text-white drop-shadow-md">
-            Storia
+            Loratone
           </span>
         </div>
 

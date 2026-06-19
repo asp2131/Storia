@@ -14,13 +14,13 @@ export async function GET() {
     )
     .join("\n");
 
-  const content = `# Storia - Full Documentation
+  const content = `# Loratone - Full Documentation
 
 > Interactive children's books with AI-generated soundscapes and narration.
 
 ## About
 
-Storia is a platform where children read illustrated books enhanced with AI-generated audio. Each page features artwork with overlaid text, optional voice narration with word-by-word highlighting, and ambient soundscapes that match the scene.
+Loratone is a platform where children read illustrated books enhanced with AI-generated audio. Each page features artwork with overlaid text, optional voice narration with word-by-word highlighting, and ambient soundscapes that match the scene.
 
 ## Available Books
 
@@ -38,7 +38,7 @@ ${bookList}
 
 ## How It Works
 
-1. Visit https://storia.kids/library to browse the catalog
+1. Visit https://loratone.kids/library to browse the catalog
 2. Tap any book to open the reader
 3. Swipe up to turn pages — each page has an illustrated scene with overlaid text
 4. Tap the "Read" button to hear AI-generated narration with word-by-word highlighting
@@ -47,8 +47,8 @@ ${bookList}
 
 ## Links
 
-- Website: https://storia.kids
-- Library: https://storia.kids/library
+- Website: https://loratone.kids
+- Library: https://loratone.kids/library
 `;
 
   return new Response(content, {

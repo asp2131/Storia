@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "How Storia collects, uses, and protects information in our native app.",
+  description: "How Loratone collects, uses, and protects information in our native app.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
       <div className="mx-auto w-full max-w-4xl">
         <p className="text-xs uppercase tracking-[0.2em] text-amber-200/70 mb-4">Legal</p>
         <h1 className="font-serif text-4xl sm:text-5xl font-black tracking-tight text-amber-100 mb-4">
-          Storia Privacy Policy
+          Loratone Privacy Policy
         </h1>
         <p className="text-sm text-white/50 mb-12">Last updated: {lastUpdated}</p>
 
@@ -21,8 +21,8 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="font-serif text-2xl text-white mb-3">1. Introduction</h2>
             <p>
-              This Privacy Policy explains how Storia (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) collects, uses, and protects information
-              when you use the Storia native mobile app and related services. By using Storia, you agree to the practices
+              This Privacy Policy explains how Loratone (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) collects, uses, and protects information
+              when you use the Loratone native mobile app and related services. By using Loratone, you agree to the practices
               described in this policy.
             </p>
           </section>
@@ -64,7 +64,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="font-serif text-2xl text-white mb-3">4. Children&apos;s Privacy</h2>
             <p>
-              Storia is designed for children with parent or guardian involvement. We strive to limit data collection to what
+              Loratone is designed for children with parent or guardian involvement. We strive to limit data collection to what
               is necessary to provide the service. If you are a parent or guardian and believe your child&apos;s information was
               provided inappropriately, contact us and we will investigate and take appropriate action.
             </p>
@@ -74,7 +74,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="font-serif text-2xl text-white mb-3">5. Sharing of Information</h2>
             <p className="mb-3">We do not sell personal information. We may share limited data with:</p>
             <ul className="list-disc pl-6 space-y-2 marker:text-amber-200/70">
-              <li>Service providers that help us host, analyze, and operate Storia.</li>
+              <li>Service providers that help us host, analyze, and operate Loratone.</li>
               <li>Platform services (such as app stores) for subscriptions and purchase validation.</li>
               <li>Legal authorities when required by law or to protect rights and safety.</li>
             </ul>
@@ -119,8 +119,8 @@ export default function PrivacyPolicyPage() {
             <h2 className="font-serif text-2xl text-white mb-3">10. Contact Us</h2>
             <p>
               If you have any questions or requests about this policy, contact us at{" "}
-              <a className="text-amber-200 hover:text-amber-100 underline underline-offset-4" href="mailto:privacy@storia.kids">
-                privacy@storia.kids
+              <a className="text-amber-200 hover:text-amber-100 underline underline-offset-4" href="mailto:privacy@loratone.kids">
+                privacy@loratone.kids
               </a>
               .
             </p>

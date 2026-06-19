@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description =
     book.description ||
-    `Read "${book.title}" by ${book.author} with immersive AI narration and soundscapes on Storia.`;
+    `Read "${book.title}" by ${book.author} with immersive AI narration and soundscapes on Loratone.`;
 
   return {
     title: `${book.title} by ${book.author}`,
@@ -71,8 +71,8 @@ export default async function BookLayout({ params, children }: Props) {
               author: { "@type": "Person", name: book.author },
               description: book.description,
               image: book.cover_url,
-              url: `https://storia.kids/books/${id}/reader`,
-              publisher: { "@type": "Organization", name: "Storia" },
+              url: `https://loratone.kids/books/${id}/reader`,
+              publisher: { "@type": "Organization", name: "Loratone" },
             }),
           }}
         />
