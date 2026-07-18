@@ -7,6 +7,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import Link from "next/link";
 import SplitType from "split-type";
+import { useReducedMotionVariant } from "@/hooks/landing/useReducedMotionVariant";
+import MascotStoryWorld from "./MascotStoryWorld";
 import "./StoriaCalmLanding.css";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -60,6 +62,7 @@ export default function StoriaCalmLanding() {
   const heroTitleRef = useRef<HTMLHeadingElement | null>(null);
   const primaryCtaRef = useRef<HTMLAnchorElement | null>(null);
   const secondaryCtaRef = useRef<HTMLAnchorElement | null>(null);
+  const { reduceMotion } = useReducedMotionVariant();
 
   useGSAP(
     () => {
@@ -71,7 +74,7 @@ export default function StoriaCalmLanding() {
       const nav = root.querySelector<HTMLElement>(".storia-nav");
       const hero = root.querySelector<HTMLElement>(".hero");
       const heroInner = root.querySelector<HTMLElement>(".hero-inner");
-      const heroImage = root.querySelector<HTMLElement>(".hero-image");
+      const heroImage = root.querySelector<HTMLElement>(".hero-visual");
       const missionShell = root.querySelector<HTMLElement>(".mission-shell");
       const magneticButtons = [primaryCtaRef.current, secondaryCtaRef.current].filter(
         Boolean
@@ -191,7 +194,7 @@ export default function StoriaCalmLanding() {
       }
 
       if (!reduceMotion && heroImage) {
-        gsap.to(heroImage.querySelector(".hero-media"), {
+        gsap.to(heroImage.querySelector(".mascot-world"), {
           yPercent: 10,
           ease: "none",
           scrollTrigger: {
@@ -487,7 +490,7 @@ export default function StoriaCalmLanding() {
       <nav className="storia-nav">
         <Link href="#top" className="wordmark">
           <span className="dot">
-            <Image src="/storia-landing/mascot-idle.png" alt="" width={32} height={32} />
+            <Image src="/storia-landing/logo-headshot.png" alt="" width={32} height={32} />
           </span>
           <span>loratone</span>
         </Link>
@@ -505,14 +508,14 @@ export default function StoriaCalmLanding() {
         <section className="hero">
           <div className="hero-inner">
             <p className="eyebrow reveal">For ages 4–10 · Made in New Orleans</p>
-            <h1 ref={heroTitleRef} className="hero-title" aria-label="A quiet place for stories.">
-              A quiet place
+            <h1 ref={heroTitleRef} className="hero-title" aria-label="Loratone brings every story to life.">
+              Loratone
               <br />
-              for stories.
+              brings every story to life.
             </h1>
             <p className="lede reveal">
-              Loratone is a read-aloud storybook app for children — warm narration,
-              gentle soundscapes, and tales made to be heard.
+              A read-aloud storybook app where warm narration, gentle soundscapes,
+              and our new guide help children hear, feel, and follow each page.
             </p>
             <div className="actions reveal">
               <a
@@ -529,16 +532,10 @@ export default function StoriaCalmLanding() {
               </a>
             </div>
           </div>
-          <div className="hero-image reveal-image">
-            <div className="hero-media">
-              <Image
-                src="/storia-landing/kid-ipad.jpg"
-                alt="A child reading Loratone"
-                fill
-                priority
-                sizes="(max-width: 900px) 100vw, 44vw"
-              />
-            </div>
+          <div className="hero-visual reveal-image">
+            <MascotStoryWorld reduceMotion={reduceMotion} />
+            <div className="hero-orbit hero-orbit-a" />
+            <div className="hero-orbit hero-orbit-b" />
           </div>
           <div className="scroll-hint"><span>Scroll</span><span className="line" /></div>
         </section>
@@ -771,7 +768,7 @@ export default function StoriaCalmLanding() {
 
         <section className="cta-section" id="download">
           <div className="cta-inner">
-            <Image className="cta-mascot reveal" src="/storia-landing/mascot-idle.png" alt="Loratone mascot" width={120} height={120} />
+            <Image className="cta-mascot reveal" src="/storia-landing/mascot-full.png" alt="Loratone mascot" width={120} height={120} />
             <h2 className="reveal">Start tonight’s story.</h2>
             <p className="lede reveal">
               Free to try with a handful of tales. A family subscription unlocks
