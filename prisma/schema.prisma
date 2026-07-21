@@ -23,6 +23,7 @@ model books {
   inserted_at       DateTime           @db.Timestamp(0)
   updated_at        DateTime           @db.Timestamp(0)
   metadata          Json?              @default("{}")
+  default_text_style Json?
   cover_url         String?            @db.VarChar(255)
   description       String?
   book_type         String             @default("pdf_book") @db.VarChar(255)

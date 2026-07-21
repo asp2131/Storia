@@ -1,8 +1,0 @@
-plan-build:
-  - planner
-  - builder
-  - reviewer
-
-info:
-  - scout
-  - reviewer

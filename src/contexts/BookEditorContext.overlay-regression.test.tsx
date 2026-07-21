@@ -1,7 +1,11 @@
 import { useEffect } from "react";
 import { act, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BookEditorProvider, usePageManagerContext } from "@/contexts/BookEditorContext";
+import {
+  BookEditorProvider,
+  useBookMetaContext,
+  usePageManagerContext,
+} from "@/contexts/BookEditorContext";
 import {
   destroyOverlayEditorStore,
   getOverlayEditorStore,
@@ -45,6 +49,7 @@ vi.mock("@/hooks/useBookData", () => {
     useSavePages: () => mutationResult,
     useSaveOverlayTextEntries: () => mutationResult,
     useUpdateBook: () => mutationResult,
+    useApplyBookTextStyle: () => mutationResult,
   };
 });
 
@@ -62,17 +67,24 @@ vi.mock("@/hooks/useSoundLibrary", () => {
 });
 
 type PageManager = ReturnType<typeof usePageManagerContext>;
+type BookMeta = ReturnType<typeof useBookMetaContext>;
 
 type ProbeProps = {
   onUpdate: (ctx: PageManager) => void;
+  onBookMetaUpdate?: (ctx: BookMeta) => void;
 };
 
-function CapturePageManager({ onUpdate }: ProbeProps) {
+function CapturePageManager({ onUpdate, onBookMetaUpdate }: ProbeProps) {
   const ctx = usePageManagerContext();
+  const bookMeta = useBookMetaContext();
 
   useEffect(() => {
     onUpdate(ctx);
   }, [ctx, onUpdate]);
+
+  useEffect(() => {
+    onBookMetaUpdate?.(bookMeta);
+  }, [bookMeta, onBookMetaUpdate]);
 
   return null;
 }
@@ -151,6 +163,66 @@ describe("BookEditorContext overlay key regressions", () => {
 
     const movedStoreElements = getOverlayEditorStore("page-3").getState().elements;
     expect(movedStoreElements.map((el) => el.id)).toEqual(["moved-page"]);
+  });
+
+  it("does not rehydrate stale server data after a successful local save", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+    const bookMetaRef = { current: null as BookMeta | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager
+          onUpdate={(ctx) => { pageManagerRef.current = ctx; }}
+          onBookMetaUpdate={(ctx) => { bookMetaRef.current = ctx; }}
+        />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(bookMetaRef.current?.localTitle).toBe("Test Book"));
+
+    act(() => bookMetaRef.current!.setLocalTitle("Locally edited title"));
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(true));
+    await act(async () => bookMetaRef.current!.handleSave());
+
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
+    expect(bookMetaRef.current?.localTitle).toBe("Locally edited title");
+    expect(pageManagerRef.current?.localPages).toHaveLength(1);
+  });
+
+  it("queues the latest overlay before navigating away", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+    const bookMetaRef = { current: null as BookMeta | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager
+          onUpdate={(ctx) => { pageManagerRef.current = ctx; }}
+          onBookMetaUpdate={(ctx) => { bookMetaRef.current = ctx; }}
+        />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
+    act(() => pageManagerRef.current!.handleAddPage());
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(2));
+    await act(async () => bookMetaRef.current!.handleSave());
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
+
+    act(() => {
+      const store = getOverlayEditorStore("saved-1");
+      store.getState().init([makeElement("latest")]);
+      store.getState().updateElement("latest", { text: "latest edit" });
+      pageManagerRef.current!.setActivePage(2);
+    });
+
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(true));
+    await act(async () => bookMetaRef.current!.handleSave());
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/books/book-1/pages/1/overlay",
+      expect.objectContaining({ method: "POST" })
+    );
   });
 
   it("remaps unsaved overlay stores when deleting and renumbering pages", async () => {

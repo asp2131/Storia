@@ -2,7 +2,8 @@
 
 import {
   Type,
-  GripVertical,
+  ChevronUp,
+  ChevronDown,
   Trash2,
 } from "lucide-react";
 import type { TextElement, TextOverlayConfig } from "@/types/text-overlay";
@@ -12,6 +13,7 @@ interface LayersPanelProps {
   selectedElementId: string | null;
   onSelect: (elementId: string | null) => void;
   onDelete: (elementId: string) => void;
+  onMove: (elementId: string, dir: "up" | "down") => void;
 }
 
 export function LayersPanel({
@@ -19,6 +21,7 @@ export function LayersPanel({
   selectedElementId,
   onSelect,
   onDelete,
+  onMove,
 }: LayersPanelProps) {
   if (elements.length === 0) {
     return (
@@ -54,6 +57,8 @@ export function LayersPanel({
         {elements.map((element, index) => {
           const isSelected = element.id === selectedElementId;
           const displayText = element.text?.trim() || "Empty text";
+          const isFirst = index === 0;
+          const isLast = index === elements.length - 1;
 
           return (
             <div
@@ -87,6 +92,32 @@ export function LayersPanel({
               >
                 {displayText}
               </span>
+
+              <button
+                type="button"
+                disabled={isFirst}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(element.id, "up");
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition shrink-0 disabled:opacity-0"
+                title="Move earlier in reading order"
+              >
+                <ChevronUp className="w-3 h-3" />
+              </button>
+
+              <button
+                type="button"
+                disabled={isLast}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(element.id, "down");
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition shrink-0 disabled:opacity-0"
+                title="Move later in reading order"
+              >
+                <ChevronDown className="w-3 h-3" />
+              </button>
 
               <button
                 type="button"

@@ -10,6 +10,7 @@ import {
 import {
   TextOverlayConfig,
   emptyOverlayConfig,
+  type BookTextStyle,
 } from "@/types/text-overlay";
 import {
   destroyOverlayEditorStore,
@@ -31,6 +32,7 @@ interface OverlayApiResponse {
 interface BookApiResponse {
   id: string;
   title: string;
+  defaultTextStyle?: BookTextStyle | null;
 }
 
 export default function OverlayEditorPage() {
@@ -45,6 +47,7 @@ export default function OverlayEditorPage() {
   const [compositedImageUrl, setCompositedImageUrl] = useState<string | null>(null);
   const [compositedAt, setCompositedAt] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>("Untitled Book");
+  const [bookTextStyle, setBookTextStyle] = useState<BookTextStyle | null>(null);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -132,8 +135,10 @@ export default function OverlayEditorPage() {
         if (!bookRes.ok) {
           throw new Error("Failed to load book data");
         }
-        const bookData: BookApiResponse = await bookRes.json();
+        const bookPayload = await bookRes.json();
+        const bookData: BookApiResponse = bookPayload.book ?? bookPayload;
         setBookTitle(bookData.title || "Untitled Book");
+        setBookTextStyle(bookData.defaultTextStyle ?? null);
 
         // Fetch overlay data
         const overlayRes = await fetch(
@@ -294,6 +299,7 @@ export default function OverlayEditorPage() {
             isSaveCoordinated
             isSaving={isSaving}
             isCompositing={isCompositing}
+            bookTextStyle={bookTextStyle ?? undefined}
           />
         </div>
       )}

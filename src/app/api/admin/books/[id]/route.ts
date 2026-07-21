@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  coerceBookTextStyle,
+  validateBookTextStyle,
+} from "@/types/text-overlay";
 
 type Params = {
   params: Promise<{
@@ -30,6 +35,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
         coverUrl: book.cover_url,
         description: book.description,
         isPublished: book.is_published,
+        defaultTextStyle: coerceBookTextStyle(book.default_text_style),
       },
     });
   } catch (error) {
@@ -56,6 +62,24 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if ("description" in body) data.description = body.description || null;
     if ("isPublished" in body) data.is_published = Boolean(body.isPublished);
     if ("processingStatus" in body) data.processing_status = body.processingStatus || "pending";
+    if ("defaultTextStyle" in body) {
+      try {
+        data.default_text_style = validateBookTextStyle(
+          body.defaultTextStyle
+        ) as unknown as Prisma.InputJsonValue;
+      } catch (validationError) {
+        return NextResponse.json(
+          {
+            error: "Invalid defaultTextStyle",
+            details:
+              validationError instanceof Error
+                ? validationError.message
+                : "Unknown validation error",
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const book = await prisma.books.update({
       where: { id: bookId },
@@ -72,6 +96,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         coverUrl: book.cover_url,
         description: book.description,
         isPublished: book.is_published,
+        defaultTextStyle: coerceBookTextStyle(book.default_text_style),
       },
     });
   } catch (error) {

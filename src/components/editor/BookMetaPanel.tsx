@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Loader2, CheckCircle2, UploadCloud } from "lucide-react";
+import { AlertCircle, Pencil, Loader2, CheckCircle2, UploadCloud } from "lucide-react";
 import { useBookMetaContext } from "@/contexts/BookEditorContext";
 
 /**
@@ -20,6 +20,7 @@ export function BookMetaPanel() {
     hasLocalChanges,
     autoSaving,
     saving,
+    saveError,
     handleSave,
     handlePublish,
     activePage,
@@ -35,6 +36,10 @@ export function BookMetaPanel() {
             type="text"
             value={localTitle}
             onChange={(e) => setLocalTitle(e.target.value)}
+            onBlur={() => void handleSave()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
             className="w-full text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
             placeholder="Untitled Book"
           />
@@ -45,6 +50,10 @@ export function BookMetaPanel() {
             type="text"
             value={localAuthor}
             onChange={(e) => setLocalAuthor(e.target.value)}
+            onBlur={() => void handleSave()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
             className="w-full text-sm text-slate-500 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
             placeholder="Author"
           />
@@ -58,7 +67,15 @@ export function BookMetaPanel() {
           Page {activePage} <span className="text-slate-300 mx-1">/</span> {localPagesLength}
         </div>
         <div className="h-6 w-px bg-slate-200" />
-        {autoSaving ? (
+        {saveError ? (
+          <span
+            className="text-xs text-rose-600 flex items-center gap-1.5"
+            title={saveError}
+          >
+            <AlertCircle className="w-3 h-3" />
+            Save failed — retry
+          </span>
+        ) : autoSaving ? (
           <span className="text-xs text-slate-400 flex items-center gap-1.5">
             <Loader2 className="w-3 h-3 animate-spin" />
             Auto-saving…

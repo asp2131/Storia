@@ -14,6 +14,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
+import { BookStyleDrawer } from "./BookStyleDrawer";
 import {
   useBookEditor,
   useOverlayEditorContext,
@@ -37,9 +38,11 @@ export function OverlayEditorPanel() {
     handleImageFile,
   } = usePageManagerContext();
   const { audioInputRef, handleAudioUpload } = useAudioLibraryContext();
-  const { hasLocalChanges } = useBookMetaContext();
+  const { hasLocalChanges, bookTextStyle } = useBookMetaContext();
 
   const { voiceOptions } = useBookEditor().narration;
+
+  const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false);
 
   const activePageData = activeView.data;
   const overlayPageId = activeView.overlayPageId;
@@ -156,6 +159,7 @@ export function OverlayEditorPanel() {
                 isCompositing={overlayEditorCompositing}
                 voiceOptions={voiceOptions}
                 enableVoiceAssignment
+                bookTextStyle={bookTextStyle}
               />
             </div>
           </div>
@@ -211,12 +215,21 @@ export function OverlayEditorPanel() {
         </div>
 
         <div className="w-1/3 flex justify-end gap-4">
-          <button className="text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-2 text-sm font-medium">
+          <button
+            type="button"
+            onClick={() => setStyleDrawerOpen(true)}
+            className="text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
             <Settings className="w-4.5 h-4.5" />
             Settings
           </button>
         </div>
       </div>
+
+      <BookStyleDrawer
+        open={styleDrawerOpen}
+        onClose={() => setStyleDrawerOpen(false)}
+      />
     </main>
   );
 }

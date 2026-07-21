@@ -4,6 +4,9 @@ import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import {
   TextElement,
   TextOverlayConfig,
+  buildNewTextElement,
+  DEFAULT_BOOK_TEXT_STYLE,
+  type BookTextStyle,
 } from "@/types/text-overlay";
 import { Toolbar } from "./Toolbar";
 import { PropertyPanel } from "./PropertyPanel";
@@ -28,6 +31,8 @@ interface DraggableTextOverlayEditorProps {
   voiceOptions?: VoiceOption[];
   enableVoiceAssignment?: boolean;
   onSelectedElementChange?: (element: TextElement | null) => void;
+  /** Per-book default style — seeds newly added text blocks. */
+  bookTextStyle?: BookTextStyle;
 }
 
 // ─── DraggableTextElement Sub-Component ────────────────────────────────────
@@ -240,6 +245,7 @@ export function DraggableTextOverlayEditor({
   voiceOptions = [],
   enableVoiceAssignment = false,
   onSelectedElementChange,
+  bookTextStyle,
 }: DraggableTextOverlayEditorProps) {
   const actions = useOverlayEditorActions(pageId);
 
@@ -317,22 +323,10 @@ export function DraggableTextOverlayEditor({
   // ─── Handlers ──────────────────────────────────────────────────────────
 
   const handleAddElement = useCallback(() => {
-    const newElement: TextElement = {
-      id: crypto.randomUUID(),
-      text: "New Text",
-      x: 10,
-      y: 10,
-      width: 30,
-      fontFamily: "Inter",
-      fontSize: 5,
-      fontWeight: 400,
-      color: "#000000",
-      textAlign: "left",
-      rotation: 0,
-    };
-
-    actions.addElement(newElement);
-  }, [actions]);
+    actions.addElement(
+      buildNewTextElement(bookTextStyle ?? DEFAULT_BOOK_TEXT_STYLE)
+    );
+  }, [actions, bookTextStyle]);
 
   const handleComposite = useCallback(async () => {
     await onComposite();
@@ -362,6 +356,13 @@ export function DraggableTextOverlayEditor({
   const handleSelectElement = useCallback(
     (elementId: string | null) => {
       actions.selectElement(elementId);
+    },
+    [actions]
+  );
+
+  const handleMoveElement = useCallback(
+    (elementId: string, dir: "up" | "down") => {
+      actions.moveElement(elementId, dir);
     },
     [actions]
   );
@@ -435,6 +436,7 @@ export function DraggableTextOverlayEditor({
           selectedElementId={selectedElementId}
           onSelect={handleSelectElement}
           onDelete={handleDeleteElement}
+          onMove={handleMoveElement}
         />
 
         {/* Property Panel */}

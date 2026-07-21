@@ -104,6 +104,37 @@ export interface TextOverlayConfig {
   elements: TextElement[];
 }
 
+// ─── Book Text Style ─────────────────────────────────────────────
+// Per-book reusable text style. Seeds new text blocks and drives the
+// "Apply to all pages" bulk restyle. Stored in books.default_text_style.
+// Materialized into concrete TextElement fields at save/apply time —
+// never referenced at render time.
+
+/**
+ * Style-only subset of TextElement. Geometry (x/y/width/rotation) and
+ * text content are deliberately excluded — they stay per-element.
+ */
+export interface BookTextStyle {
+  fontFamily: OverlayFont;
+  fontSize: number;
+  fontWeight: FontWeight;
+  color: string;
+  textAlign: TextAlign;
+  shadow?: TextShadow;
+  background?: TextBackground;
+  voiceId?: string;
+  voiceName?: string;
+}
+
+/** Used when a book has no saved style — matches the historical editor defaults. */
+export const DEFAULT_BOOK_TEXT_STYLE: BookTextStyle = {
+  fontFamily: "Inter",
+  fontSize: 5,
+  fontWeight: 400,
+  color: "#000000",
+  textAlign: "left",
+};
+
 /**
  * Compositing status tracked in the `pages` row.
  * null = never composited.
@@ -192,6 +223,141 @@ export function validateOverlayConfig(raw: unknown): TextOverlayConfig {
 /** Create an empty overlay config for new pages. */
 export function emptyOverlayConfig(): TextOverlayConfig {
   return { version: TEXT_OVERLAY_VERSION, elements: [] };
+}
+
+// ─── Book text style helpers ─────────────────────────────────────
+
+/** Validate and normalise a BookTextStyle. Throws on invalid data. */
+export function validateBookTextStyle(raw: unknown): BookTextStyle {
+  const s = raw as Record<string, unknown>;
+
+  if (!AVAILABLE_FONTS.includes(s.fontFamily as OverlayFont)) {
+    throw new Error(
+      `BookTextStyle.fontFamily must be one of: ${AVAILABLE_FONTS.join(", ")}`
+    );
+  }
+  if (!FONT_WEIGHT_OPTIONS.includes(s.fontWeight as FontWeight)) {
+    throw new Error(
+      `BookTextStyle.fontWeight must be one of: ${FONT_WEIGHT_OPTIONS.join(", ")}`
+    );
+  }
+  if (!TEXT_ALIGN_OPTIONS.includes(s.textAlign as TextAlign)) {
+    throw new Error(
+      `BookTextStyle.textAlign must be one of: ${TEXT_ALIGN_OPTIONS.join(", ")}`
+    );
+  }
+
+  return {
+    fontFamily: s.fontFamily as OverlayFont,
+    fontSize: clamp(Number(s.fontSize) || 5, 0.5, 50),
+    fontWeight: s.fontWeight as FontWeight,
+    color: String(s.color || "#000000"),
+    textAlign: s.textAlign as TextAlign,
+    ...(s.shadow ? { shadow: s.shadow as TextShadow } : {}),
+    ...(s.background ? { background: s.background as TextBackground } : {}),
+    ...(typeof s.voiceId === "string" && s.voiceId.length > 0
+      ? { voiceId: s.voiceId }
+      : {}),
+    ...(typeof s.voiceName === "string" && s.voiceName.length > 0
+      ? { voiceName: s.voiceName }
+      : {}),
+  };
+}
+
+/**
+ * Non-throwing variant of validateBookTextStyle — falls back to
+ * DEFAULT_BOOK_TEXT_STYLE when raw is null/invalid. For read paths
+ * (GET responses, apply-all resolution), never for writes.
+ */
+export function coerceBookTextStyle(raw: unknown): BookTextStyle {
+  try {
+    return validateBookTextStyle(raw);
+  } catch {
+    return DEFAULT_BOOK_TEXT_STYLE;
+  }
+}
+
+/** Style-only fields of a TextElement, taken from a BookTextStyle. */
+export function seedTextElement(
+  style: BookTextStyle
+): Pick<
+  TextElement,
+  | "fontFamily"
+  | "fontSize"
+  | "fontWeight"
+  | "color"
+  | "textAlign"
+  | "shadow"
+  | "background"
+  | "voiceId"
+  | "voiceName"
+> {
+  return {
+    fontFamily: style.fontFamily,
+    fontSize: style.fontSize,
+    fontWeight: style.fontWeight,
+    color: style.color,
+    textAlign: style.textAlign,
+    ...(style.shadow ? { shadow: style.shadow } : {}),
+    ...(style.background ? { background: style.background } : {}),
+    ...(style.voiceId ? { voiceId: style.voiceId } : {}),
+    ...(style.voiceName ? { voiceName: style.voiceName } : {}),
+  };
+}
+
+/**
+ * Build a new TextElement seeded from a book text style.
+ * Geometry defaults match the historical editor behaviour.
+ */
+export function buildNewTextElement(
+  style: BookTextStyle,
+  overrides: Partial<TextElement> = {}
+): TextElement {
+  return {
+    id: crypto.randomUUID(),
+    text: "New Text",
+    x: 10,
+    y: 10,
+    width: 30,
+    rotation: 0,
+    ...seedTextElement(style),
+    ...overrides,
+  };
+}
+
+/**
+ * Return a new config with every element's style fields replaced by the
+ * book style. Content, geometry, and ids are preserved. Optional style
+ * fields (shadow/background/voice) are REMOVED from elements when the
+ * style omits them — the style is the source of truth for style fields.
+ */
+export function applyBookTextStyle(
+  config: TextOverlayConfig,
+  style: BookTextStyle
+): TextOverlayConfig {
+  return {
+    version: config.version,
+    elements: config.elements.map((el) => {
+      const next: TextElement = {
+        id: el.id,
+        text: el.text,
+        x: el.x,
+        y: el.y,
+        width: el.width,
+        rotation: el.rotation,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        color: style.color,
+        textAlign: style.textAlign,
+      };
+      if (style.shadow) next.shadow = style.shadow;
+      if (style.background) next.background = style.background;
+      if (style.voiceId) next.voiceId = style.voiceId;
+      if (style.voiceName) next.voiceName = style.voiceName;
+      return next;
+    }),
+  };
 }
 
 /**

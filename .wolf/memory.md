@@ -958,3 +958,61 @@
 |------|--------|---------|---------|--------|
 
 | 2026-05-06 12:45 | Implemented STO-10 overlay text OCR feature: added `page_overlay_text_entries` table/migration, Replicate OCR route, overlay-text CRUD route, `overlayText.ts` parser/assembly lib with tests, `OverlayTextPanel.tsx` UI, wired into `BookEditorContext` and narration/pronunciation pipelines. 324 tests pass, tsc clean. OCR route tests cover validation, success, empty, failure, polling, and timeout paths. Overlay text parser tests cover preamble strip, quoted-line extraction, empty cases, deduplication, and whitespace normalization. | prisma/schema.prisma, prisma/migrations/20260506153300_add_page_overlay_text_entries, src/app/api/admin/books/[id]/pages/[pageNumber]/ocr/*, src/app/api/admin/books/[id]/pages/[pageNumber]/overlay-text/*, src/lib/overlayText.ts, src/lib/overlayText.test.ts, src/components/editor/OverlayTextPanel.tsx, src/contexts/BookEditorContext.tsx, src/hooks/useBookData.ts | complete | ~8500 |
+
+## Session: 2026-06-30 13:53
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:00 | Edited ../storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart | 2→5 lines | ~76 |
+| 14:00 | Edited ../storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart | 2→2 lines | ~48 |
+| 14:00 | Edited ../storia-mobile/lib/src/data/models.dart | 3→3 lines | ~43 |
+| 14:01 | Session end: 3 writes across 2 files (overlay_layout_engine.dart, models.dart) | 8 reads | ~4038 tok |
+
+## Session: 2026-07-15 12:34
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-17 17:44
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-17 17:46
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 17:50 | Edited src/components/StoriaCalmLanding.tsx | "/storia-landing/mascot-id" → "/storia-landing/logo-head" | ~26 |
+| 17:50 | Edited src/components/StoriaCalmLanding.tsx | "/storia-landing/mascot-id" → "/storia-landing/mascot-fu" | ~17 |
+| 17:50 | Swapped nav logo + CTA mascot to new replicate images | StoriaCalmLanding.tsx, public/storia-landing/ | ok | ~200 |
+| 17:50 | Session end: 2 writes across 1 files (StoriaCalmLanding.tsx) | 4 reads | ~43 tok |
+
+## Session: 2026-07-17 17:51
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-17 17:52
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-21 10:35
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 10:36 | Edited src/app/api/admin/books/route.ts | expanded (+9 lines) | ~181 |
+| 10:36 | auto-create first page on new book | src/app/api/admin/books/route.ts | added nested pages.create + total_pages:1 | ~2k |
+| 10:36 | Session end: 1 writes across 1 files (route.ts) | 2 reads | ~5162 tok |
+| 10:38 | Edited src/app/admin/actions.ts | expanded (+9 lines) | ~133 |
+| 10:38 | new book auto-create page1 (real flow) | src/app/admin/actions.ts | createBookDraft nested pages.create + total_pages:1 | ~2k |
+| 10:39 | Session end: 2 writes across 2 files (route.ts, actions.ts) | 5 reads | ~11406 tok |
+| 10:45 | Edited src/app/admin/actions.ts | added optional chaining | ~239 |
+| 10:45 | Edited src/app/admin/actions.ts | added 1 import(s) | ~36 |
+| 10:46 | new books inherit last-used text/voice style | src/app/admin/actions.ts | createBookDraft copies default_text_style from latest styled book | ~3k |
+| 10:46 | Session end: 4 writes across 2 files (route.ts, actions.ts) | 7 reads | ~12533 tok |
+
+## Session: 2026-07-21 10:48
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
