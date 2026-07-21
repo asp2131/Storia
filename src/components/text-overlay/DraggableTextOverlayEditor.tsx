@@ -5,6 +5,7 @@ import {
   TextElement,
   TextOverlayConfig,
   buildNewTextElement,
+  changedRememberedTextSettings,
   DEFAULT_BOOK_TEXT_STYLE,
   type BookTextStyle,
   type RememberedTextSettings,
@@ -35,6 +36,9 @@ interface DraggableTextOverlayEditorProps {
   onTextSettingsChange?: (settings: RememberedTextSettings) => void;
   /** Per-book default style — seeds newly added text blocks. */
   bookTextStyle?: BookTextStyle;
+  showInspector?: boolean;
+  onChangeImage?: () => void;
+  onRemoveImage?: () => void;
 }
 
 // ─── DraggableTextElement Sub-Component ────────────────────────────────────
@@ -189,10 +193,9 @@ function DraggableTextElement({
 
   return (
     <div
-      className={`
-        absolute cursor-move select-none pointer-events-auto
-        ${isSelected ? "ring-2 ring-blue-500" : ""}
-      `}
+      className={`absolute cursor-move select-none pointer-events-auto rounded-sm ${
+        isSelected ? "outline-2 outline-offset-4 outline-[var(--editor-accent)]" : ""
+      }`}
       style={{
         left: `${element.x}%`,
         top: `${element.y}%`,
@@ -218,7 +221,7 @@ function DraggableTextElement({
       {/* Resize handle - only visible when selected */}
       {isSelected && (
         <div
-          className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl"
+          className="absolute -bottom-2 -right-2 h-4 w-4 cursor-se-resize rounded-full border-2 border-[var(--editor-accent)] bg-white shadow-sm"
           style={{
             transform: `rotate(${-element.rotation}deg)`,
             transformOrigin: "center center",
@@ -249,6 +252,9 @@ export function DraggableTextOverlayEditor({
   onSelectedElementChange,
   onTextSettingsChange,
   bookTextStyle,
+  showInspector = true,
+  onChangeImage,
+  onRemoveImage,
 }: DraggableTextOverlayEditorProps) {
   const actions = useOverlayEditorActions(pageId);
 
@@ -344,22 +350,9 @@ export function DraggableTextOverlayEditor({
 
   const handlePropertyUpdate = useCallback(
     (updatedElement: TextElement) => {
-      const settings: RememberedTextSettings = {};
-      if (selectedElement?.id === updatedElement.id) {
-        if (selectedElement.fontFamily !== updatedElement.fontFamily) {
-          settings.fontFamily = updatedElement.fontFamily;
-        }
-        if (selectedElement.fontSize !== updatedElement.fontSize) {
-          settings.fontSize = updatedElement.fontSize;
-        }
-        if (
-          selectedElement.voiceId !== updatedElement.voiceId ||
-          selectedElement.voiceName !== updatedElement.voiceName
-        ) {
-          settings.voiceId = updatedElement.voiceId;
-          settings.voiceName = updatedElement.voiceName;
-        }
-      }
+      const settings = selectedElement?.id === updatedElement.id
+        ? changedRememberedTextSettings(selectedElement, updatedElement)
+        : {};
 
       actions.updateElement(updatedElement.id, updatedElement);
       if (Object.keys(settings).length > 0) onTextSettingsChange?.(settings);
@@ -401,11 +394,12 @@ export function DraggableTextOverlayEditor({
   // ─── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-gray-50">
-      {/* Toolbar */}
+    <div className="flex h-full min-h-0 flex-col bg-zinc-100">
       <Toolbar
         onAddElement={handleAddElement}
         onComposite={handleComposite}
+        onChangeImage={onChangeImage}
+        onRemoveImage={onRemoveImage}
         isSaving={isSaving || isAutoSaving}
         isCompositing={isCompositing}
         hasChanges={hasChanges}
@@ -414,28 +408,24 @@ export function DraggableTextOverlayEditor({
         hasBaseImage={!!imageUrl}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Image Canvas */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <div
-          className="flex-1 relative bg-gray-100 flex items-center justify-center p-8 overflow-auto"
+          className="editor-scroll relative flex flex-1 items-center justify-center overflow-auto bg-zinc-100 px-6 pb-8 pt-2"
           onClick={handleCanvasClick}
         >
           <div
             ref={imageContainerRef}
-            className="relative inline-block"
+            className="relative inline-block max-w-full editor-pop"
             data-canvas-container
           >
-            {/* Base Image */}
             <img
               src={imageUrl}
               alt="Base illustration"
-              className="max-w-full max-h-full object-contain shadow-lg rounded-lg"
+              className="max-h-[calc(100vh-13rem)] max-w-full rounded-2xl object-contain shadow-[0_12px_40px_rgba(24,24,27,0.13),0_2px_8px_rgba(24,24,27,0.06)]"
               draggable={false}
             />
 
-            {/* Text Elements Overlay Container */}
-            <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 overflow-hidden rounded-2xl">
               {elements.map((element) => (
                 <DraggableTextElement
                   key={element.id}
@@ -451,23 +441,24 @@ export function DraggableTextOverlayEditor({
           </div>
         </div>
 
-        {/* Layers Panel */}
-        <LayersPanel
-          elements={elements}
-          selectedElementId={selectedElementId}
-          onSelect={handleSelectElement}
-          onDelete={handleDeleteElement}
-          onMove={handleMoveElement}
-        />
-
-        {/* Property Panel */}
-        <PropertyPanel
-          selectedElement={selectedElement}
-          onUpdate={handlePropertyUpdate}
-          onDelete={handleDeleteElement}
-          voiceOptions={voiceOptions}
-          enableVoiceAssignment={enableVoiceAssignment}
-        />
+        {showInspector && (
+          <>
+            <LayersPanel
+              elements={elements}
+              selectedElementId={selectedElementId}
+              onSelect={handleSelectElement}
+              onDelete={handleDeleteElement}
+              onMove={handleMoveElement}
+            />
+            <PropertyPanel
+              selectedElement={selectedElement}
+              onUpdate={handlePropertyUpdate}
+              onDelete={handleDeleteElement}
+              voiceOptions={voiceOptions}
+              enableVoiceAssignment={enableVoiceAssignment}
+            />
+          </>
+        )}
       </div>
     </div>
   );

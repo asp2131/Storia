@@ -312,6 +312,21 @@ export type RememberedTextSettings = Partial<
   voiceName?: string | null;
 };
 
+/** Pick remembered defaults that changed between two versions of a text block. */
+export function changedRememberedTextSettings(
+  previous: TextElement,
+  next: TextElement
+): RememberedTextSettings {
+  const changed: RememberedTextSettings = {};
+  if (previous.fontFamily !== next.fontFamily) changed.fontFamily = next.fontFamily;
+  if (previous.fontSize !== next.fontSize) changed.fontSize = next.fontSize;
+  if (previous.voiceId !== next.voiceId || previous.voiceName !== next.voiceName) {
+    changed.voiceId = next.voiceId ?? null;
+    changed.voiceName = next.voiceName ?? null;
+  }
+  return changed;
+}
+
 /** Remember only the settings the user just changed. */
 export function rememberTextSettings(
   style: BookTextStyle,

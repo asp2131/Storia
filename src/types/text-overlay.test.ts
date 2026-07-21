@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   applyBookTextStyle,
   buildNewTextElement,
+  changedRememberedTextSettings,
   DEFAULT_BOOK_TEXT_STYLE,
   rememberTextSettings,
   seedTextElement,
@@ -97,6 +98,17 @@ describe("rememberTextSettings", () => {
     });
     expect(withoutVoice).not.toHaveProperty("voiceId");
     expect(withoutVoice).not.toHaveProperty("voiceName");
+  });
+
+  it("detects only defaults explicitly changed on a text block", () => {
+    const previous = el("a", { voiceId: "voice-1", voiceName: "Narrator" });
+    const next = { ...previous, text: "Changed", fontSize: 7, voiceId: undefined, voiceName: undefined };
+
+    expect(changedRememberedTextSettings(previous, next)).toEqual({
+      fontSize: 7,
+      voiceId: null,
+      voiceName: null,
+    });
   });
 });
 

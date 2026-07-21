@@ -11,6 +11,7 @@ import {
 import { PageManagerPanel } from "@/components/editor/PageManagerPanel";
 import { OverlayEditorPanel } from "@/components/editor/OverlayEditorPanel";
 import { AudioLibraryPanel } from "@/components/editor/AudioLibraryPanel";
+import { BookMetaPanel } from "@/components/editor/BookMetaPanel";
 
 // ─── Inner component — reads all state from context ───────────────────────────
 
@@ -24,18 +25,17 @@ function BookEditorInner() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="book-editor flex h-screen items-center justify-center bg-zinc-100">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
-          <span className="text-slate-600">Loading book...</span>
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--editor-accent)]" />
+          <span className="text-zinc-600">Loading book…</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
-      {/* Audio elements */}
+    <div className="book-editor flex h-screen flex-col overflow-hidden bg-zinc-100 text-zinc-900">
       {soundscapeActiveUrl ? (
         <audio ref={soundscapeRef} src={soundscapeActiveUrl} loop onEnded={() => setIsSoundscapePlaying(false)} />
       ) : (
@@ -55,9 +55,14 @@ function BookEditorInner() {
         />
       )}
 
-      <PageManagerPanel />
-      <OverlayEditorPanel />
-      <AudioLibraryPanel />
+      <header className="z-30 flex h-14 shrink-0 items-center border-b border-zinc-200/80 bg-white px-4">
+        <BookMetaPanel />
+      </header>
+      <div className="flex min-h-0 flex-1">
+        <PageManagerPanel />
+        <OverlayEditorPanel />
+        <AudioLibraryPanel />
+      </div>
     </div>
   );
 }

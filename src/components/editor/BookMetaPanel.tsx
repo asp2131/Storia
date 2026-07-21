@@ -1,17 +1,29 @@
 "use client";
 
-import { AlertCircle, Pencil, Loader2, CheckCircle2, UploadCloud } from "lucide-react";
-import { useBookMetaContext } from "@/contexts/BookEditorContext";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import {
+  AlertCircle,
+  ArrowLeft,
+  BookOpen,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Loader2,
+  Pencil,
+  Save,
+  UploadCloud,
+} from "lucide-react";
+import {
+  useBookMetaContext,
+  usePageManagerContext,
+} from "@/contexts/BookEditorContext";
 
-/**
- * BookMetaPanel — renders the full book editor header content:
- * left section: title + author inline editors
- * right section: page counter, save status indicator, Save Draft and Publish buttons
- *
- * Designed to be the sole child of the <header> flex container in BookEditorInner.
- * The header uses `justify-between` so this component renders two sibling divs.
- */
 export function BookMetaPanel() {
+  const params = useParams();
+  const router = useRouter();
+  const bookId = params.id as string;
   const {
     localTitle,
     setLocalTitle,
@@ -26,89 +38,140 @@ export function BookMetaPanel() {
     activePage,
     localPagesLength,
   } = useBookMetaContext();
+  const { setActivePage } = usePageManagerContext();
+
+  const status = saveError
+    ? { icon: AlertCircle, label: "Save failed — retry", className: "text-rose-600" }
+    : autoSaving
+      ? { icon: Loader2, label: "Saving changes…", className: "text-zinc-400" }
+      : hasLocalChanges
+        ? { icon: null, label: "Unsaved changes", className: "text-amber-600" }
+        : { icon: CheckCircle2, label: "All changes saved", className: "text-zinc-400" };
+  const StatusIcon = status.icon;
 
   return (
     <>
-      {/* Left: title + author */}
-      <div className="flex items-center gap-3 flex-1 max-w-xl">
-        <div className="group relative flex-1">
+      <div className="flex shrink-0 items-center gap-2.5">
+        <Link
+          href="/admin/books"
+          aria-label="Back to library"
+          className="grid h-8 w-8 place-items-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+        >
+          <ArrowLeft className="h-[18px] w-[18px]" />
+        </Link>
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--editor-accent)] text-white">
+          <BookOpen className="h-4 w-4" />
+        </span>
+        <span className="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 max-[900px]:hidden">
+          Loratone
+        </span>
+      </div>
+
+      <div className="mx-4 h-[22px] w-px shrink-0 bg-zinc-200" />
+
+      <div className="min-w-0 flex-1">
+        <div className="group relative flex max-w-sm items-center gap-1.5">
           <input
             type="text"
             value={localTitle}
-            onChange={(e) => setLocalTitle(e.target.value)}
+            onChange={(event) => setLocalTitle(event.target.value)}
             onBlur={() => void handleSave()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
             }}
-            className="w-full text-lg font-semibold text-slate-800 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
+            className="min-w-0 max-w-72 bg-transparent text-sm font-semibold text-zinc-900 outline-none placeholder:text-zinc-400 focus:rounded-md focus:ring-2 focus:ring-[var(--editor-accent-soft)]"
             placeholder="Untitled Book"
+            aria-label="Book title"
           />
-          <Pencil className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+          <Pencil className="h-3 w-3 shrink-0 text-zinc-400 opacity-0 transition-opacity group-hover:opacity-100" />
         </div>
-        <div className="group relative w-40 shrink-0">
+        <div className="flex min-w-0 items-center gap-2 text-[11px] leading-none">
+          <span className={`inline-flex items-center gap-1 ${status.className}`} aria-live="polite">
+            {StatusIcon ? (
+              <StatusIcon className={`h-3 w-3 ${autoSaving ? "animate-spin" : ""}`} />
+            ) : (
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            )}
+            {status.label}
+          </span>
+          <span className="hidden text-zinc-300 md:inline">·</span>
           <input
             type="text"
             value={localAuthor}
-            onChange={(e) => setLocalAuthor(e.target.value)}
+            onChange={(event) => setLocalAuthor(event.target.value)}
             onBlur={() => void handleSave()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
             }}
-            className="w-full text-sm text-slate-500 bg-transparent border-2 border-transparent hover:border-slate-200 focus:border-teal-500 rounded-md px-2 py-1 transition-all outline-none truncate focus:bg-slate-50/50"
-            placeholder="Author"
+            className="hidden min-w-0 max-w-36 bg-transparent text-zinc-400 outline-none placeholder:text-zinc-300 focus:text-zinc-600 md:block"
+            placeholder="Add author"
+            aria-label="Book author"
           />
-          <Pencil className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
         </div>
       </div>
 
-      {/* Right: page counter + save status + action buttons */}
-      <div className="flex items-center gap-6">
-        <div className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">
-          Page {activePage} <span className="text-slate-300 mx-1">/</span> {localPagesLength}
-        </div>
-        <div className="h-6 w-px bg-slate-200" />
-        {saveError ? (
-          <span
-            className="text-xs text-rose-600 flex items-center gap-1.5"
-            title={saveError}
-          >
-            <AlertCircle className="w-3 h-3" />
-            Save failed — retry
-          </span>
-        ) : autoSaving ? (
-          <span className="text-xs text-slate-400 flex items-center gap-1.5">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Auto-saving…
-          </span>
-        ) : hasLocalChanges ? (
-          <span className="text-xs text-amber-500">Unsaved changes</span>
-        ) : (
-          <span className="text-xs text-slate-400 flex items-center gap-1.5">
-            <CheckCircle2 className="w-3 h-3" />
-            Saved
-          </span>
-        )}
+      <div className="mx-3 flex shrink-0 items-center gap-0.5 rounded-lg bg-zinc-100 p-0.5 sm:p-1">
         <button
           type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-60"
+          title="Previous page"
+          aria-label="Previous page"
+          onClick={() => setActivePage(Math.max(1, activePage - 1))}
+          disabled={activePage <= 1}
+          className="grid h-7 w-7 place-items-center rounded-md text-zinc-600 transition hover:bg-white disabled:opacity-30"
         >
-          {saving ? "Saving..." : "Save Draft"}
-          <span className="text-xs text-slate-300 font-normal hidden lg:inline">
-            {typeof navigator !== "undefined" && navigator.platform?.includes("Mac")
-              ? "⌘S"
-              : "Ctrl+S"}
-          </span>
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <span className="min-w-16 px-1 text-center text-xs font-semibold tabular-nums text-zinc-700">
+          Page {activePage} / {localPagesLength}
+        </span>
+        <button
+          type="button"
+          title="Next page"
+          aria-label="Next page"
+          onClick={() => setActivePage(Math.min(localPagesLength, activePage + 1))}
+          disabled={activePage >= localPagesLength}
+          className="grid h-7 w-7 place-items-center rounded-md text-zinc-600 transition hover:bg-white disabled:opacity-30"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await handleSave();
+              router.push(`/books/${bookId}/reader`);
+            } catch {
+              // Save status already exposes the failure; stay in the editor.
+            }
+          }}
+          disabled={saving}
+          aria-label="Preview book"
+          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[13px] font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
+        >
+          <Eye className="h-4 w-4" />
+          <span className="hidden xl:inline">Preview</span>
         </button>
         <button
           type="button"
-          onClick={handlePublish}
+          onClick={() => void handleSave()}
           disabled={saving}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg font-medium shadow-sm shadow-teal-600/20 transition-all flex items-center gap-2 disabled:opacity-60"
+          aria-label="Save draft"
+          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-[13px] font-semibold text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Publish"}
-          <UploadCloud className="w-5 h-5" />
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          <span className="hidden 2xl:inline">Save draft</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void handlePublish()}
+          disabled={saving}
+          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--editor-accent)] px-4 text-[13px] font-semibold text-white shadow-sm transition hover:brightness-105 disabled:opacity-50"
+        >
+          <UploadCloud className="h-4 w-4" />
+          <span className="hidden sm:inline">Publish</span>
         </button>
       </div>
     </>

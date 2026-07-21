@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  ChevronDown,
+  Mic,
+  Trash2,
+} from "lucide-react";
 import {
   TextElement,
   TextShadow,
@@ -25,7 +33,12 @@ interface PropertyPanelProps {
   onDelete: (elementId: string) => void;
   voiceOptions?: VoiceOption[];
   enableVoiceAssignment?: boolean;
+  embedded?: boolean;
 }
+
+const fieldLabel = "mb-1.5 block text-[11.5px] font-semibold text-zinc-500";
+const control = "w-full rounded-[9px] border border-zinc-200 bg-[#fbfbfc] px-3 py-2 text-[13px] text-zinc-800 outline-none transition focus:border-[var(--editor-accent)] focus:bg-white focus:ring-2 focus:ring-[var(--editor-accent-faint)]";
+const alignIcons = { left: AlignLeft, center: AlignCenter, right: AlignRight };
 
 export function PropertyPanel({
   selectedElement,
@@ -33,474 +46,337 @@ export function PropertyPanel({
   onDelete,
   voiceOptions = [],
   enableVoiceAssignment = false,
+  embedded = false,
 }: PropertyPanelProps) {
   const [isShadowExpanded, setIsShadowExpanded] = useState(false);
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
+  const shell = embedded
+    ? "space-y-4"
+    : "editor-scroll w-80 shrink-0 space-y-4 overflow-y-auto border-l border-zinc-200 bg-white p-4";
 
   if (!selectedElement) {
     return (
-      <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
-        <p className="text-gray-500 text-sm">
-          Select a text element to edit its properties
-        </p>
+      <div className={shell}>
+        <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-8 text-center">
+          <span className="mx-auto mb-2 grid h-9 w-9 place-items-center rounded-lg bg-white text-zinc-400 shadow-sm">
+            <AlignLeft className="h-4 w-4" />
+          </span>
+          <p className="text-[13px] font-semibold text-zinc-600">Select a text block</p>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+            Choose text on the page or from the layers list to edit it.
+          </p>
+        </div>
       </div>
     );
   }
 
-  const handleTextChange = (text: string) => {
-    onUpdate({ ...selectedElement, text });
-  };
-
-  const handleFontFamilyChange = (fontFamily: OverlayFont) => {
-    onUpdate({ ...selectedElement, fontFamily });
-  };
-
-  const handleFontSizeChange = (fontSize: number) => {
-    onUpdate({ ...selectedElement, fontSize });
-  };
-
-  const handleFontWeightChange = (fontWeight: FontWeight) => {
-    onUpdate({ ...selectedElement, fontWeight });
-  };
-
-  const handleColorChange = (color: string) => {
-    onUpdate({ ...selectedElement, color });
-  };
-
-  const handleTextAlignChange = (textAlign: TextAlign) => {
-    onUpdate({ ...selectedElement, textAlign });
-  };
-
-  const handleRotationChange = (rotation: number) => {
-    onUpdate({ ...selectedElement, rotation });
-  };
+  const update = (patch: Partial<TextElement>) => onUpdate({ ...selectedElement, ...patch });
 
   const handleVoiceChange = (voiceId: string) => {
     if (!voiceId) {
-      const rest = { ...selectedElement };
-      delete rest.voiceId;
-      delete rest.voiceName;
-      onUpdate(rest);
+      const next = { ...selectedElement };
+      delete next.voiceId;
+      delete next.voiceName;
+      onUpdate(next);
       return;
     }
-
-    const selectedVoice = voiceOptions.find((voice) => voice.id === voiceId);
+    const voice = voiceOptions.find((option) => option.id === voiceId);
     onUpdate({
       ...selectedElement,
       voiceId,
-      ...(selectedVoice ? { voiceName: selectedVoice.name } : {}),
+      ...(voice ? { voiceName: voice.name } : {}),
     });
   };
 
   const handleShadowToggle = (enabled: boolean) => {
     if (enabled) {
-      const defaultShadow: TextShadow = {
+      const shadow: TextShadow = {
         color: "rgba(0, 0, 0, 0.5)",
         offsetX: 2,
         offsetY: 2,
         blur: 4,
       };
-      onUpdate({ ...selectedElement, shadow: defaultShadow });
+      update({ shadow });
       setIsShadowExpanded(true);
     } else {
-      const { shadow: _, ...elementWithoutShadow } = selectedElement;
-      onUpdate(elementWithoutShadow);
+      const next = { ...selectedElement };
+      delete next.shadow;
+      onUpdate(next);
     }
-  };
-
-  const handleShadowChange = (updates: Partial<TextShadow>) => {
-    if (!selectedElement.shadow) return;
-    onUpdate({
-      ...selectedElement,
-      shadow: { ...selectedElement.shadow, ...updates },
-    });
   };
 
   const handleBackgroundToggle = (enabled: boolean) => {
     if (enabled) {
-      const defaultBackground: TextBackground = {
+      const background: TextBackground = {
         color: "rgba(0, 0, 0, 0.5)",
         padding: 4,
         borderRadius: 4,
       };
-      onUpdate({ ...selectedElement, background: defaultBackground });
+      update({ background });
       setIsBackgroundExpanded(true);
     } else {
-      const { background: _, ...elementWithoutBackground } = selectedElement;
-      onUpdate(elementWithoutBackground);
+      const next = { ...selectedElement };
+      delete next.background;
+      onUpdate(next);
     }
   };
 
-  const handleBackgroundChange = (updates: Partial<TextBackground>) => {
-    if (!selectedElement.background) return;
-    onUpdate({
-      ...selectedElement,
-      background: { ...selectedElement.background, ...updates },
-    });
-  };
-
   return (
-    <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
-      {/* Text Content */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Text Content
-        </label>
+    <div className={shell}>
+      <div>
+        <label className={fieldLabel} htmlFor={`text-${selectedElement.id}`}>Text content</label>
         <textarea
+          id={`text-${selectedElement.id}`}
           value={selectedElement.text}
-          onChange={(e) => handleTextChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
-          rows={3}
+          onChange={(event) => update({ text: event.target.value })}
+          className={`${control} min-h-16 resize-y leading-relaxed`}
+          rows={2}
         />
       </div>
 
-      {enableVoiceAssignment && (
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Voice
-          </label>
+      <div className="grid grid-cols-[1.35fr_1fr] gap-2">
+        <div className="min-w-0">
+          <label className={fieldLabel}>Font</label>
           <select
-            value={selectedElement.voiceId || ""}
-            onChange={(e) => handleVoiceChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            value={selectedElement.fontFamily}
+            onChange={(event) => update({ fontFamily: event.target.value as OverlayFont })}
+            className={control}
           >
-            <option value="">No voice (use legacy page voice)</option>
-            {voiceOptions.map((voice) => (
-              <option key={voice.id} value={voice.id}>
-                {voice.name}{voice.category ? ` (${voice.category})` : ""}
-              </option>
-            ))}
+            {AVAILABLE_FONTS.map((font) => <option key={font}>{font}</option>)}
           </select>
-          <p className="mt-1 text-[11px] text-gray-500">
-            Used for this block and remembered for new text blocks.
-          </p>
         </div>
-      )}
-
-      {/* Font Family */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Font Family
-        </label>
-        <select
-          value={selectedElement.fontFamily}
-          onChange={(e) => handleFontFamilyChange(e.target.value as OverlayFont)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-        >
-          {AVAILABLE_FONTS.map((font) => (
-            <option key={font} value={font}>
-              {font}
-            </option>
-          ))}
-        </select>
+        <div className="min-w-0">
+          <label className={fieldLabel}>Weight</label>
+          <select
+            value={selectedElement.fontWeight}
+            onChange={(event) => update({ fontWeight: Number(event.target.value) as FontWeight })}
+            className={control}
+          >
+            {FONT_WEIGHT_OPTIONS.map((weight) => <option key={weight}>{weight}</option>)}
+          </select>
+        </div>
       </div>
 
-      {/* Font Size */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Font Size: {selectedElement.fontSize.toFixed(1)}%
-        </label>
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="text-[11.5px] font-semibold text-zinc-500">Size</label>
+          <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-zinc-700">
+            {selectedElement.fontSize.toFixed(1)}%
+          </span>
+        </div>
         <input
           type="range"
           min={0.5}
           max={50}
           step={0.1}
           value={selectedElement.fontSize}
-          onChange={(e) => handleFontSizeChange(parseFloat(e.target.value))}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          onChange={(event) => update({ fontSize: Number(event.target.value) })}
+          className="editor-range w-full"
         />
       </div>
 
-      {/* Font Weight */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Font Weight
-        </label>
-        <select
-          value={selectedElement.fontWeight}
-          onChange={(e) =>
-            handleFontWeightChange(parseInt(e.target.value) as FontWeight)
-          }
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-        >
-          {FONT_WEIGHT_OPTIONS.map((weight) => (
-            <option key={weight} value={weight}>
-              {weight}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Color */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Color
-        </label>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            value={selectedElement.color}
-            onChange={(e) => handleColorChange(e.target.value)}
-            className="w-10 h-10 rounded cursor-pointer"
-          />
-          <input
-            type="text"
-            value={selectedElement.color}
-            onChange={(e) => handleColorChange(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          />
+      <div className="grid grid-cols-[1fr_1.3fr] gap-2">
+        <div>
+          <label className={fieldLabel}>Color</label>
+          <div className="flex h-[38px] items-center gap-2 rounded-[9px] border border-zinc-200 bg-[#fbfbfc] px-2.5">
+            <input
+              type="color"
+              value={selectedElement.color}
+              onChange={(event) => update({ color: event.target.value })}
+              className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+              aria-label="Text color"
+            />
+            <input
+              value={selectedElement.color}
+              onChange={(event) => update({ color: event.target.value })}
+              className="min-w-0 flex-1 bg-transparent text-xs uppercase tabular-nums text-zinc-600 outline-none"
+              aria-label="Text color value"
+            />
+          </div>
+        </div>
+        <div>
+          <label className={fieldLabel}>Align</label>
+          <div className="flex gap-1 rounded-[9px] bg-zinc-100 p-1">
+            {TEXT_ALIGN_OPTIONS.map((align) => {
+              const Icon = alignIcons[align];
+              const active = selectedElement.textAlign === align;
+              return (
+                <button
+                  key={align}
+                  type="button"
+                  onClick={() => update({ textAlign: align as TextAlign })}
+                  className={`grid h-[30px] flex-1 place-items-center rounded-md transition ${active ? "bg-white text-[var(--editor-accent)] shadow-sm" : "text-zinc-500 hover:bg-white/70"}`}
+                  aria-label={`Align ${align}`}
+                  aria-pressed={active}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Text Align */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Text Align
-        </label>
-        <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-          {TEXT_ALIGN_OPTIONS.map((align) => (
-            <button
-              key={align}
-              onClick={() => handleTextAlignChange(align)}
-              className={`
-                flex-1 py-2 px-3 text-sm capitalize
-                ${selectedElement.textAlign === align
-                  ? "bg-blue-500 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100"
-                }
-              `}
-            >
-              {align}
-            </button>
-          ))}
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="text-[11.5px] font-semibold text-zinc-500">Rotation</label>
+          <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-zinc-700">
+            {selectedElement.rotation}°
+          </span>
         </div>
-      </div>
-
-      {/* Rotation */}
-      <div className="mb-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Rotation: {selectedElement.rotation}°
-        </label>
         <input
           type="range"
           min={-180}
           max={180}
           step={1}
           value={selectedElement.rotation}
-          onChange={(e) => handleRotationChange(parseInt(e.target.value))}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          onChange={(event) => update({ rotation: Number(event.target.value) })}
+          className="editor-range w-full"
         />
       </div>
 
-      {/* Shadow Section */}
-      <div className="mb-4 border border-gray-200 rounded-lg">
-        <button
-          onClick={() => setIsShadowExpanded(!isShadowExpanded)}
-          className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50"
-        >
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={!!selectedElement.shadow}
-              onChange={(e) => handleShadowToggle(e.target.checked)}
-              onClick={(e) => e.stopPropagation()}
-              className="w-4 h-4"
-            />
-            <span className="text-sm font-semibold text-gray-700">Shadow</span>
-          </div>
-          <span
-            className="text-gray-400 transition-transform"
-            style={{ transform: isShadowExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+      {enableVoiceAssignment && (
+        <div className="border-t border-zinc-100 pt-4">
+          <label className={`${fieldLabel} flex items-center gap-1.5`}>
+            <Mic className="h-3.5 w-3.5" />
+            Reading voice for this text
+          </label>
+          <select
+            value={selectedElement.voiceId || ""}
+            onChange={(event) => handleVoiceChange(event.target.value)}
+            className={control}
           >
-            ▼
-          </span>
-        </button>
+            <option value="">Use page voice</option>
+            {voiceOptions.map((voice) => (
+              <option key={voice.id} value={voice.id}>
+                {voice.name}{voice.category ? ` — ${voice.category}` : ""}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-[11px] text-zinc-400">Remembered for new text blocks.</p>
+        </div>
+      )}
 
-        {isShadowExpanded && selectedElement.shadow && (
-          <div className="p-3 pt-0 border-t border-gray-200">
-            {/* Shadow Color */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Color
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={selectedElement.shadow.color}
-                  onChange={(e) =>
-                    handleShadowChange({ color: e.target.value })
-                  }
-                  className="w-8 h-8 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={selectedElement.shadow.color}
-                  onChange={(e) =>
-                    handleShadowChange({ color: e.target.value })
-                  }
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Shadow Offset X */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Offset X: {selectedElement.shadow.offsetX}%
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={0.1}
-                value={selectedElement.shadow.offsetX}
-                onChange={(e) =>
-                  handleShadowChange({ offsetX: parseFloat(e.target.value) })
-                }
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-
-            {/* Shadow Offset Y */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Offset Y: {selectedElement.shadow.offsetY}%
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={0.1}
-                value={selectedElement.shadow.offsetY}
-                onChange={(e) =>
-                  handleShadowChange({ offsetY: parseFloat(e.target.value) })
-                }
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-
-            {/* Shadow Blur */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Blur: {selectedElement.shadow.blur}%
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={0.1}
-                value={selectedElement.shadow.blur}
-                onChange={(e) =>
-                  handleShadowChange({ blur: parseFloat(e.target.value) })
-                }
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Background Section */}
-      <div className="mb-4 border border-gray-200 rounded-lg">
-        <button
-          onClick={() => setIsBackgroundExpanded(!isBackgroundExpanded)}
-          className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50"
-        >
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={!!selectedElement.background}
-              onChange={(e) => handleBackgroundToggle(e.target.checked)}
-              onClick={(e) => e.stopPropagation()}
-              className="w-4 h-4"
-            />
-            <span className="text-sm font-semibold text-gray-700">
-              Background
-            </span>
-          </div>
-          <span
-            className="text-gray-400 transition-transform"
-            style={{ transform: isBackgroundExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
-          >
-            ▼
-          </span>
-        </button>
-
-        {isBackgroundExpanded && selectedElement.background && (
-          <div className="p-3 pt-0 border-t border-gray-200">
-            {/* Background Color */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Color
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={selectedElement.background.color}
-                  onChange={(e) =>
-                    handleBackgroundChange({ color: e.target.value })
-                  }
-                  className="w-8 h-8 rounded cursor-pointer"
-                />
-                <input
-                  type="text"
-                  value={selectedElement.background.color}
-                  onChange={(e) =>
-                    handleBackgroundChange({ color: e.target.value })
-                  }
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Background Padding */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Padding: {selectedElement.background.padding}%
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={0.1}
-                value={selectedElement.background.padding}
-                onChange={(e) =>
-                  handleBackgroundChange({ padding: parseFloat(e.target.value) })
-                }
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-
-            {/* Background Border Radius */}
-            <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Border Radius: {selectedElement.background.borderRadius}%
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={0.1}
-                value={selectedElement.background.borderRadius}
-                onChange={(e) =>
-                  handleBackgroundChange({
-                    borderRadius: parseFloat(e.target.value),
-                  })
-                }
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Delete Button */}
-      <button
-        onClick={() => onDelete(selectedElement.id)}
-        className="w-full py-2 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+      <Disclosure
+        label="Shadow"
+        checked={Boolean(selectedElement.shadow)}
+        expanded={isShadowExpanded}
+        onExpandedChange={setIsShadowExpanded}
+        onCheckedChange={handleShadowToggle}
       >
-        Delete Element
+        {selectedElement.shadow && (
+          <div className="space-y-3 border-t border-zinc-100 p-3">
+            <TextValue
+              label="Color"
+              value={selectedElement.shadow.color}
+              onChange={(color) => update({ shadow: { ...selectedElement.shadow!, color } })}
+            />
+            {(["offsetX", "offsetY", "blur"] as const).map((field) => (
+              <RangeValue
+                key={field}
+                label={field === "offsetX" ? "Offset X" : field === "offsetY" ? "Offset Y" : "Blur"}
+                value={selectedElement.shadow![field]}
+                onChange={(value) => update({ shadow: { ...selectedElement.shadow!, [field]: value } })}
+              />
+            ))}
+          </div>
+        )}
+      </Disclosure>
+
+      <Disclosure
+        label="Background"
+        checked={Boolean(selectedElement.background)}
+        expanded={isBackgroundExpanded}
+        onExpandedChange={setIsBackgroundExpanded}
+        onCheckedChange={handleBackgroundToggle}
+      >
+        {selectedElement.background && (
+          <div className="space-y-3 border-t border-zinc-100 p-3">
+            <TextValue
+              label="Color"
+              value={selectedElement.background.color}
+              onChange={(color) => update({ background: { ...selectedElement.background!, color } })}
+            />
+            {(["padding", "borderRadius"] as const).map((field) => (
+              <RangeValue
+                key={field}
+                label={field === "padding" ? "Padding" : "Border radius"}
+                value={selectedElement.background![field]}
+                onChange={(value) => update({ background: { ...selectedElement.background!, [field]: value } })}
+              />
+            ))}
+          </div>
+        )}
+      </Disclosure>
+
+      <button
+        type="button"
+        onClick={() => onDelete(selectedElement.id)}
+        className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-white text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+      >
+        <Trash2 className="h-4 w-4" />
+        Delete text block
       </button>
     </div>
+  );
+}
+
+function Disclosure({
+  label,
+  checked,
+  expanded,
+  onCheckedChange,
+  onExpandedChange,
+  children,
+}: {
+  label: string;
+  checked: boolean;
+  expanded: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  onExpandedChange: (expanded: boolean) => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[10px] border border-zinc-200 bg-white">
+      <button
+        type="button"
+        onClick={() => onExpandedChange(!expanded)}
+        className="flex w-full items-center justify-between p-3 text-left transition hover:bg-zinc-50"
+        aria-expanded={expanded}
+      >
+        <span className="flex items-center gap-2 text-xs font-semibold text-zinc-700">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(event) => onCheckedChange(event.target.checked)}
+            onClick={(event) => event.stopPropagation()}
+            className="h-4 w-4 accent-[var(--editor-accent)]"
+          />
+          {label}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-zinc-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </button>
+      {expanded && children}
+    </div>
+  );
+}
+
+function RangeValue({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <div>
+      <div className="mb-2 flex justify-between text-[11px] text-zinc-500">
+        <span>{label}</span><span className="tabular-nums">{value}%</span>
+      </div>
+      <input type="range" min={0} max={100} step={0.1} value={value} onChange={(event) => onChange(Number(event.target.value))} className="editor-range w-full" />
+    </div>
+  );
+}
+
+function TextValue({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="block text-[11px] text-zinc-500">
+      <span className="mb-1 block">{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} className={control} />
+    </label>
   );
 }

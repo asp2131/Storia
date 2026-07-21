@@ -149,34 +149,34 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-label="Book text style">
-      <div className="absolute inset-0 bg-slate-900/30" onClick={onClose} />
-      <aside className="absolute right-0 top-0 h-full w-80 bg-white shadow-2xl border-l border-slate-200 flex flex-col">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-          <h2 className="text-sm font-semibold text-slate-800">Book Text Style</h2>
+      <div className="absolute inset-0 bg-zinc-900/30 backdrop-blur-[2px]" onClick={onClose} />
+      <aside className="editor-pop absolute right-0 top-0 flex h-full w-[344px] max-w-full flex-col border-l border-zinc-200 bg-white shadow-2xl">
+        <header className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
+          <h2 className="text-sm font-semibold text-zinc-800">Book Text Style</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-slate-400 hover:text-slate-600"
+            className="text-zinc-400 hover:text-zinc-600"
           >
             <X className="w-4 h-4" />
           </button>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4">
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="text-xs text-zinc-500 mb-4">
             New text blocks start with these settings. Use &ldquo;Apply to all
             pages&rdquo; to restyle existing pages.
           </p>
 
           {/* Font Family */}
           <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-zinc-700 mb-2">
               Font Family
             </label>
             <select
               value={draft.fontFamily}
               onChange={(e) => update({ fontFamily: e.target.value as OverlayFont })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-zinc-200 bg-[#fbfbfc] rounded-lg text-sm outline-none focus:border-[var(--editor-accent)]"
             >
               {AVAILABLE_FONTS.map((font) => (
                 <option key={font} value={font}>
@@ -188,7 +188,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
 
           {/* Font Size */}
           <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-zinc-700 mb-2">
               Font Size: {draft.fontSize.toFixed(1)}%
             </label>
             <input
@@ -198,13 +198,13 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
               step={0.1}
               value={draft.fontSize}
               onChange={(e) => update({ fontSize: parseFloat(e.target.value) })}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              className="editor-range w-full"
             />
           </div>
 
           {/* Font Weight */}
           <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-zinc-700 mb-2">
               Font Weight
             </label>
             <select
@@ -212,7 +212,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
               onChange={(e) =>
                 update({ fontWeight: parseInt(e.target.value) as FontWeight })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-zinc-200 bg-[#fbfbfc] rounded-lg text-sm outline-none focus:border-[var(--editor-accent)]"
             >
               {FONT_WEIGHT_OPTIONS.map((weight) => (
                 <option key={weight} value={weight}>
@@ -224,7 +224,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
 
           {/* Color */}
           <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-zinc-700 mb-2">
               Color
             </label>
             <div className="flex items-center gap-2">
@@ -238,17 +238,17 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                 type="text"
                 value={draft.color}
                 onChange={(e) => update({ color: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="flex-1 px-3 py-2 border border-zinc-200 bg-[#fbfbfc] rounded-lg text-sm outline-none focus:border-[var(--editor-accent)]"
               />
             </div>
           </div>
 
           {/* Text Align */}
           <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-zinc-700 mb-2">
               Text Align
             </label>
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <div className="flex rounded-lg border border-zinc-300 overflow-hidden">
               {TEXT_ALIGN_OPTIONS.map((align) => (
                 <button
                   key={align}
@@ -256,8 +256,8 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                   className={`
                     flex-1 py-2 px-3 text-sm capitalize
                     ${draft.textAlign === align
-                      ? "bg-blue-500 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100"
+                      ? "bg-[var(--editor-accent)] text-white"
+                      : "bg-white text-zinc-700 hover:bg-zinc-100"
                     }
                   `}
                 >
@@ -269,13 +269,13 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
 
           {/* Voice */}
           <div className="mb-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-zinc-700 mb-2">
               Voice
             </label>
             <select
               value={draft.voiceId || ""}
               onChange={(e) => handleVoiceChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-zinc-200 bg-[#fbfbfc] rounded-lg text-sm outline-none focus:border-[var(--editor-accent)]"
             >
               <option value="">No voice</option>
               {voiceOptions.map((voice) => (
@@ -285,16 +285,16 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-[11px] text-gray-500">
+            <p className="mt-1 text-[11px] text-zinc-500">
               Default narration voice for new text blocks.
             </p>
           </div>
 
           {/* Shadow Section */}
-          <div className="mb-4 border border-gray-200 rounded-lg">
+          <div className="mb-4 border border-zinc-200 rounded-lg">
             <button
               onClick={() => setIsShadowExpanded(!isShadowExpanded)}
-              className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50"
+              className="w-full flex items-center justify-between p-3 text-left hover:bg-zinc-50"
             >
               <div className="flex items-center gap-2">
                 <input
@@ -304,10 +304,10 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                   onClick={(e) => e.stopPropagation()}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-semibold text-gray-700">Shadow</span>
+                <span className="text-sm font-semibold text-zinc-700">Shadow</span>
               </div>
               <span
-                className="text-gray-400 transition-transform"
+                className="text-zinc-400 transition-transform"
                 style={{ transform: isShadowExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
               >
                 ▼
@@ -315,9 +315,9 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
             </button>
 
             {isShadowExpanded && draft.shadow && (
-              <div className="p-3 pt-0 border-t border-gray-200">
+              <div className="p-3 pt-0 border-t border-zinc-200">
                 <div className="mt-3">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">
                     Color
                   </label>
                   <input
@@ -326,12 +326,12 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                     onChange={(e) =>
                       update({ shadow: { ...draft.shadow!, color: e.target.value } })
                     }
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1 border border-zinc-300 rounded text-sm"
                   />
                 </div>
                 {(["offsetX", "offsetY", "blur"] as const).map((field) => (
                   <div className="mt-3" key={field}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">
                       {field === "offsetX" ? "Offset X" : field === "offsetY" ? "Offset Y" : "Blur"}:{" "}
                       {draft.shadow![field]}%
                     </label>
@@ -349,7 +349,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                           },
                         })
                       }
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      className="editor-range w-full"
                     />
                   </div>
                 ))}
@@ -358,10 +358,10 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
           </div>
 
           {/* Background Section */}
-          <div className="mb-4 border border-gray-200 rounded-lg">
+          <div className="mb-4 border border-zinc-200 rounded-lg">
             <button
               onClick={() => setIsBackgroundExpanded(!isBackgroundExpanded)}
-              className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50"
+              className="w-full flex items-center justify-between p-3 text-left hover:bg-zinc-50"
             >
               <div className="flex items-center gap-2">
                 <input
@@ -371,10 +371,10 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                   onClick={(e) => e.stopPropagation()}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-semibold text-gray-700">Background</span>
+                <span className="text-sm font-semibold text-zinc-700">Background</span>
               </div>
               <span
-                className="text-gray-400 transition-transform"
+                className="text-zinc-400 transition-transform"
                 style={{ transform: isBackgroundExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
               >
                 ▼
@@ -382,9 +382,9 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
             </button>
 
             {isBackgroundExpanded && draft.background && (
-              <div className="p-3 pt-0 border-t border-gray-200">
+              <div className="p-3 pt-0 border-t border-zinc-200">
                 <div className="mt-3">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-zinc-600 mb-1">
                     Color
                   </label>
                   <input
@@ -393,12 +393,12 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                     onChange={(e) =>
                       update({ background: { ...draft.background!, color: e.target.value } })
                     }
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1 border border-zinc-300 rounded text-sm"
                   />
                 </div>
                 {(["padding", "borderRadius"] as const).map((field) => (
                   <div className="mt-3" key={field}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-zinc-600 mb-1">
                       {field === "padding" ? "Padding" : "Border Radius"}:{" "}
                       {draft.background![field]}%
                     </label>
@@ -416,7 +416,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                           },
                         })
                       }
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      className="editor-range w-full"
                     />
                   </div>
                 ))}
@@ -430,17 +430,17 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
             </p>
           )}
           {applyMessage && (
-            <p className="mb-3 text-sm text-teal-700" role="status">
+            <p className="mb-3 text-sm text-[var(--editor-accent)]" role="status">
               {applyMessage}
             </p>
           )}
         </div>
 
-        <footer className="border-t border-slate-200 p-4 space-y-2">
+        <footer className="border-t border-zinc-200 p-4 space-y-2">
           <button
             onClick={handleSaveStyle}
             disabled={saving || applyingTextStyle}
-            className="w-full py-2 px-4 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--editor-accent)] px-4 py-2 font-medium text-white transition hover:brightness-105 disabled:opacity-50"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             {savedTick && !saving ? "Saved ✓" : "Save style"}
@@ -465,7 +465,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                 <button
                   onClick={() => setConfirmingApply(false)}
                   disabled={applyingTextStyle}
-                  className="py-1.5 px-3 bg-white border border-slate-300 text-slate-600 text-sm rounded-lg hover:bg-slate-50"
+                  className="py-1.5 px-3 bg-white border border-zinc-300 text-zinc-600 text-sm rounded-lg hover:bg-zinc-50"
                 >
                   Cancel
                 </button>
@@ -475,7 +475,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
             <button
               onClick={() => setConfirmingApply(true)}
               disabled={saving || applyingTextStyle}
-              className="w-full py-2 px-4 bg-white border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white disabled:opacity-50 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--editor-accent)] bg-white px-4 py-2 font-medium text-[var(--editor-accent)] transition hover:bg-[var(--editor-accent-faint)] disabled:opacity-50"
             >
               {applyingTextStyle && <Loader2 className="w-4 h-4 animate-spin" />}
               Apply to all pages…

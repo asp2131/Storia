@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  Type,
-  ChevronUp,
-  ChevronDown,
-  Trash2,
-} from "lucide-react";
-import type { TextElement, TextOverlayConfig } from "@/types/text-overlay";
+import { ChevronDown, ChevronUp, Trash2, Type } from "lucide-react";
+import type { TextElement } from "@/types/text-overlay";
 
 interface LayersPanelProps {
   elements: TextElement[];
@@ -14,6 +9,7 @@ interface LayersPanelProps {
   onSelect: (elementId: string | null) => void;
   onDelete: (elementId: string) => void;
   onMove: (elementId: string, dir: "up" | "down") => void;
+  embedded?: boolean;
 }
 
 export function LayersPanel({
@@ -22,118 +18,86 @@ export function LayersPanel({
   onSelect,
   onDelete,
   onMove,
+  embedded = false,
 }: LayersPanelProps) {
-  if (elements.length === 0) {
-    return (
-      <div className="w-52 bg-white border-l border-gray-200 flex flex-col">
-        <div className="px-3 py-2 border-b border-gray-100">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Layers
-          </h3>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-gray-400 text-xs text-center">
-            No text elements yet.
-            <br />
-            Click "Add Text" to create one.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-52 bg-white border-l border-gray-200 flex flex-col">
-      <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Layers
-        </h3>
-        <span className="text-[10px] text-gray-400 tabular-nums">
+    <div className={embedded ? "mt-5 border-t border-zinc-100 pt-4" : "flex w-52 shrink-0 flex-col border-l border-zinc-200 bg-white"}>
+      <div className={`flex items-center justify-between ${embedded ? "mb-2" : "border-b border-zinc-100 px-3 py-2.5"}`}>
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">Layers</h3>
+        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-zinc-400">
           {elements.length}
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-1">
-        {elements.map((element, index) => {
-          const isSelected = element.id === selectedElementId;
-          const displayText = element.text?.trim() || "Empty text";
-          const isFirst = index === 0;
-          const isLast = index === elements.length - 1;
+      {elements.length === 0 ? (
+        <div className={`rounded-lg border border-dashed border-zinc-200 bg-zinc-50 p-4 text-center text-xs leading-relaxed text-zinc-400 ${embedded ? "" : "m-3"}`}>
+          No text layers yet.<br />Use “Add text” above.
+        </div>
+      ) : (
+        <div className={embedded ? "space-y-1" : "editor-scroll flex-1 space-y-1 overflow-y-auto p-2"}>
+          {elements.map((element, index) => {
+            const isSelected = element.id === selectedElementId;
+            const isFirst = index === 0;
+            const isLast = index === elements.length - 1;
 
-          return (
-            <div
-              key={element.id}
-              onClick={() => onSelect(element.id)}
-              className={`
-                group flex items-center gap-2 px-3 py-2 cursor-pointer transition
-                ${isSelected
-                  ? "bg-blue-50 border-r-2 border-blue-500"
-                  : "hover:bg-gray-50 border-r-2 border-transparent"
-                }
-              `}
-            >
-              <span className="text-[10px] text-gray-400 font-mono w-4 text-center shrink-0">
-                {index + 1}
-              </span>
-
+            return (
               <div
-                className="w-3 h-3 rounded-sm shrink-0 border border-gray-200"
-                style={{ backgroundColor: element.color }}
-                title={`Color: ${element.color}`}
-              />
-
-              <Type className="w-3 h-3 text-gray-400 shrink-0" />
-
-              <span
-                className={`text-xs truncate flex-1 min-w-0 ${
-                  isSelected ? "text-blue-700 font-medium" : "text-gray-700"
+                key={element.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect(element.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelect(element.id);
+                  }
+                }}
+                className={`group flex cursor-pointer items-center gap-2 rounded-[9px] border px-2.5 py-2 outline-none transition ${
+                  isSelected
+                    ? "border-[color-mix(in_srgb,var(--editor-accent)_30%,white)] bg-[var(--editor-accent-soft)]"
+                    : "border-zinc-100 bg-[#fbfbfc] hover:border-zinc-200 hover:bg-white"
                 }`}
-                title={displayText}
               >
-                {displayText}
-              </span>
-
-              <button
-                type="button"
-                disabled={isFirst}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMove(element.id, "up");
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition shrink-0 disabled:opacity-0"
-                title="Move earlier in reading order"
-              >
-                <ChevronUp className="w-3 h-3" />
-              </button>
-
-              <button
-                type="button"
-                disabled={isLast}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMove(element.id, "down");
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition shrink-0 disabled:opacity-0"
-                title="Move later in reading order"
-              >
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(element.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition shrink-0"
-                title="Delete layer"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${isSelected ? "bg-white text-[var(--editor-accent)]" : "bg-white text-zinc-400"}`}>
+                  <Type className="h-3.5 w-3.5" />
+                </span>
+                <span className={`min-w-0 flex-1 truncate text-xs ${isSelected ? "font-semibold text-zinc-900" : "font-medium text-zinc-600"}`} title={element.text}>
+                  {element.text.trim() || "Empty text"}
+                </span>
+                <span className="h-3 w-3 shrink-0 rounded-sm border border-black/10" style={{ backgroundColor: element.color }} title={`Color: ${element.color}`} />
+                <div className="hidden shrink-0 items-center group-hover:flex">
+                  <button
+                    type="button"
+                    disabled={isFirst}
+                    onClick={(event) => { event.stopPropagation(); onMove(element.id, "up"); }}
+                    className="rounded p-1 text-zinc-400 hover:bg-white hover:text-zinc-700 disabled:opacity-20"
+                    aria-label="Move layer up"
+                  >
+                    <ChevronUp className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isLast}
+                    onClick={(event) => { event.stopPropagation(); onMove(element.id, "down"); }}
+                    className="rounded p-1 text-zinc-400 hover:bg-white hover:text-zinc-700 disabled:opacity-20"
+                    aria-label="Move layer down"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); onDelete(element.id); }}
+                    className="rounded p-1 text-zinc-400 hover:bg-rose-50 hover:text-rose-500"
+                    aria-label="Delete layer"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
