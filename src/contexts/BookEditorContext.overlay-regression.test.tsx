@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   BookEditorProvider,
   useBookMetaContext,
+  useOverlayEditorContext,
   usePageManagerContext,
 } from "@/contexts/BookEditorContext";
 import {
@@ -11,6 +12,10 @@ import {
   getOverlayEditorStore,
 } from "@/stores/overlayEditorRegistry";
 import type { TextElement } from "@/types/text-overlay";
+
+const { mockMutateAsync } = vi.hoisted(() => ({
+  mockMutateAsync: vi.fn().mockResolvedValue({}),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -37,7 +42,7 @@ vi.mock("@/hooks/useBookData", () => {
   const editorPagesResult = { data: [basePage], isLoading: false };
   const audioAssignmentsResult = { data: [] };
 
-  const mutationResult = { isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) };
+  const mutationResult = { isPending: false, mutateAsync: mockMutateAsync };
 
   return {
     useBookDetails: () => bookDetailsResult,
@@ -68,15 +73,22 @@ vi.mock("@/hooks/useSoundLibrary", () => {
 
 type PageManager = ReturnType<typeof usePageManagerContext>;
 type BookMeta = ReturnType<typeof useBookMetaContext>;
+type OverlayEditor = ReturnType<typeof useOverlayEditorContext>;
 
 type ProbeProps = {
   onUpdate: (ctx: PageManager) => void;
   onBookMetaUpdate?: (ctx: BookMeta) => void;
+  onOverlayEditorUpdate?: (ctx: OverlayEditor) => void;
 };
 
-function CapturePageManager({ onUpdate, onBookMetaUpdate }: ProbeProps) {
+function CapturePageManager({
+  onUpdate,
+  onBookMetaUpdate,
+  onOverlayEditorUpdate,
+}: ProbeProps) {
   const ctx = usePageManagerContext();
   const bookMeta = useBookMetaContext();
+  const overlayEditor = useOverlayEditorContext();
 
   useEffect(() => {
     onUpdate(ctx);
@@ -85,6 +97,10 @@ function CapturePageManager({ onUpdate, onBookMetaUpdate }: ProbeProps) {
   useEffect(() => {
     onBookMetaUpdate?.(bookMeta);
   }, [bookMeta, onBookMetaUpdate]);
+
+  useEffect(() => {
+    onOverlayEditorUpdate?.(overlayEditor);
+  }, [onOverlayEditorUpdate, overlayEditor]);
 
   return null;
 }
@@ -107,6 +123,7 @@ function makeElement(id: string): TextElement {
 
 describe("BookEditorContext overlay key regressions", () => {
   beforeEach(() => {
+    mockMutateAsync.mockReset().mockResolvedValue({});
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -187,6 +204,54 @@ describe("BookEditorContext overlay key regressions", () => {
     await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
     expect(bookMetaRef.current?.localTitle).toBe("Locally edited title");
     expect(pageManagerRef.current?.localPages).toHaveLength(1);
+  });
+
+  it("persists the last font, size, and voice as defaults for new pages", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+    const bookMetaRef = { current: null as BookMeta | null };
+    const overlayEditorRef = { current: null as OverlayEditor | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager
+          onUpdate={(ctx) => { pageManagerRef.current = ctx; }}
+          onBookMetaUpdate={(ctx) => { bookMetaRef.current = ctx; }}
+          onOverlayEditorUpdate={(ctx) => { overlayEditorRef.current = ctx; }}
+        />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(overlayEditorRef.current).not.toBeNull());
+
+    act(() => {
+      overlayEditorRef.current!.rememberOverlayTextSettings({
+        fontFamily: "Lora",
+        fontSize: 7.2,
+        voiceId: "voice-2",
+        voiceName: "Sprite",
+      });
+    });
+
+    await waitFor(() =>
+      expect(bookMetaRef.current?.bookTextStyle).toMatchObject({
+        fontFamily: "Lora",
+        fontSize: 7.2,
+        voiceId: "voice-2",
+        voiceName: "Sprite",
+      })
+    );
+    await act(async () => bookMetaRef.current!.handleSave());
+
+    expect(mockMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        defaultTextStyle: expect.objectContaining({
+          fontFamily: "Lora",
+          fontSize: 7.2,
+          voiceId: "voice-2",
+          voiceName: "Sprite",
+        }),
+      })
+    );
   });
 
   it("queues the latest overlay before navigating away", async () => {

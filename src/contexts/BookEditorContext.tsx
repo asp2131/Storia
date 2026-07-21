@@ -29,8 +29,16 @@ import {
 } from "@/hooks/useBookData";
 import { useSoundLibrary, useUploadAudio, type SoundAsset } from "@/hooks/useSoundLibrary";
 import { assemblePageNarrationText, includedOverlayText, type OverlayTextEntry } from "@/lib/overlayText";
-import type { TextOverlayConfig, TextElement, BookTextStyle } from "@/types/text-overlay";
-import { DEFAULT_BOOK_TEXT_STYLE } from "@/types/text-overlay";
+import type {
+  TextOverlayConfig,
+  TextElement,
+  BookTextStyle,
+  RememberedTextSettings,
+} from "@/types/text-overlay";
+import {
+  DEFAULT_BOOK_TEXT_STYLE,
+  rememberTextSettings,
+} from "@/types/text-overlay";
 import {
   destroyOverlayEditorStore,
   getExistingOverlayEditorStore,
@@ -228,6 +236,7 @@ export type OverlayEditorContext = {
   overlayEditorCompositing: boolean;
   handleOverlaySave: (overlayConfig: TextOverlayConfig) => Promise<void>;
   handleOverlayComposite: () => Promise<void>;
+  rememberOverlayTextSettings: (settings: RememberedTextSettings) => void;
   selectedOverlayElement: TextElement | null;
 };
 
@@ -334,6 +343,9 @@ export function BookEditorProvider({
 
   const [localTitle, setLocalTitle] = useState("");
   const [localAuthor, setLocalAuthor] = useState("");
+  const [bookTextStyle, setBookTextStyle] = useState<BookTextStyle>(
+    DEFAULT_BOOK_TEXT_STYLE
+  );
 
   // ─── Narration state ──────────────────────────────────────────────────────
 
@@ -519,6 +531,7 @@ export function BookEditorProvider({
     () => ({
       title: localTitle.trim() || "Untitled Book",
       author: localAuthor,
+      defaultTextStyle: bookTextStyle,
       pages: localPages.map((page) => ({
         id: page.id,
         pageNumber: page.number,
@@ -526,7 +539,7 @@ export function BookEditorProvider({
         imageUrl: page.imageUrl || null,
       })),
     }),
-    [localAuthor, localPages, localTitle]
+    [bookTextStyle, localAuthor, localPages, localTitle]
   );
 
   const saveBookDraft = useCallback(
@@ -536,6 +549,7 @@ export function BookEditorProvider({
         await updateBookMutation.mutateAsync({
           title: draft.title,
           author: draft.author,
+          defaultTextStyle: draft.defaultTextStyle,
         });
         const result = await savePagesMutation.mutateAsync(draft.pages);
 
@@ -586,7 +600,9 @@ export function BookEditorProvider({
         return {
           pageKey: draft.pageKey,
           pageNumber: draft.pageNumber,
-          overlay: data.overlay || draft.overlay,
+          // Keep the editor-owned draft so a successful background save cannot
+          // rehydrate the canvas with a server-normalized copy mid-edit.
+          overlay: draft.overlay,
           textContent: data.textContent ?? "",
         };
       } catch (err) {
@@ -626,6 +642,14 @@ export function BookEditorProvider({
     },
   });
 
+  const rememberOverlayTextSettings = useCallback(
+    (settings: RememberedTextSettings) => {
+      setBookTextStyle((current) => rememberTextSettings(current, settings));
+      markDirty("book");
+    },
+    [markDirty]
+  );
+
   const queueActiveOverlayIfDirty = useCallback(() => {
     const overlayState = getExistingOverlayEditorStore(overlayPageId)?.getState();
     if (!overlayState?.hasChanges) return;
@@ -646,13 +670,13 @@ export function BookEditorProvider({
 
   // ─── Book text style ─────────────────────────────────────────────────────
 
-  const bookTextStyle = bookDetails?.defaultTextStyle ?? DEFAULT_BOOK_TEXT_STYLE;
   const applyingTextStyle = applyTextStyleMutation.isPending;
 
   const updateBookTextStyle = useCallback(
     async (style: BookTextStyle) => {
       try {
         await updateBookMutation.mutateAsync({ defaultTextStyle: style });
+        setBookTextStyle(style);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to save text style.");
         throw err;
@@ -742,6 +766,9 @@ export function BookEditorProvider({
     if (bookDetails && hydratedDetailsBookRef.current !== bookIdParam) {
       setLocalTitle(bookDetails.title || "Untitled Book");
       setLocalAuthor(bookDetails.author || "Unknown");
+      setBookTextStyle(
+        bookDetails.defaultTextStyle ?? DEFAULT_BOOK_TEXT_STYLE
+      );
       hydratedDetailsBookRef.current = bookIdParam;
     }
   }, [bookDetails, bookIdParam]);
@@ -1817,6 +1844,7 @@ export function BookEditorProvider({
         overlayEditorCompositing,
         handleOverlaySave,
         handleOverlayComposite,
+        rememberOverlayTextSettings,
         selectedOverlayElement,
       },
       overlayText: {
@@ -1896,6 +1924,7 @@ export function BookEditorProvider({
       isSoundscapePlaying,
       soundscapeVolume,
       overlayEditorCompositing,
+      rememberOverlayTextSettings,
       activeOverlayTextEntries,
       ocrStateByPage,
       saveOverlayTextMutation.isPending,

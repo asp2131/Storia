@@ -157,7 +157,7 @@ export function PropertyPanel({
       {enableVoiceAssignment && (
         <div className="mb-4">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Voice (new books)
+            Voice
           </label>
           <select
             value={selectedElement.voiceId || ""}
@@ -172,7 +172,7 @@ export function PropertyPanel({
             ))}
           </select>
           <p className="mt-1 text-[11px] text-gray-500">
-            Assign voices per text block for multi-voice narration.
+            Used for this block and remembered for new text blocks.
           </p>
         </div>
       )}

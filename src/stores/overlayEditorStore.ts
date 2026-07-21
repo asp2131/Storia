@@ -64,11 +64,19 @@ export function createOverlayEditorStore() {
       autoSaveStatus: "idle",
 
       init(elements) {
-        set({
-          elements,
-          selectedElementId: null,
-          hasChanges: false,
-          autoSaveStatus: "idle",
+        set((state) => {
+          if (
+            state.elements === elements ||
+            JSON.stringify(state.elements) === JSON.stringify(elements)
+          ) {
+            return state;
+          }
+          return {
+            elements,
+            selectedElementId: null,
+            hasChanges: false,
+            autoSaveStatus: "idle",
+          };
         });
       },
 

@@ -26,8 +26,12 @@ import { BookMetaPanel } from "./BookMetaPanel";
 
 export function OverlayEditorPanel() {
   const { error, clearError, imageInputRef } = useBookEditor();
-  const { overlayEditorCompositing, handleOverlaySave, handleOverlayComposite } =
-    useOverlayEditorContext();
+  const {
+    overlayEditorCompositing,
+    handleOverlaySave,
+    handleOverlayComposite,
+    rememberOverlayTextSettings,
+  } = useOverlayEditorContext();
   const {
     localPages,
     activePage,
@@ -160,6 +164,7 @@ export function OverlayEditorPanel() {
                 voiceOptions={voiceOptions}
                 enableVoiceAssignment
                 bookTextStyle={bookTextStyle}
+                onTextSettingsChange={rememberOverlayTextSettings}
               />
             </div>
           </div>

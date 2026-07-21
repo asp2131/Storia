@@ -19,6 +19,22 @@ function el(id: string, text: string): TextElement {
   };
 }
 
+describe("overlayEditorStore.init", () => {
+  it("does not clear the active edit when autosave reapplies identical elements", () => {
+    const store = createOverlayEditorStore();
+    const elements = [el("a", "editing")];
+    store.getState().init(elements);
+    store.getState().selectElement("a");
+    store.getState().updateElement("a", { fontSize: 5 });
+
+    store.getState().init([{ ...elements[0], fontSize: 5 }]);
+
+    expect(store.getState().selectedElementId).toBe("a");
+    expect(store.getState().hasChanges).toBe(true);
+    expect(store.getState().autoSaveStatus).toBe("pending");
+  });
+});
+
 describe("overlayEditorStore.moveElement", () => {
   it("reorders elements, which drives reading order (deriveTextContent + mobile read-along)", () => {
     const store = createOverlayEditorStore();

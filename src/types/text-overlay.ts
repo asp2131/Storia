@@ -305,6 +305,38 @@ export function seedTextElement(
   };
 }
 
+export type RememberedTextSettings = Partial<
+  Pick<BookTextStyle, "fontFamily" | "fontSize">
+> & {
+  voiceId?: string | null;
+  voiceName?: string | null;
+};
+
+/** Remember only the settings the user just changed. */
+export function rememberTextSettings(
+  style: BookTextStyle,
+  settings: RememberedTextSettings
+): BookTextStyle {
+  const next: BookTextStyle = {
+    ...style,
+    ...(settings.fontFamily !== undefined
+      ? { fontFamily: settings.fontFamily }
+      : {}),
+    ...(settings.fontSize !== undefined ? { fontSize: settings.fontSize } : {}),
+  };
+
+  if ("voiceId" in settings || "voiceName" in settings) {
+    delete next.voiceId;
+    delete next.voiceName;
+    if (settings.voiceId) next.voiceId = settings.voiceId;
+    if (settings.voiceId && settings.voiceName) {
+      next.voiceName = settings.voiceName;
+    }
+  }
+
+  return next;
+}
+
 /**
  * Build a new TextElement seeded from a book text style.
  * Geometry defaults match the historical editor behaviour.

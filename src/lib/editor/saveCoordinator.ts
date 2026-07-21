@@ -1,6 +1,6 @@
-import type { TextOverlayConfig } from "@/types/text-overlay";
+import type { BookTextStyle, TextOverlayConfig } from "@/types/text-overlay";
 
-export const EDITOR_AUTOSAVE_DEBOUNCE_MS = 6000;
+export const EDITOR_AUTOSAVE_DEBOUNCE_MS = 2000;
 
 export type SaveReason = "autosave" | "manual" | "retry";
 
@@ -18,6 +18,7 @@ export type BookDraftPage = {
 export type BookDraft = {
   title: string;
   author: string;
+  defaultTextStyle?: BookTextStyle;
   pages: BookDraftPage[];
 };
 

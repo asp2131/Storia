@@ -3,6 +3,7 @@ import {
   applyBookTextStyle,
   buildNewTextElement,
   DEFAULT_BOOK_TEXT_STYLE,
+  rememberTextSettings,
   seedTextElement,
   TEXT_OVERLAY_VERSION,
   validateBookTextStyle,
@@ -65,6 +66,37 @@ describe("validateBookTextStyle", () => {
     const validated = validateBookTextStyle({ ...rest, voiceId: "" });
     expect(validated.color).toBe("#000000");
     expect(validated).not.toHaveProperty("voiceId");
+  });
+});
+
+describe("rememberTextSettings", () => {
+  it("carries font family, size, and voice into future text blocks", () => {
+    const remembered = rememberTextSettings(DEFAULT_BOOK_TEXT_STYLE, {
+      fontFamily: "Lora",
+      fontSize: 7.2,
+      voiceId: "voice-2",
+      voiceName: "Sprite",
+    });
+
+    expect(buildNewTextElement(remembered)).toMatchObject({
+      fontFamily: "Lora",
+      fontSize: 7.2,
+      voiceId: "voice-2",
+      voiceName: "Sprite",
+    });
+    expect(remembered.color).toBe(DEFAULT_BOOK_TEXT_STYLE.color);
+  });
+
+  it("changes settings independently and clears voice explicitly", () => {
+    const fontOnly = rememberTextSettings(lora, { fontFamily: "Gaegu" });
+    expect(fontOnly.voiceId).toBe("voice-1");
+
+    const withoutVoice = rememberTextSettings(fontOnly, {
+      voiceId: undefined,
+      voiceName: undefined,
+    });
+    expect(withoutVoice).not.toHaveProperty("voiceId");
+    expect(withoutVoice).not.toHaveProperty("voiceName");
   });
 });
 

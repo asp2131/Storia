@@ -7,6 +7,7 @@ import {
   buildNewTextElement,
   DEFAULT_BOOK_TEXT_STYLE,
   type BookTextStyle,
+  type RememberedTextSettings,
 } from "@/types/text-overlay";
 import { Toolbar } from "./Toolbar";
 import { PropertyPanel } from "./PropertyPanel";
@@ -31,6 +32,7 @@ interface DraggableTextOverlayEditorProps {
   voiceOptions?: VoiceOption[];
   enableVoiceAssignment?: boolean;
   onSelectedElementChange?: (element: TextElement | null) => void;
+  onTextSettingsChange?: (settings: RememberedTextSettings) => void;
   /** Per-book default style — seeds newly added text blocks. */
   bookTextStyle?: BookTextStyle;
 }
@@ -245,6 +247,7 @@ export function DraggableTextOverlayEditor({
   voiceOptions = [],
   enableVoiceAssignment = false,
   onSelectedElementChange,
+  onTextSettingsChange,
   bookTextStyle,
 }: DraggableTextOverlayEditorProps) {
   const actions = useOverlayEditorActions(pageId);
@@ -341,9 +344,27 @@ export function DraggableTextOverlayEditor({
 
   const handlePropertyUpdate = useCallback(
     (updatedElement: TextElement) => {
+      const settings: RememberedTextSettings = {};
+      if (selectedElement?.id === updatedElement.id) {
+        if (selectedElement.fontFamily !== updatedElement.fontFamily) {
+          settings.fontFamily = updatedElement.fontFamily;
+        }
+        if (selectedElement.fontSize !== updatedElement.fontSize) {
+          settings.fontSize = updatedElement.fontSize;
+        }
+        if (
+          selectedElement.voiceId !== updatedElement.voiceId ||
+          selectedElement.voiceName !== updatedElement.voiceName
+        ) {
+          settings.voiceId = updatedElement.voiceId;
+          settings.voiceName = updatedElement.voiceName;
+        }
+      }
+
       actions.updateElement(updatedElement.id, updatedElement);
+      if (Object.keys(settings).length > 0) onTextSettingsChange?.(settings);
     },
-    [actions]
+    [actions, onTextSettingsChange, selectedElement]
   );
 
   const handleDeleteElement = useCallback(
