@@ -182,21 +182,35 @@
 
 .storia-calm .hero {
   position: relative;
-  display: grid;
-  min-height: 100vh;
-  max-width: var(--sl-container);
-  margin: 0 auto;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 80px;
+  display: flex;
+  min-height: 94svh;
   align-items: center;
-  padding: 160px 40px 80px;
+  overflow: hidden;
+  padding: 150px max(40px, calc((100vw - var(--sl-container)) / 2)) 92px;
+  background: #f7efe2;
+  isolation: isolate;
+}
+
+.storia-calm .hero::before {
+  content: none;
+}
+
+.storia-calm .hero::after {
+  position: absolute;
+  right: 5vw;
+  bottom: 6vh;
+  width: min(680px, 58vw);
+  height: 1px;
+  background: rgba(26, 21, 18, 0.1);
+  content: "";
 }
 
 .storia-calm .hero h1 {
   margin: 0 0 28px;
-  font-size: clamp(52px, 7vw, 96px);
+  max-width: 780px;
+  font-size: 88px;
   line-height: 0.98;
-  letter-spacing: -0.035em;
+  letter-spacing: 0;
 }
 
 .storia-calm .hero h1 > span {
@@ -219,12 +233,63 @@
   gap: 12px;
 }
 
-.storia-calm .hero-image {
+.storia-calm .hero-inner {
   position: relative;
+  z-index: 2;
+  max-width: 610px;
+}
+
+.storia-calm .hero-visual {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   overflow: hidden;
-  border-radius: 20px;
-  background: var(--sl-ink-10);
-  aspect-ratio: 4 / 5;
+}
+
+.storia-calm .mascot-world {
+  position: absolute;
+  inset: -3% -4% -7% 22%;
+}
+
+.storia-calm .mascot-world canvas {
+  cursor: grab;
+}
+
+.storia-calm .mascot-world-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0.9;
+}
+
+.storia-calm .mascot-world-fallback img {
+  width: min(44vw, 520px);
+  height: auto;
+  filter: drop-shadow(0 34px 34px rgba(26, 21, 18, 0.16));
+}
+
+.storia-calm .hero-orbit {
+  position: absolute;
+  border: 1px solid rgba(26, 21, 18, 0.1);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.storia-calm .hero-orbit-a {
+  right: 9%;
+  bottom: 18%;
+  width: min(54vw, 680px);
+  aspect-ratio: 1;
+  transform: rotate(-14deg) scaleY(0.42);
+}
+
+.storia-calm .hero-orbit-b {
+  right: 18%;
+  bottom: 29%;
+  width: min(36vw, 420px);
+  aspect-ratio: 1;
+  transform: rotate(12deg) scaleY(0.5);
 }
 
 .storia-calm .hero-media,
@@ -767,9 +832,39 @@
   }
 
   .storia-calm .hero {
-    grid-template-columns: 1fr;
-    gap: 40px;
-    padding: 120px 20px 60px;
+    min-height: 94svh;
+    align-items: flex-start;
+    padding: 112px 20px 54vh;
+  }
+
+  .storia-calm .hero h1 {
+    max-width: 11ch;
+    font-size: 48px;
+  }
+
+  .storia-calm .hero .lede {
+    max-width: 30ch;
+    font-size: 17px;
+  }
+
+  .storia-calm .hero-visual {
+    top: 29vh;
+  }
+
+  .storia-calm .mascot-world {
+    inset: -4% -18% -8%;
+  }
+
+  .storia-calm .hero-orbit-a {
+    right: -28%;
+    bottom: 16%;
+    width: 92vw;
+  }
+
+  .storia-calm .hero-orbit-b {
+    right: 4%;
+    bottom: 26%;
+    width: 58vw;
   }
 
   .storia-calm .manifesto {

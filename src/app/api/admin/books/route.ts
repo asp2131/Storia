@@ -62,8 +62,17 @@ export async function POST(request: NextRequest) {
         description: body.description || null,
         is_published: Boolean(body.isPublished),
         processing_status: body.processingStatus || "pending",
+        total_pages: 1,
         inserted_at: now,
         updated_at: now,
+        // Auto-create the first page so a new book is immediately editable.
+        pages: {
+          create: {
+            page_number: 1,
+            inserted_at: now,
+            updated_at: now,
+          },
+        },
       },
     });
 

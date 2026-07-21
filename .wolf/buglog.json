@@ -2739,6 +2739,108 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-05-06T15:22:35.803Z"
+    },
+    {
+      "id": "bug-159",
+      "timestamp": "2026-06-30T00:00:00.000Z",
+      "error_message": "Overlay text position differs between web book editor and mobile (phone) reader",
+      "file": "storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart, storia-mobile/lib/src/data/models.dart",
+      "root_cause": "Mobile treated overlay shadow offset/blur and background padding/borderRadius as raw pixels and read wrong shadow JSON keys (x/y instead of offsetX/offsetY). Canonical web compositor (image-compositing.ts) and editor scale these as percentages of image dimensions, so any element with a background box or shadow rendered shifted/wrong on phone.",
+      "fix": "models.dart TextShadow.fromJson now reads offsetX/offsetY. overlay_layout_engine.dart scales shadow offset by imageSize (x by width, y by height), blur by width, and background padding/borderRadius by image width — matching compositor math.",
+      "tags": [
+        "overlay",
+        "mobile",
+        "flutter",
+        "coordinates",
+        "shadow",
+        "background",
+        "cross-platform"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-30T00:00:00.000Z"
+    },
+    {
+      "id": "bug-160",
+      "timestamp": "2026-06-30T19:00:28.050Z",
+      "error_message": "Incorrect value in code",
+      "file": "../storia-mobile/lib/src/data/models.dart",
+      "root_cause": "Had '] as num?)?.toDouble() ?? 0,\n      y: (json['",
+      "fix": "Changed to 'offsetX'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "dart"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-30T19:00:28.050Z"
+    },
+    {
+      "id": "bug-161",
+      "timestamp": "2026-07-17T22:50:06.802Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/components/StoriaCalmLanding.tsx",
+      "root_cause": "Had \"/storia-landing/mascot-idle.png\"",
+      "fix": "Changed to \"/storia-landing/logo-headshot.png\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-07-17T22:50:07.279Z"
+    },
+    {
+      "id": "bug-162",
+      "timestamp": "2026-07-21T15:39:01.482Z",
+      "error_message": "New book: first page did not appear, had to press Add Page manually",
+      "file": "src/app/admin/actions.ts",
+      "root_cause": "createBookDraft server action created book with no pages; editor loads pages from DB via GET /pages so empty book showed no page. Two create paths existed; only the admin API POST was patched first.",
+      "fix": "createBookDraft nested-creates page_number 1 and sets total_pages:1",
+      "tags": [
+        "book",
+        "page",
+        "create",
+        "admin",
+        "editor"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-21T15:39:01.483Z"
+    },
+    {
+      "id": "bug-163",
+      "timestamp": "2026-07-21T15:45:43.843Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/app/admin/actions.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-21T15:45:43.843Z"
+    },
+    {
+      "id": "bug-164",
+      "timestamp": "2026-07-21T15:45:47.772Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/app/admin/actions.ts",
+      "root_cause": "Had \"@/lib/prisma\"",
+      "fix": "Changed to \"@prisma/client\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-07-21T15:45:47.772Z"
     }
   ]
 }

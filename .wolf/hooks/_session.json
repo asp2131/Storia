@@ -1,38 +1,12 @@
 {
-  "session_id": "session-2026-05-06-1048",
-  "started": "2026-05-06T15:48:54.610Z",
-  "files_read": {
-    "/Users/akinpound/Documents/experiments/storia/.pi/skills/linear/SKILL.md": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-06T15:53:25.156Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-06T16:01:18.744Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_frame.dart": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-06T16:01:19.190Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-06T16:01:19.519Z"
-    },
-    "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/text_overlay_utils.dart": {
-      "count": 1,
-      "tokens": 0,
-      "first_read": "2026-05-06T16:01:20.059Z"
-    }
-  },
+  "session_id": "session-2026-07-21-1048",
+  "started": "2026-07-21T15:48:45.697Z",
+  "files_read": {},
   "files_written": [],
   "edit_counts": {},
   "anatomy_hits": 0,
-  "anatomy_misses": 5,
+  "anatomy_misses": 0,
   "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 3
+  "stop_count": 2
 }

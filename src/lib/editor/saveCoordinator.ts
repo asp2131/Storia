@@ -1,6 +1,6 @@
-import type { TextOverlayConfig } from "@/types/text-overlay";
+import type { BookTextStyle, TextOverlayConfig } from "@/types/text-overlay";
 
-export const EDITOR_AUTOSAVE_DEBOUNCE_MS = 6000;
+export const EDITOR_AUTOSAVE_DEBOUNCE_MS = 2000;
 
 export type SaveReason = "autosave" | "manual" | "retry";
 
@@ -18,6 +18,7 @@ export type BookDraftPage = {
 export type BookDraft = {
   title: string;
   author: string;
+  defaultTextStyle?: BookTextStyle;
   pages: BookDraftPage[];
 };
 
@@ -45,6 +46,8 @@ export type SaveSnapshot = {
   error: unknown | null;
   revision: number;
 };
+
+export type SaveStatusSnapshot = Omit<SaveSnapshot, "target">;
 
 export type SaveCoordinatorListener = (
   snapshot: SaveSnapshot,
@@ -102,8 +105,8 @@ function pageKeyFromOverlayTarget(target: SaveTargetId): string {
 /**
  * Single in-process editor save boundary.
  *
- * The coordinator owns the debounce timer, dirty/error phases, retry behavior, and
- * the ordering rule that overlay saves must land before a dirty book/page draft is
+ * The coordinator owns the debounce timer, dirty/error phases, and the ordering
+ * rule that overlay saves must land before a dirty book/page draft is
  * snapshotted. React Query/fetch calls stay outside as injected ports.
  *
  * This class is the internal engine for `useEditorSave`. New code should use the hook
@@ -114,14 +117,24 @@ export class SaveCoordinator {
   private readonly scheduler: Scheduler;
   private readonly targets = new Map<SaveTargetId, TargetState>();
   private readonly listeners = new Set<SaveCoordinatorListener>();
+  private readonly appliedOverlayResults = new Map<string, OverlaySaveResult>();
   private autosaveTimer: unknown | null = null;
   private flushPromise: Promise<void> | null = null;
   private flushQueued = false;
 
-  constructor(private readonly ports: SaveCoordinatorPorts) {
+  constructor(private ports: SaveCoordinatorPorts) {
     this.debounceMs = ports.debounceMs ?? EDITOR_AUTOSAVE_DEBOUNCE_MS;
     this.scheduler = ports.scheduler ?? defaultScheduler;
     this.targets.set("book", createTargetState("book"));
+  }
+
+  updatePorts(
+    ports: Pick<
+      SaveCoordinatorPorts,
+      "getBookDraft" | "saveBook" | "saveOverlay" | "applyOverlayResult"
+    >
+  ): void {
+    Object.assign(this.ports, ports);
   }
 
   requestSave(intent: SaveRequestIntent): void {
@@ -167,6 +180,30 @@ export class SaveCoordinator {
     return this.getSnapshot(overlayTarget(pageKey));
   }
 
+  getStatusSnapshot(): SaveStatusSnapshot {
+    const states = [...this.targets.values()];
+    const dirty = states.some((state) => state.dirty);
+    const errorState = states.find(
+      (state) => state.dirty && state.phase === "error"
+    );
+    const phase: SavePhase = !dirty
+      ? states.some((state) => state.phase === "saved")
+        ? "saved"
+        : "idle"
+      : errorState
+        ? "error"
+        : states.some((state) => state.phase === "saving")
+          ? "saving"
+          : "pending";
+
+    return {
+      phase,
+      dirty,
+      error: errorState?.error ?? null,
+      revision: states.reduce((total, state) => total + state.revision, 0),
+    };
+  }
+
   markBookClean(phase: Extract<SavePhase, "idle" | "saved"> = "saved"): void {
     const state = this.getTarget("book");
     state.dirty = false;
@@ -206,20 +243,33 @@ export class SaveCoordinator {
     const overlayStates = [...this.targets.values()].filter(
       (state) => state.target !== "book" && state.dirty && state.overlayDraft
     );
+    const pageIds = new Set(
+      this.ports
+        .getBookDraft()
+        .pages.map((page) => page.id)
+        .filter((id): id is string => !!id)
+    );
+    const persistedOverlays = overlayStates.filter((state) =>
+      pageIds.has(state.overlayDraft!.pageKey)
+    );
+    const newPageOverlays = overlayStates.filter(
+      (state) => !pageIds.has(state.overlayDraft!.pageKey)
+    );
 
-    if (overlayStates.length > 0) {
-      await this.saveOverlays(overlayStates, reason);
+    // Existing overlays land first so the following page snapshot cannot
+    // overwrite their derived text with stale local text.
+    if (persistedOverlays.length > 0) {
+      await this.saveOverlays(persistedOverlays, reason);
+      if (persistedOverlays.some((state) => state.dirty)) return;
     }
 
-    const stillDirtyOverlay = [...this.targets.values()].some(
-      (state) => state.target !== "book" && state.dirty
-    );
-    if (stillDirtyOverlay) return;
-
     const bookState = this.getTarget("book");
-    if (!bookState.dirty) return;
+    if (bookState.dirty) await this.saveBook(bookState, reason);
 
-    await this.saveBook(bookState, reason);
+    // New pages must exist before their overlay endpoint can address them.
+    if (newPageOverlays.length > 0) {
+      await this.saveOverlays(newPageOverlays, reason);
+    }
   }
 
   private async saveOverlays(
@@ -247,6 +297,7 @@ export class SaveCoordinator {
     for (const result of results) {
       if (result.status === "fulfilled") {
         if (result.state.revision === result.revisionAtStart) {
+          this.appliedOverlayResults.set(result.result.pageKey, result.result);
           this.ports.applyOverlayResult(result.result);
           result.state.dirty = false;
           result.state.phase = "saved";
@@ -273,7 +324,21 @@ export class SaveCoordinator {
 
   private async saveBook(state: TargetState, reason: SaveReason): Promise<void> {
     const revisionAtStart = state.revision;
-    const draft = this.ports.getBookDraft();
+    const currentDraft = this.ports.getBookDraft();
+    const overlayResults = [...this.appliedOverlayResults.values()];
+    const draft: BookDraft = {
+      ...currentDraft,
+      pages: currentDraft.pages.map((page) => {
+        const result =
+          (page.id ? this.appliedOverlayResults.get(page.id) : undefined) ??
+          overlayResults.find(
+            (candidate) => candidate.pageNumber === page.pageNumber
+          );
+        return result
+          ? { ...page, textContent: result.textContent ?? "" }
+          : page;
+      }),
+    };
 
     state.phase = "saving";
     state.error = null;
@@ -285,6 +350,7 @@ export class SaveCoordinator {
         state.dirty = false;
         state.phase = "saved";
         state.error = null;
+        this.appliedOverlayResults.clear();
       } else {
         state.phase = "pending";
       }

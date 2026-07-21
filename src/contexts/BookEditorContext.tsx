@@ -21,13 +21,24 @@ import {
   useSavePages,
   useSaveOverlayTextEntries,
   useUpdateBook,
+  useApplyBookTextStyle,
   type WordTimestamp,
   type VoiceSettings,
   type AudioAssignment,
+  type PageData,
 } from "@/hooks/useBookData";
 import { useSoundLibrary, useUploadAudio, type SoundAsset } from "@/hooks/useSoundLibrary";
 import { assemblePageNarrationText, includedOverlayText, type OverlayTextEntry } from "@/lib/overlayText";
-import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
+import type {
+  TextOverlayConfig,
+  TextElement,
+  BookTextStyle,
+  RememberedTextSettings,
+} from "@/types/text-overlay";
+import {
+  DEFAULT_BOOK_TEXT_STYLE,
+  rememberTextSettings,
+} from "@/types/text-overlay";
 import {
   destroyOverlayEditorStore,
   getExistingOverlayEditorStore,
@@ -56,6 +67,19 @@ export type LocalPageData = {
   overlayTextEntries?: OverlayTextEntry[];
   narrationTimestamps?: WordTimestamp[];
 };
+
+function toLocalPage(page: PageData): LocalPageData {
+  return {
+    id: page.id,
+    number: page.pageNumber,
+    text: page.textContent || "",
+    imageUrl: page.imageUrl || "",
+    compositedImageUrl: page.compositedImageUrl || undefined,
+    overlay: page.overlay || null,
+    overlayTextEntries: page.overlayTextEntries || [],
+    narrationTimestamps: page.narrationTimestamps || undefined,
+  };
+}
 
 export type DropAssignment = {
   audioUrl: string;
@@ -212,7 +236,14 @@ export type OverlayEditorContext = {
   overlayEditorCompositing: boolean;
   handleOverlaySave: (overlayConfig: TextOverlayConfig) => Promise<void>;
   handleOverlayComposite: () => Promise<void>;
+  rememberOverlayTextSettings: (settings: RememberedTextSettings) => void;
   selectedOverlayElement: TextElement | null;
+};
+
+export type ApplyTextStyleResult = {
+  pagesUpdated: number;
+  elementsRestyled: number;
+  pagesSkipped: number;
 };
 
 export type BookMetaContext = {
@@ -224,10 +255,15 @@ export type BookMetaContext = {
   markDirty: () => void;
   autoSaving: boolean;
   saving: boolean;
+  saveError: string | null;
   handleSave: () => Promise<void>;
   handlePublish: () => Promise<void>;
   activePage: number;
   localPagesLength: number;
+  bookTextStyle: BookTextStyle;
+  applyingTextStyle: boolean;
+  updateBookTextStyle: (style: BookTextStyle) => Promise<void>;
+  applyBookTextStyleToAllPages: () => Promise<ApplyTextStyleResult>;
 };
 
 export type BookEditorContextValue = {
@@ -281,7 +317,11 @@ export function BookEditorProvider({
   // ─── React Query ──────────────────────────────────────────────────────────
 
   const { data: bookDetails, isLoading: bookLoading } = useBookDetails(bookIdParam);
-  const { data: serverPages, isLoading: pagesLoading } = useEditorPages(bookIdParam);
+  const {
+    data: serverPages,
+    isLoading: pagesLoading,
+    refetch: refetchPages,
+  } = useEditorPages(bookIdParam);
   const { data: soundLibrary, isLoading: libraryLoading } = useSoundLibrary();
   const uploadAudioMutation = useUploadAudio(bookIdParam);
 
@@ -291,6 +331,7 @@ export function BookEditorProvider({
   const savePagesMutation = useSavePages(bookIdParam);
   const saveOverlayTextMutation = useSaveOverlayTextEntries(bookIdParam);
   const updateBookMutation = useUpdateBook(bookIdParam);
+  const applyTextStyleMutation = useApplyBookTextStyle(bookIdParam);
 
   // ─── Core page state ──────────────────────────────────────────────────────
 
@@ -302,6 +343,9 @@ export function BookEditorProvider({
 
   const [localTitle, setLocalTitle] = useState("");
   const [localAuthor, setLocalAuthor] = useState("");
+  const [bookTextStyle, setBookTextStyle] = useState<BookTextStyle>(
+    DEFAULT_BOOK_TEXT_STYLE
+  );
 
   // ─── Narration state ──────────────────────────────────────────────────────
 
@@ -366,6 +410,8 @@ export function BookEditorProvider({
   const libraryPreviewRef = useRef<HTMLAudioElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const hydratedPagesBookRef = useRef<string | null>(null);
+  const hydratedDetailsBookRef = useRef<string | null>(null);
 
   // ─── Audio assignments for current page ───────────────────────────────────
 
@@ -485,6 +531,7 @@ export function BookEditorProvider({
     () => ({
       title: localTitle.trim() || "Untitled Book",
       author: localAuthor,
+      defaultTextStyle: bookTextStyle,
       pages: localPages.map((page) => ({
         id: page.id,
         pageNumber: page.number,
@@ -492,7 +539,7 @@ export function BookEditorProvider({
         imageUrl: page.imageUrl || null,
       })),
     }),
-    [localAuthor, localPages, localTitle]
+    [bookTextStyle, localAuthor, localPages, localTitle]
   );
 
   const saveBookDraft = useCallback(
@@ -502,8 +549,23 @@ export function BookEditorProvider({
         await updateBookMutation.mutateAsync({
           title: draft.title,
           author: draft.author,
+          defaultTextStyle: draft.defaultTextStyle,
         });
-        await savePagesMutation.mutateAsync(draft.pages);
+        const result = await savePagesMutation.mutateAsync(draft.pages);
+
+        // Preserve edits made during the request; only adopt server identities.
+        if (result?.pages) {
+          setLocalPages((current) =>
+            current.map((page) => {
+              const saved = result.pages.find((candidate) =>
+                page.id
+                  ? candidate.id === page.id
+                  : candidate.pageNumber === page.number
+              );
+              return saved?.id ? { ...page, id: saved.id } : page;
+            })
+          );
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to save.");
         throw err;
@@ -538,7 +600,9 @@ export function BookEditorProvider({
         return {
           pageKey: draft.pageKey,
           pageNumber: draft.pageNumber,
-          overlay: data.overlay || draft.overlay,
+          // Keep the editor-owned draft so a successful background save cannot
+          // rehydrate the canvas with a server-normalized copy mid-edit.
+          overlay: draft.overlay,
           textContent: data.textContent ?? "",
         };
       } catch (err) {
@@ -568,7 +632,7 @@ export function BookEditorProvider({
     saveBook: saveBookDraft,
     saveOverlay: saveOverlayDraft,
     applyOverlayResult,
-    onOverlayPhaseChange: (pageKey, phase, _error) => {
+    onOverlayPhaseChange: (pageKey, phase) => {
       const store = getExistingOverlayEditorStore(pageKey);
       if (!store) return;
       const actions = store.getState();
@@ -578,7 +642,62 @@ export function BookEditorProvider({
     },
   });
 
-  const handleSave = useCallback(() => commit("manual"), [commit]);
+  const rememberOverlayTextSettings = useCallback(
+    (settings: RememberedTextSettings) => {
+      setBookTextStyle((current) => rememberTextSettings(current, settings));
+      markDirty("book");
+    },
+    [markDirty]
+  );
+
+  const queueActiveOverlayIfDirty = useCallback(() => {
+    const overlayState = getExistingOverlayEditorStore(overlayPageId)?.getState();
+    if (!overlayState?.hasChanges) return;
+
+    markDirty({
+      overlay: {
+        pageKey: overlayPageId,
+        pageNumber: activePage,
+        overlay: overlayState.buildConfig(),
+      },
+    });
+  }, [activePage, markDirty, overlayPageId]);
+
+  const handleSave = useCallback(() => {
+    queueActiveOverlayIfDirty();
+    return commit("manual");
+  }, [commit, queueActiveOverlayIfDirty]);
+
+  // ─── Book text style ─────────────────────────────────────────────────────
+
+  const applyingTextStyle = applyTextStyleMutation.isPending;
+
+  const updateBookTextStyle = useCallback(
+    async (style: BookTextStyle) => {
+      try {
+        await updateBookMutation.mutateAsync({ defaultTextStyle: style });
+        setBookTextStyle(style);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save text style.");
+        throw err;
+      }
+    },
+    [updateBookMutation]
+  );
+
+  const applyBookTextStyleToAllPages =
+    useCallback(async (): Promise<ApplyTextStyleResult> => {
+      try {
+        await handleSave();
+        const result = await applyTextStyleMutation.mutateAsync();
+        const refreshed = await refetchPages();
+        if (refreshed.data) setLocalPages(refreshed.data.map(toLocalPage));
+        return result;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to apply text style.");
+        throw err;
+      }
+    }, [applyTextStyleMutation, handleSave, refetchPages]);
 
   // ─── Derived loading/saving flags ─────────────────────────────────────────
 
@@ -598,6 +717,10 @@ export function BookEditorProvider({
       next: number,
       options?: { destroyKeyOverride?: string; preserveCurrentStore?: boolean }
     ) => {
+      if (next !== activePage && !options?.preserveCurrentStore) {
+        queueActiveOverlayIfDirty();
+      }
+
       // Stop audio
       soundscapeRef.current?.pause();
       narrationRef.current?.pause();
@@ -619,8 +742,7 @@ export function BookEditorProvider({
 
       setActivePageState(next);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activePage, localPages]
+    [activePage, localPages, queueActiveOverlayIfDirty]
   );
 
   const setActivePage = useCallback(
@@ -631,28 +753,25 @@ export function BookEditorProvider({
   // ─── Sync server → local state ────────────────────────────────────────────
 
   useEffect(() => {
-    if (serverPages && serverPages.length > 0 && !status.dirty) {
-      setLocalPages(
-        serverPages.map((p) => ({
-          id: p.id,
-          number: p.pageNumber,
-          text: p.textContent || "",
-          imageUrl: p.imageUrl || "",
-          compositedImageUrl: p.compositedImageUrl || undefined,
-          overlay: p.overlay || undefined,
-          overlayTextEntries: p.overlayTextEntries || [],
-          narrationTimestamps: p.narrationTimestamps || undefined,
-        }))
-      );
+    if (
+      serverPages !== undefined &&
+      hydratedPagesBookRef.current !== bookIdParam
+    ) {
+      setLocalPages(serverPages.map(toLocalPage));
+      hydratedPagesBookRef.current = bookIdParam;
     }
-  }, [serverPages, status.dirty]);
+  }, [bookIdParam, serverPages]);
 
   useEffect(() => {
-    if (bookDetails && !status.dirty) {
+    if (bookDetails && hydratedDetailsBookRef.current !== bookIdParam) {
       setLocalTitle(bookDetails.title || "Untitled Book");
       setLocalAuthor(bookDetails.author || "Unknown");
+      setBookTextStyle(
+        bookDetails.defaultTextStyle ?? DEFAULT_BOOK_TEXT_STYLE
+      );
+      hydratedDetailsBookRef.current = bookIdParam;
     }
-  }, [bookDetails, status.dirty]);
+  }, [bookDetails, bookIdParam]);
 
   // ─── Load voices ──────────────────────────────────────────────────────────
 
@@ -739,16 +858,16 @@ export function BookEditorProvider({
 
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
-        setActivePageState((prev) => Math.max(1, prev - 1));
+        setActivePageInternal(Math.max(1, activePage - 1));
       } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
-        setActivePageState((prev) => Math.min(localPages.length, prev + 1));
+        setActivePageInternal(Math.min(localPages.length, activePage + 1));
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [handleSave, localPages.length]);
+  }, [activePage, handleSave, localPages.length, setActivePageInternal]);
 
   // ─── Auto-save ────────────────────────────────────────────────────────────
   // SaveCoordinator schedules the shared editor debounce when markDirty() or an
@@ -1530,6 +1649,7 @@ export function BookEditorProvider({
   const handlePublish = useCallback(async () => {
     setError(null);
     try {
+      queueActiveOverlayIfDirty();
       await commit("manual");
       await updateBookMutation.mutateAsync({
         title: currentBookDraft.title,
@@ -1541,7 +1661,13 @@ export function BookEditorProvider({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to publish.");
     }
-  }, [commit, currentBookDraft, router, updateBookMutation]);
+  }, [
+    commit,
+    currentBookDraft,
+    queueActiveOverlayIfDirty,
+    router,
+    updateBookMutation,
+  ]);
 
   // ─── Overlay handlers ─────────────────────────────────────────────────────
 
@@ -1718,6 +1844,7 @@ export function BookEditorProvider({
         overlayEditorCompositing,
         handleOverlaySave,
         handleOverlayComposite,
+        rememberOverlayTextSettings,
         selectedOverlayElement,
       },
       overlayText: {
@@ -1740,10 +1867,15 @@ export function BookEditorProvider({
         markDirty,
         autoSaving,
         saving,
+        saveError: status.error?.message ?? null,
         handleSave,
         handlePublish,
         activePage,
         localPagesLength: localPages.length,
+        bookTextStyle,
+        applyingTextStyle,
+        updateBookTextStyle,
+        applyBookTextStyleToAllPages,
       },
       error,
       clearError: () => setError(null),
@@ -1792,6 +1924,7 @@ export function BookEditorProvider({
       isSoundscapePlaying,
       soundscapeVolume,
       overlayEditorCompositing,
+      rememberOverlayTextSettings,
       activeOverlayTextEntries,
       ocrStateByPage,
       saveOverlayTextMutation.isPending,
@@ -1802,6 +1935,10 @@ export function BookEditorProvider({
       retryActiveOcr,
       localTitle,
       localAuthor,
+      bookTextStyle,
+      applyingTextStyle,
+      updateBookTextStyle,
+      applyBookTextStyleToAllPages,
       status,
       markDirty,
       handleSave,

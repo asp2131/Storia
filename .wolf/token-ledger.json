@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 3256220,
-    "total_reads": 1518,
-    "total_writes": 1050,
-    "total_sessions": 32,
-    "anatomy_hits": 708,
-    "anatomy_misses": 804,
-    "repeated_reads_blocked": 1229,
-    "estimated_savings_vs_bare_cli": 6422096
+    "total_tokens_estimated": 3297120,
+    "total_reads": 1561,
+    "total_writes": 1062,
+    "total_sessions": 40,
+    "anatomy_hits": 719,
+    "anatomy_misses": 836,
+    "repeated_reads_blocked": 1235,
+    "estimated_savings_vs_bare_cli": 6424491
   },
   "sessions": [
     {
@@ -16792,6 +16792,473 @@
         "writes_count": 0,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-06-30-1353",
+      "started": "2026-06-30T18:53:25.212Z",
+      "ended": "2026-06-30T18:56:37.401Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+          "tokens_estimated": 3859,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_text_element.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/text_overlay_utils.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_text_layer.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/page_renderer.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/image-compositing.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 3859,
+        "output_tokens_estimated": 0,
+        "reads_count": 7,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-30-1353",
+      "started": "2026-06-30T18:53:25.212Z",
+      "ended": "2026-06-30T18:58:41.600Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+          "tokens_estimated": 3859,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_text_element.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/text_overlay_utils.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_text_layer.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/page_renderer.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/image-compositing.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 3859,
+        "output_tokens_estimated": 0,
+        "reads_count": 8,
+        "writes_count": 0,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-06-30-1353",
+      "started": "2026-06-30T18:53:25.212Z",
+      "ended": "2026-06-30T19:01:42.554Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/text-overlay/DraggableTextOverlayEditor.tsx",
+          "tokens_estimated": 3859,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_text_element.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/text_overlay_utils.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_text_layer.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/page_renderer.dart",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/image-compositing.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart",
+          "tokens_estimated": 81,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/overlay/overlay_layout_engine.dart",
+          "tokens_estimated": 52,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 46,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 3859,
+        "output_tokens_estimated": 179,
+        "reads_count": 8,
+        "writes_count": 3,
+        "repeated_reads_blocked": 3,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-07-15-1234",
+      "started": "2026-07-15T17:34:34.972Z",
+      "ended": "2026-07-15T17:35:17.478Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/StoriaCalmLanding.css",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 1,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-07-17-1746",
+      "started": "2026-07-17T22:46:42.514Z",
+      "ended": "2026-07-17T22:50:17.228Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Desktop/replicate-prediction-258qt34cnxrg80cze8hbbhkmw4.png",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Desktop/replicate-prediction-cj032a9v8nrgc0cze8grkna410.png",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Desktop/replicate-prediction-wypvp8476nrmr0cze2rrnvbn6w.webp",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/StoriaCalmLanding.tsx",
+          "tokens_estimated": 0,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/StoriaCalmLanding.tsx",
+          "tokens_estimated": 26,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/StoriaCalmLanding.tsx",
+          "tokens_estimated": 17,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 43,
+        "reads_count": 4,
+        "writes_count": 2,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-07-17-1752",
+      "started": "2026-07-17T22:52:10.091Z",
+      "ended": "2026-07-17T22:57:02.067Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/public/storia-landing/mascot-full.png",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 1,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-07-21-1035",
+      "started": "2026-07-21T15:35:28.045Z",
+      "ended": "2026-07-21T15:36:57.007Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 4981,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/route.ts",
+          "tokens_estimated": 181,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 4981,
+        "output_tokens_estimated": 181,
+        "reads_count": 2,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 1
+      }
+    },
+    {
+      "id": "session-2026-07-21-1035",
+      "started": "2026-07-21T15:35:28.045Z",
+      "ended": "2026-07-21T15:39:04.493Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 4981,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.tsx",
+          "tokens_estimated": 4422,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/actions.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts",
+          "tokens_estimated": 1689,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/route.ts",
+          "tokens_estimated": 181,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/actions.ts",
+          "tokens_estimated": 133,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 11092,
+        "output_tokens_estimated": 314,
+        "reads_count": 5,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 3
+      }
+    },
+    {
+      "id": "session-2026-07-21-1035",
+      "started": "2026-07-21T15:35:28.045Z",
+      "ended": "2026-07-21T15:46:54.620Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/route.ts",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 4981,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/contexts/BookEditorContext.tsx",
+          "tokens_estimated": 4422,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/actions.ts",
+          "tokens_estimated": 195,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/hooks/useBookData.ts",
+          "tokens_estimated": 1689,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/book-text-style.html",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/editor/OverlayEditorPanel.tsx",
+          "tokens_estimated": 657,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/admin/books/route.ts",
+          "tokens_estimated": 181,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/actions.ts",
+          "tokens_estimated": 133,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/actions.ts",
+          "tokens_estimated": 239,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/admin/actions.ts",
+          "tokens_estimated": 36,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 11944,
+        "output_tokens_estimated": 589,
+        "reads_count": 7,
+        "writes_count": 4,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 4
       }
     }
   ],

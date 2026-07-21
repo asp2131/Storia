@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, JetBrains_Mono, Lora, Inter, Gaegu, Nunito, Space_Grotesk } from "next/font/google";
+import { Playfair_Display, JetBrains_Mono, Lora, Inter, Gaegu, Nunito, Space_Grotesk, Hanken_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
@@ -21,6 +21,11 @@ const lora = Lora({
 
 const inter = Inter({
   variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const hankenGrotesk = Hanken_Grotesk({
+  variable: "--font-editor",
   subsets: ["latin"],
 });
 
@@ -90,7 +95,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} ${gaegu.variable} ${spaceGrotesk.variable} ${nunito.variable} antialiased`}>
+      <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} ${hankenGrotesk.variable} ${gaegu.variable} ${spaceGrotesk.variable} ${nunito.variable} antialiased`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

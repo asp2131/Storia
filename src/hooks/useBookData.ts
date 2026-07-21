@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { WordPronunciationEntry } from "@/lib/pronunciation";
 import type { OverlayTextEntry } from "@/lib/overlayText";
-import type { TextOverlayConfig } from "@/types/text-overlay";
+import type { TextOverlayConfig, BookTextStyle } from "@/types/text-overlay";
 
 // Types
 export type WordTimestamp = {
@@ -177,6 +177,7 @@ export type BookData = {
   author: string | null;
   coverUrl: string | null;
   description: string | null;
+  defaultTextStyle?: BookTextStyle | null;
   hasPronunciations?: boolean;
   pronunciationManifestUrl?: string | null;
 };
@@ -572,15 +573,15 @@ export function useDeleteAudioAssignment(bookId: string | null) {
 export function useSavePages(bookId: string | null) {
   const queryClient = useQueryClient();
 
+  type PageSave = {
+    id?: string;
+    pageNumber: number;
+    textContent?: string | null;
+    imageUrl?: string | null;
+  };
+
   return useMutation({
-    mutationFn: async (
-      pages: Array<{
-        id?: string;
-        pageNumber: number;
-        textContent?: string | null;
-        imageUrl?: string | null;
-      }>
-    ) => {
+    mutationFn: async (pages: PageSave[]) => {
       if (!bookId) throw new Error("No book ID");
 
       const response = await fetch(`/api/admin/books/${bookId}/pages`, {
@@ -594,13 +595,29 @@ export function useSavePages(bookId: string | null) {
         throw new Error(payload?.error || "Failed to save pages");
       }
 
-      return response.json();
+      return response.json() as Promise<{ pages: PageSave[] }>;
     },
-    onSuccess: () => {
-      // Invalidate pages to refetch with any server-side changes
-      queryClient.invalidateQueries({
-        queryKey: ["editor-pages", bookId],
-      });
+    onSuccess: ({ pages }) => {
+      queryClient.setQueryData<PageData[]>(
+        ["editor-pages", bookId],
+        (current = []) =>
+          pages.map((saved) => ({
+            narrationUrl: null,
+            narrationTimestamps: null,
+            wordPronunciations: null,
+            compositedImageUrl: null,
+            overlay: null,
+            ...current.find((page) =>
+              saved.id
+                ? page.id === saved.id
+                : page.pageNumber === saved.pageNumber
+            ),
+            ...saved,
+            id: saved.id ?? "",
+            textContent: saved.textContent ?? null,
+            imageUrl: saved.imageUrl ?? null,
+          }))
+      );
     },
   });
 }
@@ -617,6 +634,7 @@ export function useUpdateBook(bookId: string | null) {
       author?: string;
       isPublished?: boolean;
       processingStatus?: string;
+      defaultTextStyle?: BookTextStyle;
     }) => {
       if (!bookId) throw new Error("No book ID");
 
@@ -631,11 +649,46 @@ export function useUpdateBook(bookId: string | null) {
         throw new Error(payload?.error || "Failed to update book");
       }
 
+      return response.json() as Promise<{ book: BookData }>;
+    },
+    onSuccess: ({ book }) => {
+      queryClient.setQueryData<BookData>(
+        ["book-details", bookId],
+        (current) => ({ ...current, ...book })
+      );
+    },
+  });
+}
+
+/**
+ * Apply the book's default text style to every page overlay (bulk restyle).
+ * Invalidates editor pages so open canvases pick up the new styles.
+ */
+export function useApplyBookTextStyle(bookId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<{
+      pagesUpdated: number;
+      elementsRestyled: number;
+      pagesSkipped: number;
+    }> => {
+      if (!bookId) throw new Error("No book ID");
+
+      const response = await fetch(`/api/admin/books/${bookId}/apply-text-style`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || "Failed to apply text style");
+      }
+
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["book-details", bookId],
+        queryKey: ["editor-pages", bookId],
       });
     },
   });

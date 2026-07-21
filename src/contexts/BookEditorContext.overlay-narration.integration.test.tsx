@@ -84,6 +84,7 @@ vi.mock("@/hooks/useBookData", () => {
     useSavePages: () => ({ isPending: false, mutateAsync: vi.fn() }),
     useSaveOverlayTextEntries: () => ({ isPending: false, mutateAsync: vi.fn() }),
     useUpdateBook: () => ({ isPending: false, mutateAsync: vi.fn() }),
+    useApplyBookTextStyle: () => ({ isPending: false, mutateAsync: vi.fn() }),
   };
 });
 

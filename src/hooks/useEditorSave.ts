@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -14,12 +15,17 @@ import {
   type OverlaySaveResult,
   type SavePhase,
   type SaveReason,
-  type SaveSnapshot,
-  type SaveTargetId,
   type Scheduler,
 } from "@/lib/editor/saveCoordinator";
 
-export type { BookDraft, BookDraftPage, OverlayDraft, OverlaySaveResult, SavePhase, SaveReason };
+export type {
+  BookDraft,
+  BookDraftPage,
+  OverlayDraft,
+  OverlaySaveResult,
+  SavePhase,
+  SaveReason,
+};
 
 export type SaveStatus = {
   phase: SavePhase;
@@ -30,11 +36,18 @@ export type SaveStatus = {
 export type UseEditorSaveOptions = {
   getBookDraft: () => BookDraft;
   saveBook: (draft: BookDraft, reason: SaveReason) => Promise<void>;
-  saveOverlay: (draft: OverlayDraft, reason: SaveReason) => Promise<OverlaySaveResult>;
+  saveOverlay: (
+    draft: OverlayDraft,
+    reason: SaveReason
+  ) => Promise<OverlaySaveResult>;
   applyOverlayResult: (result: OverlaySaveResult) => void;
   debounceMs?: number;
   scheduler?: Scheduler;
-  onOverlayPhaseChange?: (pageKey: string, phase: SavePhase, error: unknown | null) => void;
+  onOverlayPhaseChange?: (
+    pageKey: string,
+    phase: SavePhase,
+    error: unknown | null
+  ) => void;
 };
 
 export type UseEditorSaveReturn = {
@@ -43,56 +56,83 @@ export type UseEditorSaveReturn = {
   status: SaveStatus;
 };
 
+function toStatus(coordinator: SaveCoordinator): SaveStatus {
+  const snapshot = coordinator.getStatusSnapshot();
+  return {
+    phase: snapshot.phase,
+    dirty: snapshot.dirty,
+    error:
+      snapshot.error instanceof Error
+        ? snapshot.error
+        : snapshot.error
+          ? new Error(String(snapshot.error))
+          : null,
+  };
+}
+
 export function useEditorSave(options: UseEditorSaveOptions): UseEditorSaveReturn {
-  const getBookDraftRef = useRef(options.getBookDraft);
-  const saveBookRef = useRef(options.saveBook);
-  const saveOverlayRef = useRef(options.saveOverlay);
-  const applyOverlayResultRef = useRef(options.applyOverlayResult);
   const onOverlayPhaseChangeRef = useRef(options.onOverlayPhaseChange);
+  const [coordinator] = useState(
+    () =>
+      new SaveCoordinator({
+        getBookDraft: options.getBookDraft,
+        saveBook: options.saveBook,
+        saveOverlay: options.saveOverlay,
+        applyOverlayResult: options.applyOverlayResult,
+        debounceMs: options.debounceMs,
+        scheduler: options.scheduler,
+      })
+  );
+  const [status, setStatus] = useState<SaveStatus>(() =>
+    toStatus(coordinator)
+  );
 
-  getBookDraftRef.current = options.getBookDraft;
-  saveBookRef.current = options.saveBook;
-  saveOverlayRef.current = options.saveOverlay;
-  applyOverlayResultRef.current = options.applyOverlayResult;
-  onOverlayPhaseChangeRef.current = options.onOverlayPhaseChange;
-
-  const coordinatorRef = useRef<SaveCoordinator | null>(null);
-  if (coordinatorRef.current === null) {
-    coordinatorRef.current = new SaveCoordinator({
-      getBookDraft: () => getBookDraftRef.current(),
-      saveBook: (draft, reason) => saveBookRef.current(draft, reason),
-      saveOverlay: (draft, reason) => saveOverlayRef.current(draft, reason),
-      applyOverlayResult: (result) => applyOverlayResultRef.current(result),
-      debounceMs: options.debounceMs,
-      scheduler: options.scheduler,
+  // Layout timing guarantees a user event cannot save the previous render.
+  useLayoutEffect(() => {
+    coordinator.updatePorts({
+      getBookDraft: options.getBookDraft,
+      saveBook: options.saveBook,
+      saveOverlay: options.saveOverlay,
+      applyOverlayResult: options.applyOverlayResult,
     });
-  }
-
-  const coordinator = coordinatorRef.current;
-
-  const [status, setStatus] = useState<SaveStatus>(() => {
-    const snap = coordinator.getSnapshot("book");
-    return {
-      phase: snap.phase,
-      dirty: snap.dirty,
-      error: snap.error instanceof Error ? snap.error : null,
-    };
-  });
+    onOverlayPhaseChangeRef.current = options.onOverlayPhaseChange;
+  }, [
+    coordinator,
+    options.applyOverlayResult,
+    options.getBookDraft,
+    options.onOverlayPhaseChange,
+    options.saveBook,
+    options.saveOverlay,
+  ]);
 
   useEffect(() => {
     const unsubscribe = coordinator.subscribe((snapshot, target) => {
-      if (target === "book") {
-        setStatus({
-          phase: snapshot.phase,
-          dirty: snapshot.dirty,
-          error: snapshot.error instanceof Error ? snapshot.error : null,
-        });
-      } else if (onOverlayPhaseChangeRef.current) {
-        const pageKey = SaveCoordinator.pageKeyFromOverlayTarget(target);
-        onOverlayPhaseChangeRef.current(pageKey, snapshot.phase, snapshot.error);
+      setStatus(toStatus(coordinator));
+      if (target !== "book") {
+        onOverlayPhaseChangeRef.current?.(
+          SaveCoordinator.pageKeyFromOverlayTarget(target),
+          snapshot.phase,
+          snapshot.error
+        );
       }
     });
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!coordinator.getStatusSnapshot().dirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const handleOnline = () => {
+      const snapshot = coordinator.getStatusSnapshot();
+      if (!snapshot.dirty || snapshot.phase === "saving") return;
+      void coordinator.flush("retry").catch(() => undefined);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("online", handleOnline);
+
     return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("online", handleOnline);
       unsubscribe();
       coordinator.dispose();
     };
@@ -110,9 +150,7 @@ export function useEditorSave(options: UseEditorSaveOptions): UseEditorSaveRetur
   );
 
   const commit = useCallback(
-    async (reason?: SaveReason) => {
-      return coordinator.flush(reason ?? "manual");
-    },
+    (reason: SaveReason = "manual") => coordinator.flush(reason),
     [coordinator]
   );
 

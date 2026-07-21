@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Book Text Style</title>
+<style>
+  :root {
+    --ink: #0f172a;
+    --body: #334155;
+    --muted: #64748b;
+    --accent: #0d9488;
+    --accent-deep: #0f766e;
+    --accent-soft: #f0fdfa;
+    --bg: #ffffff;
+    --panel: #f8fafc;
+    --line: #e2e8f0;
+    --warn-soft: #fffbeb;
+    --warn-line: #fde68a;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--panel);
+    color: var(--body);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+    background: var(--bg);
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--serif);
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  h1 { font-size: 34px; margin: 0 0 12px; }
+  h2 {
+    font-size: 24px;
+    margin: 48px 0 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  h3 { font-size: 19px; margin: 32px 0 8px; }
+  h4 { font-size: 16px; margin: 24px 0 8px; color: var(--accent-deep); }
+  p { margin: 8px 0 16px; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--ink);
+  }
+  pre {
+    background: var(--ink);
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+  }
+  figure {
+    margin: 28px auto;
+    text-align: center;
+  }
+  figure img {
+    max-width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  figcaption {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .meta {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13.5px;
+    margin: 16px 0 8px;
+  }
+  .meta summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .meta dl {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 4px 16px;
+    margin: 12px 0 4px;
+  }
+  .meta dt { color: var(--muted); font-weight: 600; }
+  .meta dd { margin: 0; font-family: var(--mono); font-size: 12.5px; word-break: break-all; }
+  ul.checklist {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 20px;
+  }
+  ul.checklist li {
+    padding: 7px 0 7px 4px;
+    border-bottom: 1px dashed var(--line);
+  }
+  ul.checklist li:last-child { border-bottom: none; }
+  code.status {
+    display: inline-block;
+    min-width: 34px;
+    text-align: center;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--accent-deep);
+    border-radius: 5px;
+    font-size: 12px;
+    padding: 0 6px;
+    margin-right: 8px;
+  }
+  .phase {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px 28px 24px;
+    margin: 28px 0;
+    background: linear-gradient(180deg, #ffffff 0%, #fcfdfd 100%);
+  }
+  .phase h3 { margin-top: 20px; }
+  .loop {
+    background: var(--warn-soft);
+    border: 1px solid var(--warn-line);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    margin-top: 18px;
+  }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 2px 7px;
+    margin-right: 6px;
+  }
+  .tag.existing { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .tag.new { background: var(--accent-soft); color: var(--accent-deep); border: 1px solid #99f6e4; }
+  .files ul { padding-left: 4px; list-style: none; }
+  .files li { padding: 5px 0; }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 18px;
+    margin: 16px 0;
+    font-size: 14.5px;
+  }
+  details { margin: 10px 0; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  .muted { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 20px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; }
+  th { background: var(--panel); font-family: var(--serif); color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- ===== HEADER + UPDATABLE METADATA ===== -->
+  <header>
+    <h1>Plan: Book Text Style</h1>
+    <p class="muted">Per-book default text style that seeds new text blocks and restyles all pages on demand — eliminating redundant per-page text setup in the web book editor.</p>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-07-21T14:17:32Z</dd>
+        <dt>modified</dt>     <dd>2026-07-21T14:17:32Z, 2026-07-21T15:25:15Z</dd>
+        <dt>commits</dt>      <dd>6bc3303dcbb9491899f8bb2e919171455050f33e</dd>
+        <dt>agent name</dt>   <dd>OpenCode (kimi-k3)</dd>
+        <dt>session id</dt>   <dd>opencode-2026-07-21-book-text-style</dd>
+        <dt>back refs</dt>    <dd>docs/superpowers/specs/2026-07-21-book-text-style-design.md, specs/text-overlay-v2.md, specs/overlay-text-narration-elevenlabs.md</dd>
+        <dt>forward refs</dt> <dd>—</dd>
+      </dl>
+    </details>
+  </header>
+
+  <!-- Hero image — synced to the :root visual identity. -->
+  <figure>
+    <img src="book-text-style/hero.webp" alt="A single style card with a letter A and teal color dot, connected by lines to every page of an open book">
+    <figcaption>One book style, every page — the core idea of this plan.</figcaption>
+  </figure>
+
+  <!-- ===== PURPOSE / PROBLEM / SOLUTION ===== -->
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Give each book a single, reusable text style (font family, size, weight, color, alignment, optional shadow/background, and narration voice) that (a) automatically seeds every new text block created on any page of that book, and (b) can be pushed to all existing pages with one explicit "Apply to all pages" action. This removes the repetitive per-page re-selection of voice, font, and size that editors currently perform, and makes book-wide restyles a one-click operation instead of a page-by-page slog.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <p>Every text block in the book editor starts from hardcoded defaults (<code>Inter</code>, <code>5%</code>, weight <code>400</code>, <code>#000000</code>, left-aligned, no voice — see <code>handleAddElement</code> in <code>DraggableTextOverlayEditor.tsx</code>). When an editor creates a new page, they manually re-select the voice, font, and font size to match the previous page — for every page of the book. And after styling a 20-page book, deciding "actually, use Lora instead of Inter" means editing every page's text by hand. There is no book-level concept of a text style at all: the <code>books</code> table stores nothing about typography, and each <code>TextElement</code> carries its full style independently.</p>
+    <figure>
+      <img src="book-text-style/problem.webp" alt="A grid of six identical gray settings panels, one faintly highlighted in teal">
+      <figcaption>Today: the same settings panel, re-filled on every page.</figcaption>
+    </figure>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p>Introduce a <strong>per-book text style</strong> stored in a new nullable <code>books.default_text_style</code> JSONB column, validated and materialized entirely on the web/server side so the <code>TextElement</code> wire format stays concrete and unchanged. New text blocks seed from the book style instead of hardcoded values. A "Book Style" drawer in the editor (wired to the currently dead <strong>Settings</strong> footer button) edits the style in one place, and an explicit <strong>Apply to all pages</strong> action transactionally rewrites the style fields of every existing overlay element in the book — preserving each element's text, position, size, and rotation — while invalidating stale composited images using the exact pattern the overlay save route already uses. Books without a saved style behave exactly as today.</p>
+    <figure>
+      <img src="book-text-style/solution.webp" alt="One teal style panel with arrows fanning out to four matching book pages">
+      <figcaption>One panel seeds new blocks and, on demand, restyles the whole book.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===== RELEVANT FILES ===== -->
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>src/types/text-overlay.ts</code> — single source of truth for overlay types; gains <code>BookTextStyle</code>, defaults, validator, seed/apply helpers.</li>
+      <li><span class="tag existing">existing</span> <code>prisma/schema.prisma</code> — <code>books</code> model gains the <code>default_text_style Json?</code> column.</li>
+      <li><span class="tag existing">existing</span> <code>src/app/api/admin/books/[id]/route.ts</code> — GET/PATCH extended to read/write <code>defaultTextStyle</code>.</li>
+      <li><span class="tag existing">existing</span> <code>src/app/api/admin/books/[id]/pages/[pageNumber]/overlay/route.ts</code> — reference for the composite-invalidation pattern (clears <code>composited_*</code> fields on overlay change).</li>
+      <li><span class="tag existing">existing</span> <code>src/hooks/useBookData.ts</code> — <code>BookData</code> type and <code>useBookDetails</code> query (TanStack Query) that feeds the editor.</li>
+      <li><span class="tag existing">existing</span> <code>src/contexts/BookEditorContext.tsx</code> — exposes the book style and the update/apply-all actions to the editor UI.</li>
+      <li><span class="tag existing">existing</span> <code>src/components/text-overlay/DraggableTextOverlayEditor.tsx</code> — <code>handleAddElement</code> seeds new elements from the book style via a new optional prop.</li>
+      <li><span class="tag existing">existing</span> <code>src/components/editor/OverlayEditorPanel.tsx</code> — footer <strong>Settings</strong> button (currently no <code>onClick</code>) opens the new drawer.</li>
+      <li><span class="tag existing">existing</span> <code>src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/page.tsx</code> — standalone overlay editor; passes the book style prop too.</li>
+      <li><span class="tag existing">existing</span> <code>src/components/text-overlay/PropertyPanel.tsx</code> — control patterns (sliders, selects, collapsible shadow/background) mirrored by the drawer.</li>
+      <li><span class="tag existing">existing</span> <code>src/app/api/admin/books/[id]/pages/[pageNumber]/overlay-text/route.test.ts</code> — API route test pattern (mocked prisma) to follow.</li>
+    </ul>
+
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>prisma/migrations/&lt;ts&gt;_add_book_default_text_style/migration.sql</code> — adds the column.</li>
+      <li><span class="tag new">new</span> <code>src/types/text-overlay.test.ts</code> — unit tests for validator + seed/apply helpers.</li>
+      <li><span class="tag new">new</span> <code>src/app/api/admin/books/[id]/apply-text-style/route.ts</code> — transactional bulk-apply endpoint.</li>
+      <li><span class="tag new">new</span> <code>src/app/api/admin/books/[id]/apply-text-style/route.test.ts</code> — route tests.</li>
+      <li><span class="tag new">new</span> <code>src/components/editor/BookStyleDrawer.tsx</code> — the Book Style drawer UI.</li>
+      <li><span class="tag new">new</span> <code>src/components/editor/BookStyleDrawer.test.tsx</code> — drawer component tests.</li>
+    </ul>
+  </section>
+
+  <!-- ===== IMPLEMENTATION PHASES ===== -->
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
+
+    <!-- ================= PHASE 1 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 1: Data Foundation — Types, Helpers, Migration</h3>
+      <p>Everything downstream depends on a well-tested <code>BookTextStyle</code> type and the database column. The helpers live in <code>src/types/text-overlay.ts</code> (the project's single source of truth for overlay types) and follow the same hand-rolled validation style as the existing <code>validateTextElement</code>.</p>
+
+      <figure>
+        <img src="book-text-style/phase-data.webp" alt="A books database table gaining one new teal column beside a code block of style fields">
+        <figcaption>Phase 1: one new column + one validated type, shared everywhere.</figcaption>
+      </figure>
+
+      <h4>1.1. Add <code>BookTextStyle</code> and helpers to <code>src/types/text-overlay.ts</code></h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Define the interface — style fields only; geometry (<code>x/y/width/rotation</code>) and <code>text</code> deliberately excluded:
+<pre><code>export interface BookTextStyle {
+  fontFamily: OverlayFont;
+  fontSize: number;        // % of image height, clamped 0.5–50
+  fontWeight: FontWeight;
+  color: string;
+  textAlign: TextAlign;
+  shadow?: TextShadow;
+  background?: TextBackground;
+  voiceId?: string;
+  voiceName?: string;
+}</code></pre>
+        </li>
+        <li><code class="status">[x]</code> Add <code>DEFAULT_BOOK_TEXT_STYLE</code> matching today's hardcoded editor defaults: <code>{ fontFamily: "Inter", fontSize: 5, fontWeight: 400, color: "#000000", textAlign: "left" }</code>.</li>
+        <li><code class="status">[x]</code> Add <code>validateBookTextStyle(raw: unknown): BookTextStyle</code> — throws on unknown <code>fontFamily</code>/<code>fontWeight</code>/<code>textAlign</code> (reuse <code>AVAILABLE_FONTS</code>, <code>FONT_WEIGHT_OPTIONS</code>, <code>TEXT_ALIGN_OPTIONS</code>), clamps <code>fontSize</code> to 0.5–50 (default 5), defaults <code>color</code> to <code>#000000</code>, passes through optional <code>shadow</code>/<code>background</code>/<code>voiceId</code>/<code>voiceName</code>.</li>
+        <li><code class="status">[x]</code> Add <code>seedTextElement(style)</code> returning the style-only subset used when creating an element.</li>
+        <li><code class="status">[x]</code> Add <code>buildNewTextElement(style, overrides)</code> — pure helper producing a full <code>TextElement</code> (id via <code>crypto.randomUUID()</code>, geometry defaults <code>x:10, y:10, width:30, rotation:0, text:"New Text"</code>). This is what <code>handleAddElement</code> will call in Phase 3, extracted here so it is unit-testable without rendering the editor.</li>
+        <li><code class="status">[x]</code> Add <code>applyBookTextStyle(config, style): TextOverlayConfig</code>. <strong>Subtlety:</strong> the style is the source of truth for <em>all</em> style fields, including optional ones — an element's shadow/background/voice must be <em>removed</em> when the style doesn't define them, not left over:
+<pre><code>elements: config.elements.map((el) =&gt; {
+  const { shadow, background, voiceId, voiceName, ...rest } = el;
+  const next: TextElement = {
+    ...rest,                       // id, text, x, y, width, rotation
+    fontFamily: style.fontFamily,
+    fontSize: style.fontSize,
+    fontWeight: style.fontWeight,
+    color: style.color,
+    textAlign: style.textAlign,
+  };
+  if (style.shadow) next.shadow = style.shadow;
+  if (style.background) next.background = style.background;
+  if (style.voiceId) next.voiceId = style.voiceId;
+  if (style.voiceName) next.voiceName = style.voiceName;
+  return next;
+})</code></pre>
+        </li>
+      </ul>
+
+      <h4>1.2. Add the database column</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> In <code>prisma/schema.prisma</code>, add to <code>model books</code>: <code>default_text_style Json?</code> (nullable, no default — <code>null</code> means "use <code>DEFAULT_BOOK_TEXT_STYLE</code>").</li>
+        <li><code class="status">[x]</code> Run <code>npx prisma migrate dev --name add_book_default_text_style</code>.</li>
+        <li><code class="status">[x]</code> Run <code>npx prisma generate</code> (repo convention after schema changes).</li>
+      </ul>
+
+      <h4>1.3. Unit tests — <code>src/types/text-overlay.test.ts</code> (new)</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>validateBookTextStyle</code>: valid payload round-trips; rejects bad font/weight/align with thrown errors; clamps <code>fontSize</code> (e.g. 99 → 50); defaults missing color/fontSize; preserves optional shadow/background/voice fields.</li>
+        <li><code class="status">[x]</code> <code>buildNewTextElement</code>: returns all <code>TextElement</code> fields; style fields come from the style; geometry/text defaults present; two calls produce distinct ids.</li>
+        <li><code class="status">[x]</code> <code>applyBookTextStyle</code>: replaces all style fields on every element; preserves <code>id</code>, <code>text</code>, <code>x</code>, <code>y</code>, <code>width</code>, <code>rotation</code>; <strong>removes</strong> shadow/background/voice when style omits them; preserves config <code>version</code>; handles empty <code>elements</code> array.</li>
+      </ul>
+
+      <h4>1.4. Testing Strategy</h4>
+      <p>Vitest unit tests for the pure helpers (no React, no DB). Edge cases: clamping, optional-field removal, empty configs, invalid enum values.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>npx vitest run src/types/text-overlay.test.ts</code> — all new helper tests pass.</li>
+        <li><code class="status">[x]</code> <code>npx tsc --noEmit</code> — types compile, generated Prisma client includes the new column.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ================= PHASE 2 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 2: API Layer — Read/Write Style + Apply-All Endpoint</h3>
+      <p>Three server changes: expose the style on the existing book GET/PATCH, and add the bulk-apply endpoint. Route tests follow the existing mocked-prisma pattern in <code>src/app/api/admin/books/[id]/pages/[pageNumber]/overlay-text/route.test.ts</code>.</p>
+
+      <h4>2.1. Extend <code>GET /api/admin/books/[id]</code></h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Include <code>defaultTextStyle</code> in the response book object: parse <code>book.default_text_style</code> with <code>validateBookTextStyle</code> inside try/catch; fall back to <code>DEFAULT_BOOK_TEXT_STYLE</code> when null or invalid (never 500 on a malformed stored style).</li>
+      </ul>
+
+      <h4>2.2. Extend <code>PATCH /api/admin/books/[id]</code></h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Accept optional <code>defaultTextStyle</code> in the body: <code>if ("defaultTextStyle" in body)</code> → validate; on validation error return 400 with <code>{ error: "Invalid defaultTextStyle", details }</code> (existing error-shape convention).</li>
+        <li><code class="status">[x]</code> On success write <code>data.default_text_style = validated as unknown as Prisma.InputJsonValue</code> (same cast style as the overlay route). <code>updated_at</code> bump is already handled.</li>
+        <li><code class="status">[x]</code> Include <code>defaultTextStyle</code> in the PATCH response (same parsing as GET).</li>
+      </ul>
+
+      <h4>2.3. New endpoint <code>POST /api/admin/books/[id]/apply-text-style</code></h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Create <code>src/app/api/admin/books/[id]/apply-text-style/route.ts</code> with a <code>POST</code> handler.</li>
+        <li><code class="status">[x]</code> Load the book (<code>select: { default_text_style: true }</code>); return 404 <code>{ error: "Book not found." }</code> when missing.</li>
+        <li><code class="status">[x]</code> Resolve the style: stored value validated in try/catch, else <code>DEFAULT_BOOK_TEXT_STYLE</code>.</li>
+        <li><code class="status">[x]</code> Fetch the book's pages (<code>select: { id, page_number, text_overlay }</code>) and filter <strong>in JS</strong> to pages with a non-null overlay (avoids Prisma JSON-null filter pitfalls with <code>JsonNull</code>/<code>DbNull</code>).</li>
+        <li><code class="status">[x]</code> For each candidate page, validate the existing overlay with <code>validateOverlayConfig</code> in try/catch; invalid overlays are skipped and counted as <code>pagesSkipped</code>.</li>
+        <li><code class="status">[x]</code> In one <code>prisma.$transaction([...])</code>, update each page: <code>text_overlay = applyBookTextStyle(overlay, style)</code>, clear <code>composited_image_url</code>, <code>composited_image_path</code>, <code>composited_at</code>, <code>composited_by</code>, bump <code>updated_at</code>. <code>text_content</code> is untouched (element text never changes).</li>
+        <li><code class="status">[x]</code> Respond <code>{ pagesUpdated, elementsRestyled, pagesSkipped }</code>. Any thrown error rolls back the whole transaction; return 500 with a generic message and log server-side (existing convention).</li>
+      </ul>
+
+      <h4>2.4. Route tests — <code>src/app/api/admin/books/[id]/apply-text-style/route.test.ts</code> (new) + GET/PATCH coverage</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Mock <code>@/lib/prisma</code> the same way as the overlay-text route test.</li>
+        <li><code class="status">[x]</code> apply-text-style: 404 when book missing; updates only pages with overlays; clears composited fields; skips invalid overlays (counted); returns correct counts; transaction rolls back (no partial updates) when an update throws.</li>
+        <li><code class="status">[x]</code> PATCH: 400 on invalid <code>defaultTextStyle</code>; persists valid style. GET: returns defaults when column null.</li>
+      </ul>
+
+      <h4>2.5. Testing Strategy</h4>
+      <p>Vitest route tests with mocked Prisma (repo pattern). Edge cases: missing book, null column, zero pages with overlays (returns zeros), invalid stored style, invalid page overlay, transaction rollback.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>npx vitest run "src/app/api/admin/books"</code> — new and existing admin book route tests pass.</li>
+        <li><code class="status">[x]</code> <code>npx tsc --noEmit</code> — routes compile.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ================= PHASE 3 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 3: Editor State — Style in Context + New-Block Seeding</h3>
+      <p>Plumb the style through the editor's data layer (TanStack Query + <code>BookEditorContext</code>) and make "Add Text" seed from it. The style reaches both editor entry points (integrated panel and standalone overlay editor page).</p>
+
+      <h4>3.1. Type the style on the client</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> In <code>src/hooks/useBookData.ts</code>, extend <code>BookData</code> with <code>defaultTextStyle?: BookTextStyle | null</code> (imported from <code>@/types/text-overlay</code>).</li>
+      </ul>
+
+      <h4>3.2. Expose style + actions via <code>BookEditorContext</code></h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Where the context consumes <code>useBookDetails</code>, derive <code>bookTextStyle = book?.defaultTextStyle ?? DEFAULT_BOOK_TEXT_STYLE</code> and expose it on the book-meta context slice (the slice backing <code>useBookMetaContext</code>) so any editor component can read it.</li>
+        <li><code class="status">[x]</code> Add action <code>updateBookTextStyle(style: BookTextStyle): Promise&lt;void&gt;</code> — PATCH the book, then invalidate the <code>["book-details", bookId]</code> query so the context picks up the saved style.</li>
+        <li><code class="status">[x]</code> Add action <code>applyBookTextStyleToAllPages(): Promise&lt;{ pagesUpdated: number; elementsRestyled: number; pagesSkipped: number }&gt;</code> — POST the endpoint, then invalidate <code>["editor-pages", bookId]</code>; when fresh pages arrive, re-initialize each <em>existing</em> overlay store from its page's new overlay via <code>getExistingOverlayEditorStore(key)?.getState().init(page.overlay.elements)</code> (use the same per-page key derivation the context already uses for overlay stores) so open canvases reflect the restyle without a reload.</li>
+        <li><code class="status">[x]</code> Surface failures through the context's existing <code>error</code> state (rendered by the <code>OverlayEditorPanel</code> banner).</li>
+      </ul>
+
+      <h4>3.3. Seed new text blocks from the style</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add optional prop <code>bookTextStyle?: BookTextStyle</code> to <code>DraggableTextOverlayEditor</code> (defaults to <code>DEFAULT_BOOK_TEXT_STYLE</code> when omitted — preserves current behavior for any other callers).</li>
+        <li><code class="status">[x]</code> Replace the hardcoded literal in <code>handleAddElement</code> with <code>buildNewTextElement(bookTextStyle ?? DEFAULT_BOOK_TEXT_STYLE)</code> (helper from Phase 1).</li>
+      </ul>
+
+      <h4>3.4. Pass the prop at both entry points</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>OverlayEditorPanel</code>: read <code>bookTextStyle</code> from the context slice and pass it to <code>DraggableTextOverlayEditor</code>.</li>
+        <li><code class="status">[x]</code> Standalone page <code>src/app/admin/books/[id]/pages/[pageNumber]/overlay-editor/page.tsx</code>: fetch the book via the existing <code>useBookDetails(bookId)</code> hook and pass <code>book?.defaultTextStyle ?? undefined</code>.</li>
+      </ul>
+
+      <h4>3.5. Testing Strategy</h4>
+      <p>Vitest. Pure seeding logic is already covered by Phase 1 tests (<code>buildNewTextElement</code>). Here: extend <code>src/stores/overlayEditorStore.test.ts</code>-style coverage or add a focused test proving <code>addElement</code> payload shape stays valid when seeded; verify context defaults (<code>DEFAULT_BOOK_TEXT_STYLE</code> when book has none) in a light component/hook test if practical — otherwise rely on type safety + Phase 1 tests and keep this phase's gate on the full type check and existing overlay regression suites.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>npx vitest run src/contexts src/stores</code> — existing overlay store/context regression and integration suites still pass (no behavior change for callers without the prop).</li>
+        <li><code class="status">[x]</code> <code>npx tsc --noEmit</code> — context + components compile.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+
+    <!-- ================= PHASE 4 ================= -->
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 4: Book Style Drawer UI</h3>
+      <p>The user-facing piece: a drawer that edits the book style in one place, saves it, and offers the guarded "Apply to all pages" action. Controls mirror <code>PropertyPanel</code> patterns so the UI feels native to the editor.</p>
+
+      <figure>
+        <img src="book-text-style/phase-drawer.webp" alt="Book editor wireframe with a right-side font controls drawer and two action buttons">
+        <figcaption>Phase 4: the Book Style drawer — edit once, apply everywhere.</figcaption>
+      </figure>
+
+      <h4>4.1. New component <code>src/components/editor/BookStyleDrawer.tsx</code></h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Props: <code>{ open: boolean; onClose: () =&gt; void }</code>. Reads <code>bookTextStyle</code>, <code>updateBookTextStyle</code>, <code>applyBookTextStyleToAllPages</code> from context, plus <code>voiceOptions</code> from the existing narration slice.</li>
+        <li><code class="status">[x]</code> Local draft state initialized from <code>bookTextStyle</code> (re-initialized whenever the drawer opens). Controls: font family select (<code>AVAILABLE_FONTS</code>), font size slider (0.5–50, step 0.1), weight select, color picker + hex input, align segmented buttons, collapsible Shadow and Background sections (same expand/checkbox pattern as <code>PropertyPanel</code>), voice select with a "No voice" empty option.</li>
+        <li><code class="status">[x]</code> <strong>Save style</strong> button → <code>updateBookTextStyle(draft)</code>; disable while saving; show a brief saved confirmation.</li>
+        <li><code class="status">[x]</code> <strong>Apply to all pages…</strong> button → two-step inline confirm (first click reveals the warning + Confirm/Cancel; no native <code>window.confirm</code>). Warning copy: <em>"This will restyle all text blocks on every page of this book. Text and positions are kept. Composited images will need to be re-composited."</em></li>
+        <li><code class="status">[x]</code> On confirm: spinner while applying, then a success line with the returned counts ("Restyled N text blocks across M pages"). Errors render inline in the drawer.</li>
+        <li><code class="status">[x]</code> Styling matches the editor (Tailwind, slate/teal, same control classes as <code>PropertyPanel</code>); fixed right-side drawer over the canvas, dismissible via × or backdrop click.</li>
+      </ul>
+
+      <h4>4.2. Wire the Settings button</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> In <code>OverlayEditorPanel</code>, give the footer <strong>Settings</strong> button an <code>onClick</code> that opens the drawer (local <code>useState</code>), and render <code>&lt;BookStyleDrawer open={…} onClose={…} /&gt;</code>.</li>
+      </ul>
+
+      <h4>4.3. Component tests — <code>src/components/editor/BookStyleDrawer.test.tsx</code> (new)</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Renders draft values from the provided style (font select value, size slider value).</li>
+        <li><code class="status">[x]</code> Editing a control then clicking Save calls <code>updateBookTextStyle</code> with the updated draft.</li>
+        <li><code class="status">[x]</code> Apply-all requires the confirm step: action not called on first click; called after confirming.</li>
+      </ul>
+
+      <h4>4.4. Testing Strategy</h4>
+      <p>Vitest + Testing Library (repo pattern, e.g. <code>src/components/editor/PronunciationPanel.test.tsx</code>) with the context mocked. Edge cases: drawer closed → renders nothing; missing voice options → voice select still works.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>npx vitest run src/components/editor/BookStyleDrawer.test.tsx</code> — drawer tests pass.</li>
+        <li><code class="status">[x]</code> <code>npx tsc --noEmit</code> — compiles.</li>
+        <li><code class="status">[x]</code> <code>npx eslint src/components/editor/BookStyleDrawer.tsx src/components/editor/OverlayEditorPanel.tsx</code> — lint clean.</li>
+      </ul>
+      <div class="loop">
+        🔁 <strong>Do not exit this phase until every box above is checked.</strong>
+        If any command fails, fix the cause and re-run — loop until all pass.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== GLOBAL VALIDATION ===== -->
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Execute these commands to validate the entire plan is complete:</p>
+    <ul class="checklist">
+      <li><code class="status">[x]</code> <code>./bin/verify.sh</code> — full repo gate: TypeScript, ESLint, and the entire Vitest suite all pass with the new feature in place.</li>
+    </ul>
+    <div class="loop">
+      🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong>
+    </div>
+  </section>
+
+  <!-- ===== NOTES ===== -->
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>Rejected approaches</h3>
+    <table>
+      <tr><th>Approach</th><th>Why rejected</th></tr>
+      <tr>
+        <td>"Remember last used" sticky defaults (editor seeds from the last edited element)</td>
+        <td>Solves new-page setup but does nothing for book-wide restyles — half the problem. The book style subsumes it.</td>
+      </tr>
+      <tr>
+        <td>Live theme inheritance (elements store only overrides; style resolved at render time)</td>
+        <td>Breaks the concrete <code>TextElement</code> contract that the reader, mobile app, and server-side image compositing all depend on; adds override-tracking complexity for little gain.</td>
+      </tr>
+      <tr>
+        <td>Store the style inside <code>books.metadata</code></td>
+        <td>A dedicated nullable column is typed, discoverable, and avoids mixing concerns in a catch-all bag. Migration cost is one line.</td>
+      </tr>
+    </table>
+
+    <h3>Design decisions worth remembering</h3>
+    <ul>
+      <li><strong>Style is materialized, never referenced.</strong> Every stored/served <code>TextElement</code> keeps concrete style values. Book style only <em>seeds</em> (new elements) or <em>rewrites</em> (apply-all) at save time. The reader, mobile app, and compositing pipeline require zero changes — confirmed against <code>storia-mobile</code>'s overlay parsing, and the user explicitly scoped this as a web-editor UX improvement.</li>
+      <li><strong>Style owns optional fields too.</strong> <code>applyBookTextStyle</code> removes an element's shadow/background/voice when the style omits them — otherwise apply-all would leave stale one-off extras behind and feel broken.</li>
+      <li><strong>Apply-all is explicit, not automatic.</strong> Saving the style never touches existing pages; the destructive bulk action is always a separate, confirmed step. This preserves intentional one-off styling (e.g. a fancier title page) until the user opts in.</li>
+      <li><strong>Composite invalidation is reused, not reinvented.</strong> The apply endpoint clears the same four <code>composited_*</code> fields the overlay save route clears; re-compositing stays a manual per-page action, as today.</li>
+      <li><strong>Reset = save the defaults.</strong> No "clear style" affordance: saving <code>DEFAULT_BOOK_TEXT_STYLE</code> is identical in effect. Keeps the API surface minimal (YAGNI).</li>
+    </ul>
+
+    <h3>Edge cases & risks</h3>
+    <ul>
+      <li><strong>Book with no style:</strong> everything falls back to <code>DEFAULT_BOOK_TEXT_STYLE</code>; existing books are behaviorally unchanged.</li>
+      <li><strong>Zero pages with overlays:</strong> apply-all returns <code>{ pagesUpdated: 0, elementsRestyled: 0, pagesSkipped: 0 }</code> and the UI says so — not an error.</li>
+      <li><strong>Malformed stored style or malformed page overlay:</strong> validate-and-fallback (style) / skip-and-count (page). Neither should ever 500 the endpoint.</li>
+      <li><strong>Prisma JSON null semantics:</strong> pages are filtered in JS after fetch, avoiding <code>JsonNull</code> vs <code>DbNull</code> filter subtleties. Books are small enough that this is not a perf concern.</li>
+      <li><strong>Autosave race:</strong> an in-flight overlay autosave could theoretically land after apply-all and rewrite a page with pre-restyle elements. Window is seconds and self-heals on the next apply/edit; acceptable, not worth locking.</li>
+      <li><strong>Voice ids:</strong> the style stores any <code>voiceId</code> string (ElevenLabs id). If the voice is later deleted from the provider, elements keep the id — same behavior as per-element voice assignment today.</li>
+    </ul>
+
+    <h3>Future work (out of scope)</h3>
+    <ul>
+      <li>Per-user (account-level) default style.</li>
+      <li>"Apply only to elements still matching the old defaults" mode that preserves intentional one-off styles.</li>
+      <li>Named style presets / theme gallery.</li>
+      <li>Auto re-composite trigger after apply-all.</li>
+    </ul>
+  </section>
+
+  <!-- ===== AMENDMENTS ===== -->
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <details>
+      <summary>2026-07-21T15:25:15Z — Build complete (all phases [x])</summary>
+      <p>Executed all four phases. Two small deviations from the plan text, both in the spirit of the design: (1) post-apply-all store refresh needed no manual registry re-init — the mutation invalidates <code>editor-pages</code> and the existing <code>init(overlay)</code> effect in <code>DraggableTextOverlayEditor</code> propagates restyles automatically; a <code>useApplyBookTextStyle</code> mutation hook was added to <code>useBookData.ts</code> to match codebase conventions (also avoiding a direct <code>useQueryClient</code> in the provider, which existing context tests don't wrap). (2) The standalone overlay-editor page keeps its manual book fetch (no react-query there) and now unwraps the <code>{ book }</code> API envelope — a pre-existing bug that also fixed its title display. Plan markers all [x]; <code>./bin/verify.sh</code> passes (353 tests, tsc, eslint). Feature code is uncommitted at time of writing.</p>
+    </details>
+  </section>
+
+</main>
+</body>
+</html>

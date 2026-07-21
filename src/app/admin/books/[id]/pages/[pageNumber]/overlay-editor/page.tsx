@@ -9,7 +9,11 @@ import {
 } from "@/components/text-overlay/DraggableTextOverlayEditor";
 import {
   TextOverlayConfig,
+  DEFAULT_BOOK_TEXT_STYLE,
   emptyOverlayConfig,
+  rememberTextSettings,
+  type BookTextStyle,
+  type RememberedTextSettings,
 } from "@/types/text-overlay";
 import {
   destroyOverlayEditorStore,
@@ -31,6 +35,7 @@ interface OverlayApiResponse {
 interface BookApiResponse {
   id: string;
   title: string;
+  defaultTextStyle?: BookTextStyle | null;
 }
 
 export default function OverlayEditorPage() {
@@ -45,6 +50,9 @@ export default function OverlayEditorPage() {
   const [compositedImageUrl, setCompositedImageUrl] = useState<string | null>(null);
   const [compositedAt, setCompositedAt] = useState<string | null>(null);
   const [bookTitle, setBookTitle] = useState<string>("Untitled Book");
+  const [bookTextStyle, setBookTextStyle] = useState<BookTextStyle>(
+    DEFAULT_BOOK_TEXT_STYLE
+  );
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -88,9 +96,31 @@ export default function OverlayEditorPage() {
     [id]
   );
 
+  const saveBookDefaults = useCallback(
+    async (draft: { defaultTextStyle?: BookTextStyle }) => {
+      const response = await fetch(`/api/admin/books/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ defaultTextStyle: draft.defaultTextStyle }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        const message = payload?.error || "Failed to save text settings";
+        setSaveError(message);
+        throw new Error(message);
+      }
+    },
+    [id]
+  );
+
   const { markDirty } = useEditorSave({
-    getBookDraft: () => ({ title: "Overlay editor", author: "", pages: [] }),
-    saveBook: async () => undefined,
+    getBookDraft: () => ({
+      title: "Overlay editor",
+      author: "",
+      defaultTextStyle: bookTextStyle,
+      pages: [],
+    }),
+    saveBook: saveBookDefaults,
     saveOverlay: saveOverlayDraft,
     applyOverlayResult: () => undefined,
     onOverlayPhaseChange: (pageKey, phase, error) => {
@@ -113,6 +143,14 @@ export default function OverlayEditorPage() {
     },
   });
 
+  const handleTextSettingsChange = useCallback(
+    (settings: RememberedTextSettings) => {
+      setBookTextStyle((current) => rememberTextSettings(current, settings));
+      markDirty("book");
+    },
+    [markDirty]
+  );
+
   // Cleanup overlay editor store on unmount
   useEffect(() => {
     return () => {
@@ -132,8 +170,12 @@ export default function OverlayEditorPage() {
         if (!bookRes.ok) {
           throw new Error("Failed to load book data");
         }
-        const bookData: BookApiResponse = await bookRes.json();
+        const bookPayload = await bookRes.json();
+        const bookData: BookApiResponse = bookPayload.book ?? bookPayload;
         setBookTitle(bookData.title || "Untitled Book");
+        setBookTextStyle(
+          bookData.defaultTextStyle ?? DEFAULT_BOOK_TEXT_STYLE
+        );
 
         // Fetch overlay data
         const overlayRes = await fetch(
@@ -294,6 +336,8 @@ export default function OverlayEditorPage() {
             isSaveCoordinated
             isSaving={isSaving}
             isCompositing={isCompositing}
+            bookTextStyle={bookTextStyle}
+            onTextSettingsChange={handleTextSettingsChange}
           />
         </div>
       )}

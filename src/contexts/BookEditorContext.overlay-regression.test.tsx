@@ -1,12 +1,21 @@
 import { useEffect } from "react";
 import { act, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BookEditorProvider, usePageManagerContext } from "@/contexts/BookEditorContext";
+import {
+  BookEditorProvider,
+  useBookMetaContext,
+  useOverlayEditorContext,
+  usePageManagerContext,
+} from "@/contexts/BookEditorContext";
 import {
   destroyOverlayEditorStore,
   getOverlayEditorStore,
 } from "@/stores/overlayEditorRegistry";
 import type { TextElement } from "@/types/text-overlay";
+
+const { mockMutateAsync } = vi.hoisted(() => ({
+  mockMutateAsync: vi.fn().mockResolvedValue({}),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -33,7 +42,7 @@ vi.mock("@/hooks/useBookData", () => {
   const editorPagesResult = { data: [basePage], isLoading: false };
   const audioAssignmentsResult = { data: [] };
 
-  const mutationResult = { isPending: false, mutateAsync: vi.fn().mockResolvedValue({}) };
+  const mutationResult = { isPending: false, mutateAsync: mockMutateAsync };
 
   return {
     useBookDetails: () => bookDetailsResult,
@@ -45,6 +54,7 @@ vi.mock("@/hooks/useBookData", () => {
     useSavePages: () => mutationResult,
     useSaveOverlayTextEntries: () => mutationResult,
     useUpdateBook: () => mutationResult,
+    useApplyBookTextStyle: () => mutationResult,
   };
 });
 
@@ -62,17 +72,35 @@ vi.mock("@/hooks/useSoundLibrary", () => {
 });
 
 type PageManager = ReturnType<typeof usePageManagerContext>;
+type BookMeta = ReturnType<typeof useBookMetaContext>;
+type OverlayEditor = ReturnType<typeof useOverlayEditorContext>;
 
 type ProbeProps = {
   onUpdate: (ctx: PageManager) => void;
+  onBookMetaUpdate?: (ctx: BookMeta) => void;
+  onOverlayEditorUpdate?: (ctx: OverlayEditor) => void;
 };
 
-function CapturePageManager({ onUpdate }: ProbeProps) {
+function CapturePageManager({
+  onUpdate,
+  onBookMetaUpdate,
+  onOverlayEditorUpdate,
+}: ProbeProps) {
   const ctx = usePageManagerContext();
+  const bookMeta = useBookMetaContext();
+  const overlayEditor = useOverlayEditorContext();
 
   useEffect(() => {
     onUpdate(ctx);
   }, [ctx, onUpdate]);
+
+  useEffect(() => {
+    onBookMetaUpdate?.(bookMeta);
+  }, [bookMeta, onBookMetaUpdate]);
+
+  useEffect(() => {
+    onOverlayEditorUpdate?.(overlayEditor);
+  }, [onOverlayEditorUpdate, overlayEditor]);
 
   return null;
 }
@@ -95,6 +123,7 @@ function makeElement(id: string): TextElement {
 
 describe("BookEditorContext overlay key regressions", () => {
   beforeEach(() => {
+    mockMutateAsync.mockReset().mockResolvedValue({});
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -151,6 +180,114 @@ describe("BookEditorContext overlay key regressions", () => {
 
     const movedStoreElements = getOverlayEditorStore("page-3").getState().elements;
     expect(movedStoreElements.map((el) => el.id)).toEqual(["moved-page"]);
+  });
+
+  it("does not rehydrate stale server data after a successful local save", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+    const bookMetaRef = { current: null as BookMeta | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager
+          onUpdate={(ctx) => { pageManagerRef.current = ctx; }}
+          onBookMetaUpdate={(ctx) => { bookMetaRef.current = ctx; }}
+        />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(bookMetaRef.current?.localTitle).toBe("Test Book"));
+
+    act(() => bookMetaRef.current!.setLocalTitle("Locally edited title"));
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(true));
+    await act(async () => bookMetaRef.current!.handleSave());
+
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
+    expect(bookMetaRef.current?.localTitle).toBe("Locally edited title");
+    expect(pageManagerRef.current?.localPages).toHaveLength(1);
+  });
+
+  it("persists the last font, size, and voice as defaults for new pages", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+    const bookMetaRef = { current: null as BookMeta | null };
+    const overlayEditorRef = { current: null as OverlayEditor | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager
+          onUpdate={(ctx) => { pageManagerRef.current = ctx; }}
+          onBookMetaUpdate={(ctx) => { bookMetaRef.current = ctx; }}
+          onOverlayEditorUpdate={(ctx) => { overlayEditorRef.current = ctx; }}
+        />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(overlayEditorRef.current).not.toBeNull());
+
+    act(() => {
+      overlayEditorRef.current!.rememberOverlayTextSettings({
+        fontFamily: "Lora",
+        fontSize: 7.2,
+        voiceId: "voice-2",
+        voiceName: "Sprite",
+      });
+    });
+
+    await waitFor(() =>
+      expect(bookMetaRef.current?.bookTextStyle).toMatchObject({
+        fontFamily: "Lora",
+        fontSize: 7.2,
+        voiceId: "voice-2",
+        voiceName: "Sprite",
+      })
+    );
+    await act(async () => bookMetaRef.current!.handleSave());
+
+    expect(mockMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        defaultTextStyle: expect.objectContaining({
+          fontFamily: "Lora",
+          fontSize: 7.2,
+          voiceId: "voice-2",
+          voiceName: "Sprite",
+        }),
+      })
+    );
+  });
+
+  it("queues the latest overlay before navigating away", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+    const bookMetaRef = { current: null as BookMeta | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager
+          onUpdate={(ctx) => { pageManagerRef.current = ctx; }}
+          onBookMetaUpdate={(ctx) => { bookMetaRef.current = ctx; }}
+        />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
+    act(() => pageManagerRef.current!.handleAddPage());
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(2));
+    await act(async () => bookMetaRef.current!.handleSave());
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
+
+    act(() => {
+      const store = getOverlayEditorStore("saved-1");
+      store.getState().init([makeElement("latest")]);
+      store.getState().updateElement("latest", { text: "latest edit" });
+      pageManagerRef.current!.setActivePage(2);
+    });
+
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(true));
+    await act(async () => bookMetaRef.current!.handleSave());
+    await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
+
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/admin/books/book-1/pages/1/overlay",
+      expect.objectContaining({ method: "POST" })
+    );
   });
 
   it("remaps unsaved overlay stores when deleting and renumbering pages", async () => {

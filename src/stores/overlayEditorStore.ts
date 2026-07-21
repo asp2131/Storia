@@ -31,6 +31,8 @@ export interface OverlayEditorState {
   addElement: (element: TextElement) => void;
   updateElement: (id: string, updates: Partial<TextElement>) => void;
   deleteElement: (id: string) => void;
+  /** Move an element one slot earlier/later in reading order. */
+  moveElement: (id: string, dir: "up" | "down") => void;
 
   // Selection
   selectElement: (id: string | null) => void;
@@ -62,11 +64,19 @@ export function createOverlayEditorStore() {
       autoSaveStatus: "idle",
 
       init(elements) {
-        set({
-          elements,
-          selectedElementId: null,
-          hasChanges: false,
-          autoSaveStatus: "idle",
+        set((state) => {
+          if (
+            state.elements === elements ||
+            JSON.stringify(state.elements) === JSON.stringify(elements)
+          ) {
+            return state;
+          }
+          return {
+            elements,
+            selectedElementId: null,
+            hasChanges: false,
+            autoSaveStatus: "idle",
+          };
         });
       },
 
@@ -87,6 +97,17 @@ export function createOverlayEditorStore() {
           hasChanges: true,
           autoSaveStatus: "pending",
         }));
+      },
+
+      moveElement(id, dir) {
+        set((s) => {
+          const i = s.elements.findIndex((el) => el.id === id);
+          const j = dir === "up" ? i - 1 : i + 1;
+          if (i < 0 || j < 0 || j >= s.elements.length) return s; // no-op at ends
+          const next = s.elements.slice();
+          [next[i], next[j]] = [next[j], next[i]];
+          return { elements: next, hasChanges: true, autoSaveStatus: "pending" };
+        });
       },
 
       deleteElement(id) {

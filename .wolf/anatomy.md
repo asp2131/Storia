@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-05-06T15:22:41.868Z
-> Files: 697 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-21T15:45:47.760Z
+> Files: 709 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -17,6 +17,7 @@
 ## ../storia-mobile/lib/src/data/
 
 - `analytics_repository.dart` — Mobile analytics HTTP repository; sends Supabase access token as `Authorization: Bearer <token>` for analytics events (~5000 tok)
+- `models.dart` — Class: WordTimestamp (~3947 tok)
 - `providers.dart` — Mobile dependency providers, including current Supabase access-token callback passed to repositories (~1200 tok)
 
 ## ../storia-mobile/lib/src/features/auth/data/
@@ -26,6 +27,10 @@
 ## ../storia-mobile/lib/src/features/child/data/
 
 - `child_profile_repository.dart` — Mobile child-profile HTTP repository; fetch/create calls require current Supabase access token and send `Authorization: Bearer <token>` (~2200 tok)
+
+## ../storia-mobile/lib/src/features/reader/overlay/
+
+- `overlay_layout_engine.dart` — Class: OverlayLayoutEngine (~1460 tok)
 
 ## ./
 
@@ -141,6 +146,9 @@
 - `.superpowers/brainstorm/51927-1777563562/state/server-stopped` — Prior visual companion stop marker showing idle timeout (~20 tok)
 - `.superpowers/brainstorm/68211-1777565610/content/press-proof-layout-options.html` — Republished visual companion A/B/C mockup for Equitech article and ALTA podcast placement after idle timeout (~900 tok)
 - `.superpowers/brainstorm/68211-1777565610/state/server-info` — Restarted visual companion server metadata with local URL/port (~50 tok)
+
+## Discovered during 2026-07-17 mascot image swap
+
 
 ## _build/
 
@@ -819,6 +827,10 @@
 - `HomeClient.tsx` — MorphogenesisHero — renders form (~5295 tok)
 - `page.tsx` — metadata (~1161 tok)
 
+## src/app/admin/
+
+- `actions.ts` — Exports createBookDraft (~356 tok)
+
 ## src/app/admin/(dashboard)/
 
 - `layout.tsx` — dynamic (~2615 tok)
@@ -843,15 +855,19 @@
 
 - `route.ts` — Delete Storage files from their public URLs (best-effort, won't fail the request). (~3050 tok)
 
+## src/app/api/admin/books/
+
+- `route.ts` — Next.js API route: GET, POST (~766 tok)
+
 ## src/app/api/admin/books/[id]/pages/[pageNumber]/ocr/
 
-- `route.ts` — Next.js API route: POST — runs Replicate OCR on an uploaded illustration, parses detected text, persists `page_overlay_text_entries`. (~3010 tok)
 - `route.test.ts` — Vitest coverage for OCR route validation, Replicate mocking, empty-text handling, and timeout paths. (~2800 tok)
+- `route.ts` — Next.js API route: POST — runs Replicate OCR on an uploaded illustration, parses detected text, persists `page_overlay_text_entries`. (~3010 tok)
 
 ## src/app/api/admin/books/[id]/pages/[pageNumber]/overlay-text/
 
-- `route.ts` — Next.js API route: GET/PATCH for `page_overlay_text_entries` CRUD. (~1800 tok)
 - `route.test.ts` — Vitest coverage for overlay-text GET and PATCH (replace semantics, include/exclude preservation). (~1500 tok)
+- `route.ts` — Next.js API route: GET/PATCH for `page_overlay_text_entries` CRUD. (~1800 tok)
 
 ## src/app/api/admin/books/[id]/pronunciations/
 
@@ -963,6 +979,7 @@
 - `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
 - `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
+- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~7708 tok)
 
 ## src/components/editor/
 
@@ -1006,6 +1023,8 @@
 - `child-auth.ts` — Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPA (~1856 tok)
 - `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
+- `overlayText.test.ts` — Vitest coverage for Replicate OCR output parser (preamble strip, quoted-line extraction, empty case) and narration-input assembly. (~800 tok)
+- `overlayText.ts` — Pure helpers for overlay text: `parseReplicateOcrOutput`, `assemblePageNarrationText`, `extractPageNarrationTokens`, `includedOverlayText`. (~520 tok)
 - `prisma.ts` — Shared PrismaClient singleton using DATABASE_URL; logs query/error/warn in development and error in production (~150 tok)
 - `pronunciation.test.ts` — Declares WordPronunciationEntry (~2227 tok)
 - `pronunciation.ts` — True if the entry has at least one usable audio URL. (~1632 tok)
@@ -1019,8 +1038,6 @@
 - `pronunciationReview.ts` — Shape of a row returned from `prisma.book_pronunciations.findMany` (subset of (~3566 tok)
 - `pronunciationValidation.test.ts` — ValidationResult: mapOf (~3700 tok)
 - `pronunciationValidation.ts` — Publish-time pronunciation manifest validator (Ticket 1.3). (~1807 tok)
-- `overlayText.test.ts` — Vitest coverage for Replicate OCR output parser (preamble strip, quoted-line extraction, empty case) and narration-input assembly. (~800 tok)
-- `overlayText.ts` — Pure helpers for overlay text: `parseReplicateOcrOutput`, `assemblePageNarrationText`, `extractPageNarrationTokens`, `includedOverlayText`. (~520 tok)
 - `saveCoordinator.ts` — Barrel export for the editor SaveCoordinator boundary in `src/lib/editor/saveCoordinator.ts` (~10 tok)
 
 ## src/lib/editor/

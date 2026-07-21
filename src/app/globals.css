@@ -327,3 +327,77 @@ body {
     cursor: auto;
   }
 }
+
+/* Book editor shell */
+.book-editor {
+  --editor-accent: #5b57e6;
+  --editor-accent-soft: color-mix(in srgb, var(--editor-accent) 12%, white);
+  --editor-accent-faint: color-mix(in srgb, var(--editor-accent) 7%, white);
+  font-family: var(--font-editor), var(--font-sans), system-ui, sans-serif;
+}
+
+.book-editor ::selection {
+  background: color-mix(in srgb, var(--editor-accent) 22%, transparent);
+  color: inherit;
+}
+
+.book-editor .editor-scroll {
+  scrollbar-color: #d4d4d8 transparent;
+  scrollbar-width: thin;
+}
+
+.book-editor .editor-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.book-editor .editor-scroll::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+
+.book-editor .editor-range {
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: #e4e4e7;
+  outline: none;
+}
+
+.book-editor .editor-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 0 0 1.5px var(--editor-accent), 0 1px 3px rgb(0 0 0 / 28%);
+}
+
+.book-editor .editor-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 0 0 1.5px var(--editor-accent), 0 1px 3px rgb(0 0 0 / 28%);
+}
+
+@keyframes editor-pop {
+  from { opacity: 0; transform: translateY(4px) scale(.99); }
+  to { opacity: 1; transform: none; }
+}
+
+.book-editor .editor-pop {
+  animation: editor-pop 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-editor .editor-pop {
+    animation: none;
+  }
+}

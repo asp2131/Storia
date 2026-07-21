@@ -2,18 +2,15 @@
 
 import React from "react";
 import {
-  ImagePlus,
-  RefreshCw,
-  Trash2,
   ArrowLeft,
   ArrowRight,
-  X,
+  ImagePlus,
   Loader2,
-  Type,
   Settings,
-  CheckCircle2,
+  X,
 } from "lucide-react";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
+import { BookStyleDrawer } from "./BookStyleDrawer";
 import {
   useBookEditor,
   useOverlayEditorContext,
@@ -21,12 +18,15 @@ import {
   useAudioLibraryContext,
   useBookMetaContext,
 } from "@/contexts/BookEditorContext";
-import { BookMetaPanel } from "./BookMetaPanel";
 
 export function OverlayEditorPanel() {
   const { error, clearError, imageInputRef } = useBookEditor();
-  const { overlayEditorCompositing, handleOverlaySave, handleOverlayComposite } =
-    useOverlayEditorContext();
+  const {
+    overlayEditorCompositing,
+    handleOverlaySave,
+    handleOverlayComposite,
+    rememberOverlayTextSettings,
+  } = useOverlayEditorContext();
   const {
     localPages,
     activePage,
@@ -37,186 +37,148 @@ export function OverlayEditorPanel() {
     handleImageFile,
   } = usePageManagerContext();
   const { audioInputRef, handleAudioUpload } = useAudioLibraryContext();
-  const { hasLocalChanges } = useBookMetaContext();
-
+  const { hasLocalChanges, bookTextStyle } = useBookMetaContext();
   const { voiceOptions } = useBookEditor().narration;
+  const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false);
 
   const activePageData = activeView.data;
-  const overlayPageId = activeView.overlayPageId;
-  const hasImage = !!(activePageData?.imageUrl || activePageData?.compositedImageUrl);
-
+  const hasImage = Boolean(activePageData?.imageUrl || activePageData?.compositedImageUrl);
   const triggerImagePicker = () => imageInputRef.current?.click();
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) handleImageFile(file);
+    if (file) void handleImageFile(file);
   };
 
   const handleImageDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
-    if (file) handleImageFile(file);
+    if (file) void handleImageFile(file);
   };
 
   return (
-    <main className="flex-1 flex flex-col min-w-0 relative">
-      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
-        <BookMetaPanel />
-      </header>
-
+    <main className="relative flex min-w-0 flex-1 flex-col bg-zinc-100">
       {error && (
-        <div className="bg-rose-50 text-rose-700 border border-rose-200 px-6 py-3 text-sm flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-rose-200 bg-rose-50 px-5 py-2.5 text-sm text-rose-700" role="alert">
           <span>{error}</span>
-          <button onClick={clearError} className="text-rose-400 hover:text-rose-600">
-            <X className="w-4 h-4" />
+          <button onClick={clearError} className="rounded-md p-1 text-rose-400 hover:bg-rose-100 hover:text-rose-600" aria-label="Dismiss error">
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
-      {/* CANVAS AREA */}
-      <div className="flex-1 bg-slate-100/80 overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-8">
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageChange}
-        />
-        <input
-          ref={audioInputRef}
-          type="file"
-          accept="audio/*"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleAudioUpload(file);
-          }}
-        />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageChange}
+      />
+      <input
+        ref={audioInputRef}
+        type="file"
+        accept="audio/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleAudioUpload(file);
+        }}
+      />
 
+      <div className="min-h-0 flex-1" onDragOver={(event) => event.preventDefault()} onDrop={handleImageDrop}>
         {uploading ? (
-          <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-12 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
-              <Loader2 className="w-8 h-8 animate-spin" />
+          <div className="grid h-full place-items-center p-8">
+            <div className="editor-pop flex flex-col items-center rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-xl">
+              <span className="mb-4 grid h-14 w-14 place-items-center rounded-full bg-[var(--editor-accent-soft)] text-[var(--editor-accent)]">
+                <Loader2 className="h-7 w-7 animate-spin" />
+              </span>
+              <h3 className="text-base font-semibold text-zinc-800">Uploading illustration…</h3>
+              <p className="mt-1 text-sm text-zinc-400">This should only take a moment.</p>
             </div>
-            <h3 className="text-slate-700 font-medium text-lg mb-1">Uploading...</h3>
-            <p className="text-sm text-slate-400">Please wait while your image uploads</p>
           </div>
         ) : hasImage ? (
-          <div className="flex flex-col gap-4 w-full max-w-6xl">
-            <div className="w-full bg-white rounded-lg shadow-sm border border-slate-100 px-5 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                {activePageData?.text ? (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 min-w-0">
-                    <Type className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="truncate">
-                      {activePageData.text.slice(0, 80)}
-                      {activePageData.text.length > 80 ? "..." : ""}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-slate-400 italic">No text overlay yet</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 shrink-0 ml-3">
-                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                  Inline text editor
-                </span>
-                <button
-                  type="button"
-                  onClick={triggerImagePicker}
-                  className="bg-white text-slate-700 hover:text-teal-600 px-3 py-1.5 rounded-lg border border-slate-200 font-medium text-sm flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Change Image
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveImage("")}
-                  className="bg-white text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 font-medium text-sm flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Remove
-                </button>
-              </div>
-            </div>
-
-            <div
-              className="w-full h-[70vh] rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleImageDrop}
-            >
-              <DraggableTextOverlayEditor
-                pageId={overlayPageId}
-                imageUrl={activePageData!.imageUrl}
-                overlay={activePageData!.overlay || null}
-                onSave={handleOverlaySave}
-                onComposite={handleOverlayComposite}
-                isSaveCoordinated
-                isSaving={false}
-                isCompositing={overlayEditorCompositing}
-                voiceOptions={voiceOptions}
-                enableVoiceAssignment
-              />
-            </div>
-          </div>
+          <DraggableTextOverlayEditor
+            pageId={activeView.overlayPageId}
+            imageUrl={activePageData!.imageUrl}
+            overlay={activePageData!.overlay || null}
+            onSave={handleOverlaySave}
+            onComposite={handleOverlayComposite}
+            isSaveCoordinated
+            isSaving={false}
+            isCompositing={overlayEditorCompositing}
+            voiceOptions={voiceOptions}
+            enableVoiceAssignment
+            bookTextStyle={bookTextStyle}
+            onTextSettingsChange={rememberOverlayTextSettings}
+            showInspector={false}
+            onChangeImage={triggerImagePicker}
+            onRemoveImage={() => setActiveImage("")}
+          />
         ) : (
-          <div
-            onClick={triggerImagePicker}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleImageDrop}
-            className="w-full max-w-md aspect-3/4 bg-white rounded-xl shadow-lg border-2 border-dashed border-slate-300 hover:border-teal-400 hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-slate-400 cursor-pointer"
-          >
-            <div className="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mb-4">
-              <ImagePlus className="w-8 h-8" />
-            </div>
-            <h3 className="text-slate-700 font-medium text-lg mb-1">Add an Illustration</h3>
-            <p className="text-sm text-slate-400 mb-4">Click to upload or drag &amp; drop</p>
-            <span className="text-xs text-slate-300 px-2 py-1 bg-slate-100 rounded">
-              Supports JPG, PNG, GIF
-            </span>
+          <div className="grid h-full place-items-center p-8">
+            <button
+              type="button"
+              onClick={triggerImagePicker}
+              className="editor-pop flex aspect-[4/5] w-full max-w-sm flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-white text-zinc-400 shadow-lg transition hover:border-[var(--editor-accent)] hover:bg-[var(--editor-accent-faint)]"
+            >
+              <span className="mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--editor-accent-soft)] text-[var(--editor-accent)]">
+                <ImagePlus className="h-8 w-8" />
+              </span>
+              <span className="text-lg font-semibold text-zinc-700">Add an illustration</span>
+              <span className="mt-1 text-sm">Click to upload or drag and drop</span>
+              <span className="mt-4 rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-400">
+                JPG, PNG or GIF
+              </span>
+            </button>
           </div>
         )}
       </div>
 
-      {/* FOOTER */}
-      <div className="h-20 bg-white border-t border-slate-200 flex items-center justify-between px-8 absolute bottom-0 w-full z-10 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-        <div className="flex items-center gap-2 w-1/3">
-          <div className="flex items-center gap-1.5 text-teal-600 bg-teal-50 px-3 py-1.5 rounded-full text-xs font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Editing
-          </div>
-          <span className="text-xs text-slate-400 ml-2">
-            {hasLocalChanges ? "Unsaved changes" : "All saved"}
+      <footer className="flex h-[52px] shrink-0 items-center justify-between border-t border-zinc-200/80 bg-zinc-100 px-5">
+        <div className="flex w-1/3 items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 shadow-sm">
+            <span className={`h-2 w-2 rounded-full ${hasLocalChanges ? "bg-amber-500" : "bg-emerald-500"}`} />
+            Editing · {hasLocalChanges ? "unsaved" : "saved"}
           </span>
         </div>
 
-        <div className="flex items-center gap-4 w-1/3 justify-center">
+        <div className="flex w-1/3 items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => setActivePage(Math.max(1, activePage - 1))}
-            className="p-3 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-all hover:-translate-x-1 active:scale-95 disabled:opacity-30"
+            disabled={activePage <= 1}
+            className="grid h-8 w-8 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 disabled:opacity-30"
+            aria-label="Previous page"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="h-4 w-4" />
           </button>
-          <span className="text-lg font-serif text-slate-800 min-w-12 text-center">
+          <span className="min-w-8 text-center font-serif text-sm font-semibold tabular-nums text-zinc-700">
             {activePage}
           </span>
           <button
             type="button"
             onClick={() => setActivePage(Math.min(localPages.length, activePage + 1))}
-            className="p-3 rounded-full bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/20 transition-all hover:translate-x-1 active:scale-95"
+            disabled={activePage >= localPages.length}
+            className="grid h-8 w-8 place-items-center rounded-full bg-zinc-900 text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-30"
+            aria-label="Next page"
           >
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="w-1/3 flex justify-end gap-4">
-          <button className="text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-2 text-sm font-medium">
-            <Settings className="w-4.5 h-4.5" />
-            Settings
+        <div className="flex w-1/3 justify-end">
+          <button
+            type="button"
+            onClick={() => setStyleDrawerOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
+          >
+            <Settings className="h-4 w-4" />
+            Book style
           </button>
         </div>
-      </div>
+      </footer>
+
+      <BookStyleDrawer open={styleDrawerOpen} onClose={() => setStyleDrawerOpen(false)} />
     </main>
   );
 }

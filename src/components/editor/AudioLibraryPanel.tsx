@@ -1,63 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
-  Headphones,
-  Pause,
-  Play,
-  Loader2,
-  Wand2,
-  Sparkles,
-  Music,
-  Upload,
-  FolderOpen,
+  BookOpen,
   ChevronDown,
   ChevronRight,
-  GripHorizontal,
   FileAudio,
-  PlayCircle,
-  Mic,
-  Volume2,
-  BookOpen,
+  FolderOpen,
+  GripHorizontal,
+  Headphones,
+  Loader2,
+  Music,
+  Pause,
+  Play,
+  Type,
+  Upload,
 } from "lucide-react";
 import {
   useNarrationContext,
   useAudioLibraryContext,
   usePageManagerContext,
 } from "@/contexts/BookEditorContext";
+import { ElementInspectorPanel } from "@/components/editor/ElementInspectorPanel";
 import { PronunciationPanel } from "@/components/editor/PronunciationPanel";
 import { NarrationPanel } from "@/components/editor/NarrationPanel";
 
 export function AudioLibraryPanel() {
   const params = useParams();
   const bookId = params.id as string;
-  const narration = useNarrationContext();
+  const { selectedVoiceId, voiceSettings } = useNarrationContext();
   const audioLibrary = useAudioLibraryContext();
-  const { localPages } = usePageManagerContext();
-
-  const {
-    voiceOptions,
-    selectedVoiceId,
-    setSelectedVoiceId,
-    voicesLoading,
-    voiceSettings,
-    setVoiceSettings,
-    generating: generatingNarration,
-    generatingPhase: overlayNarrationPhase,
-    generateNarration: handleGenerateNarration,
-    generateSelectedTextNarration: handleGenerateSelectedTextNarration,
-    selectedOverlayElement,
-    isNarrationPlaying,
-    narrationVolume,
-    setNarrationVolume,
-    toggleNarration,
-    wordTimestamps,
-    activeWordIndex,
-    showSyncPreview,
-    setShowSyncPreview,
-    activeView,
-  } = narration;
+  const { localPages, activeView } = usePageManagerContext();
 
   const {
     libraryLoading,
@@ -103,110 +77,43 @@ export function AudioLibraryPanel() {
     audioInputRef,
   } = audioLibrary;
 
-  // Derive convenience values (same as page.tsx lines 157–187)
-  const activePageData = activeView.data;
-  const narrationActiveUrl = activeView.narrationUrl;
   const soundscapeActiveUrl = activeView.soundscapeUrl;
+  const soundscapeAssignment = activeView.assignments.soundscape;
   const activeAssignments = {
-    narration: activeView.assignments.narration
+    soundscape: soundscapeAssignment
       ? {
-          url: activeView.assignments.narration.audioUrl,
-          scope: activeView.assignments.narration.scope,
+          url: soundscapeAssignment.audioUrl,
+          scope: soundscapeAssignment.scope,
           range:
-            activeView.assignments.narration.scope === "range" &&
-            activeView.assignments.narration.rangeStart != null &&
-            activeView.assignments.narration.rangeEnd != null
-              ? `${activeView.assignments.narration.rangeStart}-${activeView.assignments.narration.rangeEnd}`
-              : "current",
-        }
-      : undefined,
-    soundscape: activeView.assignments.soundscape
-      ? {
-          url: activeView.assignments.soundscape.audioUrl,
-          scope: activeView.assignments.soundscape.scope,
-          range:
-            activeView.assignments.soundscape.scope === "range" &&
-            activeView.assignments.soundscape.rangeStart != null &&
-            activeView.assignments.soundscape.rangeEnd != null
-              ? `${activeView.assignments.soundscape.rangeStart}-${activeView.assignments.soundscape.rangeEnd}`
+            soundscapeAssignment.scope === "range" &&
+            soundscapeAssignment.rangeStart != null &&
+            soundscapeAssignment.rangeEnd != null
+              ? `${soundscapeAssignment.rangeStart}-${soundscapeAssignment.rangeEnd}`
               : "current",
         }
       : undefined,
   };
-  const activePageUsesOverlayVoices = activeView.usesOverlayVoices;
-  const [narrationTarget, setNarrationTarget] = useState<"page" | "selected">("page");
-
-  const selectedTextReady = Boolean(
-    selectedOverlayElement?.id && selectedOverlayElement.text?.trim()
-  );
-  const hasNarrationResult = Boolean(activeAssignments?.narration?.url || narrationActiveUrl);
-  const canGeneratePage = Boolean(activePageData?.text?.trim());
-  const canGenerateForTarget = narrationTarget === "page" ? canGeneratePage : selectedTextReady;
-  const currentStep = generatingNarration ? 3 : hasNarrationResult ? 4 : 1;
-
-  const generationPhaseLabel = useMemo(() => {
-    if (!generatingNarration) return hasNarrationResult ? "Done" : "Idle";
-
-    switch (overlayNarrationPhase) {
-      case "stitching":
-        return "Stitching audio";
-      case "saving":
-        return "Saving assignment";
-      case "generating":
-        return "Generating voices";
-      default:
-        return "Generating audio";
-    }
-  }, [generatingNarration, hasNarrationResult, overlayNarrationPhase]);
-
-  const generationStatusText = useMemo(() => {
-    if (!generatingNarration) {
-      return hasNarrationResult
-        ? "Narration ready for review."
-        : "Ready to generate narration.";
-    }
-
-    switch (overlayNarrationPhase) {
-      case "stitching":
-        return "Combining generated clips into one narration track.";
-      case "saving":
-        return "Attaching narration to the active page.";
-      case "generating":
-        return "Calling voice model and producing speech clips.";
-      default:
-        return "Preparing request and generating narration audio.";
-    }
-  }, [generatingNarration, hasNarrationResult, overlayNarrationPhase]);
-
-  const handleRunNarrationFlow = () => {
-    if (narrationTarget === "selected") {
-      return handleGenerateSelectedTextNarration();
-    }
-    return handleGenerateNarration();
-  };
-
-  const [activeTab, setActiveTab] = useState<"narrate" | "sound" | "words">("narrate");
+  const [activeTab, setActiveTab] = useState<"element" | "audio" | "words">("element");
 
   return (
     <>
       {/* ─── RIGHT SIDEBAR: Tabbed Audio Panel ─────────────────── */}
-      <aside className="w-80 bg-white border-l border-slate-200 flex flex-col shadow-[-4px_0_24px_-12px_rgba(0,0,0,0.05)] z-20 shrink-0">
-        {/* Tab Header */}
-        <div className="h-14 flex items-center px-2 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
-          <div className="flex w-full gap-1">
+      <aside className="z-20 flex w-[344px] shrink-0 flex-col border-l border-zinc-200/80 bg-white max-[1180px]:w-72 max-[600px]:hidden">
+        <div className="shrink-0 px-3.5 pb-3 pt-3.5">
+          <div className="flex w-full gap-1 rounded-[10px] bg-zinc-100 p-1">
             {[
-              { id: "narrate" as const, label: "Narrate", icon: Mic },
-              { id: "sound" as const, label: "Sound", icon: Volume2 },
+              { id: "element" as const, label: "Element", icon: Type },
+              { id: "audio" as const, label: "Audio", icon: Headphones },
               { id: "words" as const, label: "Words", icon: BookOpen },
             ].map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition ${
+                className={`flex h-[34px] flex-1 items-center justify-center gap-1.5 rounded-[7px] px-2 text-[12.5px] font-semibold transition ${
                   activeTab === tab.id
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-500 hover:bg-white/60 hover:text-zinc-700"
                 }`}
               >
                 <tab.icon className="w-3.5 h-3.5" />
@@ -216,13 +123,13 @@ export function AudioLibraryPanel() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {activeTab === "narrate" && (
-            <NarrationPanel onDeleteNarration={() => handleDeleteAudio("narration")} />
-          )}
+        <div className="editor-scroll flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-1">
+          {activeTab === "element" && <ElementInspectorPanel />}
 
-          {activeTab === "sound" && (
-            <div className="space-y-5">
+          {activeTab === "audio" && (
+            <div className="editor-pop space-y-6">
+              <NarrationPanel onDeleteNarration={() => handleDeleteAudio("narration")} />
+
               {/* ── Ambient Soundscape ───────────────────────────────── */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ambient Soundscape</h4>
@@ -357,7 +264,7 @@ export function AudioLibraryPanel() {
                       value={librarySearch}
                       onChange={(e) => setLibrarySearch(e.target.value)}
                       placeholder="Search sounds..."
-                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                      className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--editor-accent-soft)]"
                     />
 
                     {libraryLoading ? (
@@ -379,8 +286,8 @@ export function AudioLibraryPanel() {
                               onClick={() => setSelectedCategory(cat)}
                               className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition border ${
                                 selectedCategory === cat
-                                  ? "bg-teal-600 text-white border-teal-600"
-                                  : "bg-white text-slate-500 border-slate-200 hover:border-teal-300"
+                                  ? "bg-[var(--editor-accent)] text-white border-[var(--editor-accent)]"
+                                  : "bg-white text-slate-500 border-slate-200 hover:border-[var(--editor-accent)]"
                               }`}
                             >
                               {cat} ({filteredLibrarySounds[cat].length})
@@ -398,13 +305,13 @@ export function AudioLibraryPanel() {
                                 draggable
                                 onDragStart={() => handleDragStart({ ...sound, category: selectedCategory! })}
                                 onDragEnd={handleDragEnd}
-                                className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-white hover:border-teal-300 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all group"
+                                className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 bg-white hover:border-[var(--editor-accent)] hover:shadow-sm cursor-grab active:cursor-grabbing transition-all group"
                               >
-                                <GripHorizontal className="w-3 h-3 text-slate-300 group-hover:text-teal-400 shrink-0" />
+                                <GripHorizontal className="w-3 h-3 text-slate-300 group-hover:text-[var(--editor-accent)] shrink-0" />
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); toggleLibraryPreview(sound.url); }}
-                                  className="w-6 h-6 flex items-center justify-center bg-teal-50 text-teal-600 rounded-full hover:bg-teal-100 shrink-0"
+                                  className="w-6 h-6 flex items-center justify-center bg-[var(--editor-accent-faint)] text-[var(--editor-accent)] rounded-full hover:bg-[var(--editor-accent-soft)] shrink-0"
                                 >
                                   {libraryPreviewUrl === sound.url ? (
                                     <Pause className="w-3 h-3" />
@@ -428,7 +335,7 @@ export function AudioLibraryPanel() {
                                     e.stopPropagation();
                                     setSoundscapeUrlInput(sound.url);
                                   }}
-                                  className="text-[9px] text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-1.5 py-0.5 rounded font-semibold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="text-[9px] text-[var(--editor-accent)] hover:text-[var(--editor-accent)] bg-[var(--editor-accent-faint)] hover:bg-[var(--editor-accent-soft)] px-1.5 py-0.5 rounded font-semibold shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                   title="Use this URL in the assignment field"
                                 >
                                   Use
@@ -461,7 +368,7 @@ export function AudioLibraryPanel() {
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 w-96 space-y-5">
             <div className="space-y-1">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Music className="w-5 h-5 text-teal-500" />
+                <Music className="w-5 h-5 text-[var(--editor-accent)]" />
                 Assign Soundscape
               </h3>
               <p className="text-sm text-slate-500">
@@ -479,8 +386,8 @@ export function AudioLibraryPanel() {
                   onClick={() => setDropScope("single")}
                   className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
                     dropScope === "single"
-                      ? "bg-teal-600 text-white border-teal-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                      ? "bg-[var(--editor-accent)] text-white border-[var(--editor-accent)]"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-[var(--editor-accent)]"
                   }`}
                 >
                   This Page Only
@@ -490,8 +397,8 @@ export function AudioLibraryPanel() {
                   onClick={() => setDropScope("range")}
                   className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
                     dropScope === "range"
-                      ? "bg-teal-600 text-white border-teal-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-teal-300"
+                      ? "bg-[var(--editor-accent)] text-white border-[var(--editor-accent)]"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-[var(--editor-accent)]"
                   }`}
                 >
                   Page Range
@@ -507,7 +414,7 @@ export function AudioLibraryPanel() {
                     max={localPages.length}
                     value={dropRangeStart}
                     onChange={(e) => setDropRangeStart(Number(e.target.value))}
-                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--editor-accent-soft)]"
                   />
                   <label className="text-xs text-slate-500">to</label>
                   <input
@@ -516,7 +423,7 @@ export function AudioLibraryPanel() {
                     max={localPages.length}
                     value={dropRangeEnd}
                     onChange={(e) => setDropRangeEnd(Number(e.target.value))}
-                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-300"
+                    className="w-20 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--editor-accent-soft)]"
                   />
                 </div>
               )}
@@ -534,7 +441,7 @@ export function AudioLibraryPanel() {
                 type="button"
                 onClick={confirmDropAssignment}
                 disabled={assignAudioPending}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 shadow-sm disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-[var(--editor-accent)] text-white hover:brightness-105 shadow-sm disabled:opacity-60"
               >
                 {assignAudioPending ? "Assigning..." : "Assign"}
               </button>
