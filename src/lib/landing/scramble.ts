@@ -3,7 +3,7 @@ import SplitType from "split-type";
 const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789·–";
 
 export interface ScrambleOptions {
-  /** Seconds a single char cycles through glyphs before settling. Default 0.35. */
+  /** Hard cap (seconds) on a char's glyph burst; the actual burst is 3–6 swaps × `charDelay`, whichever finishes first. Default 0.35. */
   duration?: number;
   /** Milliseconds between glyph swaps for one char. Default 45. */
   charDelay?: number;
@@ -34,6 +34,7 @@ export function scrambleIn(
     char.style.opacity = "0";
 
     const startTimer = setTimeout(() => {
+      timeouts.delete(startTimer);
       char.style.opacity = "1";
       if (original.trim() === "") return;
 
@@ -54,6 +55,7 @@ export function scrambleIn(
 
       // hard settle — whichever of iterations/duration finishes first
       const settleTimer = setTimeout(() => {
+        timeouts.delete(settleTimer);
         clearInterval(interval);
         intervals.delete(interval);
         char.textContent = original;
