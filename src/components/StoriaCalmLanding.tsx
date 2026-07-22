@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import SplitType from "split-type";
 import { useReducedMotionVariant } from "@/hooks/landing/useReducedMotionVariant";
+import { scrambleIn } from "@/lib/landing/scramble";
 import MascotStoryWorld from "./MascotStoryWorld";
 import "./StoriaCalmLanding.css";
 
@@ -72,9 +73,11 @@ export default function StoriaCalmLanding() {
 
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const nav = root.querySelector<HTMLElement>(".storia-nav");
-      const hero = root.querySelector<HTMLElement>(".hero");
       const heroInner = root.querySelector<HTMLElement>(".hero-inner");
-      const heroImage = root.querySelector<HTMLElement>(".hero-visual");
+      const heroVisual = root.querySelector<HTMLElement>(".hero-visual");
+      const heroPhoto = root.querySelector<HTMLElement>(".hero-photo-card");
+      const heroHill = root.querySelector<HTMLElement>(".hero-mascot-hill");
+      const heroMascot = root.querySelector<HTMLElement>(".hero-mascot-stage");
       const missionShell = root.querySelector<HTMLElement>(".mission-shell");
       const magneticButtons = [primaryCtaRef.current, secondaryCtaRef.current].filter(
         Boolean
@@ -90,9 +93,9 @@ export default function StoriaCalmLanding() {
       const lineTargets = splitHeadline?.lines ?? [];
       const charTargets = splitHeadline?.chars ?? [];
       const heroEyebrow = root.querySelector<HTMLElement>(".hero .eyebrow");
-      const heroLede = root.querySelector<HTMLElement>(".hero .lede");
       const heroActions = root.querySelector<HTMLElement>(".hero .actions");
       const heroActionItems = heroActions ? Array.from(heroActions.children) : [];
+      let scrambleCleanup: (() => void) | undefined;
 
       const onScroll = () => {
         if (!nav) return;
@@ -102,15 +105,19 @@ export default function StoriaCalmLanding() {
       window.addEventListener("scroll", onScroll, { passive: true });
       onScroll();
 
-      gsap.set([heroEyebrow, heroLede, heroActionItems], { clearProps: "all" });
-
       if (reduceMotion) {
         gsap.set(
           [
+            nav,
+            heroEyebrow,
+            heroTitle,
+            heroActions,
+            heroVisual,
+            heroPhoto,
+            heroHill,
+            heroMascot,
             ".storia-calm .reveal",
             ".storia-calm .reveal-image",
-            ".storia-calm .hero-line",
-            ".storia-calm .hero-char",
           ],
           {
             clearProps: "all",
@@ -125,85 +132,69 @@ export default function StoriaCalmLanding() {
           }
         );
       } else {
-        if (lineTargets.length) {
-          gsap.set(lineTargets, { overflow: "hidden" });
-        }
-
+        gsap.set(lineTargets, { overflow: "hidden" });
         gsap.set(charTargets, {
           yPercent: 110,
           rotate: 2,
           transformOrigin: "50% 100%",
           willChange: "transform",
         });
-        gsap.set([heroEyebrow, heroLede], {
-          y: 28,
-          opacity: 0,
-          willChange: "transform, opacity",
-        });
-        gsap.set(heroActionItems, {
-          y: 18,
-          opacity: 0,
-          willChange: "transform, opacity",
-        });
-        gsap.set(heroImage, {
-          opacity: 0,
-          y: 40,
-          scale: 1.06,
-          rotate: 0.8,
-          willChange: "transform, opacity",
-        });
+        gsap.set(nav, { y: -18, opacity: 0 });
+        gsap.set(heroEyebrow, { opacity: 1 });
+        gsap.set(heroVisual, { opacity: 1, y: 0, scale: 1, rotate: 0 });
+        gsap.set(heroActionItems, { y: 18, opacity: 0 });
+        gsap.set(heroPhoto, { y: 30, scale: 1.08, rotate: -8, opacity: 0 });
+        gsap.set(heroHill, { y: 80, scale: 0.94, opacity: 0 });
+        gsap.set(heroMascot, { x: 50, y: 24, scale: 0.96, opacity: 0 });
 
         gsap
           .timeline({ defaults: { ease: "power3.out" } })
           .addLabel("hero")
-          .to(heroEyebrow, { opacity: 1, y: 0, duration: 0.7 }, "hero")
+          .to(nav, { opacity: 1, y: 0, duration: 0.65 }, "hero")
+          .call(
+            () => {
+              if (heroEyebrow) {
+                scrambleCleanup = scrambleIn(heroEyebrow, {
+                  duration: 0.3,
+                  charDelay: 38,
+                  stagger: 18,
+                });
+              }
+            },
+            [],
+            "hero+=0.1"
+          )
           .to(
             charTargets,
             {
               yPercent: 0,
               rotate: 0,
-              duration: 0.95,
+              duration: 1.05,
               ease: "power4.out",
-              stagger: { each: 0.018, from: "start" },
+              stagger: { each: 0.022, from: "start" },
             },
             "hero+=0.08"
           )
-          .to(heroLede, { opacity: 1, y: 0, duration: 0.8 }, "hero+=0.34")
           .to(
-            heroActionItems,
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.65,
-              stagger: 0.08,
-            },
-            "hero+=0.42"
+            heroPhoto,
+            { opacity: 1, y: 0, scale: 1, rotate: -3, duration: 0.9, ease: "power4.out" },
+            "hero+=0.28"
           )
           .to(
-            heroImage,
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              rotate: 0,
-              duration: 1.1,
-              ease: "power3.out",
-            },
-            "hero+=0.18"
+            heroHill,
+            { opacity: 1, y: 0, scale: 1, duration: 1, ease: "power4.out" },
+            "hero+=0.3"
+          )
+          .to(
+            heroMascot,
+            { opacity: 1, x: 0, y: 0, scale: 1, duration: 1, ease: "power4.out" },
+            "hero+=0.34"
+          )
+          .to(
+            heroActionItems,
+            { opacity: 1, y: 0, duration: 0.65, stagger: 0.08 },
+            "hero+=0.5"
           );
-      }
-
-      if (!reduceMotion && heroImage) {
-        gsap.to(heroImage.querySelector(".mascot-world"), {
-          yPercent: 10,
-          ease: "none",
-          scrollTrigger: {
-            trigger: hero,
-            start: "top top",
-            end: "bottom top",
-            scrub: 1,
-          },
-        });
       }
 
       gsap.to(".manifesto .m-word", {
@@ -287,14 +278,61 @@ export default function StoriaCalmLanding() {
         scrollTrigger: { trigger: ".bleed-caption", start: "top 80%" },
       });
 
-      gsap.to(".mission-intro.reveal, .mission-card.reveal", {
+      gsap.to(".mission-intro.reveal", {
         opacity: 1,
         y: 0,
         duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.12,
+        ease: "power4.out",
         scrollTrigger: { trigger: ".mission-section", start: "top 80%" },
       });
+
+      const missionMedia = gsap.matchMedia();
+      missionMedia.add(
+        {
+          pinned: "(min-width: 800px) and (prefers-reduced-motion: no-preference)",
+          simple: "(max-width: 799px), (prefers-reduced-motion: reduce)",
+        },
+        (context) => {
+          if (context.conditions?.pinned) {
+            gsap.set(".mission-card", {
+              opacity: 0,
+              y: 90,
+              scale: 0.92,
+              borderRadius: 96,
+              transformOrigin: "50% 100%",
+            });
+            gsap
+              .timeline({
+                scrollTrigger: {
+                  trigger: ".mission-section",
+                  start: "top 12%",
+                  end: "+=560",
+                  scrub: 0.6,
+                  pin: true,
+                  anticipatePin: 1,
+                },
+              })
+              .to(".mission-card", {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                borderRadius: 24,
+                duration: 1,
+                ease: "power4.out",
+                stagger: 0.22,
+              });
+          } else {
+            gsap.to(".mission-card.reveal", {
+              opacity: 1,
+              y: 0,
+              duration: 0.9,
+              ease: "power3.out",
+              stagger: 0.12,
+              scrollTrigger: { trigger: ".mission-grid", start: "top 85%" },
+            });
+          }
+        }
+      );
 
       gsap.to(".stories-head .reveal", {
         opacity: 1,
@@ -459,18 +497,23 @@ export default function StoriaCalmLanding() {
       }
 
       const fallbackTimer = window.setTimeout(() => {
-        root.querySelectorAll<HTMLElement>(".hero .reveal, .reveal-image").forEach((el) => {
-          if (parseFloat(getComputedStyle(el).opacity) < 0.1) {
-            el.style.opacity = "1";
-            el.style.transform = "none";
+        root
+          .querySelectorAll<HTMLElement>(
+            ".storia-nav, .hero .reveal, .reveal-image, .hero-photo-card, .hero-mascot-hill, .hero-mascot-stage"
+          )
+          .forEach((element) => {
+            if (parseFloat(getComputedStyle(element).opacity) < 0.1) {
+              element.style.opacity = "1";
+              element.style.transform = "none";
+            }
+          });
+        root.querySelectorAll<HTMLElement>(".hero-char, .hero .eyebrow .char").forEach((element) => {
+          element.style.opacity = "1";
+          if (getComputedStyle(element).transform !== "none") {
+            element.style.transform = "none";
           }
         });
-        root.querySelectorAll<HTMLElement>(".hero-char").forEach((el) => {
-          if (getComputedStyle(el).transform !== "none") {
-            el.style.transform = "none";
-          }
-        });
-      }, 2000);
+      }, 3000);
 
       ScrollTrigger.refresh();
 
@@ -479,6 +522,8 @@ export default function StoriaCalmLanding() {
         window.removeEventListener("scroll", onScroll);
         magneticCleanups.forEach((cleanup) => cleanup());
         velocityCleanups.forEach((cleanup) => cleanup());
+        missionMedia.revert();
+        scrambleCleanup?.();
         splitHeadline?.revert();
       };
     },
@@ -509,14 +554,8 @@ export default function StoriaCalmLanding() {
           <div className="hero-inner">
             <p className="eyebrow reveal">For ages 4–10 · Made in New Orleans</p>
             <h1 ref={heroTitleRef} className="hero-title" aria-label="Loratone brings every story to life.">
-              Loratone
-              <br />
-              brings every story to life.
+              Loratone brings <em>every story</em> to life.
             </h1>
-            <p className="lede reveal">
-              A read-aloud storybook app where warm narration, gentle soundscapes,
-              and our new guide help children hear, feel, and follow each page.
-            </p>
             <div className="actions reveal">
               <a
                 ref={primaryCtaRef}
@@ -533,11 +572,26 @@ export default function StoriaCalmLanding() {
             </div>
           </div>
           <div className="hero-visual reveal-image">
-            <MascotStoryWorld reduceMotion={reduceMotion} />
-            <div className="hero-orbit hero-orbit-a" />
-            <div className="hero-orbit hero-orbit-b" />
+            <Image
+              className="hero-mascot-hill"
+              src="/storia-landing/mascot-hill.svg"
+              alt=""
+              width={160}
+              height={107}
+            />
+            <div className="hero-mascot-stage">
+              <MascotStoryWorld reduceMotion={reduceMotion} />
+            </div>
+            <div className="hero-photo-card">
+              <Image
+                src="/storia-landing/kid-ipad.jpg"
+                alt="A child reading a Loratone storybook on a tablet"
+                fill
+                priority
+                sizes="(max-width: 900px) 116px, 13vw"
+              />
+            </div>
           </div>
-          <div className="scroll-hint"><span>Scroll</span><span className="line" /></div>
         </section>
 
         <section className="manifesto">
