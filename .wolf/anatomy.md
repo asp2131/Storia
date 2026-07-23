@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-23T13:56:15.345Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-23T13:58:02.016Z
 > Files: 709 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
@@ -979,7 +979,7 @@
 - `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
 - `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
-- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~8395 tok)
+- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~8413 tok)
 
 ## src/components/editor/
 

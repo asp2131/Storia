@@ -853,7 +853,7 @@ export default function StoriaCalmLanding() {
           <div className="footer-links">
             <Link href="/privacy-policy">Privacy</Link>
             <a href="mailto:hello@loratone.kids">Contact</a>
-            <Link href="/library">Library</Link>
+            <a href="https://app.loratone.com/#/intro" target="_blank" rel="noopener noreferrer">Try it now!</a>
           </div>
         </div>
       </footer>
