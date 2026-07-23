@@ -544,7 +544,7 @@ export default function StoriaCalmLanding() {
           <a href="#how">How it works</a>
           <a href="#stories">Stories</a>
           <a href="#community">Our story</a>
-          <Link href="/library">Library</Link>
+          <a href="https://app.loratone.com/#/intro" target="_blank" rel="noopener noreferrer">Try it now!</a>
         </div>
         <a className="cta" href="#download">Download</a>
       </nav>
@@ -566,8 +566,14 @@ export default function StoriaCalmLanding() {
               >
                 Download on iOS
               </a>
-              <a ref={secondaryCtaRef} className="btn btn-ghost" href="#how">
-                See how it works
+              <a
+                ref={secondaryCtaRef}
+                className="btn btn-ghost"
+                href="https://app.loratone.com/#/intro"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Web version
               </a>
             </div>
           </div>

@@ -2,14 +2,14 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 3297120,
-    "total_reads": 1561,
-    "total_writes": 1062,
-    "total_sessions": 40,
-    "anatomy_hits": 719,
+    "total_tokens_estimated": 3304947,
+    "total_reads": 1562,
+    "total_writes": 1064,
+    "total_sessions": 41,
+    "anatomy_hits": 720,
     "anatomy_misses": 836,
-    "repeated_reads_blocked": 1235,
-    "estimated_savings_vs_bare_cli": 6424491
+    "repeated_reads_blocked": 1236,
+    "estimated_savings_vs_bare_cli": 6432399
   },
   "sessions": [
     {
@@ -17259,6 +17259,39 @@
         "writes_count": 4,
         "repeated_reads_blocked": 1,
         "anatomy_lookups": 4
+      }
+    },
+    {
+      "id": "session-2026-07-23-0849",
+      "started": "2026-07-23T13:49:24.647Z",
+      "ended": "2026-07-23T13:56:39.591Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/StoriaCalmLanding.tsx",
+          "tokens_estimated": 7708,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/StoriaCalmLanding.tsx",
+          "tokens_estimated": 36,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/components/StoriaCalmLanding.tsx",
+          "tokens_estimated": 83,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 7708,
+        "output_tokens_estimated": 119,
+        "reads_count": 1,
+        "writes_count": 2,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 1
       }
     }
   ],
