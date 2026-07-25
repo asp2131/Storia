@@ -7,7 +7,13 @@ let authClientInstance: any = null;
 
 try {
   authClientInstance = createAuthClient({
-    baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    // ponytail: same-origin in the browser — the auth routes are served by this
+    // same Next app, so hardcoding a host only breaks when the domain changes.
+    // NEXT_PUBLIC_APP_URL is the SSR/build-time fallback where there's no window.
+    baseURL:
+      typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   });
 } catch (error) {
   // During build time, create a mock client

@@ -55,6 +55,8 @@ function createAuth() {
       "http://localhost:3000",
       "https://loratone.kids",
       "https://www.loratone.kids",
+      "https://loratone.com",
+      "https://www.loratone.com",
       "https://storia-gray.vercel.app",
       "https://*.vercel.app",           // all Vercel preview deployments
       "storia://",

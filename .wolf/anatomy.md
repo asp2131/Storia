@@ -1,6 +1,6 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-23T13:58:02.016Z
+> Auto-maintained by OpenWolf. Last scanned: 2026-07-25T14:05:49.992Z
 > Files: 709 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
@@ -1017,8 +1017,8 @@
 
 - `admin-reports-prisma.test.ts` — Vitest coverage for dedicated admin reports Prisma connection selection/fallback (~500 tok)
 - `admin-reports-prisma.ts` — Dedicated admin reports Prisma client using ADMIN_REPORTS_DATABASE_URL when configured, otherwise shared Prisma fallback (~220 tok)
-- `auth-client.ts` — Better Auth React client wrapper using `NEXT_PUBLIC_APP_URL` with a build-time mock fallback (~250 tok)
-- `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1213 tok)
+- `auth-client.ts` — Create client instance using type assertion to bypass TypeScript issues (~310 tok)
+- `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1520 tok)
 - `child-auth.test.ts` — Direct dual-stack auth helper tests for Better Auth cookies, Supabase Bearer/raw token parsing, verified-email linking, and child access authorization (~2500 tok)
 - `child-auth.ts` — Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPA (~1856 tok)
 - `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
