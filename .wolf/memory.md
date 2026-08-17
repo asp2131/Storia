@@ -1036,3 +1036,102 @@
 | 09:05 | Edited src/lib/auth-client.ts | expanded (+6 lines) | ~113 |
 | 09:05 | Edited src/lib/auth.ts | 2→4 lines | ~37 |
 | 09:06 | Session end: 2 writes across 2 files (auth-client.ts, auth.ts) | 3 reads | ~1613 tok |
+
+## Session: 2026-07-25 09:12
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-07-28 06:56
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-16 11:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-16 13:14
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-16 13:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-16 13:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-16 13:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 13:20 | Created scripts/storage-gc.mjs | — | ~1794 |
+| 13:21 | storage GC audit: built scripts/storage-gc.mjs, found 1787 orphans (332MB) in storia-storage | scripts/storage-gc.mjs | dry-run only, awaiting tier approval | ~35k |
+| 13:22 | Session end: 1 writes across 1 files (storage-gc.mjs) | 0 reads | ~1922 tok |
+
+## Session: 2026-08-16 14:32
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 14:42 | Created specs/parent-recorded-narration-sync.html | — | ~15004 |
+| 14:43 | planf3: parent-recorded narration + word-sync plan (mobile capture, ElevenLabs forced alignment, per-user narration tracks) | specs/parent-recorded-narration-sync.html | created | ~45k |
+| 14:43 | Session end: 1 writes across 1 files (parent-recorded-narration-sync.html) | 0 reads | ~16076 tok |
+| 14:47 | Session end: 1 writes across 1 files (parent-recorded-narration-sync.html) | 0 reads | ~16076 tok |
+| 14:49 | Session end: 1 writes across 1 files (parent-recorded-narration-sync.html) | 0 reads | ~16076 tok |
+| 14:53 | Edited prisma/schema.prisma | 4→5 lines | ~52 |
+| 14:54 | Edited prisma/schema.prisma | 3→4 lines | ~60 |
+| 14:54 | Edited prisma/schema.prisma | 3→4 lines | ~37 |
+| 14:55 | Created src/lib/narration/referenceWords.ts | — | ~948 |
+| 14:55 | Created src/lib/narration/fallbackTiming.ts | — | ~541 |
+| 14:55 | Edited src/lib/elevenlabs.ts | inline fix | ~27 |
+| 14:56 | Edited src/lib/elevenlabs.ts | getElevenLabsApiKey() → ensureApiKey() | ~19 |
+| 14:56 | Created src/lib/narration/alignRecording.ts | — | ~1255 |
+| 14:57 | Edited src/lib/narration/alignRecording.ts | round() → startAt() | ~476 |
+| 14:57 | Created src/lib/narration/storage.ts | — | ~1000 |
+| 14:57 | Created src/lib/narration/tracks.ts | — | ~896 |
+| 14:57 | Created src/app/api/narrations/tracks/route.ts | — | ~1002 |
+| 14:58 | Created src/app/api/narrations/tracks/[trackId]/route.ts | — | ~951 |
+| 14:58 | Created src/app/api/narrations/pages/route.ts | — | ~1530 |
+| 14:58 | Created src/app/api/books/[id]/narrations/route.ts | — | ~413 |
+| 14:58 | Created src/lib/narration/referenceWords.test.ts | — | ~747 |
+| 14:59 | Created src/lib/narration/fallbackTiming.test.ts | — | ~528 |
+| 14:59 | Created src/lib/narration/alignRecording.test.ts | — | ~1577 |
+| 15:00 | Created src/app/api/narrations/pages/route.test.ts | — | ~1999 |
+| 15:00 | Edited src/app/api/narrations/pages/route.ts | 4→6 lines | ~96 |
+| 15:00 | Edited src/app/api/narrations/pages/route.ts | modified isBlobLike() | ~105 |
+| 15:01 | Edited src/app/api/narrations/pages/route.test.ts | modified buildRequest() | ~266 |
+| 15:02 | Edited src/lib/narration/tracks.ts | modified requireOwnedTrack() | ~136 |
+| 15:04 | Edited ../storia-mobile/lib/src/data/models.dart | modified copyWith() | ~139 |
+| 15:04 | Edited ../storia-mobile/lib/src/data/models.dart | modified copyWithPages() | ~120 |
+| 15:05 | Created ../storia-mobile/lib/src/features/narration_studio/domain/narration_track.dart | — | ~996 |
+| 15:05 | Created ../storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart | — | ~1473 |
+| 15:06 | Edited ../storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart | added 1 import(s) | ~39 |
+| 15:06 | Created ../storia-mobile/lib/src/features/narration_studio/application/narration_recorder.dart | — | ~550 |
+| 15:06 | Created ../storia-mobile/lib/src/features/narration_studio/application/recording_controller.dart | — | ~2588 |
+| 15:07 | Created ../storia-mobile/lib/src/features/narration_studio/application/narration_track_selection.dart | — | ~830 |
+| 15:07 | Created ../storia-mobile/lib/src/features/narration_studio/data/narration_providers.dart | — | ~778 |
+| 15:08 | Edited ../storia-mobile/lib/src/features/reader/reader_screen.dart | added 2 import(s) | ~66 |
+| 15:08 | Created ../storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart | — | ~1373 |
+| 15:08 | Edited ../storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart | inline fix | ~15 |
+| 15:09 | Created ../storia-mobile/lib/src/features/narration_studio/presentation/narration_studio_screen.dart | — | ~3178 |
+| 15:10 | Created ../storia-mobile/test/features/narration_studio/narration_track_selection_test.dart | — | ~1633 |
+| 15:11 | Created ../storia-mobile/test/features/narration_studio/recording_controller_test.dart | — | ~2395 |
+| 15:12 | Created ../storia-mobile/test/features/narration_studio/narration_repository_test.dart | — | ~1701 |
+| 15:12 | Edited ../storia-mobile/test/features/narration_studio/narration_repository_test.dart | 3→7 lines | ~65 |
+| 15:13 | Created ../storia-mobile/test/features/narration_studio/parent_narration_highlight_test.dart | — | ~1065 |
+| 15:16 | built parent-narration feature: web schema+align core+4 routes, mobile narration_studio+reader override | src/lib/narration/*, src/app/api/narrations/*, storia-mobile/lib/src/features/narration_studio/* | 420 web + 389 mobile tests pass, tsc clean; migration unapplied (no docker) | ~120k |
+| 15:17 | Session end: 42 writes across 27 files (parent-recorded-narration-sync.html, schema.prisma, referenceWords.ts, fallbackTiming.ts, elevenlabs.ts) | 0 reads | ~51108 tok |
+| 15:23 | applied add_user_narration_tracks migration to hosted Supabase via MCP; verified columns/FKs/unique index | prisma/migrations/20260816120000_add_user_narration_tracks | applied, 0 rows; new tables have RLS disabled (project-wide default) | ~8k |
+| 15:23 | Session end: 42 writes across 27 files (parent-recorded-narration-sync.html, schema.prisma, referenceWords.ts, fallbackTiming.ts, elevenlabs.ts) | 0 reads | ~51108 tok |
+| 15:31 | Edited ../storia-mobile/lib/src/features/auth/data/auth_repository.dart | added error handling | ~451 |
+| 15:32 | Created ../storia-mobile/lib/src/features/auth/presentation/widgets/auth_social_buttons.dart | — | ~909 |
+| 15:32 | Created ../storia-mobile/lib/src/features/auth/presentation/widgets/magic_code_field.dart | — | ~657 |
+| 15:32 | Edited ../storia-mobile/lib/src/features/auth/presentation/widgets/magic_code_field.dart | modified normalizeMagicCode() | ~71 |
+| 15:33 | Created ../storia-mobile/test/features/auth/magic_code_test.dart | — | ~1295 |
+| 15:36 | Session end: 47 writes across 31 files (parent-recorded-narration-sync.html, schema.prisma, referenceWords.ts, fallbackTiming.ts, elevenlabs.ts) | 0 reads | ~54733 tok |

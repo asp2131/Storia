@@ -10,27 +10,28 @@ datasource db {
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model books {
-  id                BigInt             @id @default(autoincrement())
-  title             String             @db.VarChar(255)
-  author            String             @db.VarChar(255)
-  pdf_url           String?            @db.VarChar(255)
-  total_pages       Int?               @default(0)
-  source_type       String             @default("public_domain") @db.VarChar(255)
-  is_published      Boolean            @default(false)
-  processing_status String?            @default("pending") @db.VarChar(255)
-  processing_cost   Decimal?           @db.Decimal(10, 4)
-  processing_error  String?
-  inserted_at       DateTime           @db.Timestamp(0)
-  updated_at        DateTime           @db.Timestamp(0)
-  metadata          Json?              @default("{}")
-  default_text_style Json?
-  cover_url         String?            @db.VarChar(255)
-  description       String?
-  book_type         String             @default("pdf_book") @db.VarChar(255)
-  pages               pages[]
-  reading_progress    reading_progress[]
-  scenes              scenes[]
-  book_pronunciations book_pronunciations[]
+  id                    BigInt                 @id @default(autoincrement())
+  title                 String                 @db.VarChar(255)
+  author                String                 @db.VarChar(255)
+  pdf_url               String?                @db.VarChar(255)
+  total_pages           Int?                   @default(0)
+  source_type           String                 @default("public_domain") @db.VarChar(255)
+  is_published          Boolean                @default(false)
+  processing_status     String?                @default("pending") @db.VarChar(255)
+  processing_cost       Decimal?               @db.Decimal(10, 4)
+  processing_error      String?
+  inserted_at           DateTime               @db.Timestamp(0)
+  updated_at            DateTime               @db.Timestamp(0)
+  metadata              Json?                  @default("{}")
+  default_text_style    Json?
+  cover_url             String?                @db.VarChar(255)
+  description           String?
+  book_type             String                 @default("pdf_book") @db.VarChar(255)
+  pages                 pages[]
+  reading_progress      reading_progress[]
+  scenes                scenes[]
+  book_pronunciations   book_pronunciations[]
+  user_narration_tracks user_narration_track[]
 
   @@index([author(ops: raw("gin_trgm_ops"))], map: "books_author_gin_idx", type: Gin)
   @@index([is_published], map: "books_is_published_index")
@@ -76,28 +77,29 @@ model oban_peers {
 }
 
 model pages {
-  id                      BigInt                    @id @default(autoincrement())
-  book_id                 BigInt
-  page_number             Int
-  text_content            String?
-  inserted_at             DateTime                  @db.Timestamp(0)
-  updated_at              DateTime                  @db.Timestamp(0)
-  scene_id                BigInt?
-  image_url               String?                   @db.VarChar(255)
-  narration_url           String?                   @db.VarChar(255)
-  narration_timestamps    Json?
-  word_pronunciations     Json?
-  illustration_prompt     String?
-  text_overlay            Json?
-  composited_image_url    String?                   @db.VarChar(500)
-  composited_image_path   String?                   @db.VarChar(500)
-  composited_at           DateTime?                 @db.Timestamp(0)
-  composited_by           String?                   @db.VarChar(255)
-  books                   books                     @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  scenes                  scenes?                   @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
-  page_audio_assignments       page_audio_assignments[]
-  page_overlay_narrations      page_overlay_narrations[]
-  page_overlay_text_entries    page_overlay_text_entries[]
+  id                        BigInt                      @id @default(autoincrement())
+  book_id                   BigInt
+  page_number               Int
+  text_content              String?
+  inserted_at               DateTime                    @db.Timestamp(0)
+  updated_at                DateTime                    @db.Timestamp(0)
+  scene_id                  BigInt?
+  image_url                 String?                     @db.VarChar(255)
+  narration_url             String?                     @db.VarChar(255)
+  narration_timestamps      Json?
+  word_pronunciations       Json?
+  illustration_prompt       String?
+  text_overlay              Json?
+  composited_image_url      String?                     @db.VarChar(500)
+  composited_image_path     String?                     @db.VarChar(500)
+  composited_at             DateTime?                   @db.Timestamp(0)
+  composited_by             String?                     @db.VarChar(255)
+  books                     books                       @relation(fields: [book_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  scenes                    scenes?                     @relation(fields: [scene_id], references: [id], onUpdate: NoAction)
+  page_audio_assignments    page_audio_assignments[]
+  page_overlay_narrations   page_overlay_narrations[]
+  page_overlay_text_entries page_overlay_text_entries[]
+  user_narration_pages      user_narration_page[]
 
   @@unique([book_id, page_number], map: "pages_book_id_page_number_index")
   @@index([book_id], map: "pages_book_id_index")
@@ -292,6 +294,7 @@ model user {
   user_reading_progress user_reading_progress[]
   child_profiles        child_profile[]
   mobileAnalyticsEvents mobile_analytics_events[]
+  narrationTracks       user_narration_track[]
 }
 
 model session {
@@ -511,4 +514,58 @@ enum oban_job_state {
   completed
   discarded
   cancelled
+}
+
+// ─── Parent / teacher recorded narration ──────────────────────────
+// A personal narration track: one adult account recording one book in
+// their own voice. Never overwrites the published pages.narration_url;
+// the mobile reader substitutes these values into PageData at load time.
+
+model user_narration_track {
+  id        String   @id @default(cuid())
+  userId    String
+  book_id   BigInt
+  label     String   @db.VarChar(80)
+  /// draft | ready
+  status    String   @default("draft") @db.VarChar(16)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  user                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  books books                 @relation(fields: [book_id], references: [id], onDelete: Cascade)
+  pages user_narration_page[]
+
+  @@index([userId, book_id])
+  @@index([book_id])
+}
+
+model user_narration_page {
+  id       String @id @default(cuid())
+  track_id String
+  page_id  BigInt
+
+  /// Public URL used for playback.
+  audio_url   String @db.VarChar(500)
+  /// Bucket path — required for delete + storage GC.
+  audio_path  String @db.VarChar(500)
+  duration_ms Int?
+
+  /// [{ word, start, end }] — same shape as pages.narration_timestamps.
+  word_timestamps Json?
+  /// Rendered word count this recording was aligned against. Used to detect
+  /// staleness after a page's text is edited.
+  word_count      Int   @default(0)
+
+  /// aligned | projected | fallback | failed
+  alignment_status String @default("pending") @db.VarChar(16)
+  alignment_loss   Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  track user_narration_track @relation(fields: [track_id], references: [id], onDelete: Cascade)
+  page  pages                @relation(fields: [page_id], references: [id], onDelete: Cascade)
+
+  @@unique([track_id, page_id])
+  @@index([page_id])
 }

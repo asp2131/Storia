@@ -188,7 +188,7 @@ export async function synthesizeSpeech(params: {
   return { audioBuffer, contentType };
 }
 
-function alignmentToWordTimestamps(alignment?: CharacterAlignment): WordTimestamp[] {
+export function alignmentToWordTimestamps(alignment?: CharacterAlignment): WordTimestamp[] {
   if (!alignment?.characters?.length) {
     return [];
   }
@@ -318,3 +318,84 @@ export async function synthesizeSpeechWithTimestamps(params: {
 }
 
 export type { CharacterAlignment };
+
+// ─── Forced alignment ─────────────────────────────────────────────
+// Aligns EXISTING audio (e.g. a parent's recording) against known text,
+// as opposed to synthesizeSpeechWithTimestamps which aligns audio it just
+// generated. Same character-alignment shape comes back, so the existing
+// alignmentToWordTimestamps converter is reused when word-level data is
+// absent.
+
+export type ForcedAlignmentWord = {
+  text?: string;
+  word?: string;
+  start?: number;
+  end?: number;
+};
+
+type ForcedAlignmentResponse = {
+  characters?: Array<{ text?: string; start?: number; end?: number }>;
+  words?: ForcedAlignmentWord[];
+  loss?: number;
+};
+
+export type ForcedAlignmentResult = {
+  words: WordTimestamp[];
+  loss?: number;
+};
+
+/**
+ * POST /v1/forced-alignment — multipart with the audio `file` and the reference
+ * `text`. Returns word-level timings; falls back to deriving them from the
+ * character array when the response omits `words`.
+ */
+export async function forceAlign(params: {
+  audio: Buffer;
+  contentType: string;
+  fileName?: string;
+  text: string;
+}): Promise<ForcedAlignmentResult> {
+  const apiKey = ensureApiKey();
+
+  const form = new FormData();
+  form.append(
+    "file",
+    new Blob([new Uint8Array(params.audio)], { type: params.contentType }),
+    params.fileName || "recording.m4a"
+  );
+  form.append("text", params.text);
+
+  const response = await fetch(`${ELEVENLABS_BASE_URL}/forced-alignment`, {
+    method: "POST",
+    headers: { "xi-api-key": apiKey },
+    body: form,
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`ElevenLabs forced alignment failed (${response.status}): ${detail}`);
+  }
+
+  const payload = (await response.json()) as ForcedAlignmentResponse;
+
+  if (Array.isArray(payload.words) && payload.words.length > 0) {
+    return {
+      loss: payload.loss,
+      words: payload.words.map((w) => ({
+        word: w.text ?? w.word ?? "",
+        start: typeof w.start === "number" ? w.start : 0,
+        end: typeof w.end === "number" ? w.end : 0,
+      })),
+    };
+  }
+
+  // Character-level only: reuse the TTS converter.
+  const characters = payload.characters ?? [];
+  const alignment: CharacterAlignment = {
+    characters: characters.map((c) => c.text ?? ""),
+    character_start_times_seconds: characters.map((c) => c.start ?? 0),
+    character_end_times_seconds: characters.map((c) => c.end ?? 0),
+  };
+
+  return { loss: payload.loss, words: alignmentToWordTimestamps(alignment) };
+}

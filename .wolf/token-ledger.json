@@ -2,10 +2,10 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 3314419,
+    "total_tokens_estimated": 3521518,
     "total_reads": 1566,
-    "total_writes": 1069,
-    "total_sessions": 42,
+    "total_writes": 1204,
+    "total_sessions": 50,
     "anatomy_hits": 723,
     "anatomy_misses": 837,
     "repeated_reads_blocked": 1237,
@@ -17375,6 +17375,793 @@
         "writes_count": 2,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 2
+      }
+    },
+    {
+      "id": "session-2026-08-16-1315",
+      "started": "2026-08-16T18:15:57.200Z",
+      "ended": "2026-08-16T18:22:29.024Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/scripts/storage-gc.mjs",
+          "tokens_estimated": 1922,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 1922,
+        "reads_count": 0,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-08-16-1432",
+      "started": "2026-08-16T19:32:46.151Z",
+      "ended": "2026-08-16T19:43:21.267Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/parent-recorded-narration-sync.html",
+          "tokens_estimated": 16076,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 16076,
+        "reads_count": 0,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-08-16-1432",
+      "started": "2026-08-16T19:32:46.151Z",
+      "ended": "2026-08-16T19:47:03.375Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/parent-recorded-narration-sync.html",
+          "tokens_estimated": 16076,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 16076,
+        "reads_count": 0,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-08-16-1432",
+      "started": "2026-08-16T19:32:46.151Z",
+      "ended": "2026-08-16T19:49:52.994Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/parent-recorded-narration-sync.html",
+          "tokens_estimated": 16076,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 16076,
+        "reads_count": 0,
+        "writes_count": 1,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-08-16-1432",
+      "started": "2026-08-16T19:32:46.151Z",
+      "ended": "2026-08-16T20:17:11.794Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/parent-recorded-narration-sync.html",
+          "tokens_estimated": 16076,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 55,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 64,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 40,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/referenceWords.ts",
+          "tokens_estimated": 948,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/fallbackTiming.ts",
+          "tokens_estimated": 541,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 27,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.ts",
+          "tokens_estimated": 1255,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.ts",
+          "tokens_estimated": 476,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/storage.ts",
+          "tokens_estimated": 1000,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/tracks.ts",
+          "tokens_estimated": 896,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/tracks/route.ts",
+          "tokens_estimated": 1002,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/tracks/[trackId]/route.ts",
+          "tokens_estimated": 951,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 1530,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/narrations/route.ts",
+          "tokens_estimated": 413,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/referenceWords.test.ts",
+          "tokens_estimated": 747,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/fallbackTiming.test.ts",
+          "tokens_estimated": 528,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.test.ts",
+          "tokens_estimated": 1577,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.test.ts",
+          "tokens_estimated": 1999,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 105,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.test.ts",
+          "tokens_estimated": 266,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/tracks.ts",
+          "tokens_estimated": 136,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 149,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 129,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/domain/narration_track.dart",
+          "tokens_estimated": 1067,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart",
+          "tokens_estimated": 1578,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart",
+          "tokens_estimated": 42,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/narration_recorder.dart",
+          "tokens_estimated": 589,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/recording_controller.dart",
+          "tokens_estimated": 2773,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/narration_track_selection.dart",
+          "tokens_estimated": 890,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_providers.dart",
+          "tokens_estimated": 833,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/reader_screen.dart",
+          "tokens_estimated": 71,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart",
+          "tokens_estimated": 1471,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart",
+          "tokens_estimated": 16,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_studio_screen.dart",
+          "tokens_estimated": 3405,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_track_selection_test.dart",
+          "tokens_estimated": 1749,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/recording_controller_test.dart",
+          "tokens_estimated": 2566,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_repository_test.dart",
+          "tokens_estimated": 1822,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_repository_test.dart",
+          "tokens_estimated": 70,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/parent_narration_highlight_test.dart",
+          "tokens_estimated": 1141,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 51108,
+        "reads_count": 0,
+        "writes_count": 42,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-08-16-1432",
+      "started": "2026-08-16T19:32:46.151Z",
+      "ended": "2026-08-16T20:23:35.687Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/parent-recorded-narration-sync.html",
+          "tokens_estimated": 16076,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 55,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 64,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 40,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/referenceWords.ts",
+          "tokens_estimated": 948,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/fallbackTiming.ts",
+          "tokens_estimated": 541,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 27,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.ts",
+          "tokens_estimated": 1255,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.ts",
+          "tokens_estimated": 476,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/storage.ts",
+          "tokens_estimated": 1000,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/tracks.ts",
+          "tokens_estimated": 896,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/tracks/route.ts",
+          "tokens_estimated": 1002,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/tracks/[trackId]/route.ts",
+          "tokens_estimated": 951,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 1530,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/narrations/route.ts",
+          "tokens_estimated": 413,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/referenceWords.test.ts",
+          "tokens_estimated": 747,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/fallbackTiming.test.ts",
+          "tokens_estimated": 528,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.test.ts",
+          "tokens_estimated": 1577,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.test.ts",
+          "tokens_estimated": 1999,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 105,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.test.ts",
+          "tokens_estimated": 266,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/tracks.ts",
+          "tokens_estimated": 136,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 149,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 129,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/domain/narration_track.dart",
+          "tokens_estimated": 1067,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart",
+          "tokens_estimated": 1578,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart",
+          "tokens_estimated": 42,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/narration_recorder.dart",
+          "tokens_estimated": 589,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/recording_controller.dart",
+          "tokens_estimated": 2773,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/narration_track_selection.dart",
+          "tokens_estimated": 890,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_providers.dart",
+          "tokens_estimated": 833,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/reader_screen.dart",
+          "tokens_estimated": 71,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart",
+          "tokens_estimated": 1471,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart",
+          "tokens_estimated": 16,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_studio_screen.dart",
+          "tokens_estimated": 3405,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_track_selection_test.dart",
+          "tokens_estimated": 1749,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/recording_controller_test.dart",
+          "tokens_estimated": 2566,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_repository_test.dart",
+          "tokens_estimated": 1822,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_repository_test.dart",
+          "tokens_estimated": 70,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/parent_narration_highlight_test.dart",
+          "tokens_estimated": 1141,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 51108,
+        "reads_count": 0,
+        "writes_count": 42,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-08-16-1432",
+      "started": "2026-08-16T19:32:46.151Z",
+      "ended": "2026-08-16T20:36:17.520Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/specs/parent-recorded-narration-sync.html",
+          "tokens_estimated": 16076,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 55,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 64,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/prisma/schema.prisma",
+          "tokens_estimated": 40,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/referenceWords.ts",
+          "tokens_estimated": 948,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/fallbackTiming.ts",
+          "tokens_estimated": 541,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 27,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/elevenlabs.ts",
+          "tokens_estimated": 19,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.ts",
+          "tokens_estimated": 1255,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.ts",
+          "tokens_estimated": 476,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/storage.ts",
+          "tokens_estimated": 1000,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/tracks.ts",
+          "tokens_estimated": 896,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/tracks/route.ts",
+          "tokens_estimated": 1002,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/tracks/[trackId]/route.ts",
+          "tokens_estimated": 951,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 1530,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/books/[id]/narrations/route.ts",
+          "tokens_estimated": 413,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/referenceWords.test.ts",
+          "tokens_estimated": 747,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/fallbackTiming.test.ts",
+          "tokens_estimated": 528,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/alignRecording.test.ts",
+          "tokens_estimated": 1577,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.test.ts",
+          "tokens_estimated": 1999,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 96,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.ts",
+          "tokens_estimated": 105,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/app/api/narrations/pages/route.test.ts",
+          "tokens_estimated": 266,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia/src/lib/narration/tracks.ts",
+          "tokens_estimated": 136,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 149,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/data/models.dart",
+          "tokens_estimated": 129,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/domain/narration_track.dart",
+          "tokens_estimated": 1067,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart",
+          "tokens_estimated": 1578,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_repository.dart",
+          "tokens_estimated": 42,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/narration_recorder.dart",
+          "tokens_estimated": 589,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/recording_controller.dart",
+          "tokens_estimated": 2773,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/application/narration_track_selection.dart",
+          "tokens_estimated": 890,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/data/narration_providers.dart",
+          "tokens_estimated": 833,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/reader/reader_screen.dart",
+          "tokens_estimated": 71,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart",
+          "tokens_estimated": 1471,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_voice_picker.dart",
+          "tokens_estimated": 16,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/narration_studio/presentation/narration_studio_screen.dart",
+          "tokens_estimated": 3405,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_track_selection_test.dart",
+          "tokens_estimated": 1749,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/recording_controller_test.dart",
+          "tokens_estimated": 2566,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_repository_test.dart",
+          "tokens_estimated": 1822,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/narration_repository_test.dart",
+          "tokens_estimated": 70,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/narration_studio/parent_narration_highlight_test.dart",
+          "tokens_estimated": 1141,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/auth/data/auth_repository.dart",
+          "tokens_estimated": 483,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/auth/presentation/widgets/auth_social_buttons.dart",
+          "tokens_estimated": 974,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/auth/presentation/widgets/magic_code_field.dart",
+          "tokens_estimated": 704,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/lib/src/features/auth/presentation/widgets/magic_code_field.dart",
+          "tokens_estimated": 76,
+          "action": "edit"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/storia-mobile/test/features/auth/magic_code_test.dart",
+          "tokens_estimated": 1388,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 54733,
+        "reads_count": 0,
+        "writes_count": 47,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
       }
     }
   ],
