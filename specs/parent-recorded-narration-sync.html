@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Parent-Recorded Narration with Synced Word Highlighting</title>
+<style>
+  :root {
+    --paper: #FBF7F0;
+    --paper-2: #F3EDE2;
+    --ink: #26221C;
+    --ink-soft: #5C5449;
+    --rule: #DED4C4;
+    --accent: #C2410C;      /* record / mic */
+    --accent-soft: #FDE8DC;
+    --amber: #F59E0B;       /* narration, matches reader */
+    --green: #4D7C0F;       /* done / validated */
+    --violet: #6D28D9;      /* data + backend */
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    --radius: 10px;
+    --maxw: 62rem;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.5rem 6rem;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  main { max-width: var(--maxw); margin: 0 auto; }
+  h1 {
+    font-size: 2.1rem; line-height: 1.2; margin: 0 0 .5rem;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-size: 1.35rem; margin: 3rem 0 .75rem; letter-spacing: -0.01em;
+    padding-bottom: .4rem; border-bottom: 2px solid var(--rule);
+  }
+  h3 { font-size: 1.1rem; margin: 2rem 0 .5rem; }
+  h4 { font-size: .98rem; margin: 1.4rem 0 .4rem; color: var(--ink); }
+  p { margin: .6rem 0; }
+  code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 5px; padding: .08em .35em;
+  }
+  pre {
+    background: #FFFDF9; border: 1px solid var(--rule); border-left: 3px solid var(--violet);
+    border-radius: var(--radius); padding: 1rem; overflow-x: auto;
+    font-family: var(--mono); font-size: .82rem; line-height: 1.55;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  header { border-bottom: 3px double var(--rule); padding-bottom: 1.25rem; }
+  .lede { color: var(--ink-soft); font-size: 1.05rem; margin-top: .25rem; }
+  details.meta { margin-top: 1rem; }
+  summary { cursor: pointer; font-weight: 600; }
+  dl { display: grid; grid-template-columns: 9rem 1fr; gap: .25rem .75rem; margin: .75rem 0 0; font-size: .88rem; }
+  dt { color: var(--ink-soft); font-family: var(--mono); font-size: .8rem; }
+  dd { margin: 0; word-break: break-word; }
+  .tag {
+    display: inline-block; font-size: .68rem; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: .06em;
+    padding: .1rem .4rem; border-radius: 4px; vertical-align: middle;
+  }
+  .tag.existing { background: var(--paper-2); color: var(--ink-soft); border: 1px solid var(--rule); }
+  .tag.new { background: var(--accent-soft); color: var(--accent); border: 1px solid #F5C4A8; }
+  .tag.repo { background: #EDE9FE; color: var(--violet); border: 1px solid #DDD6FE; }
+  .files ul { list-style: none; padding: 0; }
+  .files li { padding: .35rem 0; border-bottom: 1px dashed var(--rule); font-size: .92rem; }
+  .phase {
+    background: #FFFDF9; border: 1px solid var(--rule); border-radius: var(--radius);
+    padding: .25rem 1.5rem 1.5rem; margin: 1.5rem 0;
+  }
+  .phase h3 { border-left: 4px solid var(--amber); padding-left: .75rem; margin-left: -1.5rem; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist li { padding: .22rem 0 .22rem 0; font-size: .93rem; }
+  code.status { background: var(--paper-2); color: var(--ink-soft); font-weight: 700; }
+  .loop {
+    background: var(--accent-soft); border: 1px solid #F5C4A8; color: #7C2D12;
+    border-radius: var(--radius); padding: .7rem 1rem; font-size: .88rem; margin-top: 1rem;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; margin: .75rem 0; }
+  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+  .callout {
+    border-left: 3px solid var(--green); background: #F6F9EE;
+    padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .93rem;
+  }
+  .callout.warn { border-left-color: var(--accent); background: var(--accent-soft); }
+  #questionables details {
+    border: 1px solid var(--rule); background: #FFFDF9; border-radius: var(--radius);
+    padding: .6rem .9rem; margin: .5rem 0;
+  }
+  .qa-answer { font-size: .92rem; color: var(--ink-soft); margin: .5rem 0 .2rem; }
+  .flow {
+    font-family: var(--mono); font-size: .8rem; line-height: 1.7; white-space: pre;
+    overflow-x: auto; background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: var(--radius); padding: 1rem; margin: 1rem 0;
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <h1>Plan: Parent-Recorded Narration with Synced Word Highlighting</h1>
+    <p class="lede">A parent, teacher, or caregiver records their own voice reading a book in the Storia mobile app. Every future read-through plays that recording with the existing word-by-word highlighting locked to their voice.</p>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-08-16</dd>
+        <dt>modified</dt>     <dd>2026-08-16, 2026-08-16 (build)</dd>
+        <dt>commits</dt>      <dd>7c9cf22</dd>
+        <dt>agent name</dt>   <dd>Claude Opus 5 (planf3), Claude Opus 5 (build)</dd>
+        <dt>session id</dt>   <dd>e46ccaf1-2d14-416a-9472-30fe75ba5016</dd>
+        <dt>back refs</dt>    <dd>specs/overlay-text-narration-elevenlabs.md, specs/pronunciation-rich-metadata-and-timing.md, specs/word-pronunciation-cross-platform-spec.md, storia-mobile/specs/read-aloud-feature-plan.md, storia-mobile/specs/rfc-reader-runtime-deep-module.md</dd>
+        <dt>forward refs</dt> <dd>—</dd>
+      </dl>
+    </details>
+  </header>
+
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Let an adult record their own narration of any book from inside the mobile app, page by page, and have that recording become a selectable narration voice in the reader — with the existing karaoke-style word highlighting synced to <em>their</em> timing, not ElevenLabs'. A child then rereads the book as many times as they like in a familiar voice.</p>
+    <p>The whole feature is designed around one existing seam: the reader already highlights words from <code>PageData.narrationTimestamps</code> paired with <code>PageData.narrationUrl</code>. If a parent recording can produce those two values in the same shape, <strong>zero changes are needed in the highlight engine, overlay layout engine, or page renderer</strong>.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <p>Today narration is generated server-side by admins: <code>POST /api/admin/generate-narration</code> calls ElevenLabs text-to-speech <em>with timestamps</em>, converts the returned character alignment into <code>[{word,start,end}]</code> via <code>alignmentToWordTimestamps()</code>, uploads the MP3 to the <code>storia-storage</code> bucket, and writes <code>pages.narration_url</code> + <code>pages.narration_timestamps</code>. The mobile reader reads those two columns and highlights word <code>i</code> while <code>timestamps[i].start ≤ position ≤ timestamps[i].end</code>.</p>
+    <p>Three gaps block a parent recording:</p>
+    <table>
+      <tr><th>Gap</th><th>Detail</th></tr>
+      <tr><td>No capture path</td><td>The mobile app has <code>speech_to_text</code> (for read-aloud practice) but no audio <em>recorder</em>, no mic permission strings, and no storage upload code anywhere in <code>lib/src</code>.</td></tr>
+      <tr><td>No timings for arbitrary audio</td><td>The TTS pipeline gets word timings for free because ElevenLabs generates the audio. A human recording arrives with audio only — timings must be derived by <em>forced alignment</em> against known text.</td></tr>
+      <tr><td>Narration is single-valued</td><td><code>pages.narration_url</code> / <code>narration_timestamps</code> are one global track per page. Personal recordings are per-user, per-book, and must never overwrite the published narration or leak between accounts.</td></tr>
+    </table>
+    <p>Also worth naming: the highlight index is <strong>positional</strong>. <code>OverlayLayoutEngine</code> assigns each rendered token a <code>globalWordIndex</code> counted across overlay elements in order; <code>computeActiveWordIndex()</code> returns an index into <code>narrationTimestamps</code>. If the recording's timestamp array has a different length or ordering than the page's rendered words, every highlight after the first mismatch is wrong.</p>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <p><strong>Record per page on device → upload to the existing Next.js API → forced-align server-side against the page's own text → store a per-user narration track → reader substitutes it into <code>PageData</code> at load time.</strong></p>
+    <div class="flow">parent (mobile)                 storia.kids API                  ElevenLabs / Supabase
+
+ [Narration Studio]
+  record page 3  ──► m4a ──► POST /api/narrations/pages ──► upload m4a ──► storia-storage bucket
+  (record pkg, AAC)          (Bearer supabase token,           │
+                              multipart file + trackId)        └─► POST /v1/forced-alignment
+                                                                    (file + page reference text)
+                                                                        │
+                                        reference words ◄───────────────┘ words[{text,start,end}]
+                                        (built from page.text_overlay,
+                                         same order as globalWordIndex)
+                                                │
+                                                ▼
+                                  user_narration_pages row
+                                  { audio_url, word_timestamps, status }
+
+ [Reader]  GET /api/books/{id}/narrations ──► track + pages ──► PageData.copyWith(
+                                                                  narrationUrl, narrationTimestamps)
+                                                                        │
+                                        existing computeActiveWordIndex ◄┘  → highlighting, unchanged</div>
+
+    <h3>Why this shape</h3>
+    <ul>
+      <li><strong>Reuse the alignment converter, not the highlight engine.</strong> <code>src/lib/elevenlabs.ts</code> already owns <code>CharacterAlignment → WordTimestamp[]</code>. The forced-alignment endpoint returns the same character/word structure as TTS-with-timestamps, so the existing helper does the conversion.</li>
+      <li><strong>Server-side alignment, always.</strong> <code>ELEVENLABS_API_KEY</code> and the Supabase service-role key must never ship in the app binary. The mobile client already talks to <code>API_BASE_URL</code> (<code>https://storia.kids</code>) with a Supabase bearer token via <code>ChildProfileRepository</code>; the same <code>getAuthenticatedUser()</code> dual-stack helper gates the new routes.</li>
+      <li><strong>Per page, not per book.</strong> One recording per page means: no page-boundary detection, retake one page without redoing the book, short alignment jobs (seconds of audio), and a natural progress UI. Whole-book recording would need silence detection or manual page-turn markers — strictly more work for a worse retake story.</li>
+      <li><strong>Reference text comes from the server's copy of the page</strong>, never from the client. The alignment text and the rendered words must come from one source of truth or the positional index drifts.</li>
+      <li><strong>No reader-runtime surgery.</strong> Track selection resolves before <code>Book</code> reaches <code>ReaderScreen</code>: pages are rewritten with the parent's <code>narrationUrl</code> + timestamps. Everything downstream — <code>page_audio.dart</code>, <code>AudioEngine</code>, <code>computeActiveWordIndex</code>, <code>OverlayLayoutEngine</code>, <code>buildWordToIndices</code> — is untouched.</li>
+    </ul>
+
+    <div class="callout">
+      <strong>The load-bearing invariant:</strong> <code>word_timestamps.length</code> for a page MUST equal the number of rendered word tokens on that page, in render order. The backend enforces this by aligning against server-built reference words and, on any count mismatch, re-projecting aligner timings onto the reference tokens (or falling back to proportional timing) before persisting.
+    </div>
+  </section>
+
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+
+    <h3>Existing Files — <span class="tag repo">storia (web)</span></h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>src/lib/elevenlabs.ts</code> — owns <code>CharacterAlignment</code>, <code>alignmentToWordTimestamps()</code>, <code>WordTimestamp</code>, <code>getElevenLabsApiKey()</code>. Add <code>forceAlign()</code> here; reuse the converter.</li>
+      <li><span class="tag existing">existing</span> <code>src/app/api/admin/generate-narration/route.ts</code> — reference implementation for upload path (<code>storia-storage</code> bucket, <code>books/{id}/narration/...</code>), <code>validateTimestamps()</code> usage, and the public-URL pattern.</li>
+      <li><span class="tag existing">existing</span> <code>src/lib/child-auth.ts</code> — <code>getAuthenticatedUser()</code>: Bearer Supabase token → Better Auth <code>user.id</code>. The new routes' auth gate; the owner id is a Better Auth cuid (TEXT), not a Supabase uuid.</li>
+      <li><span class="tag existing">existing</span> <code>src/app/api/child-profiles/route.ts</code> — the mobile-facing route pattern to copy (error envelope <code>{error:{code,message}}</code>, status codes).</li>
+      <li><span class="tag existing">existing</span> <code>prisma/schema.prisma</code> — <code>pages</code> (<code>narration_url</code>, <code>narration_timestamps</code>, <code>text_overlay</code>), <code>page_overlay_narrations</code> (precedent for a per-page audio+timestamps side table), <code>child_profile</code> (ownership precedent).</li>
+      <li><span class="tag existing">existing</span> <code>src/types/text-overlay.ts</code> — overlay element shape; source for the server-side reference-word builder.</li>
+      <li><span class="tag existing">existing</span> <code>scripts/storage-gc.mjs</code> — bucket GC audit. Must learn about the new audio path column or it will flag/delete parent recordings.</li>
+    </ul>
+
+    <h3>Existing Files — <span class="tag repo">storia-mobile (Flutter)</span></h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>lib/src/data/models.dart</code> — <code>WordTimestamp</code>, <code>PageData</code>, <code>Book</code>. <code>PageData.copyWith</code> currently only accepts <code>soundscapeUrl</code>; must widen for <code>narrationUrl</code> + <code>narrationTimestamps</code>.</li>
+      <li><span class="tag existing">existing</span> <code>lib/src/data/book_repository.dart</code> — Supabase-direct book fetch. Narration overlay is applied on top of its result.</li>
+      <li><span class="tag existing">existing</span> <code>lib/src/data/providers.dart</code> — <code>apiBaseUrlProvider</code> (<code>API_BASE_URL</code>, default <code>https://storia.kids</code>) and the access-token resolver. Wire the new repository here.</li>
+      <li><span class="tag existing">existing</span> <code>lib/src/features/child/data/child_profile_repository.dart</code> — exact template for an authenticated <code>http</code> repository against the web API.</li>
+      <li><span class="tag existing">existing</span> <code>lib/src/features/reader/page_renderer.dart</code> — calls <code>computeActiveWordIndex(page.narrationTimestamps, position)</code>. <strong>Unchanged.</strong></li>
+      <li><span class="tag existing">existing</span> <code>lib/src/features/reader/overlay/text_overlay_utils.dart</code> — <code>computeActiveWordIndex</code>. <strong>Unchanged.</strong></li>
+      <li><span class="tag existing">existing</span> <code>lib/src/features/reader/overlay/overlay_layout_engine.dart</code> — assigns <code>globalWordIndex</code>. Defines the canonical word order the backend must mirror. <strong>Unchanged.</strong></li>
+      <li><span class="tag existing">existing</span> <code>lib/src/features/reader/reader_screen.dart</code> — <code>_AudioSettingsSheet</code> gets the voice picker; <code>hasNarration</code> gate already keys off <code>narrationUrl</code>.</li>
+      <li><span class="tag existing">existing</span> <code>lib/src/core/widgets/parental_gate.dart</code> — gates entry into the recording studio (adult-only surface).</li>
+      <li><span class="tag existing">existing</span> <code>lib/src/audio/audio_engine.dart</code>, <code>lib/src/audio/page_audio.dart</code> — playback of <code>page.narrationUrl</code>. <strong>Unchanged.</strong></li>
+      <li><span class="tag existing">existing</span> <code>lib/src/routing/app_router.dart</code> — register the studio routes.</li>
+      <li><span class="tag existing">existing</span> <code>ios/Runner/Info.plist</code>, <code>android/app/src/main/AndroidManifest.xml</code> — mic usage description / <code>RECORD_AUDIO</code>.</li>
+      <li><span class="tag existing">existing</span> <code>pubspec.yaml</code> — add the recorder dependency.</li>
+    </ul>
+
+    <h3>New Files — <span class="tag repo">storia (web)</span></h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>prisma/migrations/&lt;ts&gt;_user_narration_tracks/migration.sql</code> — two tables + indexes.</li>
+      <li><span class="tag new">new</span> <code>src/lib/narration/referenceWords.ts</code> — <code>buildPageReferenceWords(page)</code>: the canonical render-order tokenizer mirroring <code>overlay_layout_engine.dart</code>.</li>
+      <li><span class="tag new">new</span> <code>src/lib/narration/alignRecording.ts</code> — orchestrates forced alignment → reference-word projection → proportional fallback; returns <code>{timestamps, status, loss}</code>.</li>
+      <li><span class="tag new">new</span> <code>src/lib/narration/fallbackTiming.ts</code> — deterministic duration-proportional timing (character-length weighted, punctuation pause bonus).</li>
+      <li><span class="tag new">new</span> <code>src/app/api/narrations/tracks/route.ts</code> — <code>POST</code> create track, <code>GET</code> list own tracks.</li>
+      <li><span class="tag new">new</span> <code>src/app/api/narrations/tracks/[trackId]/route.ts</code> — <code>PATCH</code> (label/status), <code>DELETE</code> (rows + storage objects).</li>
+      <li><span class="tag new">new</span> <code>src/app/api/narrations/pages/route.ts</code> — <code>POST</code> multipart upload + align + upsert one page recording.</li>
+      <li><span class="tag new">new</span> <code>src/app/api/books/[id]/narrations/route.ts</code> — <code>GET</code> reader payload: this user's tracks for this book, each with per-page <code>audioUrl</code> + <code>wordTimestamps</code>.</li>
+      <li><span class="tag new">new</span> tests: <code>src/lib/narration/*.test.ts</code>, <code>src/app/api/narrations/pages/route.test.ts</code>.</li>
+    </ul>
+
+    <h3>New Files — <span class="tag repo">storia-mobile (Flutter)</span></h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>lib/src/features/narration_studio/domain/narration_track.dart</code> — <code>NarrationTrack</code>, <code>NarrationPageRecording</code>, <code>NarrationAlignmentStatus</code>.</li>
+      <li><span class="tag new">new</span> <code>lib/src/features/narration_studio/data/narration_repository.dart</code> — authenticated HTTP client (create track, upload page, list, delete).</li>
+      <li><span class="tag new">new</span> <code>lib/src/features/narration_studio/data/narration_providers.dart</code> — Riverpod wiring + <code>bookNarrationTracksProvider(bookId)</code>.</li>
+      <li><span class="tag new">new</span> <code>lib/src/features/narration_studio/application/recording_controller.dart</code> — record/stop/preview/retake/upload state machine.</li>
+      <li><span class="tag new">new</span> <code>lib/src/features/narration_studio/presentation/narration_studio_screen.dart</code> — page-by-page recording UI (parental-gated).</li>
+      <li><span class="tag new">new</span> <code>lib/src/features/narration_studio/presentation/narration_voice_picker.dart</code> — reader-side track selector sheet.</li>
+      <li><span class="tag new">new</span> <code>lib/src/features/narration_studio/application/narration_track_selection.dart</code> — selected-track persistence (<code>shared_preferences</code>, keyed by book) + <code>applyTrackToBook()</code>.</li>
+      <li><span class="tag new">new</span> tests: <code>test/features/narration_studio/…</code> (selection/override, repository parsing, controller transitions).</li>
+    </ul>
+  </section>
+
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>.</p>
+
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 1: Data model + alignment core (web)</h3>
+      <p>Everything that can be built and tested without a microphone. Ends with an API that turns an uploaded audio file plus a page id into a validated <code>[{word,start,end}]</code> array whose length equals the page's rendered word count.</p>
+
+      <h4>1. Schema</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add <code>user_narration_track</code> and <code>user_narration_page</code> models to <code>prisma/schema.prisma</code>; relate to <code>books</code>, <code>pages</code>, and Better Auth <code>user</code>.</li>
+        <li><code class="status">[x]</code> Owner column is <code>userId TEXT</code> referencing <code>user.id</code> (Better Auth cuid) — matching <code>child_profile</code>, NOT a Supabase uuid.</li>
+        <li><code class="status">[x]</code> Unique constraint <code>(track_id, page_id)</code> so a retake upserts instead of duplicating.</li>
+        <li><code class="status">[x]</code> Store both <code>audio_url</code> (public URL for playback) and <code>audio_path</code> (bucket path for delete/GC).</li>
+        <li><code class="status">[x]</code> Generate + apply the migration (<code>npx prisma migrate dev</code> against the Dockerized local Postgres on <code>localhost:5433</code>).</li>
+      </ul>
+      <pre><code>model user_narration_track {
+  id         String   @id @default(cuid())
+  userId     String
+  book_id    BigInt
+  label      String   @db.VarChar(80)      // "Mom", "Ms. Rivera"
+  status     String   @default("draft") @db.VarChar(16) // draft | ready
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  books      books    @relation(fields: [book_id], references: [id], onDelete: Cascade)
+  pages      user_narration_page[]
+  @@index([userId, book_id])
+}
+
+model user_narration_page {
+  id                String   @id @default(cuid())
+  track_id          String
+  page_id           BigInt
+  audio_url         String   @db.VarChar(500)
+  audio_path        String   @db.VarChar(500)
+  duration_ms       Int?
+  word_timestamps   Json?    // [{word,start,end}] — same shape as pages.narration_timestamps
+  word_count        Int      @default(0)
+  alignment_status  String   @default("pending") @db.VarChar(16) // aligned | projected | fallback | failed
+  alignment_loss    Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  track             user_narration_track @relation(fields: [track_id], references: [id], onDelete: Cascade)
+  page              pages                @relation(fields: [page_id], references: [id], onDelete: Cascade)
+  @@unique([track_id, page_id])
+  @@index([page_id])
+}</code></pre>
+
+      <h4>2. Canonical reference words</h4>
+      <p>This is the single highest-risk detail in the plan: the server's word list must match the client's render order exactly.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Write <code>buildPageReferenceWords(page)</code> in <code>src/lib/narration/referenceWords.ts</code>: iterate <code>text_overlay.elements</code> in stored order, split each <code>text</code> on <code>/\s+/</code>, drop empties. Fall back to <code>text_content</code> split the same way when no overlay exists.</li>
+        <li><code class="status">[x]</code> Mirror the Dart rule in <code>overlay_layout_engine.dart</code> / <code>page_words_indexer.dart</code> (whitespace split, punctuation retained on the token, no reordering).</li>
+        <li><code class="status">[x]</code> Return <code>{ tokens: string[], text: string }</code> where <code>text</code> is <code>tokens.join(" ")</code> — the alignment reference text.</li>
+        <li><code class="status">[x]</code> Add a shared fixture (one overlay page JSON) used by both the TS test and a Dart test, asserting both tokenizers produce the identical array.</li>
+      </ul>
+
+      <h4>3. Forced alignment + projection</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add <code>forceAlign({audio, contentType, text})</code> to <code>src/lib/elevenlabs.ts</code>: multipart <code>POST https://api.elevenlabs.io/v1/forced-alignment</code> with <code>file</code> + <code>text</code>, header <code>xi-api-key</code>. Verify the current request/response contract and quota limits against ElevenLabs docs before coding.</li>
+        <li><code class="status">[x]</code> Prefer the response's word-level array; if only character alignment is returned, run it through the existing <code>alignmentToWordTimestamps()</code>.</li>
+        <li><code class="status">[x]</code> In <code>alignRecording.ts</code>: if aligned word count === reference token count → status <code>aligned</code>, but rewrite each <code>word</code> field to the reference token (so display text always matches the page).</li>
+        <li><code class="status">[x]</code> If counts differ → project by monotonic index scaling onto reference tokens, status <code>projected</code>; if the aligner errors or returns nothing → <code>fallbackTiming()</code>, status <code>fallback</code>.</li>
+        <li><code class="status">[x]</code> <code>fallbackTiming(tokens, durationMs)</code>: weight = token length + 1, plus a fixed extra weight for tokens ending in <code>.?!,;:</code>; distribute duration proportionally. Pure function, no I/O.</li>
+        <li><code class="status">[x]</code> Guarantee post-conditions before persisting: <code>timestamps.length === tokens.length</code>, monotonically non-decreasing <code>start</code>, <code>start &lt;= end</code>, <code>end &lt;= durationSeconds</code>. Throw (not silently persist) if violated.</li>
+      </ul>
+      <pre><code>// src/lib/narration/alignRecording.ts (shape)
+export type AlignmentStatus = "aligned" | "projected" | "fallback";
+
+export async function alignRecording(args: {
+  audio: Buffer; contentType: string; tokens: string[]; durationSeconds: number;
+}): Promise&lt;{ timestamps: WordTimestamp[]; status: AlignmentStatus; loss?: number }&gt; {
+  try {
+    const res = await forceAlign({ audio: args.audio, contentType: args.contentType,
+                                   text: args.tokens.join(" ") });
+    const words = res.words?.length ? res.words : alignmentToWordTimestamps(res.alignment);
+    if (words.length === args.tokens.length) {
+      return { status: "aligned", loss: res.loss,
+               timestamps: words.map((w, i) => ({ ...w, word: args.tokens[i] })) };
+    }
+    return { status: "projected", loss: res.loss,
+             timestamps: projectOntoTokens(words, args.tokens, args.durationSeconds) };
+  } catch (err) {
+    console.warn("[narration] forced alignment failed, falling back", err);
+    return { status: "fallback",
+             timestamps: fallbackTiming(args.tokens, args.durationSeconds) };
+  }
+}</code></pre>
+
+      <h4>4. Routes</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>POST /api/narrations/tracks</code> — <code>{bookId, label}</code> → creates a draft track owned by <code>getAuthenticatedUser().user.id</code>. Reject if the book is not published/visible to that user.</li>
+        <li><code class="status">[x]</code> <code>POST /api/narrations/pages</code> — multipart <code>{trackId, pageNumber, file, durationMs}</code>. Verify track ownership, resolve the page server-side, upload to <code>storia-storage</code> at <code>user-narrations/{userId}/{bookId}/{trackId}/page_{n}_{ts}.{ext}</code>, align, upsert the row, return it. On retake, delete the previous storage object after the new row commits.</li>
+        <li><code class="status">[x]</code> Enforce limits: audio ≤ 10&nbsp;MB and ≤ 5&nbsp;minutes per page; content types <code>audio/mp4|m4a|aac|mpeg|wav</code> only; 413/415 otherwise.</li>
+        <li><code class="status">[x]</code> <code>PATCH /api/narrations/tracks/[trackId]</code> — rename, or flip <code>status</code> to <code>ready</code> (only when every page with text has a recording).</li>
+        <li><code class="status">[x]</code> <code>DELETE /api/narrations/tracks/[trackId]</code> — remove storage objects by <code>audio_path</code> via the Storage API (never by deleting <code>storage.objects</code> rows), then cascade-delete the track.</li>
+        <li><code class="status">[x]</code> <code>GET /api/books/[id]/narrations</code> — returns <code>{tracks:[{id,label,status,pages:[{pageNumber,audioUrl,wordTimestamps,alignmentStatus}]}]}</code> scoped to the caller.</li>
+        <li><code class="status">[x]</code> Every route: 401 via <code>getAuthenticatedUser()</code>, 403 on non-owner track access, standard <code>{error:{code,message}}</code> envelope.</li>
+      </ul>
+
+      <h4>5. Testing Strategy</h4>
+      <p>Vitest for the pure alignment/tokenizer logic (no network), plus route tests with the ElevenLabs call and Supabase storage mocked. The tokenizer parity fixture is the regression anchor for the positional-index invariant.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>npx prisma migrate dev</code> — migration applies cleanly against local Postgres.</li>
+        <li><code class="status">[x]</code> <code>npm test -- src/lib/narration/</code> — tokenizer order, projection with count mismatch (aligner returns fewer and more words), fallback monotonicity, punctuation weighting, zero-duration guard.</li>
+        <li><code class="status">[x]</code> <code>npm test -- 'src/app/api/narrations/pages/route.test.ts'</code> — 401 unauth, 403 foreign track, 415 bad mime, 413 oversize, happy path persists <code>word_count === tokens.length</code>, aligner failure persists status <code>fallback</code>.</li>
+        <li><code class="status">[x]</code> <code>npx tsc --noEmit --pretty false</code> — no new type errors in <code>src/lib/narration/**</code> or the new routes (pre-existing unrelated failures are acceptable; diff them).</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 2: Recording studio (mobile capture)</h3>
+      <p>Adult-gated, page-by-page recorder that captures audio, previews it locally, and uploads to Phase 1. No reader changes yet — success here means rows land in the DB with valid timestamps.</p>
+
+      <h4>1. Platform plumbing</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add <code>record: ^6.1.1</code> to <code>pubspec.yaml</code> (mic capture; handles its own permission request via <code>hasPermission()</code> — no <code>permission_handler</code> needed).</li>
+        <li><code class="status">[x]</code> iOS: add <code>NSMicrophoneUsageDescription</code> ("Record your voice so your child can read along in your voice") to <code>ios/Runner/Info.plist</code>. <code>NSSpeechRecognitionUsageDescription</code> already exists for read-aloud.</li>
+        <li><code class="status">[x]</code> Android: confirm <code>RECORD_AUDIO</code> in <code>AndroidManifest.xml</code>.</li>
+        <li><code class="status">[x]</code> Configure the recorder: AAC-LC in an m4a container, 44.1&nbsp;kHz, mono, ~64&nbsp;kbps — small uploads, plays in <code>just_audio</code> on both platforms.</li>
+        <li><code class="status">[x]</code> Coordinate with <code>audio_session</code>: request the record category while recording, restore music config afterwards so soundscape/narration playback isn't left muted.</li>
+      </ul>
+
+      <h4>2. Domain + repository</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Model <code>NarrationTrack</code> / <code>NarrationPageRecording</code> with <code>fromJson</code>, reusing <code>WordTimestamp.fromJson</code> from <code>models.dart</code>.</li>
+        <li><code class="status">[x]</code> Write <code>NarrationRepository</code> modeled on <code>ChildProfileRepository</code>: <code>http.Client</code> + <code>apiBaseUrl</code> + access-token resolver, typed exception class, explicit status-code checks.</li>
+        <li><code class="status">[x]</code> Upload uses <code>http.MultipartRequest</code> with the recorded file path; surface upload progress as coarse states (<code>uploading</code> → <code>aligning</code> → <code>done</code>) rather than a byte-accurate bar.</li>
+        <li><code class="status">[x]</code> Register providers in <code>narration_providers.dart</code>, wired from <code>apiBaseUrlProvider</code> + the existing Supabase session token resolver.</li>
+      </ul>
+
+      <h4>3. Studio UI</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add route <code>/books/:id/narration-studio</code> in <code>app_router.dart</code>; entry point is a "Record my voice" action reachable from the book detail / reader audio sheet.</li>
+        <li><code class="status">[x]</code> Wrap entry in <code>ParentalGate</code> — recording is an adult surface.</li>
+        <li><code class="status">[x]</code> First run asks for a track label (default to the account name, e.g. "Mom") and creates the draft track.</li>
+        <li><code class="status">[x]</code> Per page: show the page image + its text large enough to read aloud from, a big record/stop control, elapsed time, and a waveform-free amplitude meter (<code>record</code> exposes an amplitude stream).</li>
+        <li><code class="status">[x]</code> After stop: local preview playback, <strong>Retake</strong> or <strong>Keep &amp; next</strong>. Upload fires on Keep; the UI advances immediately and reconciles the result asynchronously.</li>
+        <li><code class="status">[x]</code> Page list shows per-page status chips (not recorded / uploading / aligning / ready / failed) with tap-to-retry on failure.</li>
+        <li><code class="status">[x]</code> Skip pages with no text (image-only) — no recording, no gap in the track's "complete" calculation.</li>
+        <li><code class="status">[x]</code> "Finish" marks the track <code>ready</code>; allow finishing with gaps but warn which pages are missing.</li>
+        <li><code class="status">[x]</code> Use existing design tokens (<code>StoriaColors</code>, <code>storia_spacing</code>, sketch widgets) — no hardcoded colors.</li>
+      </ul>
+
+      <h4>4. Testing Strategy</h4>
+      <p>Widget/unit tests with a fake recorder port and a fake repository; the real mic is exercised manually on a device. Keep the recorder behind a thin interface so tests never touch platform channels.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>flutter test test/features/narration_studio/</code> — controller transitions (idle→recording→preview→uploading→ready, retake discards the previous file), failure path sets <code>failed</code> and stays retryable.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/features/narration_studio/narration_repository_test.dart</code> — JSON parsing, non-2xx throws, auth header present.</li>
+        <li><code class="status">[x]</code> <code>flutter analyze</code> — clean.</li>
+        <li><code class="status">[f]</code> Manual device check: record one page on iOS and one on Android, confirm rows exist with <code>alignment_status='aligned'</code> and correct <code>word_count</code>.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 3: Playback + voice selection (reader)</h3>
+      <p>The payoff phase: pick a voice, reread the book any number of times, highlighting follows the parent's voice. Deliberately tiny — one override applied before the reader ever sees the book.</p>
+
+      <h4>1. Model widening</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Widen <code>PageData.copyWith</code> to accept <code>narrationUrl</code> and <code>narrationTimestamps</code> (keep the existing sentinel-free style consistent with the current signature).</li>
+        <li><code class="status">[x]</code> Add <code>Book.withNarrationTrack(NarrationTrack track)</code> (or a free function <code>applyTrackToBook</code>) mapping pages by <code>pageNumber</code>; pages without a recording keep the published narration.</li>
+      </ul>
+      <pre><code>// narration_track_selection.dart
+Book applyTrackToBook(Book book, NarrationTrack? track) {
+  if (track == null) return book;
+  final byPage = {for (final r in track.pages) r.pageNumber: r};
+  return book.copyWithPages([
+    for (final p in book.pages)
+      byPage[p.pageNumber] case final r? =&gt;
+        p.copyWith(narrationUrl: r.audioUrl, narrationTimestamps: r.wordTimestamps)
+      || p,
+  ]);
+}</code></pre>
+      <p class="qa-answer">(Sketch — write it as a plain loop; the point is that the override is one map lookup per page and nothing downstream changes.)</p>
+
+      <h4>2. Selection + persistence</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>bookNarrationTracksProvider(bookId)</code> fetches <code>GET /api/books/{id}/narrations</code>; treat any failure as "no tracks" and log — never block the reader on it.</li>
+        <li><code class="status">[x]</code> Persist the selected track id in <code>shared_preferences</code> under <code>narration_track:{bookId}</code>; default to the published Storia voice.</li>
+        <li><code class="status">[x]</code> Apply the override where the reader's book future resolves, before <code>ReaderScreen</code> builds — so <code>AudioEngine.loadPage</code> receives the parent's URL naturally.</li>
+        <li><code class="status">[x]</code> Changing voice mid-book: reload the current page's audio and reset narration position to zero for that page (existing <code>loadPage</code> path handles it).</li>
+      </ul>
+
+      <h4>3. Picker UI</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add a "Narrator" section to <code>_AudioSettingsSheet</code> in <code>reader_screen.dart</code>: radio-style list of "Storia voice" + each ready track label.</li>
+        <li><code class="status">[x]</code> Hide the section entirely when the user has no tracks (no empty-state clutter for kids).</li>
+        <li><code class="status">[x]</code> "Record my voice" entry at the bottom of that section, behind the parental gate, routing to the studio.</li>
+        <li><code class="status">[x]</code> When a track page is missing a recording, show a small "Storia voice for this page" hint rather than silently swapping voices.</li>
+      </ul>
+
+      <h4>4. Testing Strategy</h4>
+      <p>Pure-function tests for the override plus one widget test proving highlighting follows the injected timestamps — that test is the feature's actual acceptance criterion.</p>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> <code>flutter test test/features/narration_studio/narration_track_selection_test.dart</code> — override applies per page, missing pages fall back to published narration, null track is identity.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/features/reader/</code> — existing reader suite still green; add a case feeding parent timestamps into <code>computeActiveWordIndex</code> and asserting the expected <code>globalWordIndex</code> at three positions.</li>
+        <li><code class="status">[x]</code> <code>flutter analyze</code> — clean.</li>
+        <li><code class="status">[f]</code> Manual: record 3 pages, close the app, reopen, reread twice — same voice, same highlighting, no re-download prompt.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[x]</code> Phase 4: Durability, safety, and housekeeping</h3>
+      <p>The things that make it survive real families: bad networks, retakes, deletions, storage GC, and telemetry.</p>
+
+      <h4>1. Failure handling</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Keep recorded files in the app documents dir until the server confirms the upload; delete only after a 2xx. A dropped upload is retryable from the studio page list after an app restart.</li>
+        <li><code class="status">[x]</code> Surface <code>alignment_status</code> in the studio: <code>fallback</code> shows "Highlighting may drift on this page — retake for a better match".</li>
+        <li><code class="status">[x]</code> Retake replaces the row (unique <code>(track_id,page_id)</code>) and deletes the old storage object.</li>
+        <li><code class="status">[x]</code> Track delete removes every object under the track prefix via the Storage API before deleting rows.</li>
+      </ul>
+
+      <h4>2. Storage + cost hygiene</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Add <code>user_narration_page.audio_path</code> to the referenced-column list in <code>scripts/storage-gc.mjs</code> so the GC never deletes live parent recordings.</li>
+        <li><code class="status">[x]</code> Document the <code>user-narrations/**</code> prefix alongside the existing <code>audio/curated/**</code> and <code>pdfs/**</code> notes.</li>
+        <li><code class="status">[x]</code> Cap tracks per user per book (suggest 3) and total pages per track at the book's page count; 409 beyond that.</li>
+      </ul>
+
+      <h4>3. Telemetry</h4>
+      <ul class="checklist">
+        <li><code class="status">[x]</code> Emit mobile analytics events through the existing <code>mobile_analytics_events</code> path: <code>narration_recording_started</code>, <code>narration_page_recorded</code>, <code>narration_track_completed</code>, <code>narration_track_selected</code>, <code>narration_alignment_fallback</code>.</li>
+        <li><code class="status">[x]</code> Log server-side alignment loss + status counts for tuning the fallback threshold.</li>
+      </ul>
+
+      <h4>4. Testing Strategy</h4>
+      <p>Whole-feature validation across both repos plus a manual end-to-end pass on a real device with the network toggled mid-upload.</p>
+      <ul class="checklist">
+        <li><code class="status">[f]</code> <code>node scripts/storage-gc.mjs</code> — dry run reports zero orphans for a freshly recorded track.</li>
+        <li><code class="status">[x]</code> <code>npm test -- src/lib/narration/ 'src/app/api/narrations'</code> — full narration suite green.</li>
+        <li><code class="status">[x]</code> <code>./bin/verify.sh</code> (mobile) — <code>flutter analyze</code> + <code>flutter test</code> both pass.</li>
+        <li><code class="status">[f]</code> Manual: airplane-mode mid-upload → page shows retry; restore network → retry succeeds; delete track → audio gone from storage and the picker.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+  </section>
+
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Execute these to validate the entire plan is complete:</p>
+    <ul class="checklist">
+      <li><code class="status">[x]</code> <code>cd storia &amp;&amp; npx prisma migrate status</code> — narration migration applied.</li>
+      <li><code class="status">[x]</code> <code>cd storia &amp;&amp; npm test -- src/lib/narration/ 'src/app/api/narrations'</code> — alignment core + routes pass.</li>
+      <li><code class="status">[x]</code> <code>cd storia &amp;&amp; npx tsc --noEmit --pretty false</code> — no new type errors attributable to this feature.</li>
+      <li><code class="status">[f]</code> <code>cd storia &amp;&amp; node scripts/storage-gc.mjs</code> — parent recordings recognized as referenced.</li>
+      <li><code class="status">[x]</code> <code>cd storia-mobile &amp;&amp; ./bin/verify.sh</code> — analyze + full test suite pass.</li>
+      <li><code class="status">[x]</code> <code>cd storia-mobile &amp;&amp; flutter test test/features/narration_studio/ test/features/reader/</code> — studio + reader suites pass.</li>
+      <li><code class="status">[f]</code> Manual device pass: record a 3-page book, finish, select the voice, reread twice — highlighting tracks the recorded voice on every page, both readings.</li>
+    </ul>
+    <div class="loop">🔁 <strong>The plan is not complete until every box is checked and every command passes. If a step is genuinely impossible, mark it <code>[f]</code> and move on.</strong></div>
+  </section>
+
+  <section id="questionables">
+    <h2>Questionables</h2>
+    <p>Open decisions carried by this plan. Each has a default assumption already baked into the phases above — override before Phase 1 if wrong.</p>
+
+    <details>
+      <summary>Who can hear a recording — only the recorder's account, or the whole family/classroom?</summary>
+      <p class="qa-answer"><strong>Assumed: owner account only.</strong> Tracks are keyed to the Better Auth <code>user.id</code>, and every child profile under that account sees them (child profiles share the parent's session — there is no separate child auth). A teacher sharing one recording across many families' accounts would need a share/visibility column and a distribution mechanism; that is a genuinely different feature (moderation, revocation, storage attribution) and is deliberately out of scope. If teacher-sharing is the actual product goal, say so now — it changes the schema (add <code>visibility</code> + a grants table) but not the capture or alignment work.</p>
+    </details>
+
+    <details>
+      <summary>Is ElevenLabs forced alignment the right aligner — cost, limits, latency?</summary>
+      <p class="qa-answer"><strong>Assumed yes</strong>, because the account, key, and character→word converter already exist in <code>src/lib/elevenlabs.ts</code>, and per-page audio is short (seconds). Verify current pricing, request-size limits, and the exact response schema against the docs during Phase 1 task 3 rather than trusting this document. Alternatives if it disappoints: Whisper with <code>timestamp_granularities:["word"]</code> plus text-anchored matching (more code, needs a second vendor), or shipping only the proportional fallback (free, visibly worse). The fallback path is built either way, so a vendor swap touches one file.</p>
+    </details>
+
+    <details>
+      <summary>Per-page recording vs. record-the-whole-book-in-one-take?</summary>
+      <p class="qa-answer"><strong>Assumed per page.</strong> It removes page-boundary detection entirely, keeps alignment jobs short, and makes retakes cheap. The cost is a slightly more clinical recording experience (stop/start per page) versus reading a story straight through. If user testing says the stop/start breaks the reading flow, the upgrade is a continuous-record mode with a "next page" tap that records split points, then slicing server-side — same alignment core, new capture UI.</p>
+    </details>
+
+    <details>
+      <summary>Should recordings work offline / be cached for repeat reads?</summary>
+      <p class="qa-answer"><strong>Assumed streamed from the public bucket URL,</strong> same as published narration today — no new caching layer. Repeat reads therefore need connectivity. If offline rereads matter (car rides, bedtime with bad wifi), the smallest upgrade is <code>just_audio</code>'s <code>LockCachingAudioSource</code> for narration URLs, which also improves published narration. Deliberately not built now.</p>
+    </details>
+
+    <details>
+      <summary>Child-safety: recorded audio is user-generated content in a kids' app.</summary>
+      <p class="qa-answer"><strong>Assumed acceptable because it is private to the recording account</strong> — nothing is shared, published, or discoverable by other users, so it is closer to a voice memo than to UGC. The moment sharing is added (see the first questionable), moderation, reporting, and retention policy become mandatory rather than optional. Storage bucket paths are namespaced by user id so a per-account purge is a single prefix delete.</p>
+    </details>
+
+    <details>
+      <summary>Does the highlight look right when the reader's pace differs wildly from TTS?</summary>
+      <p class="qa-answer"><strong>Assumed yes for <code>aligned</code> status</strong>, since forced alignment is derived from the actual audio, not an assumed pace. The risk is concentrated in <code>projected</code>/<code>fallback</code> rows, where drift is proportional to how uneven the reading was. That is why status is persisted and surfaced in the studio with a retake nudge, and why <code>alignment_loss</code> is logged — the threshold for auto-suggesting a retake should be tuned from real data after launch, not guessed now.</p>
+    </details>
+
+    <details>
+      <summary>What if the book's text is edited after a parent records it?</summary>
+      <p class="qa-answer"><strong>Assumed rare and handled by staleness detection, not re-alignment.</strong> Persist <code>word_count</code> per recorded page; at read time, if the page's current rendered word count differs from the recording's, keep playing the audio but treat the highlighting as untrusted for that page (highlight off, audio on) and flag a retake in the studio. Silently misaligned highlighting is worse than none.</p>
+    </details>
+  </section>
+
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>The one insight that shrinks this feature</h3>
+    <p>The reader's karaoke highlighting has no notion of "who is speaking". <code>page_renderer.dart</code> calls <code>computeActiveWordIndex(page.narrationTimestamps, widget.narrationPosition)</code> and hands the index to <code>OverlayLayoutEngine</code>, which matches it against each token's <code>globalWordIndex</code>. Feed it a different <code>narrationUrl</code> + a matching timestamp array and the feature is done. Every phase above exists only to <em>produce</em> that array safely. Resist any temptation to add a parallel "custom narration" playback path in <code>AudioEngine</code> — that would fork behavior that currently has exactly one implementation.</p>
+
+    <h3>Dependencies added</h3>
+    <table>
+      <tr><th>Repo</th><th>Dependency</th><th>Why</th></tr>
+      <tr><td>storia-mobile</td><td><code>record ^6.1.1</code></td><td>Mic capture to a file with amplitude stream + built-in permission check. Chosen over <code>flutter_sound</code> (much larger, more platform surface) and over writing a platform channel.</td></tr>
+      <tr><td>storia (web)</td><td>none</td><td>Forced alignment is a <code>fetch</code> to an API already in use; storage upload uses the existing <code>@supabase/supabase-js</code> service client.</td></tr>
+    </table>
+    <p>Not added, on purpose: <code>permission_handler</code> (the recorder covers it), a background-upload/work-manager package (retry-on-open is enough), and any audio-processing library (no trimming/normalization in v1).</p>
+
+    <h3>Rejected approaches</h3>
+    <ul>
+      <li><strong>On-device alignment via <code>speech_to_text</code>.</strong> The app already depends on it, so it's tempting — but platform recognizers stream hypotheses, not reliable per-word timestamps against a known script, and behavior diverges sharply between iOS and Android. It would produce exactly the drifting highlight this feature exists to avoid.</li>
+      <li><strong>Manual tap-to-sync ("tap each word as you read").</strong> Zero backend cost, but an unusable authoring experience for a parent at bedtime, and it produces worse timings than an aligner.</li>
+      <li><strong>Writing into <code>pages.narration_url</code> / <code>narration_timestamps</code>.</strong> Would let the reader work with no code changes at all — and would let one parent overwrite the published narration for every user. Non-starter.</li>
+      <li><strong>A new Supabase Edge Function instead of Next.js routes.</strong> The repo has no <code>supabase/functions</code> directory, no deploy pipeline for one, and the auth helper (<code>getAuthenticatedUser</code>) plus the alignment converter both live in the Next app. Adding a second backend runtime for one endpoint is unnecessary.</li>
+      <li><strong>Direct client→Supabase Storage upload with RLS.</strong> Saves one hop, but the alignment step must happen server-side anyway (API key), and the current mobile app has no storage-upload code or bucket policies at all. Uploading through the API keeps one code path and one auth model.</li>
+    </ul>
+
+    <h3>Cross-repo coordination</h3>
+    <p>Phase 1 ships to <code>storia</code> (web/API) and must be deployed before Phase 2 is useful on a device — mobile talks to <code>API_BASE_URL</code>, defaulting to <code>https://storia.kids</code>. For local development, point the mobile <code>.env</code> <code>API_BASE_URL</code> at the dev machine's LAN address and run <code>npm run dev</code> (which prepares the Dockerized Postgres on <code>:5433</code> first). Phases 2 and 3 are mobile-only and can land in one release.</p>
+
+    <h3>Word-order parity: the thing most likely to break</h3>
+    <p>Two tokenizers must agree forever: <code>buildPageReferenceWords()</code> (TypeScript, server) and the token split inside <code>overlay_layout_engine.dart</code> / <code>page_words_indexer.dart</code> (Dart, client). They are in different repos and different languages, so drift is a matter of when, not if. Mitigations, in order of value: (1) the shared fixture asserted in both test suites; (2) persisting <code>word_count</code> and refusing to highlight when it disagrees with the rendered count at read time; (3) a comment in each tokenizer naming the other. Note that <code>page_words_indexer.dart</code> additionally normalizes tokens via <code>normalizeWordToken</code> for word-help lookups — the <em>reference</em> builder must NOT normalize; it needs raw display tokens in raw order.</p>
+
+    <h3>Scope explicitly left out</h3>
+    <ul>
+      <li>Sharing recordings between accounts, classrooms, or family members.</li>
+      <li>Recording from the web editor (this is a mobile-first feature; the backend routes are platform-agnostic if that changes).</li>
+      <li>Audio cleanup: trimming leading/trailing silence, noise reduction, loudness normalization.</li>
+      <li>Mixing parent narration with soundscapes at different levels — existing narration/soundscape volume controls apply unchanged.</li>
+      <li>Per-word pronunciation audio from the parent's voice (the <code>book_pronunciations</code> pipeline stays TTS-driven).</li>
+    </ul>
+  </section>
+
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <details>
+      <summary>2026-08-16 — Built phases 1-4; two items blocked on local infrastructure</summary>
+      <p><strong>Shipped:</strong> web schema + migration file, <code>src/lib/narration/*</code> (reference words, fallback timing, alignment orchestration, storage helpers), <code>forceAlign()</code> in <code>src/lib/elevenlabs.ts</code>, four API routes, and the mobile <code>narration_studio</code> feature (recorder port, repository, controller, studio screen, voice picker, track override) plus the reader wiring. 420 web tests and 389 mobile tests pass; <code>tsc --noEmit</code> is clean repo-wide; <code>flutter analyze</code> is clean.</p>
+      <p><strong>Migration applied:</strong> locally by the author, and to the hosted Supabase project via the Supabase MCP as <code>add_user_narration_tracks</code>. Verified remotely: both tables exist with the expected columns, foreign keys to <code>user</code>/<code>books</code>/<code>pages</code>, and the unique <code>(track_id, page_id)</code> index.</p>
+      <p><strong>Still blocked <code>[f]</code>:</strong> <code>node scripts/storage-gc.mjs</code> needs production Supabase credentials and was not run; the script was updated to treat <code>user_narration_page.audio_url/audio_path</code> as referenced. All manual device passes need a physical microphone.</p>
+      <p><strong>Deviations from the plan as written:</strong> mic permissions already existed for read-aloud practice, so only the iOS usage string needed widening. <code>http_parser</code> was promoted from a transitive to a direct dependency so the upload can set an explicit multipart content type (the server's 415 check depends on it). <code>requireOwnedTrack</code> carries an explicit return type — inferred result unions leak <code>undefined</code> into every caller.</p>
+    </details>
+
+  </section>
+
+</main>
+</body>
+</html>

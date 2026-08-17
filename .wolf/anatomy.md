@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-07-25T14:05:49.992Z
-> Files: 709 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-08-16T20:33:56.529Z
+> Files: 740 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -17,20 +17,60 @@
 ## ../storia-mobile/lib/src/data/
 
 - `analytics_repository.dart` — Mobile analytics HTTP repository; sends Supabase access token as `Authorization: Bearer <token>` for analytics events (~5000 tok)
-- `models.dart` — Class: WordTimestamp (~3947 tok)
+- `models.dart` — Class: WordTimestamp (~4251 tok)
 - `providers.dart` — Mobile dependency providers, including current Supabase access-token callback passed to repositories (~1200 tok)
 
 ## ../storia-mobile/lib/src/features/auth/data/
 
-- `auth_repository.dart` — Mobile Supabase auth repository for OTP magic link, OAuth, and native Apple id-token sign-in flows (~2500 tok)
+- `auth_repository.dart` — Class: AppAuthException (~1770 tok)
+
+## ../storia-mobile/lib/src/features/auth/presentation/widgets/
+
+- `auth_social_buttons.dart` — / Apple / Google sign-in block shared by the sign-in and sign-up screens. (~909 tok)
+- `magic_code_field.dart` — / Code-entry fallback shown once a magic link has been emailed. (~602 tok)
 
 ## ../storia-mobile/lib/src/features/child/data/
 
 - `child_profile_repository.dart` — Mobile child-profile HTTP repository; fetch/create calls require current Supabase access token and send `Authorization: Bearer <token>` (~2200 tok)
 
+## ../storia-mobile/lib/src/features/narration_studio/application/
+
+- `narration_recorder.dart` — / Mic capture behind a thin port so the controller is testable without (~550 tok)
+- `narration_track_selection.dart` — / Swaps a parent-recorded track into a book's pages. (~830 tok)
+- `recording_controller.dart` — / Where one page sits in the record → keep → upload → aligned flow. (~2588 tok)
+
+## ../storia-mobile/lib/src/features/narration_studio/data/
+
+- `narration_providers.dart` — Class: NarrationTrackSelection (~778 tok)
+- `narration_repository.dart` — Class: NarrationRepositoryException (~1490 tok)
+
+## ../storia-mobile/lib/src/features/narration_studio/domain/
+
+- `narration_track.dart` — / How much to trust a recording's word timings. (~996 tok)
+
+## ../storia-mobile/lib/src/features/narration_studio/presentation/
+
+- `narration_studio_screen.dart` — Stateful widget: _PageStrip (~3178 tok)
+- `narration_voice_picker.dart` — / Narrator chooser for the reader's audio sheet. (~1374 tok)
+
+## ../storia-mobile/lib/src/features/reader/
+
+- `reader_screen.dart` — Flutter widget (~15035 tok)
+
 ## ../storia-mobile/lib/src/features/reader/overlay/
 
 - `overlay_layout_engine.dart` — Class: OverlayLayoutEngine (~1460 tok)
+
+## ../storia-mobile/test/features/auth/
+
+- `magic_code_test.dart` (~1295 tok)
+
+## ../storia-mobile/test/features/narration_studio/
+
+- `narration_repository_test.dart` — Declares _trackJson (~1731 tok)
+- `narration_track_selection_test.dart` — Declares TextOverlayConfig (~1633 tok)
+- `parent_narration_highlight_test.dart` — / The feature's actual acceptance criterion: with a parent track selected, the (~1065 tok)
+- `recording_controller_test.dart` — Class: _FakeRecorder (~2395 tok)
 
 ## ./
 
@@ -796,7 +836,7 @@
 - `migrations/20250205_add_user_reading_progress/migration.sql` — Creates Better Auth-era user reading progress table and indexes; no RLS/policies (~300 tok)
 - `migrations/20260411023443_add_proof_test_models/migration.sql` — Creates child profiles, child book progress, reading sessions, book questions/options, and question attempts; no RLS/policies (~1800 tok)
 - `migrations/20260417120000_add_mobile_analytics_events/migration.sql` — Creates mobile analytics events table/indexes/FKs; no RLS/policies (~600 tok)
-- `schema.prisma` — Declares String (~4981 tok)
+- `schema.prisma` — Declares String (~5238 tok)
 - `seed.ts` — prisma: main (~3664 tok)
 
 ## scripts/
@@ -805,6 +845,7 @@
 - `backfill-pronunciation-metadata.ts` — Backfill `syllables`, `phonetic_display`, and `breakdown_segments` for any (~1477 tok)
 - `backfill-pronunciations.ts` — Pronunciation backfill script (Phase 2 — Ticket 2.4). (~1862 tok)
 - `ensure-local-db.sh` — Starts local Postgres container, waits for readiness, recreates `storia_dev` if missing (~220 tok)
+- `storage-gc.mjs` — Storage GC for the `storia-storage` bucket: lists every object, rebuilds the referenced-path set from pages/books/page_audio_assignments/page_overlay_narrations/book_pronunciations/soundscapes, buckets the difference into tiers A–D, and deletes only with `--delete --tier`. Never touches `audio/**` or `pdfs/**`. (~1794 tok)
 
 ## specs/
 
@@ -812,6 +853,7 @@
 - `dual-stack-auth-remediation-2026-04-28.md` — Plan: Dual-Stack Auth Remediation (Better Auth Web + Supabase Mobile) (~6424 tok)
 - `in-book-questions-phased-plan.md` — Phased implementation plan and decision log for book-attached end-of-book questions across backend, editor, and mobile (~3600 tok)
 - `mobile-compat-dual-stack-2026-04-28.md` — Read-only Flutter mobile auth compatibility audit for dual-stack auth remediation, covering Bearer headers, Supabase sessions, service-role env usage, and route-shape dependencies (~1100 tok)
+- `parent-recorded-narration-sync.html` — Plan: Parent-Recorded Narration with Synced Word Highlighting (~15004 tok)
 - `pronunciation-rich-metadata-and-timing.md` — Plan: Pronunciation Rich Metadata + Per-Segment Audio Timing (~5038 tok)
 - `proof-test-schema-and-routes.md` — Plan: Proof-Test Schema Changes & Server Routes (~5188 tok)
 - `public-book-editor-improvements.md` — Public Book Editor — Required Improvements (~2089 tok)
@@ -927,6 +969,10 @@
 
 - `route.ts` — Next.js API route: GET (~365 tok)
 
+## src/app/api/books/[id]/narrations/
+
+- `route.ts` — GET /api/books/[id]/narrations (~413 tok)
+
 ## src/app/api/books/[id]/pronunciations/
 
 - `route.test.ts` — Declares makeRow (~1938 tok)
@@ -951,6 +997,19 @@
 ## src/app/api/continue-reading/
 
 - `route.ts` — Next.js API route: GET (~596 tok)
+
+## src/app/api/narrations/pages/
+
+- `route.test.ts` — The route only ever touches `request.formData()`, so the form is handed over (~2109 tok)
+- `route.ts` — POST /api/narrations/pages (~1672 tok)
+
+## src/app/api/narrations/tracks/
+
+- `route.ts` — GET /api/narrations/tracks?bookId=123 — the caller's own tracks. (~1002 tok)
+
+## src/app/api/narrations/tracks/[trackId]/
+
+- `route.ts` — PATCH /api/narrations/tracks/[trackId] — rename, or mark ready. (~951 tok)
 
 ## src/app/api/reading-progress/
 
@@ -1021,7 +1080,7 @@
 - `auth.ts` — DEBUG: Log the actual DATABASE_URL at import time (~1520 tok)
 - `child-auth.test.ts` — Direct dual-stack auth helper tests for Better Auth cookies, Supabase Bearer/raw token parsing, verified-email linking, and child access authorization (~2500 tok)
 - `child-auth.ts` — Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPA (~1856 tok)
-- `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~2486 tok)
+- `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~3200 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `overlayText.test.ts` — Vitest coverage for Replicate OCR output parser (preamble strip, quoted-line extraction, empty case) and narration-input assembly. (~800 tok)
 - `overlayText.ts` — Pure helpers for overlay text: `parseReplicateOcrOutput`, `assemblePageNarrationText`, `extractPageNarrationTokens`, `includedOverlayText`. (~520 tok)
@@ -1044,6 +1103,17 @@
 
 - `saveCoordinator.test.ts` — Boundary tests for SaveCoordinator debounce reset, retry/error, and overlay-before-book ordering (~2200 tok)
 - `saveCoordinator.ts` — Pure editor save coordinator with debounced autosave, dirty/status snapshots, retry, and overlay-before-book save ordering (~3650 tok)
+
+## src/lib/narration/
+
+- `alignRecording.test.ts` — TOKENS: args (~1577 tok)
+- `alignRecording.ts` — Turns a recorded audio file plus the page's reference words into a timestamp (~1446 tok)
+- `fallbackTiming.test.ts` — Declares result (~528 tok)
+- `fallbackTiming.ts` — Deterministic duration-proportional word timings. (~541 tok)
+- `referenceWords.test.ts` — PARITY FIXTURE — mirrored by the Dart test in storia-mobile (~747 tok)
+- `referenceWords.ts` — Canonical render-order tokenizer for a page's words. (~948 tok)
+- `storage.ts` — Storage helpers for parent-recorded narration. (~1000 tok)
+- `tracks.ts` — Shared serialization + ownership checks for the narration routes. (~993 tok)
 
 ## src/lib/reports/
 
