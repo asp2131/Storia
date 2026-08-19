@@ -379,14 +379,24 @@ export async function forceAlign(params: {
   const payload = (await response.json()) as ForcedAlignmentResponse;
 
   if (Array.isArray(payload.words) && payload.words.length > 0) {
-    return {
-      loss: payload.loss,
-      words: payload.words.map((w) => ({
-        word: w.text ?? w.word ?? "",
-        start: typeof w.start === "number" ? w.start : 0,
-        end: typeof w.end === "number" ? w.end : 0,
-      })),
-    };
+    // The API interleaves whitespace-only entries between real words (16 words
+    // come back as 31 entries). They must be dropped, or the count never
+    // matches the reference tokens and alignRecording() downgrades a perfectly
+    // good alignment to "projected".
+    const spoken = payload.words.filter(
+      (w) => (w.text ?? w.word ?? "").trim().length > 0
+    );
+
+    if (spoken.length > 0) {
+      return {
+        loss: payload.loss,
+        words: spoken.map((w) => ({
+          word: w.text ?? w.word ?? "",
+          start: typeof w.start === "number" ? w.start : 0,
+          end: typeof w.end === "number" ? w.end : 0,
+        })),
+      };
+    }
   }
 
   // Character-level only: reuse the TTS converter.
