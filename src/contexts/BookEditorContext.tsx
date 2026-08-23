@@ -161,6 +161,7 @@ export type NarrationContext = {
   generatingPhase: "idle" | "generating" | "stitching" | "saving";
   generateNarration: (pageNumber?: number) => Promise<void>;
   generateSelectedTextNarration: () => Promise<void>;
+  saveRecordedNarration: (file: File, durationMs: number) => Promise<void>;
   selectedOverlayElement: TextElement | null;
   isNarrationPlaying: boolean;
   setIsNarrationPlaying: (v: boolean) => void;
@@ -415,7 +416,10 @@ export function BookEditorProvider({
 
   // ─── Audio assignments for current page ───────────────────────────────────
 
-  const { data: currentAssignments } = useAudioAssignments(bookIdParam, activePage);
+  const {
+    data: currentAssignments,
+    refetch: refetchAssignments,
+  } = useAudioAssignments(bookIdParam, activePage);
 
   // ─── pageIdMap ────────────────────────────────────────────────────────────
 
@@ -1372,6 +1376,46 @@ export function BookEditorProvider({
 
   // ─── Narration helpers ────────────────────────────────────────────────────
 
+  const saveRecordedNarration = useCallback(
+    async (file: File, durationMs: number) => {
+      setError(null);
+      try {
+        await handleSave();
+        const form = new FormData();
+        form.set("file", file);
+        form.set("durationMs", String(durationMs));
+
+        const response = await fetch(
+          `/api/admin/books/${bookIdParam}/pages/${activePage}/narration-recording`,
+          { method: "POST", body: form }
+        );
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload?.error || "Failed to save narration recording.");
+        }
+
+        const wordTimestamps = Array.isArray(payload.wordTimestamps)
+          ? (payload.wordTimestamps as WordTimestamp[])
+          : [];
+        setLocalPages((pages) =>
+          pages.map((page) =>
+            page.number === activePage
+              ? { ...page, narrationTimestamps: wordTimestamps }
+              : page
+          )
+        );
+
+        const [pagesResult] = await Promise.all([refetchPages(), refetchAssignments()]);
+        if (pagesResult.data) setLocalPages(pagesResult.data.map(toLocalPage));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to save narration recording.";
+        setError(message);
+        throw new Error(message);
+      }
+    },
+    [activePage, bookIdParam, handleSave, refetchAssignments, refetchPages]
+  );
+
   const getVoicedOverlayItems = useCallback((page: LocalPageData) => {
     const elements = page.overlay?.elements || [];
     return elements
@@ -1777,6 +1821,7 @@ export function BookEditorProvider({
         generatingPhase: overlayNarrationPhase,
         generateNarration,
         generateSelectedTextNarration,
+        saveRecordedNarration,
         selectedOverlayElement,
         isNarrationPlaying,
         setIsNarrationPlaying,

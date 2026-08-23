@@ -8,6 +8,7 @@ import {
   MAX_RECORDING_BYTES,
   MAX_RECORDING_SECONDS,
   buildRecordingPath,
+  extensionForContentType,
   isSupportedAudioType,
   removeRecordings,
   uploadRecording,
@@ -107,6 +108,10 @@ export async function POST(request: NextRequest) {
     const alignment = await alignRecording({
       audio,
       contentType,
+      // ElevenLabs sniffs the upload by extension; forceAlign() otherwise names
+      // every file "recording.m4a", which silently degrades non-m4a uploads to
+      // "fallback" timings. No-op for the mobile client, which sends audio/mp4.
+      fileName: `page_${pageNumber}.${extensionForContentType(contentType)}`,
       tokens,
       durationSeconds: durationMs !== null ? durationMs / 1000 : 0,
     });

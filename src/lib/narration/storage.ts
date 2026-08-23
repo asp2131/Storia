@@ -26,6 +26,8 @@ const EXTENSION_BY_CONTENT_TYPE: Record<string, string> = {
   "audio/mpeg": "mp3",
   "audio/wav": "wav",
   "audio/x-wav": "wav",
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
 };
 
 export function isSupportedAudioType(contentType: string): boolean {

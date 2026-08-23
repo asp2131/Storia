@@ -3124,6 +3124,91 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-19T03:24:00.928983Z"
+    },
+    {
+      "id": "bug-182",
+      "timestamp": "2026-08-20T00:00:00Z",
+      "error_message": "Magic auth says it sends a code but the emails contain no code",
+      "file": "Supabase dashboard auth email templates (project gbtohjbmchjgdfwwlhyy); client at storia-mobile lib/src/features/auth/data/auth_repository.dart",
+      "root_cause": "Mobile signInWithOtp + verifyOTP expect a 6-digit token, but Supabase default Magic Link / Confirm signup templates only interpolate {{ .ConfirmationURL }} and never render {{ .Token }}. Templates live only in the dashboard, no supabase/config.toml in either repo, so nothing in git revealed it.",
+      "fix": "Added {{ .Token }} to both the Magic Link and Confirm signup templates in the Supabase dashboard, keeping {{ .ConfirmationURL }} as a secondary link.",
+      "tags": [
+        "auth",
+        "supabase",
+        "otp",
+        "magic-link",
+        "email-template",
+        "storia-mobile",
+        "dashboard-only-config"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-20T00:00:00Z"
+    },
+    {
+      "id": "bug-183",
+      "timestamp": "2026-08-20T00:00:00Z",
+      "error_message": "Emailed OTP 78112825 reported invalid on verify",
+      "file": "storia-mobile/lib/src/features/auth/presentation/widgets/magic_code_field.dart:68 (client); Supabase Email OTP Length setting (server)",
+      "root_cause": "Supabase project Email OTP Length was set to 8, but the app hardcodes 6: normalizeMagicCode truncates digits to the first 6, and sign_in_screen.dart:184 / sign_up_screen.dart:192 both guard on code.length < 6. The truncated 781128 never matched the issued 8-digit token.",
+      "fix": "Set Email OTP Length back to 6 in the Supabase dashboard (auth/providers), matching what the app was written against. No code change or App Store release needed.",
+      "tags": [
+        "auth",
+        "supabase",
+        "otp",
+        "magic-link",
+        "otp-length",
+        "storia-mobile",
+        "dashboard-only-config"
+      ],
+      "related_bugs": [
+        "bug-182"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-20T00:00:00Z"
+    },
+    {
+      "id": "bug-184",
+      "timestamp": "2026-08-23T20:01:47.387341+00:00",
+      "error_message": "Recorded narration silently degrades to 'fallback' word timings in Chrome/Firefox",
+      "file": "src/app/api/admin/books/[id]/pages/[pageNumber]/narration-recording/route.ts",
+      "root_cause": "Route called alignRecording() without fileName, so forceAlign() defaulted the ElevenLabs upload filename to 'recording.m4a' while the blob was audio/webm. ElevenLabs sniffs forced-alignment uploads by extension, so the mismatch fails alignment and alignRecording falls back to duration-proportional guesses.",
+      "fix": "Pass fileName: `page_${pageNumber}.${extensionForContentType(contentType)}` to alignRecording, reusing the same extension for the storage path.",
+      "tags": [
+        "elevenlabs",
+        "forced-alignment",
+        "narration",
+        "webm",
+        "mediarecorder",
+        "silent-failure"
+      ],
+      "related_bugs": [
+        "bug-185"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-23T20:01:47.387341+00:00"
+    },
+    {
+      "id": "bug-185",
+      "timestamp": "2026-08-23T20:09:09.331436+00:00",
+      "error_message": "Latent: /api/narrations/pages would silently degrade non-m4a uploads to fallback word timings",
+      "file": "src/app/api/narrations/pages/route.ts",
+      "root_cause": "Same as bug-184 \u2014 alignRecording() called without fileName, so forceAlign() names every upload 'recording.m4a'. Harmless while the only client is the Flutter recorder (aac-lc in audio/mp4), but storage.ts now accepts audio/webm and audio/ogg, so any other client would hit it.",
+      "fix": "Pass fileName: `page_${pageNumber}.${extensionForContentType(contentType)}`. No behavior change for mobile (audio/mp4 -> m4a). Both route tests now assert the filename so a regression cannot silently break Flutter alignment.",
+      "tags": [
+        "elevenlabs",
+        "forced-alignment",
+        "narration",
+        "mobile",
+        "flutter",
+        "latent",
+        "silent-failure"
+      ],
+      "related_bugs": [
+        "bug-184"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-23T20:09:09.331436+00:00"
     }
   ]
 }
