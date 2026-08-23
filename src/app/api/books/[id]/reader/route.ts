@@ -99,20 +99,22 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
     // Helper function to get assignments applicable to a specific page number
     const getAssignmentsForPage = (pageNumber: number) => {
-      return allAssignments.filter((assignment) => {
-        // Direct assignment (scope is "single" or assignment is on this page)
-        if (assignment.scope === "single" && assignment.pages.page_number === pageNumber) {
-          return true;
-        }
-        // Range assignment - check if pageNumber falls within the range
-        if (assignment.scope === "range") {
-          const start = assignment.range_start ?? assignment.pages.page_number;
-          const end = assignment.range_end ?? assignment.pages.page_number;
-          return pageNumber >= start && pageNumber <= end;
-        }
-        // Fallback: direct page assignment
-        return assignment.pages.page_number === pageNumber;
-      });
+      return allAssignments
+        .filter((assignment) => {
+          // Direct assignment (scope is "single" or assignment is on this page)
+          if (assignment.scope === "single" && assignment.pages.page_number === pageNumber) {
+            return true;
+          }
+          // Range assignment - check if pageNumber falls within the range
+          if (assignment.scope === "range") {
+            const start = assignment.range_start ?? assignment.pages.page_number;
+            const end = assignment.range_end ?? assignment.pages.page_number;
+            return pageNumber >= start && pageNumber <= end;
+          }
+          // Fallback: direct page assignment
+          return assignment.pages.page_number === pageNumber;
+        })
+        .sort((a, b) => Number(b.scope === "single") - Number(a.scope === "single"));
     };
 
     const bookIdStr = book.id.toString();

@@ -3124,6 +3124,48 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-19T03:24:00.928983Z"
+    },
+    {
+      "id": "bug-182",
+      "timestamp": "2026-08-20T00:00:00Z",
+      "error_message": "Magic auth says it sends a code but the emails contain no code",
+      "file": "Supabase dashboard auth email templates (project gbtohjbmchjgdfwwlhyy); client at storia-mobile lib/src/features/auth/data/auth_repository.dart",
+      "root_cause": "Mobile signInWithOtp + verifyOTP expect a 6-digit token, but Supabase default Magic Link / Confirm signup templates only interpolate {{ .ConfirmationURL }} and never render {{ .Token }}. Templates live only in the dashboard, no supabase/config.toml in either repo, so nothing in git revealed it.",
+      "fix": "Added {{ .Token }} to both the Magic Link and Confirm signup templates in the Supabase dashboard, keeping {{ .ConfirmationURL }} as a secondary link.",
+      "tags": [
+        "auth",
+        "supabase",
+        "otp",
+        "magic-link",
+        "email-template",
+        "storia-mobile",
+        "dashboard-only-config"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-20T00:00:00Z"
+    },
+    {
+      "id": "bug-183",
+      "timestamp": "2026-08-20T00:00:00Z",
+      "error_message": "Emailed OTP 78112825 reported invalid on verify",
+      "file": "storia-mobile/lib/src/features/auth/presentation/widgets/magic_code_field.dart:68 (client); Supabase Email OTP Length setting (server)",
+      "root_cause": "Supabase project Email OTP Length was set to 8, but the app hardcodes 6: normalizeMagicCode truncates digits to the first 6, and sign_in_screen.dart:184 / sign_up_screen.dart:192 both guard on code.length < 6. The truncated 781128 never matched the issued 8-digit token.",
+      "fix": "Set Email OTP Length back to 6 in the Supabase dashboard (auth/providers), matching what the app was written against. No code change or App Store release needed.",
+      "tags": [
+        "auth",
+        "supabase",
+        "otp",
+        "magic-link",
+        "otp-length",
+        "storia-mobile",
+        "dashboard-only-config"
+      ],
+      "related_bugs": [
+        "bug-182"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-20T00:00:00Z"
     }
   ]
 }

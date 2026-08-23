@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useNarrationContext, useOverlayTextContext } from "@/contexts/BookEditorContext";
 import { OverlayTextPanel } from "@/components/editor/OverlayTextPanel";
+import { PageNarrationRecorder } from "@/components/editor/PageNarrationRecorder";
 
 /**
  * NarrationPanel — the Voice Narration section of the editor right rail.
@@ -60,6 +61,7 @@ export function NarrationPanel({
     generatingPhase: overlayNarrationPhase,
     generateNarration: handleGenerateNarration,
     generateSelectedTextNarration: handleGenerateSelectedTextNarration,
+    saveRecordedNarration,
     selectedOverlayElement,
     isNarrationPlaying,
     narrationVolume,
@@ -131,6 +133,20 @@ export function NarrationPanel({
               className="editor-range flex-1"
             />
           </div>
+        )}
+
+        {activePageData && (
+          <PageNarrationRecorder
+            key={activePageData.number}
+            pageNumber={activePageData.number}
+            disabledReason={
+              activePageData.text.trim() ||
+              activePageData.overlay?.elements.some((element) => element.text.trim())
+                ? undefined
+                : "Add text to this page before recording."
+            }
+            onSave={saveRecordedNarration}
+          />
         )}
 
         {/* AI Generate */}

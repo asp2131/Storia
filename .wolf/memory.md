@@ -1135,3 +1135,21 @@
 | 15:32 | Edited ../storia-mobile/lib/src/features/auth/presentation/widgets/magic_code_field.dart | modified normalizeMagicCode() | ~71 |
 | 15:33 | Created ../storia-mobile/test/features/auth/magic_code_test.dart | — | ~1295 |
 | 15:36 | Session end: 47 writes across 31 files (parent-recorded-narration-sync.html, schema.prisma, referenceWords.ts, fallbackTiming.ts, elevenlabs.ts) | 0 reads | ~54733 tok |
+
+## Session: 2026-08-21 19:25
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-08-21 19:44
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 19:48 | stripped alpha from 3 App Store screenshots (magick -alpha remove) | ~/Desktop/appstore-shots/ | 1242x2688, hasAlpha:no | ~2k |
+| 20:19 | diagnosed missing OTP in magic auth emails | supabase auth templates | fixed: added {{ .Token }} to Magic Link + Confirm signup | ~8k |
+| 20:28 | fixed invalid OTP: length mismatch 8 vs 6 | supabase auth providers setting | set Email OTP Length to 6 | ~6k |
+
+## Session: 2026-08-21 11:33
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
