@@ -97,6 +97,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
       },
     });
 
+    const narrationPriority = (assignment: { audio_type: string; scope: string }) =>
+      assignment.audio_type === "narration" && assignment.scope === "single" ? 0 : 1;
+
     // Helper function to get assignments applicable to a specific page number
     const getAssignmentsForPage = (pageNumber: number) => {
       return allAssignments
@@ -114,7 +117,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
           // Fallback: direct page assignment
           return assignment.pages.page_number === pageNumber;
         })
-        .sort((a, b) => Number(b.scope === "single") - Number(a.scope === "single"));
+        // The reader picks its narration/soundscape with `.find()`, so the order
+        // returned here IS the precedence rule. A page-specific recording must
+        // beat a range assignment. Deliberately narration-only: soundscape
+        // precedence stays whatever the query ordering already gave it.
+        .sort((a, b) => narrationPriority(a) - narrationPriority(b));
     };
 
     const bookIdStr = book.id.toString();

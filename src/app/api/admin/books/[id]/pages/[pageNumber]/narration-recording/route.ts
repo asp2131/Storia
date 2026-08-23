@@ -87,14 +87,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const audio = Buffer.from(await file.arrayBuffer());
+    const extension = extensionForContentType(contentType);
     const alignment = await alignRecording({
       audio,
       contentType,
+      // ElevenLabs sniffs the upload by extension; a webm blob named .m4a
+      // fails to align and silently degrades to "fallback" timings.
+      fileName: `page_${pageNumber}.${extension}`,
       tokens,
       durationSeconds: durationMs / 1000,
     });
     const stamp = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const path = `books/${bookId}/narration/recorded_page_${pageNumber}_${stamp}.${extensionForContentType(contentType)}`;
+    const path = `books/${bookId}/narration/recorded_page_${pageNumber}_${stamp}.${extension}`;
     const audioUrl = await uploadRecording({ path, audio, contentType });
     const now = new Date();
 

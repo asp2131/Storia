@@ -70,7 +70,13 @@ describe("recorded narration route", () => {
 
     expect(response.status).toBe(200);
     expect(mockAlignRecording).toHaveBeenCalledWith(
-      expect.objectContaining({ tokens: ["Once", "upon", "a", "time"], durationSeconds: 4 })
+      expect.objectContaining({
+        tokens: ["Once", "upon", "a", "time"],
+        durationSeconds: 4,
+        // ElevenLabs sniffs by extension — a webm blob must not go up as .m4a,
+        // or alignment silently degrades to fallback timings.
+        fileName: "page_3.webm",
+      })
     );
     expect(mockPrisma.pages.update).toHaveBeenCalledWith(
       expect.objectContaining({

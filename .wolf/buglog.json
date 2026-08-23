@@ -3166,6 +3166,49 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-08-20T00:00:00Z"
+    },
+    {
+      "id": "bug-184",
+      "timestamp": "2026-08-23T20:01:47.387341+00:00",
+      "error_message": "Recorded narration silently degrades to 'fallback' word timings in Chrome/Firefox",
+      "file": "src/app/api/admin/books/[id]/pages/[pageNumber]/narration-recording/route.ts",
+      "root_cause": "Route called alignRecording() without fileName, so forceAlign() defaulted the ElevenLabs upload filename to 'recording.m4a' while the blob was audio/webm. ElevenLabs sniffs forced-alignment uploads by extension, so the mismatch fails alignment and alignRecording falls back to duration-proportional guesses.",
+      "fix": "Pass fileName: `page_${pageNumber}.${extensionForContentType(contentType)}` to alignRecording, reusing the same extension for the storage path.",
+      "tags": [
+        "elevenlabs",
+        "forced-alignment",
+        "narration",
+        "webm",
+        "mediarecorder",
+        "silent-failure"
+      ],
+      "related_bugs": [
+        "bug-185"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-23T20:01:47.387341+00:00"
+    },
+    {
+      "id": "bug-185",
+      "timestamp": "2026-08-23T20:09:09.331436+00:00",
+      "error_message": "Latent: /api/narrations/pages would silently degrade non-m4a uploads to fallback word timings",
+      "file": "src/app/api/narrations/pages/route.ts",
+      "root_cause": "Same as bug-184 \u2014 alignRecording() called without fileName, so forceAlign() names every upload 'recording.m4a'. Harmless while the only client is the Flutter recorder (aac-lc in audio/mp4), but storage.ts now accepts audio/webm and audio/ogg, so any other client would hit it.",
+      "fix": "Pass fileName: `page_${pageNumber}.${extensionForContentType(contentType)}`. No behavior change for mobile (audio/mp4 -> m4a). Both route tests now assert the filename so a regression cannot silently break Flutter alignment.",
+      "tags": [
+        "elevenlabs",
+        "forced-alignment",
+        "narration",
+        "mobile",
+        "flutter",
+        "latent",
+        "silent-failure"
+      ],
+      "related_bugs": [
+        "bug-184"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-08-23T20:09:09.331436+00:00"
     }
   ]
 }

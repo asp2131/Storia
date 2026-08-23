@@ -150,6 +150,13 @@
 
 - Supabase Email OTP Length is constrained to 6-10 (5 is impossible), and storia-mobile hardcodes 6 in three places: `normalizeMagicCode` truncation (`magic_code_field.dart:68`) and the `code.length < 6` guards in `sign_in_screen.dart` / `sign_up_screen.dart`. Keep the project setting at 6 unless all three plus the user-facing copy change together.
 
+- **ElevenLabs forced alignment sniffs the upload by filename extension, not by blob MIME type.** `forceAlign()` in `src/lib/elevenlabs.ts` defaults `fileName` to `"recording.m4a"`. Any caller sending non-m4a audio (browser `MediaRecorder` gives webm on Chrome/Firefox, mp4 only on Safari) MUST pass a matching `fileName`, or alignment fails and `alignRecording()` silently downgrades to `"fallback"` duration-proportional timings — no error, just bad word highlighting.
+- **`scripts/storage-gc.mjs` is the cleanup path for superseded narration audio.** It scans `pages.narration_url` and `page_audio_assignments.audio_url`, and `NEVER_DELETE` only protects `^audio/` and `^pdfs/`. So anything written under `books/{bookId}/narration/` is reclaimed once nothing references it — eager deletion on overwrite is unnecessary and risks nuking URLs still used by range assignments.
+- **Reader assignment precedence is positional.** `src/app/books/[id]/reader/page.tsx` picks narration and soundscape with `.find()`, so the order the API returns assignments in *is* the precedence. `src/app/api/books/[id]/reader/route.ts` sorts single-scope ahead of range-scope for this reason — it applies to every audio type, not just narration.
+
+- **The Flutter app does NOT consume `/api/books/[id]/reader`.** `storia-mobile/lib/src/data/book_repository.dart` queries Supabase/PostgREST directly (`pages(*, page_audio_assignments(...), scenes(soundscapes(...)))`) and resolves soundscape precedence itself in `models.dart`. Changes to the reader route's shape or ordering are web-only. Mobile DOES share: `pages.narration_url`, `pages.narration_timestamps` (`{word,start,end}` seconds — matches `WordTimestamp` in both codebases), and the `/api/narrations/*` routes. Mobile never reads `page_overlay_narrations`.
+- **Two separate parent-narration features exist, on different storage prefixes and tables.** Mobile's Narration Studio → `POST /api/narrations/pages` → `user-narrations/{userId}/{bookId}/{trackId}/` + `user_narration_page`. The web editor's page recorder → `POST /api/admin/books/[id]/pages/[pageNumber]/narration-recording` → `books/{bookId}/narration/` + `pages.narration_url` and `page_audio_assignments`. Don't conflate them. The mobile recorder emits aac-lc in `audio/mp4`; browser `MediaRecorder` emits webm except on Safari.
+
 ## Do-Not-Repeat
 
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
@@ -169,6 +176,8 @@
 - [2026-04-28] Do not update child-owned rows through a globally unique client-provided id without checking existing ownership first; `/api/reading-sessions` must reject foreign `sessionId` upserts before mutation.
 
 - [2026-05-04] Do not assume `requireAdmin()` changes database visibility. It only validates Better Auth `user.role === "admin"`; admin/report queries still run under whatever Postgres role `DATABASE_URL` uses, so a Supabase anon/authenticated/RLS-scoped connection can silently return only the current user-owned rows. Use the dedicated admin reports Prisma connection and verify the DB role/RLS policies.
+
+- **2026-08-23** — Do not call `alignRecording()` without `fileName` when the audio is not m4a. Browser recordings are webm; the default `recording.m4a` name made ElevenLabs reject the file and the feature degraded silently to fallback timings. Always pass `page_${pageNumber}.${extensionForContentType(contentType)}`.
 
 ## Decision Log
 

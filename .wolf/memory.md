@@ -1153,3 +1153,13 @@
 
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
+
+## Session: 2026-08-23 14:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 15:01 | Reviewed codex's parent-recorded narration work: verified tsc/lint/425 tests, checked storage-gc coverage of new `books/{id}/narration/` prefix | src/app/api/admin/books/[id]/pages/[pageNumber]/narration-recording/route.ts, src/components/editor/PageNarrationRecorder.tsx, src/contexts/BookEditorContext.tsx, scripts/storage-gc.mjs | verified; ponytail gc comment is accurate (pages.narration_url + page_audio_assignments.audio_url are both scanned, prefix not in NEVER_DELETE) | ~12k |
+| 15:01 | Fixed silent alignment degradation: route now passes fileName with real extension to alignRecording | src/app/api/admin/books/[id]/pages/[pageNumber]/narration-recording/route.ts | tsc clean, new tests pass | ~2k |
+| 15:08 | Scoped reader assignment precedence sort to narration only (was reordering soundscapes too) | src/app/api/books/[id]/reader/route.ts | tsc clean, 425 tests pass | ~3k |
+| 15:08 | Applied the same fileName fix to the mobile-facing narration route; pinned filenames in both route tests | src/app/api/narrations/pages/route.ts + both route.test.ts | 425 web tests pass, 42 Flutter narration tests pass | ~5k |
+| 15:08 | Mobile-compat check for narration-recording: Flutter hits /api/narrations/pages (unchanged for audio/mp4), reads book/page data straight from Supabase (not /api/books/[id]/reader), never reads page_overlay_narrations | storia-mobile/lib/src/features/narration_studio/**, lib/src/data/{models,book_repository}.dart | no mobile impact; zero dart files changed | ~8k |

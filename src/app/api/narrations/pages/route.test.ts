@@ -159,6 +159,9 @@ describe("POST /api/narrations/pages", () => {
       expect.objectContaining({
         tokens: ["Once", "upon", "a", "time"],
         durationSeconds: 4,
+        // The mobile recorder sends aac-lc in audio/mp4; the aligner must keep
+        // seeing an .m4a name for it.
+        fileName: "page_3.m4a",
       })
     );
 
