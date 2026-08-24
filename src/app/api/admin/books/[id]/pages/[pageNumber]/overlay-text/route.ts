@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -65,6 +66,9 @@ async function findPage(bookId: bigint, pageNumber: number) {
 }
 
 export async function GET(_request: NextRequest, { params }: Params) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   const { id, pageNumber } = await params;
   const bookId = parsePositiveBigInt(id);
   const parsedPageNumber = parsePositiveInt(pageNumber);
@@ -88,6 +92,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
 }
 
 export async function PATCH(request: NextRequest, { params }: Params) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   const { id, pageNumber } = await params;
   const bookId = parsePositiveBigInt(id);
   const parsedPageNumber = parsePositiveInt(pageNumber);

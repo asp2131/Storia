@@ -116,7 +116,7 @@ export function NarrationPanel({
             <button
               type="button"
               onClick={toggleNarration}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--editor-accent)] text-white shadow-sm transition hover:brightness-105"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--editor-accent)] text-[var(--editor-on-accent)] shadow-sm transition hover:brightness-105"
             >
               {isNarrationPlaying ? (
                 <Pause className="w-3.5 h-3.5" />
@@ -265,7 +265,7 @@ export function NarrationPanel({
               type="button"
               onClick={() => handleGenerateNarration()}
               disabled={generatingNarration || (!activePageData?.text?.trim() && !hasIncludedEntries)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-[var(--editor-accent)] py-2.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[10px] bg-[var(--editor-accent)] py-2.5 text-xs font-semibold text-[var(--editor-on-accent)] shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {generatingNarration ? (
                 <>
@@ -324,7 +324,7 @@ export function NarrationPanel({
                   <button
                     type="button"
                     onClick={toggleNarration}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--editor-accent)] text-white"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--editor-accent)] text-[var(--editor-on-accent)]"
                   >
                     {isNarrationPlaying ? (
                       <Pause className="w-3 h-3" />

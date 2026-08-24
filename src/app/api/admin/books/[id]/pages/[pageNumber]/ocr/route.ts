@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseReplicateOcrOutput } from "@/lib/overlayText";
@@ -128,6 +129,9 @@ function mapEntry(entry: {
 }
 
 export async function POST(request: NextRequest, { params }: Params) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   const { id, pageNumber } = await params;
   const bookId = parsePositiveBigInt(id);
   const parsedPageNumber = parsePositiveInt(pageNumber);

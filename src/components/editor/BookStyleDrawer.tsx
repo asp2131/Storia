@@ -256,7 +256,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
                   className={`
                     flex-1 py-2 px-3 text-sm capitalize
                     ${draft.textAlign === align
-                      ? "bg-[var(--editor-accent)] text-white"
+                      ? "bg-[var(--editor-accent)] text-[var(--editor-on-accent)]"
                       : "bg-white text-zinc-700 hover:bg-zinc-100"
                     }
                   `}
@@ -440,7 +440,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
           <button
             onClick={handleSaveStyle}
             disabled={saving || applyingTextStyle}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--editor-accent)] px-4 py-2 font-medium text-white transition hover:brightness-105 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--editor-accent)] px-4 py-2 font-medium text-[var(--editor-on-accent)] transition hover:brightness-105 disabled:opacity-50"
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             {savedTick && !saving ? "Saved ✓" : "Save style"}

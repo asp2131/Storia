@@ -117,7 +117,7 @@ export function PageManagerPanel() {
 
                             {isDropTarget && (
                               <div className="pointer-events-none absolute inset-0 grid place-items-center bg-[color-mix(in_srgb,var(--editor-accent)_12%,transparent)]">
-                                <span className="rounded-full bg-[var(--editor-accent)] px-2 py-1 text-[9px] font-bold text-white shadow-sm">
+                                <span className="rounded-full bg-[var(--editor-accent)] px-2 py-1 text-[9px] font-bold text-[var(--editor-on-accent)] shadow-sm">
                                   Drop here
                                 </span>
                               </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { TextOverlayConfig } from "@/types/text-overlay";
@@ -38,6 +39,9 @@ function mapOverlayTextEntry(entry: {
 }
 
 export async function GET(_request: NextRequest, { params }: Params) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   try {
     const { id } = await params;
     const bookId = BigInt(id);
@@ -75,6 +79,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
 }
 
 export async function POST(request: NextRequest, { params }: Params) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   try {
     const { id } = await params;
     const bookId = BigInt(id);
@@ -147,6 +154,9 @@ export async function POST(request: NextRequest, { params }: Params) {
 }
 
 export async function PATCH(request: NextRequest, { params }: Params) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   try {
     const { id } = await params;
     const bookId = BigInt(id);

@@ -27,6 +27,39 @@
   --storia-border: #E2E8F0;
   --storia-input-bg: #F1F5F9;
   --storia-nav-bg: #FFFFFF;
+
+  /* ── Loratone Studio (admin/author surface) ───────────────────────────
+     Accents mirror the landing page (src/components/StoriaCalmLanding.css)
+     so the studio and the marketing site read as one product. Deliberately
+     NOT flipped by prefers-color-scheme: the studio is a light surface. */
+  --studio-paper: #FAFAFB;
+  --studio-rail: #F3F2F5;
+  --studio-card: #FFFFFF;
+  --studio-rule: #E7E6EA;
+  --studio-rule-strong: #D7D5DC;
+
+  --studio-ink: #211F24;
+  --studio-ink-2: #57545C;
+  --studio-ink-muted: #6F6C76;
+
+  /* --sl-accent / --sl-accent-deep from the landing page. Coral carries white
+     text at only 3.2:1, so anything sitting ON coral uses --studio-on-coral. */
+  --studio-coral: #ED6151;
+  --studio-coral-deep: #B53E2D;
+  --studio-coral-darker: #96301F;
+  --studio-on-coral: #1A1512;
+  --studio-coral-wash: #FBD8C8;
+
+  /* Review states. One meaning each — amber only ever means "needs you". */
+  --studio-amber: #E7C169;
+  --studio-review-fill: #F2E3C6;
+  --studio-review-ink: #7D5410;
+  --studio-live-fill: #D7E6D0;
+  --studio-live-ink: #276353;
+  --studio-changes-fill: #FBD8C8;
+  --studio-changes-ink: #96301F;
+  --studio-draft-fill: #F0EAE0;
+  --studio-draft-ink: #5F574B;
 }
 
 @theme inline {
@@ -330,8 +363,10 @@ body {
 
 /* Book editor shell */
 .book-editor {
-  --editor-accent: #5b57e6;
+  --editor-accent: var(--studio-coral);
   --editor-accent-soft: color-mix(in srgb, var(--editor-accent) 12%, white);
+  /* Coral carries white at only 3.3:1 — anything ON the accent uses this. */
+  --editor-on-accent: var(--studio-on-coral);
   --editor-accent-faint: color-mix(in srgb, var(--editor-accent) 7%, white);
   font-family: var(--font-editor), var(--font-sans), system-ui, sans-serif;
 }

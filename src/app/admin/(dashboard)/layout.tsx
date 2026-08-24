@@ -11,6 +11,9 @@ import { authClient } from "@/lib/auth-client";
 import { createBookDraft } from "@/app/admin/actions";
 import { useTransition } from "react";
 
+// Admins run the library; authors see only their own shelf.
+const STUDIO_ROLES = ["admin", "author"];
+
 export default function AdminLayout({
   children,
 }: {
@@ -26,27 +29,33 @@ export default function AdminLayout({
     if (isPending) return;
     if (!session) {
       router.push("/admin/login");
-    } else if (session.user.role !== "admin") {
+    } else if (!STUDIO_ROLES.includes(session.user.role)) {
       router.push("/admin/login?error=forbidden");
     }
   }, [session, isPending, router]);
 
-  if (isPending || !session || session.user.role !== "admin") {
+  if (isPending || !session || !STUDIO_ROLES.includes(session.user.role)) {
     return (
-      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[var(--studio-paper)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-[var(--studio-coral)] border-t-transparent rounded-full" />
       </div>
     );
   }
 
   const user = session.user;
+  const isAdmin = user.role === "admin";
 
   const handleSignOut = async () => {
     await authClient.signOut();
     router.push("/");
   };
 
-  const tabs = [
+  const tabs: {
+    name: string;
+    href?: string;
+    action?: boolean;
+    icon: React.ReactNode;
+  }[] = [
     {
       name: "Dashboard",
       href: "/admin",
@@ -75,6 +84,8 @@ export default function AdminLayout({
         </svg>
       ),
     },
+    ...(isAdmin
+      ? [
     {
       name: "Soundscapes",
       href: "/admin/soundscapes",
@@ -102,6 +113,22 @@ export default function AdminLayout({
         </svg>
       ),
     },
+    {
+      name: "Authors",
+      href: "/admin/authors",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          />
+        </svg>
+      ),
+    },
+        ]
+      : []),
     {
       name: "Create Book",
       action: true,
@@ -131,17 +158,14 @@ export default function AdminLayout({
 
   const SidebarContent = () => (
     <>
-      {/* User Profile */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="bg-[#1337ec] bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 flex items-center justify-center text-white font-bold text-sm">
-          {user.email?.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex flex-col overflow-hidden">
-          <h1 className="text-white text-sm font-semibold leading-normal truncate">
-            {user.email?.split("@")[0]}
-          </h1>
-          <span className="text-xs text-[#929bc9] truncate">{user.email}</span>
-        </div>
+      {/* Wordmark */}
+      <div className="flex flex-col gap-0.5 mb-8">
+        <span className="font-serif text-[22px] font-semibold tracking-[-0.015em] text-[var(--studio-ink)]">
+          Loratone
+        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--studio-coral-deep)]">
+          Studio
+        </span>
       </div>
 
       {/* Navigation */}
@@ -153,14 +177,14 @@ export default function AdminLayout({
                 key={tab.name}
                 onClick={handleCreateBook}
                 disabled={isPendingCreation}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-[#929bc9] hover:bg-[#1a1f2e] hover:text-white w-full text-left disabled:opacity-50"
+                className="flex items-center gap-3 py-3 border-b border-[var(--studio-rule)] text-[11px] font-semibold uppercase tracking-[0.11em] text-[var(--studio-ink-2)] hover:text-[var(--studio-ink)] transition-colors w-full text-left disabled:opacity-50"
               >
                 {isPendingCreation ? (
                   <div className="w-5 h-5 flex items-center justify-center">
-                    <div className="w-4 h-4 border-2 border-[#929bc9] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-[var(--studio-coral)] border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : tab.icon}
-                <span className="text-sm font-medium">{tab.name}</span>
+                <span className="flex-1">{tab.name}</span>
               </button>
             );
           }
@@ -171,21 +195,21 @@ export default function AdminLayout({
               key={tab.name}
               href={tab.href!}
               onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 py-3 border-b border-[var(--studio-rule)] text-[11px] uppercase tracking-[0.11em] transition-colors ${
                 isActive
-                  ? "bg-[#1a1f2e] text-white"
-                  : "text-[#929bc9] hover:bg-[#1a1f2e] hover:text-white"
+                  ? "font-bold text-[var(--studio-ink)] [&_svg]:text-[var(--studio-coral-deep)]"
+                  : "font-semibold text-[var(--studio-ink-2)] hover:text-[var(--studio-ink)]"
               }`}
             >
               {tab.icon}
-              <span className="text-sm font-medium">{tab.name}</span>
+              <span className="flex-1">{tab.name}</span>
             </Link>
           );
         })}
 
         <Link
           href="/library"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-[#929bc9] hover:bg-[#1a1f2e] hover:text-white mt-auto"
+          className="flex items-center gap-3 py-3 text-[11px] font-semibold uppercase tracking-[0.11em] text-[var(--studio-ink-2)] hover:text-[var(--studio-ink)] transition-colors mt-auto"
         >
           <svg
             className="w-5 h-5"
@@ -200,50 +224,50 @@ export default function AdminLayout({
               d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
             />
           </svg>
-          <span className="text-sm font-medium">Back to Library</span>
+          <span className="flex-1">Back to Library</span>
         </Link>
       </nav>
 
-      {/* Bottom Actions */}
-      <div className="mt-6 pt-6 border-t border-[#1a1f2e]">
+      {/* Account + sign out */}
+      <div className="mt-6 pt-4 border-t border-[var(--studio-rule)] flex flex-col gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center justify-center size-[30px] shrink-0 rounded-full bg-[var(--studio-coral-wash)] text-[var(--studio-coral-darker)] font-serif text-[13px] font-semibold">
+            {user.email?.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-semibold leading-tight text-[var(--studio-ink)] truncate">
+              {user.email?.split("@")[0]}
+            </span>
+            <span className="text-[11px] leading-tight text-[var(--studio-ink-muted)] truncate">
+              {isAdmin ? "Editor" : "Author"}
+            </span>
+          </div>
+        </div>
         <button
           onClick={handleSignOut}
-          className="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-[#1337ec] text-white text-sm font-semibold leading-normal hover:bg-[#1337ec]/90 transition-colors"
+          className="flex w-full cursor-pointer items-center justify-center rounded-md h-10 px-4 bg-[var(--studio-coral)] text-[var(--studio-on-coral)] text-[11px] font-bold uppercase tracking-[0.12em] hover:brightness-95 transition"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-            />
-          </svg>
-          <span className="truncate">Log Out</span>
+          Log out
         </button>
       </div>
     </>
   );
 
   return (
-    <div className="flex h-screen bg-[#0f1419] text-white overflow-hidden">
+    <div className="flex h-screen bg-[var(--studio-paper)] text-[var(--studio-ink)] overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#0a0e1a] border-r border-[#1a1f2e] p-6 shrink-0 h-full overflow-y-auto">
+      <aside className="hidden md:flex flex-col w-[244px] bg-[var(--studio-rail)] border-r border-[var(--studio-rule)] px-[22px] py-7 shrink-0 h-full overflow-y-auto">
         <SidebarContent />
       </aside>
 
       {/* Mobile Header & Overlay */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0e1a] border-b border-[#1a1f2e] px-4 py-3 flex items-center justify-between">
-        <Link href="/admin" className="text-lg font-black font-serif tracking-tight">
-          Loratone Admin
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[var(--studio-rail)] border-b border-[var(--studio-rule)] px-4 py-3 flex items-center justify-between">
+        <Link href="/admin" className="text-lg font-semibold font-serif tracking-tight text-[var(--studio-ink)]">
+          {isAdmin ? "Loratone Admin" : "Loratone Studio"}
         </Link>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-[#929bc9] p-2 hover:text-white"
+          className="text-[var(--studio-ink-2)] p-2 hover:text-[var(--studio-ink)]"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {mobileMenuOpen ? (
@@ -257,13 +281,13 @@ export default function AdminLayout({
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-[#0a0e1a] pt-16 px-6 pb-6 flex flex-col">
+        <div className="md:hidden fixed inset-0 z-40 bg-[var(--studio-rail)] pt-16 px-6 pb-6 flex flex-col">
           <SidebarContent />
         </div>
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto md:p-8 pt-20 p-4 bg-[#0f1419]">
+      <main className="flex-1 overflow-auto md:px-10 md:py-[34px] pt-20 p-4 bg-[var(--studio-paper)]">
         {children}
       </main>
     </div>

@@ -1163,3 +1163,23 @@
 | 15:08 | Scoped reader assignment precedence sort to narration only (was reordering soundscapes too) | src/app/api/books/[id]/reader/route.ts | tsc clean, 425 tests pass | ~3k |
 | 15:08 | Applied the same fileName fix to the mobile-facing narration route; pinned filenames in both route tests | src/app/api/narrations/pages/route.ts + both route.test.ts | 425 web tests pass, 42 Flutter narration tests pass | ~5k |
 | 15:08 | Mobile-compat check for narration-recording: Flutter hits /api/narrations/pages (unchanged for audio/mp4), reads book/page data straight from Supabase (not /api/books/[id]/reader), never reads page_overlay_narrations | storia-mobile/lib/src/features/narration_studio/**, lib/src/data/{models,book_repository}.dart | no mobile impact; zero dart files changed | ~8k |
+
+## Session: 2026-08-24 09:56
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 10:45 | Author role + invite-only onboarding: books.owner_id/review_status/review_note/submitted_at/reviewed_at + author_invite table; migration 20260824120000_add_author_role | prisma/schema.prisma, prisma/migrations/20260824120000_add_author_role/ | applied to local db, prisma generate clean | ~6k |
+| 10:45 | Role gates: requireRole/requireStudio/requireBookAccess/assertBookAccess/assertPageAccess | src/lib/admin-auth.ts | 27/27 admin routes now gated (14 previously had none) | ~5k |
+| 10:45 | Invite flow: create/list/revoke, accept-by-token with email binding | src/app/api/admin/authors/**, src/app/api/authors/accept/route.ts, src/lib/{author-invites,mail}.ts | 7 route tests pass | ~8k |
+| 10:45 | Review workflow submit/withdraw/approve/reject/unpublish; approve is the only is_published writer | src/app/api/admin/books/[id]/review/route.ts | 6 route tests pass | ~5k |
+| 10:45 | Studio UI: author role in dashboard+editor layouts and login, Authors admin page, review column/filters on books list, accept page | src/app/admin/**, src/app/authors/accept/page.tsx | build clean, 438/438 tests pass | ~9k |
+| 11:20 | Design canvas for admin/author studio restyle: 3 directions (Console/Studio/Press) published, user picked Press but rejected the sepia dark palette | scratchpad/design/*.dc.html, canvas.json | reseeded as press-on-paper w/ pastel accents, all pairs pass WCAG AA | ~40k |
+| 17:51 | Created src/app/admin/(dashboard)/page.tsx | — | ~2915 |
+| 17:54 | Edited src/app/admin/login/page.tsx | removed 16 lines | ~19 |
+| 17:54 | Edited src/app/admin/login/page.tsx | 4→9 lines | ~106 |
+| 12:05 | Studio restyle designed (8 artboards, press-on-paper + landing coral/amber) and landed in code: --studio-* tokens in globals.css, all admin screens converted off the dark palette (book editor deliberately left untouched) | src/app/globals.css, src/app/admin/**, src/app/authors/accept/page.tsx | build clean, 438/438 tests, 0 legacy dark hexes left | ~55k |
+| 12:05 | Dashboard home rebuilt from "(Placeholder)" into a real role-aware Desk (review queue + library counts + 30d readers) | src/app/admin/(dashboard)/page.tsx | server component, direct prisma + reportAgg.headline, verified live in browser | ~12k |
+| 17:59 | Session end: 3 writes across 1 files (page.tsx) | 10 reads | ~8088 tok |
+| 18:05 | Session end: 3 writes across 1 files (page.tsx) | 10 reads | ~8088 tok |
+| 12:20 | Editor re-themed colour-only: --editor-accent -> var(--studio-coral) + new --editor-on-accent; 12x text-white -> on-accent token where elements sit on the accent (white on coral was 3.27:1) | src/app/globals.css, src/components/editor/{BookMetaPanel,BookStyleDrawer,AudioLibraryPanel,NarrationPanel,PageManagerPanel}.tsx | word-diff confirms colour-only, no layout classes changed; verified in browser | ~9k |
+| 18:11 | Session end: 3 writes across 1 files (page.tsx) | 10 reads | ~8088 tok |

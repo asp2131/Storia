@@ -36,7 +36,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/admin-auth", () => ({
-  requireAdmin: mockRequireAdmin,
+  requireBookAccess: mockRequireAdmin,
 }));
 
 import { GET, POST } from "@/app/api/books/[id]/questions/route";

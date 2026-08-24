@@ -6,6 +6,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient, signIn, useSession } from "@/lib/auth-client";
 
+const STUDIO_ROLES = ["admin", "author"];
+
 function AdminLoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -20,13 +22,16 @@ function AdminLoginPageInner() {
   const initialError = searchParams.get("error");
   useEffect(() => {
     if (initialError === "forbidden") {
-      setError("This account is not an admin.");
+      setError("This account doesn't have studio access.");
     }
   }, [initialError]);
 
   useEffect(() => {
     if (isPending) return;
-    if (session?.user && (session.user as { role?: string }).role === "admin") {
+    if (
+      session?.user &&
+      STUDIO_ROLES.includes((session.user as { role?: string }).role ?? "user")
+    ) {
       router.replace("/admin");
     }
   }, [session, isPending, router]);
@@ -65,11 +70,13 @@ function AdminLoginPageInner() {
     const role = (fresh?.data?.user as { role?: string } | undefined)?.role;
     setLoading(false);
 
-    if (role === "admin") {
+    if (STUDIO_ROLES.includes(role ?? "user")) {
       router.replace("/admin");
     } else {
       await authClient.signOut();
-      setError("This account is not an admin.");
+      setError(
+        "This account doesn't have studio access. Authors need an invitation."
+      );
       setOtpSent(false);
       setOtp("");
     }
@@ -88,35 +95,39 @@ function AdminLoginPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl bg-[#0f1419] border border-[#1a1f2e] shadow-2xl">
-        <div className="px-8 py-10">
-          <div className="flex items-center justify-center mb-6">
-            <div className="w-10 h-10 rounded-full bg-[#1337ec] text-white flex items-center justify-center font-serif font-bold">
-              S
+    <div className="min-h-screen bg-[var(--studio-rail)] flex items-center justify-center px-4">
+      <div className="w-full max-w-[468px] rounded-[10px] bg-[var(--studio-card)] border border-[var(--studio-rule)] shadow-[0_18px_44px_rgba(33,31,36,0.07)]">
+        <div className="p-11">
+          <div className="flex flex-col items-center gap-[18px] mb-7">
+            <div className="w-[52px] h-[52px] rounded-lg bg-[var(--studio-coral-wash)] text-[var(--studio-coral-darker)] flex items-center justify-center font-serif text-2xl font-semibold">
+              L
+            </div>
+            <div className="flex flex-col items-center gap-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--studio-coral-deep)]">
+                Loratone Studio
+              </span>
+              <h1 className="m-0 font-serif text-3xl font-medium tracking-[-0.02em] text-[var(--studio-ink)]">
+                Sign in
+              </h1>
+              <p className="m-0 text-center text-[13px] leading-relaxed text-[var(--studio-ink-2)]">
+                Write, edit, and review books for the library.
+              </p>
             </div>
           </div>
 
-          <h1 className="text-2xl font-serif font-black text-center text-white mb-1">
-            Loratone Admin
-          </h1>
-          <p className="text-center text-sm text-[#929bc9] mb-8">
-            Sign in to access the admin console.
-          </p>
-
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm text-center">
+            <div className="mb-4 p-3 rounded-lg bg-[var(--studio-changes-fill)] border border-[var(--studio-changes-ink)]/30 text-[var(--studio-changes-ink)] text-sm text-center">
               {error}
             </div>
           )}
 
           {otpSent ? (
             <form onSubmit={handleVerifyOtp} className="space-y-5">
-              <p className="text-center text-sm text-[#929bc9]">
-                We sent a 6-digit code to <strong className="text-white">{email}</strong>
+              <p className="text-center text-sm text-[var(--studio-ink-muted)]">
+                We sent a 6-digit code to <strong className="text-[var(--studio-ink)]">{email}</strong>
               </p>
               <div>
-                <label className="block text-sm font-medium mb-2 text-white">
+                <label className="block text-sm font-medium mb-2 text-[var(--studio-ink)]">
                   Verification code
                 </label>
                 <input
@@ -126,7 +137,7 @@ function AdminLoginPageInner() {
                   maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className="w-full h-12 rounded-lg bg-[#0a0e1a] border border-[#1a1f2e] text-white px-4 text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
+                  className="w-full h-12 rounded-lg bg-[var(--studio-rail)] border border-[var(--studio-rule)] text-[var(--studio-ink)] px-4 text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
                   placeholder="000000"
                   disabled={loading}
                   autoFocus
@@ -135,7 +146,7 @@ function AdminLoginPageInner() {
               <button
                 type="submit"
                 disabled={loading || otp.length !== 6}
-                className="w-full h-12 rounded-full bg-[#1337ec] text-white font-semibold hover:bg-[#1337ec]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-[50px] rounded-md bg-[var(--studio-coral)] text-[var(--studio-on-coral)] text-[11px] font-bold uppercase tracking-[0.13em] hover:brightness-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Verifying…" : "Verify & Sign In"}
               </button>
@@ -146,7 +157,7 @@ function AdminLoginPageInner() {
                   setOtp("");
                   setError("");
                 }}
-                className="w-full text-sm text-[#929bc9] hover:text-white transition"
+                className="w-full text-sm text-[var(--studio-ink-muted)] hover:text-white transition"
               >
                 Use a different email
               </button>
@@ -155,8 +166,8 @@ function AdminLoginPageInner() {
             <>
               <form onSubmit={handleSendOtp} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-white">
-                    Admin email
+                  <label className="block text-[10px] font-bold uppercase tracking-[0.13em] mb-2.5 text-[var(--studio-ink-2)]">
+                    Email
                   </label>
                   <input
                     type="email"
@@ -164,15 +175,15 @@ function AdminLoginPageInner() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-12 rounded-lg bg-[#0a0e1a] border border-[#1a1f2e] text-white px-4 focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
-                    placeholder="you@loratone.kids"
+                    className="w-full h-12 rounded-lg bg-[var(--studio-rail)] border border-[var(--studio-rule)] text-[var(--studio-ink)] px-4 focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
+                    placeholder="you@example.com"
                     disabled={loading}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-12 rounded-full bg-[#1337ec] text-white font-semibold hover:bg-[#1337ec]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-[50px] rounded-md bg-[var(--studio-coral)] text-[var(--studio-on-coral)] text-[11px] font-bold uppercase tracking-[0.13em] hover:brightness-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Sending…" : "Send Verification Code"}
                 </button>
@@ -180,10 +191,10 @@ function AdminLoginPageInner() {
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#1a1f2e]" />
+                  <div className="w-full border-t border-[var(--studio-rule)]" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-[#0f1419] text-[#929bc9]">
+                  <span className="px-2 bg-[var(--studio-card)] text-[var(--studio-ink-muted)]">
                     or continue with
                   </span>
                 </div>
@@ -192,7 +203,7 @@ function AdminLoginPageInner() {
               <button
                 onClick={handleGoogleSignIn}
                 disabled={loading}
-                className="w-full h-12 rounded-full border border-[#1a1f2e] bg-[#0a0e1a] text-white font-medium hover:bg-[#1a1f2e] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full h-[50px] rounded-md border border-[var(--studio-rule-strong)] bg-[var(--studio-card)] text-[var(--studio-ink)] text-[11px] font-bold uppercase tracking-[0.13em] hover:bg-[var(--studio-rail)] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 262">
                   <path fill="#4285F4" d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622l38.755 30.023l2.685.268c24.659-22.774 38.875-56.282 38.875-96.027" />
@@ -202,6 +213,11 @@ function AdminLoginPageInner() {
                 </svg>
                 Sign in with Google
               </button>
+
+              <p className="mt-7 pt-5 border-t border-[var(--studio-rule)] text-center text-xs leading-relaxed text-[var(--studio-ink-muted)]">
+                Author access is by invitation. If you have one, open the link in
+                your email instead.
+              </p>
             </>
           )}
         </div>

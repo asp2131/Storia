@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 type ParsedOption = {
@@ -87,7 +87,7 @@ export async function PATCH(
     return invalidRequest("questionId is required", "questionId");
   }
 
-  const authResult = await requireAdmin();
+  const authResult = await requireBookAccess(id);
   if (authResult instanceof NextResponse) return authResult;
 
   let body: unknown;
@@ -268,7 +268,7 @@ export async function DELETE(
     return invalidRequest("questionId is required", "questionId");
   }
 
-  const authResult = await requireAdmin();
+  const authResult = await requireBookAccess(id);
   if (authResult instanceof NextResponse) return authResult;
 
   try {

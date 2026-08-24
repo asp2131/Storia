@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { extractStoragePath } from "@/lib/elevenlabs";
+import {
+  assertBookAccess,
+  assertPageAccess,
+  requireStudio,
+} from "@/lib/admin-auth";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -19,6 +24,9 @@ function buildSupabaseClient() {
 }
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
     const client = prisma as typeof prisma & {
       page_audio_assignments?: {
@@ -47,6 +55,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const denied = await assertPageAccess(authResult.user, body.pageId);
+    if (denied) return denied;
 
     // Check if an assignment already exists for this page and audio type
     const existingAssignment = await client.page_audio_assignments.findFirst({
@@ -114,6 +125,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
     const client = prisma as typeof prisma & {
       page_audio_assignments?: {
@@ -143,6 +157,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const denied = await assertBookAccess(authResult.user, bookId);
+    if (denied) return denied;
 
     const page = await client.pages.findFirst({
       where: { book_id: BigInt(bookId), page_number: pageNumber },
@@ -227,6 +244,9 @@ async function deleteOverlayNarrations(pageId: bigint) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+
   try {
     const client = prisma as typeof prisma & {
       page_audio_assignments?: {
@@ -258,6 +278,12 @@ export async function DELETE(request: NextRequest) {
         where: { id: BigInt(assignmentId) },
       });
 
+      const denied = await assertPageAccess(
+        authResult.user,
+        assignment?.page_id ?? null
+      );
+      if (denied) return denied;
+
       await client.page_audio_assignments.delete({
         where: { id: BigInt(assignmentId) },
       });
@@ -287,6 +313,9 @@ export async function DELETE(request: NextRequest) {
 
     // Delete by pageId and audioType
     if (pageId && audioType) {
+      const denied = await assertPageAccess(authResult.user, pageId);
+      if (denied) return denied;
+
       // Collect audio URLs before deleting so we can clean up Storage
       const toDelete = await client.page_audio_assignments.findMany({
         where: {

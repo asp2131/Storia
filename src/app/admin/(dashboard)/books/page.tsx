@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createBookDraft } from "@/app/admin/actions";
+import { useSession } from "@/lib/auth-client";
 
 type AdminBook = {
   id: string;
@@ -15,27 +16,47 @@ type AdminBook = {
   coverUrl?: string | null;
   description?: string | null;
   isPublished?: boolean | null;
+  ownerId?: string | null;
+  ownerEmail?: string | null;
+  reviewStatus?: string | null;
+  reviewNote?: string | null;
+  submittedAt?: string | null;
 };
+
+const reviewStyles: Record<string, { badge: string; label: string }> = {
+  draft: { badge: "bg-[var(--studio-draft-fill)] text-[var(--studio-draft-ink)]", label: "Draft" },
+  submitted: { badge: "bg-amber-500/10 text-[var(--studio-review-ink)]", label: "In review" },
+  approved: { badge: "bg-emerald-500/10 text-[var(--studio-live-ink)]", label: "Live" },
+  rejected: { badge: "bg-rose-500/10 text-[var(--studio-changes-ink)]", label: "Changes requested" },
+};
+
+const REVIEW_FILTERS = [
+  { value: "", label: "All" },
+  { value: "submitted", label: "In review" },
+  { value: "approved", label: "Live" },
+  { value: "draft", label: "Drafts" },
+  { value: "rejected", label: "Changes requested" },
+];
 
 const statusStyles: Record<string, { badge: string; dot: string; label: string }> = {
   ready_for_review: {
-    badge: "bg-[#1a1f2e] text-[#a5b4fc]",
-    dot: "bg-[#6366f1]",
+    badge: "bg-[var(--studio-rule)] text-[var(--studio-review-ink)]",
+    dot: "bg-[var(--studio-amber)]",
     label: "Ready for Review",
   },
   published: {
-    badge: "bg-emerald-500/10 text-emerald-400",
-    dot: "bg-emerald-400",
+    badge: "bg-[var(--studio-live-fill)] text-[var(--studio-live-ink)]",
+    dot: "bg-[var(--studio-live-ink)]",
     label: "Published",
   },
   processing: {
-    badge: "bg-amber-500/10 text-amber-400",
-    dot: "bg-amber-400",
+    badge: "bg-[var(--studio-review-fill)] text-[var(--studio-review-ink)]",
+    dot: "bg-[var(--studio-amber)]",
     label: "Processing",
   },
   failed: {
-    badge: "bg-rose-500/10 text-rose-400",
-    dot: "bg-rose-400",
+    badge: "bg-[var(--studio-changes-fill)] text-[var(--studio-changes-ink)]",
+    dot: "bg-[var(--studio-changes-ink)]",
     label: "Failed",
   },
 };
@@ -43,14 +64,19 @@ const statusStyles: Record<string, { badge: string; dot: string; label: string }
 function getStatusStyle(status?: string | null) {
   if (!status) return statusStyles.processing;
   return statusStyles[status] ?? {
-    badge: "bg-slate-500/10 text-slate-300",
-    dot: "bg-slate-300",
+    badge: "bg-[var(--studio-draft-fill)] text-[var(--studio-draft-ink)]",
+    dot: "bg-[var(--studio-draft-ink)]",
     label: status.replace(/_/g, " "),
   };
 }
 
 export default function AdminBooksPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+
   const [search, setSearch] = useState("");
+  const [reviewFilter, setReviewFilter] = useState("");
+  const [reviewBusyId, setReviewBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [books, setBooks] = useState<AdminBook[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +101,10 @@ export default function AdminBooksPage() {
   });
 
   const searchQuery = useMemo(() => search.trim(), [search]);
+  const submittedCount = useMemo(
+    () => books.filter((b) => b.reviewStatus === "submitted").length,
+    [books]
+  );
 
   const loadBooks = async () => {
     setLoading(true);
@@ -82,6 +112,7 @@ export default function AdminBooksPage() {
 
     const params = new URLSearchParams();
     if (searchQuery) params.set("search", searchQuery);
+    if (reviewFilter) params.set("reviewStatus", reviewFilter);
 
     const response = await fetch(`/api/admin/books?${params.toString()}`);
     if (!response.ok) {
@@ -104,7 +135,7 @@ export default function AdminBooksPage() {
     return () => {
       active = false;
     };
-  }, [searchQuery]);
+  }, [searchQuery, reviewFilter]);
 
   const openEditModal = (book: AdminBook) => {
     setEditingBook(book);
@@ -151,6 +182,42 @@ export default function AdminBooksPage() {
     await loadBooks();
   };
 
+  const runReviewAction = async (
+    bookId: string,
+    action: "submit" | "withdraw" | "approve" | "reject" | "unpublish",
+    note?: string
+  ) => {
+    setReviewBusyId(bookId);
+    setError(null);
+
+    const response = await fetch(`/api/admin/books/${bookId}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, note }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      const problems: string[] = payload?.problems ?? [];
+      setError(
+        [payload?.error || "Failed to update review status.", ...problems].join(" ")
+      );
+      setReviewBusyId(null);
+      return;
+    }
+
+    setReviewBusyId(null);
+    await loadBooks();
+  };
+
+  const handleReject = async (bookId: string) => {
+    const note = window.prompt(
+      "What does the author need to change before this can go live?"
+    );
+    if (!note) return;
+    await runReviewAction(bookId, "reject", note);
+  };
+
   const handleDelete = async (bookId: string) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this book? This cannot be undone."
@@ -177,36 +244,38 @@ export default function AdminBooksPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-white text-3xl sm:text-4xl font-black leading-tight tracking-[-0.033em]">
-            Book & Soundscape Management
+      <div className="flex flex-wrap items-end justify-between gap-6 border-b-2 border-[var(--studio-ink)] pb-[18px]">
+        <div className="flex flex-col gap-[7px]">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--studio-review-ink)]">
+            {submittedCount > 0
+              ? `${submittedCount} waiting on a decision`
+              : isAdmin
+                ? "The whole library"
+                : "Your shelf"}
+          </span>
+          <h1 className="m-0 font-serif text-[44px] font-medium leading-none tracking-[-0.025em]">
+            {isAdmin ? "Books" : "My Books"}
           </h1>
-          <p className="text-[#929bc9] text-base font-normal leading-normal">
-            Review, edit, and manage AI-generated soundscapes for all processed books.
-          </p>
         </div>
         <button
           type="button"
           onClick={handleCreateBookDraft}
           disabled={isPendingCreation}
-          className="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer overflow-hidden rounded-lg h-10 px-4 bg-[#1337ec] text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#1337ec]/90 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 h-11 px-5 rounded-md bg-[var(--studio-coral)] text-[var(--studio-on-coral)] text-[11px] font-bold uppercase tracking-[0.12em] hover:brightness-95 transition disabled:opacity-50"
         >
           {isPendingCreation ? (
-            <div className="w-5 h-5 flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            </div>
+            <div className="w-4 h-4 border-2 border-[var(--studio-on-coral)] border-t-transparent rounded-full animate-spin" />
           ) : (
             <span className="text-lg leading-none">+</span>
           )}
-          <span className="truncate">{isPendingCreation ? "Creating..." : "Add New Book"}</span>
+          <span>{isPendingCreation ? "Creating" : "New book"}</span>
         </button>
       </div>
 
       <div className="mb-2">
         <label className="flex flex-col min-w-40 h-12 w-full">
           <div className="flex w-full flex-1 items-stretch rounded-lg h-full">
-            <div className="text-[#929bc9] flex bg-[#232948] items-center justify-center pl-4 rounded-l-lg border border-[#323b67] border-r-0">
+            <div className="text-[var(--studio-ink-muted)] flex bg-[var(--studio-card)] items-center justify-center pl-4 rounded-l-lg border border-[var(--studio-rule-strong)] border-r-0">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -220,53 +289,73 @@ export default function AdminBooksPage() {
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-2 focus:ring-[#1337ec] border border-[#323b67] bg-[#232948] h-full placeholder:text-[#929bc9] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+              className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[var(--studio-ink)] focus:outline-0 focus:ring-2 focus:ring-[var(--studio-coral)] border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] h-full placeholder:text-[var(--studio-ink-muted)] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
               placeholder="Search by book title or author..."
             />
           </div>
         </label>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        {REVIEW_FILTERS.map((filter) => (
+          <button
+            key={filter.value}
+            type="button"
+            onClick={() => setReviewFilter(filter.value)}
+            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+              reviewFilter === filter.value
+                ? "bg-[var(--studio-coral)] text-[var(--studio-on-coral)]"
+                : "bg-[var(--studio-rule)] text-[var(--studio-ink-muted)] hover:text-white"
+            }`}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
       <div className="mb-6">
-        <div className="flex overflow-hidden rounded-lg border border-[#323b67] bg-[#111422]">
+        <div className="flex overflow-hidden rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-card)]">
           <table className="w-full">
-            <thead className="bg-[#191e33]">
+            <thead className="bg-[var(--studio-rail)]">
               <tr>
-                <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal w-2/5">
+                <th className="px-4 py-3 text-left text-[var(--studio-ink-muted)] text-[11px] font-bold uppercase tracking-[0.07em] leading-normal w-2/5">
                   Book Title
                 </th>
-                <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal w-1/5">
+                <th className="px-4 py-3 text-left text-[var(--studio-ink-muted)] text-[11px] font-bold uppercase tracking-[0.07em] leading-normal w-1/5">
                   Author
                 </th>
-                <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal w-1/5">
+                <th className="px-4 py-3 text-left text-[var(--studio-ink-muted)] text-[11px] font-bold uppercase tracking-[0.07em] leading-normal w-1/5">
+                  Review
+                </th>
+                <th className="px-4 py-3 text-left text-[var(--studio-ink-muted)] text-[11px] font-bold uppercase tracking-[0.07em] leading-normal w-1/5">
                   Processing Status
                 </th>
-                <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal w-1/5">
+                <th className="px-4 py-3 text-left text-[var(--studio-ink-muted)] text-[11px] font-bold uppercase tracking-[0.07em] leading-normal w-1/5">
                   Last Updated
                 </th>
-                <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal">
+                <th className="px-4 py-3 text-left text-[var(--studio-ink-muted)] text-[11px] font-bold uppercase tracking-[0.07em] leading-normal">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#323b67]">
+            <tbody className="divide-y divide-[var(--studio-rule-strong)]">
               {loading && (
                 <tr>
-                  <td colSpan={5} className="h-32 text-center text-[#929bc9]">
+                  <td colSpan={6} className="h-32 text-center text-[var(--studio-ink-muted)]">
                     Loading books...
                   </td>
                 </tr>
               )}
               {error && !loading && (
                 <tr>
-                  <td colSpan={5} className="h-32 text-center text-red-300">
+                  <td colSpan={6} className="h-32 text-center text-[var(--studio-changes-ink)]">
                     {error}
                   </td>
                 </tr>
               )}
               {!loading && !error && books.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="h-32 text-center text-[#929bc9]">
+                  <td colSpan={6} className="h-32 text-center text-[var(--studio-ink-muted)]">
                     {searchQuery
                       ? `No books found matching "${searchQuery}"`
                       : "No books yet. Upload your first book to get started!"}
@@ -277,13 +366,34 @@ export default function AdminBooksPage() {
                 !error &&
                 books.map((book) => {
                   const style = getStatusStyle(book.processingStatus);
+                  const review =
+                    reviewStyles[book.reviewStatus ?? "draft"] ?? reviewStyles.draft;
+                  const busy = reviewBusyId === book.id;
                   return (
-                    <tr key={book.id} className="hover:bg-[#191e33]">
-                      <td className="h-[72px] px-4 py-2 text-white text-sm font-normal leading-normal">
+                    <tr key={book.id} className="hover:bg-[var(--studio-rail)]">
+                      <td className="h-[72px] px-4 py-2 text-[var(--studio-ink)] text-sm font-normal leading-normal">
                         {book.title}
                       </td>
-                      <td className="h-[72px] px-4 py-2 text-[#929bc9] text-sm font-normal leading-normal">
+                      <td className="h-[72px] px-4 py-2 text-[var(--studio-ink-muted)] text-sm font-normal leading-normal">
                         {book.author || "Unknown"}
+                        {isAdmin && book.ownerEmail && (
+                          <span className="block text-xs text-[var(--studio-ink-muted)] truncate">
+                            {book.ownerEmail}
+                          </span>
+                        )}
+                      </td>
+                      <td className="h-[72px] px-4 py-2">
+                        <div
+                          className={`inline-flex items-center rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${review.badge}`}
+                          title={book.reviewNote ?? undefined}
+                        >
+                          {review.label}
+                        </div>
+                        {book.reviewStatus === "rejected" && book.reviewNote && (
+                          <p className="mt-1 text-xs text-[var(--studio-changes-ink)]/80 line-clamp-2">
+                            {book.reviewNote}
+                          </p>
+                        )}
                       </td>
                       <td className="h-[72px] px-4 py-2">
                         <div
@@ -293,7 +403,7 @@ export default function AdminBooksPage() {
                           {style.label}
                         </div>
                       </td>
-                      <td className="h-[72px] px-4 py-2 text-[#929bc9] text-sm font-normal leading-normal">
+                      <td className="h-[72px] px-4 py-2 text-[var(--studio-ink-muted)] text-sm font-normal leading-normal">
                         {book.updatedAt
                           ? new Date(book.updatedAt).toLocaleDateString()
                           : "N/A"}
@@ -302,7 +412,7 @@ export default function AdminBooksPage() {
                         <div className="flex items-center gap-3 text-sm">
                           <a
                             href={`/admin/books/${book.id}/edit`}
-                            className="text-[#60a5fa] hover:underline font-semibold"
+                            className="text-[var(--studio-coral-deep)] hover:underline font-semibold"
                           >
                             Edit
                           </a>
@@ -311,27 +421,67 @@ export default function AdminBooksPage() {
                           ) && (
                             <a
                               href={`/admin/books/${book.id}/scenes`}
-                              className="text-[#1337ec] hover:underline font-semibold"
+                              className="text-[var(--studio-coral)] hover:underline font-semibold"
                             >
                               View Scenes
                             </a>
                           )}
+                          {isAdmin
+                            ? book.reviewStatus === "submitted" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => runReviewAction(book.id, "approve")}
+                                    className="text-[var(--studio-live-ink)] hover:underline font-semibold disabled:opacity-50"
+                                  >
+                                    Approve
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => handleReject(book.id)}
+                                    className="text-[var(--studio-changes-ink)] hover:underline font-semibold disabled:opacity-50"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )
+                            : book.reviewStatus === "submitted" ? (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => runReviewAction(book.id, "withdraw")}
+                                  className="text-[var(--studio-ink-muted)] hover:underline font-semibold disabled:opacity-50"
+                                >
+                                  Withdraw
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => runReviewAction(book.id, "submit")}
+                                  className="text-[var(--studio-live-ink)] hover:underline font-semibold disabled:opacity-50"
+                                >
+                                  Submit for review
+                                </button>
+                              )}
                           <button
                             type="button"
-                            className="p-1 text-[#6b7280] hover:text-[#60a5fa]"
+                            className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--studio-ink-muted)] hover:text-[var(--studio-coral-deep)] transition"
                             aria-label="Edit metadata"
                             onClick={() => openEditModal(book)}
                             title="Edit metadata"
                           >
-                            ✏️
+                            Details
                           </button>
                           <button
                             type="button"
-                            className="p-1 text-[#6b7280] hover:text-[#f87171]"
+                            className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--studio-ink-muted)] hover:text-[var(--studio-changes-ink)] transition"
                             aria-label="Delete book"
                             onClick={() => handleDelete(book.id)}
                           >
-                            🗑️
+                            Delete
                           </button>
                         </div>
                       </td>
@@ -345,9 +495,9 @@ export default function AdminBooksPage() {
 
       {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-xl rounded-2xl border border-[#232948] bg-[#0f1419] p-6">
+          <div className="w-full max-w-xl rounded-2xl border border-[var(--studio-rule)] bg-[var(--studio-card)] p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-[var(--studio-ink)]">
                 Edit Book
               </h2>
               <button
@@ -356,7 +506,7 @@ export default function AdminBooksPage() {
                   setEditOpen(false);
                   setEditingBook(null);
                 }}
-                className="text-[#929bc9] hover:text-white"
+                className="text-[var(--studio-ink-muted)] hover:text-white"
               >
                 ✕
               </button>
@@ -367,7 +517,7 @@ export default function AdminBooksPage() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm text-[#c5cbe6]">Title</label>
+                  <label className="text-sm text-[var(--studio-ink-2)]">Title</label>
                   <input
                     required
                     value={formState.title}
@@ -377,11 +527,11 @@ export default function AdminBooksPage() {
                         title: event.target.value,
                       }))
                     }
-                    className="w-full rounded-lg border border-[#323b67] bg-[#232948] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
+                    className="w-full rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] px-3 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm text-[#c5cbe6]">Author</label>
+                  <label className="text-sm text-[var(--studio-ink-2)]">Author</label>
                   <input
                     required
                     value={formState.author}
@@ -391,12 +541,12 @@ export default function AdminBooksPage() {
                         author: event.target.value,
                       }))
                     }
-                    className="w-full rounded-lg border border-[#323b67] bg-[#232948] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
+                    className="w-full rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] px-3 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-sm text-[#c5cbe6]">Cover URL</label>
+                <label className="text-sm text-[var(--studio-ink-2)]">Cover URL</label>
                 <input
                   value={formState.coverUrl}
                   onChange={(event) =>
@@ -405,11 +555,11 @@ export default function AdminBooksPage() {
                       coverUrl: event.target.value,
                     }))
                   }
-                  className="w-full rounded-lg border border-[#323b67] bg-[#232948] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
+                  className="w-full rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] px-3 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-sm text-[#c5cbe6]">Description</label>
+                <label className="text-sm text-[var(--studio-ink-2)]">Description</label>
                 <textarea
                   value={formState.description}
                   onChange={(event) =>
@@ -418,12 +568,12 @@ export default function AdminBooksPage() {
                       description: event.target.value,
                     }))
                   }
-                  className="min-h-[90px] w-full rounded-lg border border-[#323b67] bg-[#232948] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
+                  className="min-h-[90px] w-full rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] px-3 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm text-[#c5cbe6]">Status</label>
+                  <label className="text-sm text-[var(--studio-ink-2)]">Status</label>
                   <select
                     value={formState.processingStatus}
                     onChange={(event) =>
@@ -432,7 +582,7 @@ export default function AdminBooksPage() {
                         processingStatus: event.target.value,
                       }))
                     }
-                    className="w-full rounded-lg border border-[#323b67] bg-[#232948] px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#1337ec]"
+                    className="w-full rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] px-3 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
                   >
                     <option value="pending">Pending</option>
                     <option value="processing">Processing</option>
@@ -441,7 +591,11 @@ export default function AdminBooksPage() {
                     <option value="failed">Failed</option>
                   </select>
                 </div>
-                <div className="flex items-center gap-2 pt-6">
+                {/* Publishing is a review decision — the API ignores this field
+                    for authors, so don't offer it to them. */}
+                <div
+                  className={`items-center gap-2 pt-6 ${isAdmin ? "flex" : "hidden"}`}
+                >
                   <input
                     id="isPublished"
                     type="checkbox"
@@ -452,9 +606,9 @@ export default function AdminBooksPage() {
                         isPublished: event.target.checked,
                       }))
                     }
-                    className="h-4 w-4 rounded border-[#323b67] bg-[#232948] text-[#1337ec] focus:ring-[#1337ec]"
+                    className="h-4 w-4 rounded border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] text-[var(--studio-coral)] focus:ring-[var(--studio-coral)]"
                   />
-                  <label htmlFor="isPublished" className="text-sm text-[#c5cbe6]">
+                  <label htmlFor="isPublished" className="text-sm text-[var(--studio-ink-2)]">
                     Published
                   </label>
                 </div>
@@ -466,14 +620,14 @@ export default function AdminBooksPage() {
                     setEditOpen(false);
                     setEditingBook(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-[#c5cbe6] bg-[#1a1f36] rounded-lg hover:bg-[#232948]"
+                  className="px-4 py-2 text-sm font-medium text-[var(--studio-ink-2)] bg-[#1a1f36] rounded-lg hover:bg-[var(--studio-rule)]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 text-sm font-bold text-white bg-[#1337ec] rounded-lg hover:bg-[#1337ec]/90 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-bold text-[var(--studio-ink)] bg-[var(--studio-coral)] rounded-lg hover:bg-[var(--studio-coral)]/90 disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>

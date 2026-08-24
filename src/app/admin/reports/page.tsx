@@ -73,11 +73,14 @@ export default function AdminReportsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <section className="bg-[#101322] border border-[#232948] rounded-2xl p-6">
+      <section className="bg-[var(--studio-card)] border border-[var(--studio-rule)] rounded-2xl p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-black font-serif mb-2">Platform Reports</h1>
-            <p className="text-[#929bc9] text-sm">
+            <div className="flex flex-col gap-[7px] border-b-2 border-[var(--studio-ink)] pb-[18px] mb-4">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--studio-ink-muted)]">How the library is being read</span>
+              <h1 className="m-0 font-serif text-[44px] font-medium leading-none tracking-[-0.025em]">Reports</h1>
+            </div>
+            <p className="text-[var(--studio-ink-muted)] text-sm">
               Overview of reading activity, comprehension, narration adoption, and feedback across all users.
             </p>
           </div>
@@ -85,14 +88,14 @@ export default function AdminReportsPage() {
             <a
               href={headlineExportHref}
               download
-              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold bg-[#1337ec] text-white hover:bg-[#1337ec]/90 transition"
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold bg-[var(--studio-coral)] text-[var(--studio-on-coral)] hover:bg-[var(--studio-coral)]/90 transition"
             >
               Export headline CSV
             </a>
             <a
               href={trendExportHref}
               download
-              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold border border-[#232948] text-white hover:bg-[#1a1f2e] transition"
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold border border-[var(--studio-rule)] text-[var(--studio-ink)] hover:bg-[var(--studio-rule)] transition"
             >
               Export trend CSV
             </a>
@@ -107,10 +110,10 @@ export default function AdminReportsPage() {
                 key={option.value}
                 type="button"
                 onClick={() => setRange(option.value)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`rounded-full px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] transition ${
                   active
-                    ? "bg-white text-zinc-950"
-                    : "bg-white/10 text-white hover:bg-white/20"
+                    ? "bg-[var(--studio-coral)] text-[var(--studio-on-coral)]"
+                    : "bg-[var(--studio-rule)] text-[var(--studio-ink)] hover:bg-white/20"
                 }`}
               >
                 {option.label}
@@ -191,14 +194,14 @@ export default function AdminReportsPage() {
                       return (
                         <div key={intent}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="capitalize text-white/80">{intent}</span>
-                            <span className="text-white/60">
+                            <span className="capitalize text-[var(--studio-ink-2)]">{intent}</span>
+                            <span className="text-[var(--studio-ink-muted)]">
                               {formatNumber(count)} ({pct}%)
                             </span>
                           </div>
-                          <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                          <div className="h-2 overflow-hidden rounded-full bg-[var(--studio-rule)]">
                             <div
-                              className="h-full rounded-full bg-[#1337ec] transition-all"
+                              className="h-full rounded-full bg-[var(--studio-coral)] transition-all"
                               style={{ width: `${Math.max(2, pct)}%` }}
                             />
                           </div>
@@ -216,7 +219,7 @@ export default function AdminReportsPage() {
                   <a
                     href={trendExportHref}
                     download
-                    className="text-xs text-[#929bc9] hover:text-white transition"
+                    className="text-xs text-[var(--studio-ink-muted)] hover:text-white transition"
                   >
                     Download CSV
                   </a>
@@ -235,7 +238,7 @@ export default function AdminReportsPage() {
                 <a
                   href={topBooksExportHref}
                   download
-                  className="text-xs text-[#929bc9] hover:text-white transition"
+                  className="text-xs text-[var(--studio-ink-muted)] hover:text-white transition"
                 >
                   Download CSV
                 </a>
@@ -243,7 +246,7 @@ export default function AdminReportsPage() {
             >
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px] text-sm">
-                  <thead className="text-left text-xs uppercase tracking-wide text-[#929bc9]">
+                  <thead className="text-left text-xs uppercase tracking-wide text-[var(--studio-ink-muted)]">
                     <tr>
                       <th className="pb-3 font-semibold">Book</th>
                       <th className="pb-3 font-semibold">Readers</th>
@@ -257,8 +260,8 @@ export default function AdminReportsPage() {
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {topBooks.data.books.map((book) => (
-                      <tr key={book.bookId} className="text-white/80">
-                        <td className="py-3 pr-4 font-medium text-white">
+                      <tr key={book.bookId} className="text-[var(--studio-ink-2)]">
+                        <td className="py-3 pr-4 font-medium text-[var(--studio-ink)]">
                           {book.title || `Book ${book.bookId}`}
                         </td>
                         <td className="py-3 pr-4">{formatNumber(book.uniqueReaders)}</td>
@@ -290,16 +293,16 @@ export default function AdminReportsPage() {
                   <a
                     href={feedbackExportHref}
                     download
-                    className="text-xs text-[#929bc9] hover:text-white transition"
+                    className="text-xs text-[var(--studio-ink-muted)] hover:text-white transition"
                   >
                     Download CSV
                   </a>
                 }
               >
                 {feedback.data.summary.averageRating != null && (
-                  <div className="mb-4 text-sm text-white/70">
+                  <div className="mb-4 text-sm text-[var(--studio-ink-2)]">
                     Average rating:{" "}
-                    <span className="font-semibold text-white">
+                    <span className="font-semibold text-[var(--studio-ink)]">
                       {feedback.data.summary.averageRating}★
                     </span>
                   </div>
@@ -311,10 +314,10 @@ export default function AdminReportsPage() {
                     {feedback.data.items.map((item) => (
                       <div
                         key={item.id}
-                        className="rounded-xl border border-white/5 bg-[#0a0e1a] p-3"
+                        className="rounded-xl border border-[var(--studio-rule)] bg-[var(--studio-paper)] p-3"
                       >
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="text-amber-300 font-semibold">
+                          <span className="text-[var(--studio-review-ink)] font-semibold">
                             {"★".repeat(item.rating)}
                             <span className="text-white/20">
                               {"★".repeat(5 - item.rating)}
@@ -325,7 +328,7 @@ export default function AdminReportsPage() {
                           </span>
                         </div>
                         {item.feedback && (
-                          <p className="mt-2 text-sm text-white/70 leading-relaxed">
+                          <p className="mt-2 text-sm text-[var(--studio-ink-2)] leading-relaxed">
                             {item.feedback}
                           </p>
                         )}
@@ -358,7 +361,7 @@ export default function AdminReportsPage() {
                           className={`px-2 py-1 rounded-md text-xs transition ${
                             active
                               ? "bg-white text-zinc-950 font-semibold"
-                              : "text-[#929bc9] hover:text-white hover:bg-white/5"
+                              : "text-[var(--studio-ink-muted)] hover:text-white hover:bg-white/5"
                           }`}
                         >
                           {cat.label}
@@ -375,24 +378,24 @@ export default function AdminReportsPage() {
                     {timeline.data.events.map((event) => (
                       <div
                         key={`${event.source}-${event.rawId}`}
-                        className="rounded-xl border border-white/5 bg-[#0a0e1a] p-3"
+                        className="rounded-xl border border-[var(--studio-rule)] bg-[var(--studio-paper)] p-3"
                       >
                         <div className="flex flex-wrap items-center gap-2 text-sm">
                           <CategoryBadge category={event.category} />
-                          <span className="text-white/80 font-medium">
+                          <span className="text-[var(--studio-ink-2)] font-medium">
                             {event.label}
                           </span>
                           <span className="text-xs text-white/40 ml-auto">
                             {formatRelative(event.occurredAt)}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-white/60">{event.summaryLine}</p>
+                        <p className="mt-1 text-sm text-[var(--studio-ink-muted)]">{event.summaryLine}</p>
                         {event.details.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {event.details.map((detail) => (
                               <span
                                 key={detail.key}
-                                className="inline-flex items-center rounded-md bg-white/5 px-2 py-0.5 text-xs text-white/60"
+                                className="inline-flex items-center rounded-md bg-[var(--studio-rail)] px-2 py-0.5 text-xs text-[var(--studio-ink-muted)]"
                               >
                                 {detail.key}: {String(detail.value)}
                               </span>
@@ -427,7 +430,7 @@ function Panel({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="bg-[#101322] border border-[#232948] rounded-2xl p-6">
+    <section className="bg-[var(--studio-card)] border border-[var(--studio-rule)] rounded-2xl p-6">
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="text-lg font-semibold">{title}</h2>
         {action ? <div>{action}</div> : null}
@@ -447,9 +450,9 @@ function MetricCard({
   helper: string;
 }) {
   return (
-    <div className="bg-[#101322] border border-[#232948] rounded-2xl p-5">
-      <p className="text-sm font-medium text-[#929bc9]">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-white">{value}</p>
+    <div className="bg-[var(--studio-card)] border border-[var(--studio-rule)] rounded-2xl p-5">
+      <p className="text-sm font-medium text-[var(--studio-ink-muted)]">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-[var(--studio-ink)]">{value}</p>
       <p className="mt-2 text-sm text-white/50">{helper}</p>
     </div>
   );
@@ -457,8 +460,8 @@ function MetricCard({
 
 function LoadingPanel() {
   return (
-    <div className="bg-[#101322] border border-[#232948] rounded-2xl p-12 flex flex-col items-center justify-center gap-4 text-center text-white/60">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+    <div className="bg-[var(--studio-card)] border border-[var(--studio-rule)] rounded-2xl p-12 flex flex-col items-center justify-center gap-4 text-center text-[var(--studio-ink-muted)]">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--studio-rule-strong)] border-t-[var(--studio-coral)]" />
       <p className="text-sm">Loading reports…</p>
     </div>
   );
@@ -466,10 +469,10 @@ function LoadingPanel() {
 
 function CategoryBadge({ category }: { category: EventCategory }) {
   const colors: Record<EventCategory, string> = {
-    engagement: "bg-emerald-400/15 text-emerald-300",
+    engagement: "bg-[var(--studio-live-ink)]/15 text-[var(--studio-live-ink)]",
     comprehension: "bg-sky-400/15 text-sky-300",
-    feedback: "bg-amber-400/15 text-amber-300",
-    system: "bg-white/10 text-white/60",
+    feedback: "bg-[var(--studio-amber)]/15 text-[var(--studio-review-ink)]",
+    system: "bg-[var(--studio-rule)] text-[var(--studio-ink-muted)]",
   };
   return (
     <span
@@ -503,7 +506,7 @@ function DailyBars({
           return (
             <div
               key={row.date}
-              className="flex-1 rounded-t bg-[#1337ec]/60 hover:bg-[#1337ec] transition"
+              className="flex-1 rounded-t bg-[var(--studio-coral)]/60 hover:bg-[var(--studio-coral)] transition"
               style={{
                 minHeight: row.minutes > 0 ? "2px" : "1px",
                 height: `${Math.max(heightPct, row.minutes > 0 ? 4 : 1)}%`,

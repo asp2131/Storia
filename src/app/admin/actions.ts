@@ -3,8 +3,17 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
+import { requireStudio } from "@/lib/admin-auth";
 
 export async function createBookDraft() {
+  // Server actions are publicly callable endpoints — gate them like routes.
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) {
+    throw new Error("You do not have access to create books.");
+  }
+  const { user } = authResult;
+
   const now = new Date();
 
   // Inherit the text/voice style from the most recently styled book so new
@@ -21,6 +30,9 @@ export async function createBookDraft() {
       title: "Untitled Book",
       author: "Unknown",
       is_published: false,
+      // Staff drafts stay unowned; an author's draft belongs to them.
+      owner_id: user.role === "admin" ? null : user.id,
+      review_status: "draft",
       processing_status: "pending",
       total_pages: 1,
       default_text_style:

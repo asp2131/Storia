@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-08-16T20:33:56.529Z
-> Files: 740 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-08-24T22:54:59.007Z
+> Files: 741 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -876,6 +876,7 @@
 ## src/app/admin/(dashboard)/
 
 - `layout.tsx` — dynamic (~2615 tok)
+- `page.tsx` — Disable prerendering for admin pages (~2915 tok)
 
 ## src/app/admin/(editor)/books/[id]/edit/
 
@@ -887,7 +888,7 @@
 
 ## src/app/admin/login/
 
-- `page.tsx` — dynamic — renders form (~2433 tok)
+- `page.tsx` — dynamic — renders form (~2842 tok)
 
 ## src/app/admin/reports/
 
@@ -1132,15 +1133,3 @@
 
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
-
-### src/app/api/admin/books/[id]/pages/[pageNumber]/narration-recording/route.ts (~1.2k tokens)
-POST endpoint for parent/admin-recorded page narration. Validates the multipart upload (content type, 10MB, 5min), force-aligns it against the page's reference words, uploads to `books/{bookId}/narration/`, then in one transaction sets `pages.narration_url` + `narration_timestamps`, replaces the page's single-scope narration assignment, and clears `page_overlay_narrations`. Deletes the uploaded object if the transaction fails.
-
-### src/app/api/admin/books/[id]/pages/[pageNumber]/narration-recording/route.test.ts (~1k tokens)
-Route tests: validation failures, happy path, and transaction-rollback cleanup.
-
-### src/components/editor/PageNarrationRecorder.tsx (~2.2k tokens)
-Client MediaRecorder UI in the editor's Audio tab. States: idle → requesting → recording → preview → saving. Picks the first supported MIME from mp4/webm-opus/webm/ogg, caps at 5 minutes, offers preview playback and retake, revokes object URLs on unmount. Calls `onSave(file, durationMs)` (wired to `saveRecordedNarration` from BookEditorContext).
-
-### src/components/editor/PageNarrationRecorder.test.tsx (~0.6k tokens)
-Component tests for the recorder's disabled state and save flow.
