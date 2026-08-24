@@ -34,6 +34,26 @@ const {
   mockGeneratePronunciationEntries: vi.fn(),
 }));
 
+// The studio gates are exercised in admin-auth.test.ts; here they stand in as
+// an admin, who passes every ownership check.
+vi.mock("@/lib/admin-auth", () => {
+  const user = {
+    id: "admin_1",
+    name: "Admin User",
+    email: "admin@example.com",
+    role: "admin",
+  };
+  return {
+    STUDIO_ROLES: ["admin", "author"],
+    requireRole: vi.fn(async () => ({ user })),
+    requireAdmin: vi.fn(async () => ({ user })),
+    requireStudio: vi.fn(async () => ({ user })),
+    requireBookAccess: vi.fn(async () => ({ user, isOwner: false })),
+    assertBookAccess: vi.fn(async () => null),
+    assertPageAccess: vi.fn(async () => null),
+  };
+});
+
 vi.mock("@/lib/prisma", () => ({
   prisma: mockPrisma,
 }));

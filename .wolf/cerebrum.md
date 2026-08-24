@@ -5,6 +5,8 @@
 > Last updated: 2026-04-22
 
 ## User Preferences
+- 2026-08-24 For the book editor specifically the user wants COLOUR changes but not UI changes: "we didn't need to touch the editor" then "we can just change the color, not the ui". Re-theming via tokens is welcome; restructuring its layout, panels or copy is not. More generally, treat a broad-sounding approval as covering re-theming, not re-designing, of surfaces that already work.
+- 2026-08-24 Visual direction for the admin/author studio: editorial "press" aesthetic (Lora at display sizes, Space Grotesk labels, rules instead of card boxes) but on a LIGHT, cool off-white ground with pastel accents. User rejected the dark warm-black version as "too sepia and dark" — avoid sepia/cream grounds and dark editorial palettes for this project.
 
 - User may request setup work while on their phone; prefer remote/non-interactive completion paths and avoid blocking on desktop-only clicks when possible.
 - User wants Superpowers skills available in both OpenCode and Pi when setting up agent tooling.
@@ -13,6 +15,14 @@
 - User prefers product/spec markdown files to be updated in place to reflect current implementation progress rather than receiving status only in chat.
 
 ## Key Learnings
+- 2026-08-24 Admin/author studio styling goes through `--studio-*` CSS custom properties in `src/app/globals.css` (paper/rail/card/rule/ink + coral/amber/sage/peach review states). They are defined ONLY on `:root` and deliberately do NOT flip under `prefers-color-scheme: dark` — the studio is a light surface. The book editor takes the palette through `--editor-accent: var(--studio-coral)` plus `--editor-on-accent` (coral carries white at only 3.3:1, so anything filled with the accent uses ink). Its LAYOUT is out of scope — the only component change was `text-white` -> `text-[var(--editor-on-accent)]` on the 12 elements that sit on the accent. Do not add raw hexes to admin screens; extend the token set instead.
+- 2026-08-24 The landing page's real palette lives in `src/components/StoriaCalmLanding.css` (`--sl-accent: #ed6151` coral, `--sl-accent-deep: #b53e2d`, plus #E7C169 amber / #FBD8C8 peach / #F2E3C6 butter / #D7E6D0 sage / #C9DBE8 sky / #2B6F5F green). It is the source of truth for brand colour, NOT the unused `--storia-*` tokens in globals.css. Note its `.btn-primary` is coral-on-paper at ~3.2:1, which is under WCAG AA — the studio puts ink on coral instead (`--studio-on-coral`, 5.5:1).
+
+- 2026-08-24 Roles live in Better Auth's `user.role` (additionalFields in `src/lib/auth.ts`, default "user"). Three values now: `user`, `author`, `admin`. The legacy Phoenix `users` table also has a `role` column — it is NOT the one the app reads; every gate goes through `auth.api.getSession()` and the Better Auth `user` model.
+- 2026-08-24 The `/admin` surface has TWO route groups: `(dashboard)` (has a layout with the role gate) and `(editor)` (had none until 2026-08-24). Any new admin route group needs its own client gate — and the gate is UX only, authorization must be per-request in the route handler.
+- 2026-08-24 Book ownership: `books.owner_id` is NULL for every staff-created book (the whole pre-author library). NULL means admin-only. An author's book carries their `user.id`. Any new query over `books` in an author-reachable path must filter on `owner_id` or go through `requireBookAccess`.
+- 2026-08-24 `is_published` is written in exactly one place now: the `approve` action in `src/app/api/admin/books/[id]/review/route.ts`. `PATCH /api/admin/books/[id]` silently drops `isPublished` for non-admins. Don't add a second writer.
+- 2026-08-24 Server actions ("use server", e.g. `src/app/admin/actions.ts`) are publicly callable HTTP endpoints. They need the same gate as a route handler; a client-side role check in the calling layout proves nothing.
 
 - 2026-08-16 `storia-storage` bucket asset ownership: an object is "referenced" only if a DB column points at it — `pages.image_url/composited_image_url/composited_image_path/narration_url`, `pages.word_pronunciations` (jsonb, embeds audio URLs — easy to miss), `books.cover_url/pdf_url`, `page_audio_assignments.audio_url`, `page_overlay_narrations.audio_url`, `book_pronunciations.full_word_url/breakdown_url`, `soundscapes.audio_url`. Two prefixes are referenced by *code*, not by DB, so they must never be GC'd: `audio/curated/**` is the soundscape library enumerated by listing storage (`src/app/api/soundscapes/route.ts`, `NEXT_PUBLIC_SUPABASE_SOUNDSCAPE_BASE_PATH`), and `pdfs/**` holds source uploads while `books.pdf_url` is entirely NULL. Audit with `node scripts/storage-gc.mjs`. Deleting rows from `storage.objects` in SQL does NOT free the underlying file — always go through the Storage API.
 
@@ -159,6 +169,8 @@
 
 ## Do-Not-Repeat
 
+- 2026-08-24 Don't put an auth check that parses a route param BEFORE the admin short-circuit. `requireBookAccess` originally did `BigInt(rawBookId)` first, which turned every route's own "invalid book id" 400 into a 404 and broke 3 test suites. Admins return early; only the author branch parses.
+
 <!-- Mistakes made and corrected. Each entry prevents the same mistake recurring. -->
 <!-- Format: [YYYY-MM-DD] Description of what went wrong and what to do instead. -->
 - [2026-04-25] Do not call `collectMissingTokens` with old page-entry objects or an options object as the second argument; after the `book_pronunciations` migration the second argument is a `BookPronunciationRow[]`, and passing anything else causes `TypeError: existingRows is not iterable`.
@@ -180,6 +192,10 @@
 - **2026-08-23** — Do not call `alignRecording()` without `fileName` when the audio is not m4a. Browser recordings are webm; the default `recording.m4a` name made ElevenLabs reject the file and the feature degraded silently to fallback timings. Always pass `page_${pageNumber}.${extensionForContentType(contentType)}`.
 
 ## Decision Log
+
+- 2026-08-24 Author onboarding is **invite-only** (admin emails a link) rather than self-serve signup or an application queue. Chosen by the user; keeps a kids' library gated without building a review-application UI. Token is 32 random bytes, only the sha256 hash is stored, bound to one email address, 14-day TTL, single-use via a conditional `updateMany`.
+- 2026-08-24 Authors reuse the existing `/admin` editor scoped by `owner_id` rather than a separate `/studio` surface — roughly half the UI work, one editor to maintain. The nav hides Soundscapes/Reports/Authors and the header reads "Loratone Studio" for authors.
+- 2026-08-24 Authors submit; admins publish. `books.review_status` is draft → submitted → approved/rejected. An author editing an already-approved book pushes it back to `submitted` so nothing changes under the library after review. Authors cannot delete a live book.
 
 - 2026-04-22: Treat section `1.14 Web functional requirements` in `specs/word-pronunciation-cross-platform-spec.md` as the canonical final web requirements artifact by consolidating scope, FRs, acceptance criteria, edge cases, QA matrix, open gaps, and an implementation-ready checklist in one place.
 - 2026-04-22: For same-voice tap/long-press pronunciation, prefer pre-generated narration-voice pronunciation assets as the canonical cross-platform source over device TTS or on-demand synthesis; this preserves voice parity across web and mobile and fits existing page/overlay narration storage patterns.

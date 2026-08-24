@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { compositePageImage } from "@/lib/image-compositing";
 import {
@@ -20,7 +20,7 @@ interface RouteParams {
  * and whether the composited image is stale.
  */
 export async function GET(_request: Request, { params }: RouteParams) {
-  const authResult = await requireAdmin();
+  const authResult = await requireBookAccess((await params).id);
   if (authResult instanceof NextResponse) return authResult;
 
   try {
@@ -100,7 +100,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
  * and updates the page record.
  */
 export async function POST(_request: Request, { params }: RouteParams) {
-  const authResult = await requireAdmin();
+  const authResult = await requireBookAccess((await params).id);
   if (authResult instanceof NextResponse) return authResult;
   const { user } = authResult;
 

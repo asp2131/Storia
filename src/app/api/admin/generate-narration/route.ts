@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { assertBookAccess, requireStudio } from "@/lib/admin-auth";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -35,6 +36,9 @@ function buildSupabaseClient() {
 
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+
   const supabase = buildSupabaseClient();
   if (!supabase) {
     return NextResponse.json(
@@ -56,6 +60,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { text, bookId, pageNumber, voice, voiceSettings } = body;
+
+    const denied = await assertBookAccess(authResult.user, bookId);
+    if (denied) return denied;
 
     if (typeof text !== "string") {
       return NextResponse.json(

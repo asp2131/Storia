@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { assertBookAccess, requireStudio } from "@/lib/admin-auth";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -30,6 +31,9 @@ const ALLOWED_AUDIO_TYPES = [
 const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+
   const supabase = buildClient();
   if (!supabase) {
     return NextResponse.json(
@@ -42,6 +46,9 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const bookId = formData.get("bookId") as string | null;
+
+    const denied = await assertBookAccess(authResult.user, bookId);
+    if (denied) return denied;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided." }, { status: 400 });

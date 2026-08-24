@@ -59,7 +59,7 @@ export function BookMetaPanel() {
         >
           <ArrowLeft className="h-[18px] w-[18px]" />
         </Link>
-        <span className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--editor-accent)] text-white">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--editor-accent)] text-[var(--editor-on-accent)]">
           <BookOpen className="h-4 w-4" />
         </span>
         <span className="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 max-[900px]:hidden">
@@ -168,7 +168,7 @@ export function BookMetaPanel() {
           type="button"
           onClick={() => void handlePublish()}
           disabled={saving}
-          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--editor-accent)] px-4 text-[13px] font-semibold text-white shadow-sm transition hover:brightness-105 disabled:opacity-50"
+          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--editor-accent)] px-4 text-[13px] font-semibold text-[var(--editor-on-accent)] shadow-sm transition hover:brightness-105 disabled:opacity-50"
         >
           <UploadCloud className="h-4 w-4" />
           <span className="hidden sm:inline">Publish</span>

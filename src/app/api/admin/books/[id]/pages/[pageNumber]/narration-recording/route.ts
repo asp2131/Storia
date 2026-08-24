@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { alignRecording } from "@/lib/narration/alignRecording";
 import { buildPageReferenceWords } from "@/lib/narration/referenceWords";
@@ -33,7 +33,7 @@ function isBlobLike(value: unknown): value is BlobLike {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireBookAccess((await context.params).id);
   if (admin instanceof NextResponse) return admin;
 
   let bookId: bigint;

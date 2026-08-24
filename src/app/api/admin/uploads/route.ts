@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { assertBookAccess, requireStudio } from "@/lib/admin-auth";
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -15,6 +16,9 @@ function buildClient() {
 }
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+
   const supabase = buildClient();
   if (!supabase) {
     return NextResponse.json(
@@ -28,6 +32,11 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
     const bookId = formData.get("bookId") as string | null;
     const pageNumber = formData.get("pageNumber") as string | null;
+
+    // bookId is optional here (temp uploads), but an author may only write
+    // into a book they own.
+    const denied = await assertBookAccess(authResult.user, bookId);
+    if (denied) return denied;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided." }, { status: 400 });

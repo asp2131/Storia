@@ -3209,6 +3209,25 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-08-23T20:09:09.331436+00:00"
+    },
+    {
+      "id": "bug-186",
+      "timestamp": "2026-08-24T15:45:08.606669+00:00",
+      "error_message": "14 of 22 /api/admin/* routes had no server-side auth at all \u2014 POST /api/admin/books, /api/admin/uploads, PATCH+DELETE /api/admin/books/[id], generate-narration, audio-assignments and others were callable by anyone with curl. The admin gate was client-side only, in src/app/admin/(dashboard)/layout.tsx.",
+      "file": "src/lib/admin-auth.ts, src/app/api/admin/**/route.ts, src/app/admin/actions.ts",
+      "root_cause": "requireAdmin() existed but was only wired into the routes added most recently (reports, composite, overlay, narration-recording). Everything older relied on the admin dashboard layout's useEffect redirect, which is a UI convenience, not an authorization boundary. The `createBookDraft` server action was likewise unguarded \u2014 server actions are public endpoints.",
+      "fix": "Added requireRole/requireStudio/requireBookAccess/assertBookAccess/assertPageAccess to src/lib/admin-auth.ts and applied one to every admin route handler and to createBookDraft. Book-scoped routes now resolve ownership from the [id] param; body-driven routes (generate-narration, uploads, audio-assignments) assert after parsing bookId/pageId. Verified with a coverage sweep: 27/27 route.ts files under src/app/api/admin reference a gate.",
+      "tags": [
+        "security",
+        "authorization",
+        "admin",
+        "better-auth",
+        "api-routes",
+        "author-role"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-24T15:45:08.606669+00:00"
     }
   ]
 }

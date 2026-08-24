@@ -15,7 +15,7 @@ const { mockRequireAdmin, mockPrisma, mockAlignRecording, mockUploadRecording, m
     mockRemoveRecordings: vi.fn(),
   }));
 
-vi.mock("@/lib/admin-auth", () => ({ requireAdmin: mockRequireAdmin }));
+vi.mock("@/lib/admin-auth", () => ({ requireBookAccess: mockRequireAdmin }));
 vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }));
 vi.mock("@/lib/narration/alignRecording", () => ({ alignRecording: mockAlignRecording }));
 vi.mock("@/lib/narration/storage", async (importOriginal) => ({

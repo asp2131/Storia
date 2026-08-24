@@ -286,7 +286,7 @@ export function AudioLibraryPanel() {
                               onClick={() => setSelectedCategory(cat)}
                               className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition border ${
                                 selectedCategory === cat
-                                  ? "bg-[var(--editor-accent)] text-white border-[var(--editor-accent)]"
+                                  ? "bg-[var(--editor-accent)] text-[var(--editor-on-accent)] border-[var(--editor-accent)]"
                                   : "bg-white text-slate-500 border-slate-200 hover:border-[var(--editor-accent)]"
                               }`}
                             >
@@ -386,7 +386,7 @@ export function AudioLibraryPanel() {
                   onClick={() => setDropScope("single")}
                   className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
                     dropScope === "single"
-                      ? "bg-[var(--editor-accent)] text-white border-[var(--editor-accent)]"
+                      ? "bg-[var(--editor-accent)] text-[var(--editor-on-accent)] border-[var(--editor-accent)]"
                       : "bg-white text-slate-600 border-slate-200 hover:border-[var(--editor-accent)]"
                   }`}
                 >
@@ -397,7 +397,7 @@ export function AudioLibraryPanel() {
                   onClick={() => setDropScope("range")}
                   className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition ${
                     dropScope === "range"
-                      ? "bg-[var(--editor-accent)] text-white border-[var(--editor-accent)]"
+                      ? "bg-[var(--editor-accent)] text-[var(--editor-on-accent)] border-[var(--editor-accent)]"
                       : "bg-white text-slate-600 border-slate-200 hover:border-[var(--editor-accent)]"
                   }`}
                 >
@@ -441,7 +441,7 @@ export function AudioLibraryPanel() {
                 type="button"
                 onClick={confirmDropAssignment}
                 disabled={assignAudioPending}
-                className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-[var(--editor-accent)] text-white hover:brightness-105 shadow-sm disabled:opacity-60"
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-[var(--editor-accent)] text-[var(--editor-on-accent)] hover:brightness-105 shadow-sm disabled:opacity-60"
               >
                 {assignAudioPending ? "Assigning..." : "Assign"}
               </button>

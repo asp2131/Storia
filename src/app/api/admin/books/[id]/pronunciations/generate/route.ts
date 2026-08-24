@@ -17,6 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import {
@@ -208,6 +209,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   const supabase = buildSupabaseClient();
   if (!supabase) {
     return NextResponse.json(
@@ -372,6 +376,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   // Read-only coverage report (no generation).
   const { id: bookId } = await params;
   const parsedBookId = parseBookIdParam(bookId);

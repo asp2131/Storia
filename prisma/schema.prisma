@@ -27,6 +27,17 @@ model books {
   cover_url             String?                @db.VarChar(255)
   description           String?
   book_type             String                 @default("pdf_book") @db.VarChar(255)
+  /// Better Auth user.id of the author who submitted this book. NULL = staff-created
+  /// (the entire pre-author library), which only admins can see or edit.
+  owner_id              String?
+  /// draft | submitted | approved | rejected. Authors move draft -> submitted;
+  /// only admins move it further, and only an admin may set is_published.
+  review_status         String                 @default("draft") @db.VarChar(16)
+  /// Admin's reason when review_status is rejected. Shown to the author.
+  review_note           String?
+  submitted_at          DateTime?
+  reviewed_at           DateTime?
+  owner                 user?                  @relation("book_owner", fields: [owner_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   pages                 pages[]
   reading_progress      reading_progress[]
   scenes                scenes[]
@@ -38,6 +49,8 @@ model books {
   @@index([is_published, updated_at], map: "books_is_published_updated_at_index")
   @@index([metadata], map: "books_metadata_index", type: Gin)
   @@index([processing_status], map: "books_processing_status_index")
+  @@index([owner_id], map: "books_owner_id_index")
+  @@index([review_status], map: "books_review_status_index")
   @@index([source_type], map: "books_source_type_index")
   @@index([title(ops: raw("gin_trgm_ops"))], map: "books_title_gin_idx", type: Gin)
 }
@@ -295,6 +308,7 @@ model user {
   child_profiles        child_profile[]
   mobileAnalyticsEvents mobile_analytics_events[]
   narrationTracks       user_narration_track[]
+  ownedBooks            books[]                   @relation("book_owner")
 }
 
 model session {
@@ -568,4 +582,26 @@ model user_narration_page {
 
   @@unique([track_id, page_id])
   @@index([page_id])
+}
+
+// ─── Author onboarding (invite-only) ──────────────────────────────
+// An admin invites one email address; the link in that email is the only
+// way to gain role="author". The raw token never touches the database.
+
+model author_invite {
+  id             String    @id @default(cuid())
+  email          String    @db.VarChar(255)
+  /// sha256 hex of the invite token. The raw token exists only in the link.
+  token_hash     String    @unique
+  /// user.id of the admin who sent it.
+  invited_by     String
+  note           String?
+  expires_at     DateTime
+  accepted_at    DateTime?
+  /// user.id that redeemed it.
+  accepted_user_id String?
+  revoked_at     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([email])
 }

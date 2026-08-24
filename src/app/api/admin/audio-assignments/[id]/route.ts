@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { assertPageAccess, requireStudio, type AdminUser } from "@/lib/admin-auth";
 
 type Params = {
   params: Promise<{
@@ -7,7 +8,25 @@ type Params = {
   }>;
 };
 
+/** Resolve the assignment's page so ownership can be checked before writing. */
+async function assertAssignmentAccess(user: AdminUser, id: string) {
+  if (user.role === "admin") return null;
+  const assignment = await prisma.page_audio_assignments.findUnique({
+    where: { id: BigInt(id) },
+    select: { page_id: true },
+  });
+  return assertPageAccess(user, assignment?.page_id ?? null);
+}
+
 export async function PATCH(request: NextRequest, { params }: Params) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+  const denied = await assertAssignmentAccess(
+    authResult.user,
+    (await params).id
+  );
+  if (denied) return denied;
+
   try {
     const client = prisma as typeof prisma & {
       page_audio_assignments?: {
@@ -63,6 +82,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+  const denied = await assertAssignmentAccess(
+    authResult.user,
+    (await params).id
+  );
+  if (denied) return denied;
+
   try {
     const client = prisma as typeof prisma & {
       page_audio_assignments?: {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -23,6 +24,9 @@ type Params = {
  * All page updates happen in a single transaction.
  */
 export async function POST(_request: NextRequest, { params }: Params) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   try {
     const { id } = await params;
     const bookId = BigInt(id);

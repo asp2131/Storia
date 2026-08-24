@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { assertBookAccess, requireStudio } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
@@ -33,6 +34,9 @@ function buildSupabaseClient() {
 
 
 export async function POST(request: NextRequest) {
+  const authResult = await requireStudio();
+  if (authResult instanceof NextResponse) return authResult;
+
   const supabase = buildSupabaseClient();
   if (!supabase) {
     return NextResponse.json(
@@ -68,6 +72,9 @@ export async function POST(request: NextRequest) {
     if (!bookId) {
       return NextResponse.json({ error: "Book ID is required." }, { status: 400 });
     }
+
+    const denied = await assertBookAccess(authResult.user, bookId);
+    if (denied) return denied;
 
     if (!pageNumber || pageNumber < 1) {
       return NextResponse.json(

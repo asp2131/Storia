@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireBookAccess } from "@/lib/admin-auth";
 import {
   TextOverlayConfig,
   validateOverlayConfig,
@@ -20,7 +20,7 @@ export async function GET(
   _request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const authResult = await requireAdmin();
+  const authResult = await requireBookAccess((await params).id);
   if (authResult instanceof NextResponse) {
     return authResult;
   }
@@ -80,7 +80,7 @@ export async function POST(
   request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
-  const authResult = await requireAdmin();
+  const authResult = await requireBookAccess((await params).id);
   if (authResult instanceof NextResponse) {
     return authResult;
   }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireBookAccess } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { assemblePageNarrationText } from "@/lib/overlayText";
 import {
@@ -118,6 +119,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const access = await requireBookAccess((await params).id);
+  if (access instanceof NextResponse) return access;
+
   const { id: bookId } = await params;
   const parsedBookId = parseBookIdParam(bookId);
 
