@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-08-24T22:54:59.007Z
-> Files: 741 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-07T14:35:42.679Z
+> Files: 743 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -1053,7 +1053,11 @@
 ## src/components/text-overlay/
 
 - `DraggableTextOverlayEditor.tsx` — OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS (~3859 tok)
+- `DraggableTextOverlayEditor.test.tsx` — Vitest for `historyShortcutFor`: Cmd/Ctrl+Z/Y mapping, and which text fields keep their native undo. (~200 tok)
+- `PropertyPanel.tsx` — Right-hand inspector for the selected overlay element: text, font/size/weight/colour/align, shadow + background sections, per-element voice. Focuses its text field only when `focusTextToken` changes. (~1900 tok)
+- `PropertyPanel.test.tsx` — Vitest: the text field takes focus only on an explicit `focusTextToken` bump, never on plain selection. (~330 tok)
 - `Toolbar.tsx` — Overlay editor toolbar showing save/composite status and actions like add text, undo/redo, and composite export. (~668 tok)
+- `Toolbar.test.tsx` — Vitest for the undo/redo toolbar buttons: disabled without history, fire their handlers with it. (~180 tok)
 
 ## src/contexts/
 
@@ -1082,6 +1086,8 @@
 - `child-auth.test.ts` — Direct dual-stack auth helper tests for Better Auth cookies, Supabase Bearer/raw token parsing, verified-email linking, and child access authorization (~2500 tok)
 - `child-auth.ts` — Env contract: requires SUPABASE_SERVICE_ROLE_KEY (server-only) and SUPABASE_URL (or NEXT_PUBLIC_SUPA (~1856 tok)
 - `elevenlabs.ts` — Extract the storage file path from a Supabase public URL. (~3200 tok)
+- `image-compositing.test.ts` — Vitest for `parseTruetypeUrl`: pulls the .ttf src out of a Google Fonts CSS2 response, returns null for woff2 so the caller falls back. (~279 tok)
+- `image-compositing.ts` — Flattens a TextOverlayConfig onto the page illustration with node-canvas + sharp. Registers the overlay fonts first by fetching TTFs from Google Fonts into a tmpdir cache (`ensureOverlayFontsRegistered`), since the runtime has none installed. (~1500 tok)
 - `mobile-compat/normalize.ts` — Converts web overlay shadow fields into the mobile Flutter overlay JSON shape before persistence. (~189 tok)
 - `overlayText.test.ts` — Vitest coverage for Replicate OCR output parser (preamble strip, quoted-line extraction, empty case) and narration-input assembly. (~800 tok)
 - `overlayText.ts` — Pure helpers for overlay text: `parseReplicateOcrOutput`, `assemblePageNarrationText`, `extractPageNarrationTokens`, `includedOverlayText`. (~520 tok)
@@ -1133,3 +1139,4 @@
 
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
+- `overlayEditorStore.test.ts` — Vitest for the overlay store: init, reorder, undo/redo, typing-burst coalescing, no-op update rejection, saved-state dirty tracking. (~420 tok)

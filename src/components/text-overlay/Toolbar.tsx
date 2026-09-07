@@ -6,13 +6,19 @@ import {
   Image as ImageIcon,
   Images,
   Loader2,
+  Redo2,
   Trash2,
   Type,
+  Undo2,
 } from "lucide-react";
 
 export interface ToolbarProps {
   onAddElement: () => void;
   onComposite: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   onChangeImage?: () => void;
   onRemoveImage?: () => void;
   isSaving: boolean;
@@ -43,6 +49,10 @@ function formatRelativeTime(isoString: string | null): string {
 export function Toolbar({
   onAddElement,
   onComposite,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   onChangeImage,
   onRemoveImage,
   isSaving,
@@ -93,6 +103,29 @@ export function Toolbar({
             <ImageIcon className="h-[17px] w-[17px]" />
           </button>
         )}
+
+        <span className="mx-0.5 h-[22px] w-px bg-zinc-200" />
+
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="grid h-[34px] w-[34px] place-items-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-30"
+          type="button"
+          title="Undo (Cmd/Ctrl+Z)"
+          aria-label="Undo"
+        >
+          <Undo2 className="h-[17px] w-[17px]" />
+        </button>
+        <button
+          onClick={onRedo}
+          disabled={!canRedo}
+          className="grid h-[34px] w-[34px] place-items-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-30"
+          type="button"
+          title="Redo (Cmd/Ctrl+Shift+Z)"
+          aria-label="Redo"
+        >
+          <Redo2 className="h-[17px] w-[17px]" />
+        </button>
 
         <span className="mx-0.5 h-[22px] w-px bg-zinc-200" />
 

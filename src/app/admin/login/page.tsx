@@ -71,7 +71,10 @@ function AdminLoginPageInner() {
     setLoading(false);
 
     if (STUDIO_ROLES.includes(role ?? "user")) {
-      router.replace("/admin");
+      // Hard nav, not router.replace: authClient.getSession() does not update
+      // Better Auth's reactive useSession store, so a soft transition lands on
+      // /admin with a stale null session and the layout bounces back to login.
+      window.location.href = "/admin";
     } else {
       await authClient.signOut();
       setError(

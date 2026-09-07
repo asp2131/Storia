@@ -4,6 +4,7 @@ import {
   buildNewTextElement,
   changedRememberedTextSettings,
   DEFAULT_BOOK_TEXT_STYLE,
+  OVERLAY_FONT_CSS_FAMILY,
   rememberTextSettings,
   seedTextElement,
   TEXT_OVERLAY_VERSION,
@@ -55,6 +56,13 @@ describe("validateBookTextStyle", () => {
     expect(() => validateBookTextStyle({ ...lora, textAlign: "justify" })).toThrow(
       /textAlign/
     );
+  });
+
+  it("accepts the portable web and Flutter font catalog", () => {
+    for (const fontFamily of ["Nunito", "Hanken Grotesk", "Space Grotesk"] as const) {
+      expect(validateBookTextStyle({ ...lora, fontFamily }).fontFamily).toBe(fontFamily);
+      expect(OVERLAY_FONT_CSS_FAMILY[fontFamily]).toContain("var(--font-");
+    }
   });
 
   it("clamps fontSize to 0.5–50 and defaults it to 5", () => {

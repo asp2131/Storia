@@ -1,4 +1,7 @@
-import { createCanvas, loadImage } from "canvas";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { createCanvas, loadImage, registerFont } from "canvas";
 import sharp from "sharp";
 import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
 
@@ -10,7 +13,94 @@ const FONT_FALLBACK_MAP: Record<string, string> = {
   "Playfair Display": "'Playfair Display', serif",
   "JetBrains Mono": "'JetBrains Mono', monospace",
   Gaegu: "Gaegu, cursive",
+  Nunito: "Nunito, sans-serif",
+  "Hanken Grotesk": "'Hanken Grotesk', sans-serif",
+  "Space Grotesk": "'Space Grotesk', sans-serif",
 };
+
+// ─── Font registration ────────────────────────────────────────────────────────
+//
+// node-canvas resolves families through fontconfig, and none of the overlay
+// families are installed on the serverless runtime — every composite silently
+// fell back to the generic sans/serif, so the flattened PNG did not match what
+// the editor and the Flutter reader show. Fetch the TTF Google serves for the
+// exact family+weight, cache it on disk, and register it before drawing.
+
+const FONT_CACHE_DIR = path.join(tmpdir(), "storia-overlay-fonts");
+// Google Fonts serves woff2 to modern UAs and plain TTF to old ones; node-canvas
+// (FreeType) wants the TTF.
+const TTF_USER_AGENT = "Mozilla/4.0";
+const FONT_FETCH_TIMEOUT_MS = 5000;
+
+/** family+weight -> in-flight or settled registration. One attempt per process. */
+const fontRegistrations = new Map<string, Promise<void>>();
+
+/** Pull the first truetype `src` URL out of a Google Fonts CSS2 response. */
+export function parseTruetypeUrl(css: string): string | null {
+  return css.match(/src:\s*url\((https:\/\/[^)]+\.ttf)\)/)?.[1] ?? null;
+}
+
+async function fetchCss(family: string, weight: number | null): Promise<string | null> {
+  const spec = `${family.replace(/ /g, "+")}${weight === null ? "" : `:wght@${weight}`}`;
+  const res = await fetch(`https://fonts.googleapis.com/css2?family=${spec}`, {
+    headers: { "User-Agent": TTF_USER_AGENT },
+    signal: AbortSignal.timeout(FONT_FETCH_TIMEOUT_MS),
+  });
+  return res.ok ? res.text() : null;
+}
+
+async function registerOverlayFont(family: string, weight: number): Promise<void> {
+  const file = path.join(
+    FONT_CACHE_DIR,
+    `${family.replace(/[^a-z0-9]/gi, "")}-${weight}.ttf`
+  );
+
+  let cached = await readFile(file).catch(() => null);
+  if (!cached) {
+    // Not every family ships every weight (Lora has no 300); fall back to the
+    // family default so at least the typeface is right.
+    const css = (await fetchCss(family, weight)) ?? (await fetchCss(family, null));
+    const url = css && parseTruetypeUrl(css);
+    if (!url) throw new Error(`no truetype source for ${family} ${weight}`);
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(FONT_FETCH_TIMEOUT_MS) });
+    if (!res.ok) throw new Error(`font download failed: ${res.status}`);
+    cached = Buffer.from(await res.arrayBuffer());
+
+    await mkdir(FONT_CACHE_DIR, { recursive: true });
+    await writeFile(file, cached);
+  }
+
+  registerFont(file, { family, weight: String(weight) });
+}
+
+/**
+ * Register every family/weight the overlay uses. Never throws: a font that
+ * cannot be fetched keeps the previous behaviour (generic system fallback).
+ */
+export async function ensureOverlayFontsRegistered(
+  elements: readonly TextElement[]
+): Promise<void> {
+  const pairs = new Set(
+    elements
+      .filter((el) => el.fontFamily in FONT_FALLBACK_MAP)
+      .map((el) => `${el.fontFamily}|${el.fontWeight}`)
+  );
+
+  await Promise.all(
+    [...pairs].map((pair) => {
+      let registration = fontRegistrations.get(pair);
+      if (!registration) {
+        const [family, weight] = pair.split("|");
+        registration = registerOverlayFont(family, Number(weight)).catch((error) => {
+          console.warn(`[compositing] font unavailable, using fallback: ${pair}`, error);
+        });
+        fontRegistrations.set(pair, registration);
+      }
+      return registration;
+    })
+  );
+}
 
 export interface CompositeResult {
   /** PNG buffer of the composited image. */
@@ -38,8 +128,11 @@ export async function compositePageImage(
   baseImageUrl: string,
   overlay: TextOverlayConfig
 ): Promise<CompositeResult> {
-  // 1. Load base image
-  const baseImage = await loadImage(baseImageUrl);
+  // 1. Load base image (and the fonts the overlay needs, in parallel)
+  const [baseImage] = await Promise.all([
+    loadImage(baseImageUrl),
+    ensureOverlayFontsRegistered(overlay.elements),
+  ]);
   const width = baseImage.width;
   const height = baseImage.height;
 

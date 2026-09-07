@@ -3228,6 +3228,139 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-08-24T15:45:08.606669+00:00"
+    },
+    {
+      "id": "bug-187",
+      "timestamp": "2026-08-25T09:16:16.952135",
+      "error_message": "PrismaClientKnownRequestError P2022: The column `books.submitted_at` does not exist in the current database (prod admin auth login)",
+      "file": "prisma/migrations/20260824120000_add_author_role/migration.sql",
+      "root_cause": "Prod Supabase DB has no _prisma_migrations table (schema originally Ecto-managed). The build script is `prisma generate && next build` with no `prisma migrate deploy`, so no deploy ever applies migrations. add_author_role was the only unapplied migration.",
+      "fix": "Applied 20260824120000_add_author_role SQL directly to prod via supabase MCP apply_migration. Verified 5 books columns, author_invite table, books_owner_id_fkey, 4 indexes, and backfill (11 approved / 1 draft). Long-term fix still pending: baseline prod with `prisma migrate resolve --applied` for every past migration, then add `prisma migrate deploy` to the build script.",
+      "tags": [
+        "prisma",
+        "migration",
+        "prod",
+        "supabase",
+        "P2022",
+        "schema-drift",
+        "admin-auth"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-25T09:16:16.952135"
+    },
+    {
+      "id": "bug-188",
+      "timestamp": "2026-08-25T11:18:16.069005",
+      "error_message": "After signing in with the email code as admin/author on prod, not redirected to the dashboard (Google sign-in redirects fine)",
+      "file": "src/app/admin/login/page.tsx",
+      "root_cause": "handleVerifyOtp called authClient.getSession() (a one-off fetch that does NOT update Better Auth's reactive useSession nanostore) then did a SOFT router.replace('/admin'). The dashboard layout's useSession() (src/app/admin/(dashboard)/layout.tsx:24) still held the pre-login null, so its effect at :29-31 pushed straight back to /admin/login. Google works because signIn.social({callbackURL}) ends in a full document load, which rebuilds the session store.",
+      "fix": "Replaced router.replace('/admin') with window.location.href = '/admin' in src/app/admin/login/page.tsx and src/app/authors/accept/page.tsx (dropped the now-unused router dep from the accept useCallback). Matches src/app/HomeClient.tsx:97, which already hard-navs to /library and never had the bug.",
+      "tags": [
+        "better-auth",
+        "email-otp",
+        "redirect",
+        "useSession",
+        "nanostore",
+        "soft-nav",
+        "admin",
+        "prod"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-08-25T11:18:16.069005"
+    },
+    {
+      "id": "bug-189",
+      "timestamp": "2026-09-07T09:37:20.404171",
+      "error_message": "Overlay undo (Cmd+Z) undid one character at a time and evicted every structural step from history",
+      "file": "src/stores/overlayEditorStore.ts",
+      "root_cause": "PropertyPanel's textarea calls updateElement on every keystroke, and updateElement pushed a past[] entry per call. With HISTORY_LIMIT=50, ~50 typed characters flushed out every add/delete/move/drag step. The shortcut handler also takes over Cmd+Z inside the overlay textarea, so native per-word textarea undo was not available either.",
+      "fix": "Added pushHistory(state, signature) with a HISTORY_COALESCE_MS=600 window: consecutive edits carrying the same signature (elementId + changed field names) reuse the existing past entry. updateElement now diffs `updates` against the stored element so the signature names only the field actually changing, and a no-op update is dropped entirely (no history entry, no dirty flag).",
+      "tags": [
+        "overlay-editor",
+        "undo",
+        "history",
+        "zustand",
+        "coalescing"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-07T09:37:20.404171"
+    },
+    {
+      "id": "bug-190",
+      "timestamp": "2026-09-07T09:37:20.404171",
+      "error_message": "Composited page PNGs render in a generic system font instead of the overlay font",
+      "file": "src/lib/image-compositing.ts",
+      "root_cause": "node-canvas resolves families through fontconfig and nothing ever called registerFont, so none of the 8 overlay families existed in the process. Measured on macOS: 'Inter, sans-serif', 'Gaegu, cursive', Nunito, Hanken Grotesk and Space Grotesk all returned exactly the bare sans-serif width (302.36px at 40px), and Lora/Playfair both returned the generic serif width. Affected every font, not only the 3 newly added ones. composited_image_url is a real render path (IntegratedIllustration displayMode 'composited', and the Flutter narration studio reads page.compositedImageUrl).",
+      "fix": "Added ensureOverlayFontsRegistered(elements): resolves each family+weight in use through the Google Fonts CSS2 API with an old User-Agent (which serves .ttf rather than .woff2), caches the file under tmpdir()/storia-overlay-fonts, and calls registerFont before the canvas is drawn. Falls back to the family default weight when a family lacks the requested one (Lora has no 300), never throws, and memoizes one attempt per family+weight per process. Verified: Gaegu@400 302.36 -> 274.32, Nunito@700 328.93 -> 323.12, Lora@300 306.00 -> 321.60, Space Grotesk@500 302.36 -> 333.64.",
+      "tags": [
+        "compositing",
+        "node-canvas",
+        "fonts",
+        "registerFont",
+        "google-fonts",
+        "serverless"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-07T09:37:20.404171"
+    },
+    {
+      "id": "bug-191",
+      "timestamp": "2026-09-07T09:37:20.404171",
+      "error_message": "Property panel stole keyboard focus whenever an overlay element was selected, including at the start of a canvas drag",
+      "file": "src/components/text-overlay/PropertyPanel.tsx",
+      "root_cause": "The autofocus effect keyed on selectedElementId, and pointerdown on a canvas block selects it, so every drag began by moving the caret into the sidebar textarea (scroll jump on desktop, keyboard popup on touch).",
+      "fix": "Replaced selection-driven focus with intent-driven focus: the store owns a textEditRequestId counter bumped by requestTextEdit(), called on Add text and on double-clicking a block. PropertyPanel takes it as focusTextToken and focuses with { preventScroll: true }.",
+      "tags": [
+        "overlay-editor",
+        "focus",
+        "a11y",
+        "property-panel"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-07T09:37:20.404171"
+    },
+    {
+      "id": "bug-192",
+      "timestamp": "2026-09-07T09:37:20.404171",
+      "error_message": "Undo back to the last saved overlay still reported unsaved changes and queued another autosave write",
+      "file": "src/stores/overlayEditorStore.ts",
+      "root_cause": "undo/redo set hasChanges: true and autoSaveStatus: 'pending' unconditionally, with no notion of which snapshot was last persisted.",
+      "fix": "markSaved() and init() record savedElements; undo/redo compare the restored array by reference against it (past[] holds the same array objects) and report hasChanges:false / autoSaveStatus:'idle' when they match.",
+      "tags": [
+        "overlay-editor",
+        "undo",
+        "autosave",
+        "dirty-state"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-09-07T09:37:20.404171"
+    },
+    {
+      "id": "bug-193",
+      "timestamp": "2026-09-07T09:59:08.397911",
+      "error_message": "Property panel text field never received focus after Add text, despite the effect running with the right token",
+      "file": "src/components/text-overlay/PropertyPanel.tsx",
+      "root_cause": "The focus effect deferred the focus() call into requestAnimationFrame. rAF callbacks do not fire while document.visibilityState === 'hidden', so in a backgrounded tab the callback stayed queued forever and focus never moved. Caught during browser verification: console showed '[FOCUSDBG] effect token=1 ref=true' but the rAF log never appeared, and document.visibilityState was 'hidden'.",
+      "fix": "Dropped the rAF. The effect already runs after the commit that mounts the textarea (proved by ref=true in the same log line), so focus({preventScroll:true}) + setSelectionRange are called synchronously in the effect. Also removed the now-pointless requestAnimationFrame mocks from PropertyPanel.test.tsx.",
+      "tags": [
+        "react",
+        "useEffect",
+        "requestAnimationFrame",
+        "focus",
+        "visibility",
+        "overlay-editor"
+      ],
+      "related_bugs": [
+        "bug-191"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-09-07T09:59:08.397911"
     }
   ]
 }

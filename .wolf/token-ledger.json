@@ -2,10 +2,10 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 3545782,
+    "total_tokens_estimated": 3550396,
     "total_reads": 1615,
-    "total_writes": 1213,
-    "total_sessions": 55,
+    "total_writes": 1219,
+    "total_sessions": 58,
     "anatomy_hits": 729,
     "anatomy_misses": 880,
     "repeated_reads_blocked": 1237,
@@ -18600,6 +18600,84 @@
         "writes_count": 3,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 2
+      }
+    },
+    {
+      "id": "session-2026-09-07-0900",
+      "started": "2026-09-07T14:00:03.994Z",
+      "ended": "2026-09-07T14:38:37.751Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/lib/image-compositing.test.ts",
+          "tokens_estimated": 279,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/components/text-overlay/PropertyPanel.test.tsx",
+          "tokens_estimated": 1259,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 1538,
+        "reads_count": 0,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-09-07-0900",
+      "started": "2026-09-07T14:00:03.994Z",
+      "ended": "2026-09-07T14:59:32.948Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/lib/image-compositing.test.ts",
+          "tokens_estimated": 279,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/components/text-overlay/PropertyPanel.test.tsx",
+          "tokens_estimated": 1259,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 1538,
+        "reads_count": 0,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-09-07-0900",
+      "started": "2026-09-07T14:00:03.994Z",
+      "ended": "2026-09-07T15:01:20.444Z",
+      "reads": [],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/lib/image-compositing.test.ts",
+          "tokens_estimated": 279,
+          "action": "create"
+        },
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/components/text-overlay/PropertyPanel.test.tsx",
+          "tokens_estimated": 1259,
+          "action": "create"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 1538,
+        "reads_count": 0,
+        "writes_count": 2,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
       }
     }
   ],

@@ -161,7 +161,7 @@ Acceptance criteria:
 - [ ] Add checks:
   - Overlay schema integrity
   - Font compatibility checks:
-    - Supported built-ins are valid by default (`Inter`, `Lora`, `Playfair Display`, `JetBrains Mono`, `Gaegu`)
+    - Supported built-ins are valid by default (`Inter`, `Lora`, `Playfair Display`, `JetBrains Mono`, `Gaegu`, `Nunito`, `Hanken Grotesk`, `Space Grotesk`)
     - Custom fonts require Flutter asset registration + fallback mapping metadata
   - Narration timestamp shape and monotonicity (`start <= end`, ascending)
   - Word-token and timestamp sanity checks

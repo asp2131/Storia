@@ -25,6 +25,10 @@ import {
 import { ElementInspectorPanel } from "@/components/editor/ElementInspectorPanel";
 import { PronunciationPanel } from "@/components/editor/PronunciationPanel";
 import { NarrationPanel } from "@/components/editor/NarrationPanel";
+import {
+  useOverlayEditor,
+  useOverlayEditorActions,
+} from "@/hooks/useOverlayEditor";
 
 export function AudioLibraryPanel() {
   const params = useParams();
@@ -94,6 +98,17 @@ export function AudioLibraryPanel() {
       : undefined,
   };
   const [activeTab, setActiveTab] = useState<"element" | "audio" | "words">("element");
+  const selectedElementId = useOverlayEditor(
+    activeView.overlayPageId,
+    (state) => state.selectedElementId
+  );
+  const overlayActions = useOverlayEditorActions(activeView.overlayPageId);
+  const visibleTab = selectedElementId ? "element" : activeTab;
+
+  const selectTab = (tab: "element" | "audio" | "words") => {
+    setActiveTab(tab);
+    if (tab !== "element") overlayActions.selectElement(null);
+  };
 
   return (
     <>
@@ -109,9 +124,9 @@ export function AudioLibraryPanel() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => selectTab(tab.id)}
                 className={`flex h-[34px] flex-1 items-center justify-center gap-1.5 rounded-[7px] px-2 text-[12.5px] font-semibold transition ${
-                  activeTab === tab.id
+                  visibleTab === tab.id
                     ? "bg-white text-zinc-900 shadow-sm"
                     : "text-zinc-500 hover:bg-white/60 hover:text-zinc-700"
                 }`}
@@ -124,9 +139,9 @@ export function AudioLibraryPanel() {
         </div>
 
         <div className="editor-scroll flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-1">
-          {activeTab === "element" && <ElementInspectorPanel />}
+          {visibleTab === "element" && <ElementInspectorPanel />}
 
-          {activeTab === "audio" && (
+          {visibleTab === "audio" && (
             <div className="editor-pop space-y-6">
               <NarrationPanel onDeleteNarration={() => handleDeleteAudio("narration")} />
 
@@ -352,7 +367,7 @@ export function AudioLibraryPanel() {
             </div>
           )}
 
-          {activeTab === "words" && (
+          {visibleTab === "words" && (
             <PronunciationPanel
               bookId={bookId}
               selectedVoiceId={selectedVoiceId}

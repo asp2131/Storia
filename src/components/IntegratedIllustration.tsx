@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
+import {
+  OVERLAY_FONT_CSS_FAMILY,
+  type TextElement,
+  type TextOverlayConfig,
+} from "@/types/text-overlay";
 
 interface IntegratedIllustrationProps {
   imageUrl: string;
@@ -291,7 +295,7 @@ function OverlayTextElement({
         top: `${element.y}%`,
         width: `${element.width}%`,
         fontSize: `${fontSize}px`,
-        fontFamily: element.fontFamily,
+        fontFamily: OVERLAY_FONT_CSS_FAMILY[element.fontFamily],
         fontWeight: element.fontWeight,
         color: element.color,
         textAlign: element.textAlign,

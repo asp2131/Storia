@@ -11,9 +11,23 @@ export const AVAILABLE_FONTS = [
   "Playfair Display",
   "JetBrains Mono",
   "Gaegu",
+  "Nunito",
+  "Hanken Grotesk",
+  "Space Grotesk",
 ] as const;
 
 export type OverlayFont = (typeof AVAILABLE_FONTS)[number];
+
+export const OVERLAY_FONT_CSS_FAMILY: Record<OverlayFont, string> = {
+  Inter: "var(--font-sans), Inter, sans-serif",
+  Lora: "var(--font-serif), Lora, serif",
+  "Playfair Display": "var(--font-playfair), 'Playfair Display', serif",
+  "JetBrains Mono": "var(--font-mono), 'JetBrains Mono', monospace",
+  Gaegu: "var(--font-gaegu), Gaegu, cursive",
+  Nunito: "var(--font-nunito), Nunito, sans-serif",
+  "Hanken Grotesk": "var(--font-editor), 'Hanken Grotesk', sans-serif",
+  "Space Grotesk": "var(--font-space-grotesk), 'Space Grotesk', sans-serif",
+};
 
 export const FONT_WEIGHT_OPTIONS = [300, 400, 500, 600, 700] as const;
 export type FontWeight = (typeof FONT_WEIGHT_OPTIONS)[number];

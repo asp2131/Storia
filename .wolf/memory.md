@@ -1183,3 +1183,28 @@
 | 18:05 | Session end: 3 writes across 1 files (page.tsx) | 10 reads | ~8088 tok |
 | 12:20 | Editor re-themed colour-only: --editor-accent -> var(--studio-coral) + new --editor-on-accent; 12x text-white -> on-accent token where elements sit on the accent (white on coral was 3.27:1) | src/app/globals.css, src/components/editor/{BookMetaPanel,BookStyleDrawer,AudioLibraryPanel,NarrationPanel,PageManagerPanel}.tsx | word-diff confirms colour-only, no layout classes changed; verified in browser | ~9k |
 | 18:11 | Session end: 3 writes across 1 files (page.tsx) | 10 reads | ~8088 tok |
+
+## Session: 2026-08-25 09:10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:16 | Applied missing add_author_role migration to prod Supabase (fixed P2022 books.submitted_at on admin login) | prisma/migrations/20260824120000_add_author_role/migration.sql | success | ~9k |
+
+## Session: 2026-08-25 11:07
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:18 | Fixed admin email-OTP sign-in not redirecting to dashboard (soft nav -> hard nav) | src/app/admin/login/page.tsx, src/app/authors/accept/page.tsx | success | ~14k |
+
+## Session: 2026-09-07 09:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:05 | Audited 21 unstaged files (auth hard-nav fix, font catalog +3, overlay undo/redo, panel focus UX); tsc clean, eslint 0 errors, 28 tests pass | src/types/text-overlay.ts, src/stores/overlayEditorStore.ts, src/components/text-overlay/*, src/components/editor/AudioLibraryPanel.tsx, src/lib/image-compositing.ts, specs/mobile-compat-contract.json | 6 findings, no blockers | ~28k |
+| 09:34 | Created src/lib/image-compositing.test.ts | — | ~279 |
+| 09:35 | Created src/components/text-overlay/PropertyPanel.test.tsx | — | ~1259 |
+| 09:36 | Fixed all 6 audit findings: history coalescing + no-op guard, saved-snapshot dirty tracking, intent-driven text focus, node-canvas font registration, font drift guard, tests | src/stores/overlayEditorStore.ts, src/components/text-overlay/{PropertyPanel,DraggableTextOverlayEditor}.tsx, src/components/editor/ElementInspectorPanel.tsx, src/lib/image-compositing.ts, +4 test files | 456 tests pass, tsc + eslint clean | ~55k |
+| 09:38 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |
+| 09:58 | Browser-verified all fixes in the real editor (logged in via OTP read from dev DB); found + fixed rAF-in-hidden-tab focus bug; restored dev book 2 page 1 to its original single overlay element | src/components/text-overlay/PropertyPanel.tsx, src/components/text-overlay/PropertyPanel.test.tsx | undo coalescing, dirty-restore, add + double-click focus all confirmed live; 456 tests pass | ~40k |
+| 09:59 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |
+| 10:01 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |

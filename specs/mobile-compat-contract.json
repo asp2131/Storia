@@ -41,7 +41,10 @@
       "Lora",
       "Playfair Display",
       "JetBrains Mono",
-      "Gaegu"
+      "Gaegu",
+      "Nunito",
+      "Hanken Grotesk",
+      "Space Grotesk"
     ],
     "customFonts": {
       "allowed": true,
