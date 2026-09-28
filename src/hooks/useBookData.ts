@@ -175,6 +175,7 @@ export type BookData = {
   id: string;
   title: string;
   author: string | null;
+  artworkProvenance?: string | null;
   coverUrl: string | null;
   description: string | null;
   defaultTextStyle?: BookTextStyle | null;

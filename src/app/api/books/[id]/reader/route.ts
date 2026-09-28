@@ -139,6 +139,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
         id: bookIdStr,
         title: book.title,
         author: book.author,
+        artworkProvenance: book.artwork_provenance,
         coverUrl: book.cover_url,
         description: book.description,
         hasPronunciations,

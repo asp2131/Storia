@@ -1208,3 +1208,12 @@
 | 09:58 | Browser-verified all fixes in the real editor (logged in via OTP read from dev DB); found + fixed rAF-in-hidden-tab focus bug; restored dev book 2 page 1 to its original single overlay element | src/components/text-overlay/PropertyPanel.tsx, src/components/text-overlay/PropertyPanel.test.tsx | undo coalescing, dirty-restore, add + double-click focus all confirmed live; 456 tests pass | ~40k |
 | 09:59 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |
 | 10:01 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |
+
+## Session: 2026-09-28 12:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:17 | Edited src/components/StoriaCalmLanding.tsx | 6→6 lines | ~208 |
+| 12:17 | Fixed homepage event captions (Autism Society of GNO Festival, NO Book Festival at Tulane Family Day) | src/components/StoriaCalmLanding.tsx | done | ~300 |
+| 12:17 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
+| 12:19 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |

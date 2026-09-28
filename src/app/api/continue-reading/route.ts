@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
           id: book.id.toString(),
           title: book.title,
           author: book.author,
+          artworkProvenance: book.artwork_provenance,
           coverUrl: book.cover_url,
           totalPages: book.total_pages,
           hasNarration: book.pages.length > 0,

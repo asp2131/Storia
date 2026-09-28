@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-07T14:35:42.679Z
-> Files: 743 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-28T17:17:39.383Z
+> Files: 748 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -1039,7 +1039,7 @@
 - `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
 - `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
-- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~8413 tok)
+- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~8476 tok)
 
 ## src/components/editor/
 
@@ -1052,12 +1052,12 @@
 
 ## src/components/text-overlay/
 
-- `DraggableTextOverlayEditor.tsx` — OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS (~3859 tok)
 - `DraggableTextOverlayEditor.test.tsx` — Vitest for `historyShortcutFor`: Cmd/Ctrl+Z/Y mapping, and which text fields keep their native undo. (~200 tok)
-- `PropertyPanel.tsx` — Right-hand inspector for the selected overlay element: text, font/size/weight/colour/align, shadow + background sections, per-element voice. Focuses its text field only when `focusTextToken` changes. (~1900 tok)
+- `DraggableTextOverlayEditor.tsx` — OVERLAY_EDITOR_AUTOSAVE_DEBOUNCE_MS (~3859 tok)
 - `PropertyPanel.test.tsx` — Vitest: the text field takes focus only on an explicit `focusTextToken` bump, never on plain selection. (~330 tok)
-- `Toolbar.tsx` — Overlay editor toolbar showing save/composite status and actions like add text, undo/redo, and composite export. (~668 tok)
+- `PropertyPanel.tsx` — Right-hand inspector for the selected overlay element: text, font/size/weight/colour/align, shadow + background sections, per-element voice. Focuses its text field only when `focusTextToken` changes. (~1900 tok)
 - `Toolbar.test.tsx` — Vitest for the undo/redo toolbar buttons: disabled without history, fire their handlers with it. (~180 tok)
+- `Toolbar.tsx` — Overlay editor toolbar showing save/composite status and actions like add text, undo/redo, and composite export. (~668 tok)
 
 ## src/contexts/
 
@@ -1138,5 +1138,5 @@
 ## src/stores/
 
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
-- `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
 - `overlayEditorStore.test.ts` — Vitest for the overlay store: init, reorder, undo/redo, typing-burst coalescing, no-op update rejection, saved-state dirty tracking. (~420 tok)
+- `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)

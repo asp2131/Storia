@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { authClient, useSession } from "@/lib/auth-client";
+import { ARTWORK_PROVENANCE_COPY } from "@/lib/artwork-provenance";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -12,6 +13,7 @@ interface Book {
   id: string;
   title: string;
   author: string;
+  artworkProvenance?: string | null;
   coverUrl: string | null;
   description: string | null;
   totalPages: number | null;
@@ -389,6 +391,19 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
                   <p className="text-white/80 font-bold text-sm sm:text-xl mb-3 sm:mb-4 drop-shadow-lg">
                     By {book.author}
                   </p>
+                  {book.artworkProvenance === "human_created" && i === activeIndex && (
+                    <details
+                      className="relative pointer-events-auto mb-3 text-white text-xs sm:text-sm"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <summary className="cursor-pointer rounded-full bg-black/60 border border-white/10 px-3 py-1.5 font-bold shadow-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                        {ARTWORK_PROVENANCE_COPY.badge}
+                      </summary>
+                      <p className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 max-w-[80vw] rounded-2xl bg-zinc-800 border border-white/20 p-4 text-left leading-relaxed shadow-2xl z-10">
+                        {ARTWORK_PROVENANCE_COPY.explanation}
+                      </p>
+                    </details>
+                  )}
                   {(book.progressPercent && book.progressPercent > 0) ||
                   (book.currentPage && book.currentPage > 1) ? (
                     <span className="text-white font-bold text-xs sm:text-base bg-black/60 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/10 shadow-xl">
@@ -515,6 +530,14 @@ export default function LibraryClient({ initialBooks }: LibraryClientProps) {
           </button>
         </>
       )}
+      <details className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-[200] w-[min(90vw,32rem)] text-center text-white/80 text-xs sm:text-sm">
+        <summary className="cursor-pointer w-fit mx-auto rounded-full bg-black/50 border border-white/20 px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+          {ARTWORK_PROVENANCE_COPY.catalogHeading}
+        </summary>
+        <p className="absolute bottom-full mb-2 w-full rounded-2xl bg-zinc-800 border border-white/20 p-4 text-left leading-relaxed shadow-2xl">
+          {ARTWORK_PROVENANCE_COPY.catalogNonEndorsement}
+        </p>
+      </details>
     </div>
   );
 }

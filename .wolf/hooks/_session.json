@@ -1,28 +1,37 @@
 {
-  "session_id": "session-2026-09-07-0900",
-  "started": "2026-09-07T14:00:03.994Z",
-  "files_read": {},
+  "session_id": "session-2026-09-28-1215",
+  "started": "2026-09-28T17:15:05.615Z",
+  "files_read": {
+    "/Users/akinpound/Documents/experiments/loratone/storia/public/storia-landing/team-author.jpg": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-09-28T17:16:47.364Z"
+    },
+    "/Users/akinpound/Documents/experiments/loratone/storia/public/storia-landing/team-festival.png": {
+      "count": 1,
+      "tokens": 0,
+      "first_read": "2026-09-28T17:16:47.674Z"
+    },
+    "/Users/akinpound/Documents/experiments/loratone/storia/src/components/StoriaCalmLanding.tsx": {
+      "count": 1,
+      "tokens": 8413,
+      "first_read": "2026-09-28T17:16:59.884Z"
+    }
+  },
   "files_written": [
     {
-      "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/lib/image-compositing.test.ts",
-      "action": "create",
-      "tokens": 279,
-      "at": "2026-09-07T14:34:38.088Z"
-    },
-    {
-      "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/components/text-overlay/PropertyPanel.test.tsx",
-      "action": "create",
-      "tokens": 1259,
-      "at": "2026-09-07T14:35:42.688Z"
+      "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/components/StoriaCalmLanding.tsx",
+      "action": "edit",
+      "tokens": 208,
+      "at": "2026-09-28T17:17:39.401Z"
     }
   ],
   "edit_counts": {
-    "src/lib/image-compositing.test.ts": 1,
-    "src/components/text-overlay/PropertyPanel.test.tsx": 1
+    "src/components/StoriaCalmLanding.tsx": 1
   },
-  "anatomy_hits": 0,
-  "anatomy_misses": 0,
+  "anatomy_hits": 1,
+  "anatomy_misses": 2,
   "repeated_reads_warned": 0,
   "cerebrum_warnings": 0,
-  "stop_count": 4
+  "stop_count": 2
 }

@@ -798,12 +798,12 @@ export default function StoriaCalmLanding() {
 
           <div className="c-grid">
             <figure className="c-tile c-a reveal">
-              <Image src="/storia-landing/team-author.jpg" alt="With author Cherelyn Poe" fill sizes="(max-width: 900px) 100vw, 50vw" />
-              <figcaption>With author Cherelyn Poe</figcaption>
+              <Image src="/storia-landing/team-author.jpg" alt="Loratone team with author Cherelyn Poe at the Autism Society of Greater New Orleans Festival" fill sizes="(max-width: 900px) 100vw, 50vw" />
+              <figcaption>Autism Society of Greater New Orleans Festival with author Cherelyn Poe</figcaption>
             </figure>
             <figure className="c-tile c-b reveal">
-              <Image src="/storia-landing/team-festival.png" alt="Loratone team at festival" fill sizes="(max-width: 900px) 100vw, 50vw" />
-              <figcaption>Tulane Book Festival with Former Mayor Mitch Landrieu</figcaption>
+              <Image src="/storia-landing/team-festival.png" alt="Loratone team at the New Orleans Book Festival at Tulane University During Family Day" fill sizes="(max-width: 900px) 100vw, 50vw" />
+              <figcaption>New Orleans Book Festival at Tulane University During Family Day with Former Mayor Mitch Landrieu</figcaption>
             </figure>
           </div>
 

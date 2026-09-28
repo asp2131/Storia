@@ -70,6 +70,7 @@ function createAuth() {
         role: {
           type: "string",
           defaultValue: "user",
+          input: false,
         },
       },
     },
