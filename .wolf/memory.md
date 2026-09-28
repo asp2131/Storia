@@ -1217,3 +1217,5 @@
 | 12:17 | Fixed homepage event captions (Autism Society of GNO Festival, NO Book Festival at Tulane Family Day) | src/components/StoriaCalmLanding.tsx | done | ~300 |
 | 12:17 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
 | 12:19 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
+| 12:51 | Tried applying add_artwork_provenance to prod; blocked (no IPv6, no pooler URL, no Supabase MCP) | - | blocked | ~2k |
+| 12:52 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
