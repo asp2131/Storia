@@ -9,7 +9,9 @@ import Link from "next/link";
 import SplitType from "split-type";
 import { useReducedMotionVariant } from "@/hooks/landing/useReducedMotionVariant";
 import { scrambleIn } from "@/lib/landing/scramble";
+import { ARTICLES, formatArticleDate } from "@/content/whats-new";
 import MascotStoryWorld from "./MascotStoryWorld";
+import { SiteFooter, SiteNav } from "./SiteChrome";
 import "./StoriaCalmLanding.css";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -43,6 +45,24 @@ const BOOKS = [
   { title: "Bunny Brother", meta: "Playful story", cover: "bc-6" },
   { title: "Kumu's Sky", meta: "Adventure", cover: "bc-7" },
   { title: "Sweet Potato Sweet Potato", meta: "By Cherelyn Poe", cover: "bc-8" },
+];
+
+const VALUES = [
+  {
+    word: "Resourceful",
+    tone: "v-blue",
+    body: "Built lean in New Orleans with educators, SLPs, and authors, so every feature earns its place on the page.",
+  },
+  {
+    word: "Fun",
+    tone: "v-sun",
+    body: "Soundscapes, a mascot who waves back, and words that light up as they're read. Reading should feel like play.",
+  },
+  {
+    word: "Equitable",
+    tone: "v-mint",
+    body: "Designed for every kind of reader, including neurodivergent kids and kids still finding their footing.",
+  },
 ];
 
 const PRESS_LINKS = [
@@ -352,6 +372,24 @@ export default function StoriaCalmLanding() {
         scrollTrigger: { trigger: ".stories-rail", start: "top 85%" },
       });
 
+      gsap.to(".values .reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.12,
+        scrollTrigger: { trigger: ".values", start: "top 80%" },
+      });
+
+      gsap.to(".news .reveal", {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.1,
+        scrollTrigger: { trigger: ".news", start: "top 80%" },
+      });
+
       gsap.to(".community-head .reveal", {
         opacity: 1,
         y: 0,
@@ -532,27 +570,16 @@ export default function StoriaCalmLanding() {
 
   return (
     <div ref={rootRef} className="storia-calm">
-      <nav className="storia-nav">
-        <Link href="#top" className="wordmark">
-          <span className="dot">
-            <Image src="/storia-landing/logo-headshot.png" alt="" width={32} height={32} />
-          </span>
-          <span>loratone</span>
-        </Link>
-        <div className="links">
-          <a href="#mission">Why we built this</a>
-          <a href="#how">How it works</a>
-          <a href="#stories">Stories</a>
-          <a href="#community">Our story</a>
-          <a href="https://app.loratone.com/#/intro" target="_blank" rel="noopener noreferrer">Try it now!</a>
-        </div>
-        <a className="cta" href="#download">Download</a>
-      </nav>
+      <SiteNav />
 
       <main id="top">
         <section className="hero">
           <div className="hero-inner">
-            <p className="eyebrow reveal">For ages 4–10 · Made in New Orleans</p>
+            <Link className="hero-award" href="/whats-new/tulane-open-season-fall-2026">
+              <span className="hero-award-badge">3rd place</span>
+              Tulane Open Season Pitch Competition · Fall 2026 →
+            </Link>
+            <p className="eyebrow reveal">For all kids and reluctant readers · Made in New Orleans</p>
             <h1 ref={heroTitleRef} className="hero-title" aria-label="Loratone brings every story to life.">
               Loratone brings <em>every story</em> to life.
             </h1>
@@ -617,6 +644,15 @@ export default function StoriaCalmLanding() {
               );
             })}
           </p>
+        </section>
+
+        <section className="values" aria-label="What Loratone stands for">
+          {VALUES.map((value) => (
+            <article className={`value-card ${value.tone} reveal`} key={value.word}>
+              <h2>{value.word}.</h2>
+              <p>{value.body}</p>
+            </article>
+          ))}
         </section>
 
         <section className="mission-section" id="mission">
@@ -786,6 +822,36 @@ export default function StoriaCalmLanding() {
           </div>
         </section>
 
+        <section className="news" id="whats-new">
+          <div className="news-head">
+            <div>
+              <p className="eyebrow reveal">What&apos;s new</p>
+              <h2 className="reveal">Fresh from the Loratone desk.</h2>
+            </div>
+            <Link className="btn btn-ghost reveal" href="/whats-new">
+              All updates →
+            </Link>
+          </div>
+          <div className="news-grid">
+            {ARTICLES.slice(0, 3).map((article) => (
+              <Link className="news-card reveal" href={`/whats-new/${article.slug}`} key={article.slug}>
+                <div className={`news-cover news-${article.category.toLowerCase()}`}>
+                  {article.cover ? (
+                    <Image src={article.cover.src} alt={article.cover.alt} fill sizes="(max-width: 900px) 100vw, 560px" />
+                  ) : (
+                    <span className="news-cover-mark" aria-hidden="true">{article.category}</span>
+                  )}
+                </div>
+                <p className="news-meta">
+                  {article.category} · {formatArticleDate(article.date)}
+                </p>
+                <h3>{article.title}</h3>
+                <p className="news-summary">{article.summary}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <section className="community" id="community">
           <div className="community-head">
             <p className="eyebrow reveal">Our story</p>
@@ -847,16 +913,7 @@ export default function StoriaCalmLanding() {
         </section>
       </main>
 
-      <footer className="storia-footer">
-        <div className="footer-inner">
-          <span>© 2026 Loratone, Inc. · Made in New Orleans</span>
-          <div className="footer-links">
-            <Link href="/privacy-policy">Privacy</Link>
-            <a href="mailto:hello@loratone.kids">Contact</a>
-            <a href="https://app.loratone.com/#/intro" target="_blank" rel="noopener noreferrer">Try it now!</a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

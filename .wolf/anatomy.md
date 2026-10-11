@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-28T17:17:39.383Z
-> Files: 748 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-09-29T17:08:24.936Z
+> Files: 752 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -1034,11 +1034,20 @@
 - `ReportsClient.test.tsx` — useSessionMock (~2553 tok)
 - `ReportsClient.tsx` — RANGE_OPTIONS (~8501 tok)
 
+## src/app/whats-new/
+
+- `page.tsx` — metadata (~530 tok)
+
+## src/app/whats-new/[slug]/
+
+- `page.tsx` — generateStaticParams (~474 tok)
+
 ## src/components/
 
 - `IntegratedIllustration.test.tsx` — overlay (~1644 tok)
 - `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
+- `SiteChrome.tsx` — WEB_APP_URL (~460 tok)
 - `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~8476 tok)
 
 ## src/components/editor/
@@ -1058,6 +1067,10 @@
 - `PropertyPanel.tsx` — Right-hand inspector for the selected overlay element: text, font/size/weight/colour/align, shadow + background sections, per-element voice. Focuses its text field only when `focusTextToken` changes. (~1900 tok)
 - `Toolbar.test.tsx` — Vitest for the undo/redo toolbar buttons: disabled without history, fire their handlers with it. (~180 tok)
 - `Toolbar.tsx` — Overlay editor toolbar showing save/composite status and actions like add text, undo/redo, and composite export. (~668 tok)
+
+## src/content/
+
+- `whats-new.tsx` — ponytail: articles live in code. Move to the DB/admin once non-devs need to publish. (~1587 tok)
 
 ## src/contexts/
 
@@ -1140,3 +1153,11 @@
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
 - `overlayEditorStore.test.ts` — Vitest for the overlay store: init, reorder, undo/redo, typing-burst coalescing, no-op update rejection, saved-state dirty tracking. (~420 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
+
+## Discovered during 2026-09-29 landing revamp + What's new
+
+- `src/content/whats-new.tsx` — In-code What's new articles (`ARTICLES`, `getArticle`, `formatArticleDate`); JSX bodies with next/image figures (~1500 tok)
+- `src/components/SiteChrome.tsx` — Shared `SiteNav` (incl. What's new pill) + `SiteFooter` used by landing and /whats-new (~450 tok)
+- `src/app/whats-new/page.tsx` — What's new index, card grid over `ARTICLES` (~400 tok)
+- `src/app/whats-new/[slug]/page.tsx` — Static article page (generateStaticParams, dynamicParams=false) (~450 tok)
+- `public/whats-new/` — Web-sized (1600px) JPEGs converted from `public/Q3 assets/` (HEIC → JPEG via sips)

@@ -181,7 +181,12 @@
 
 - **After any client-side sign-in, HARD-navigate (`window.location.href`), never `router.replace`.** Better Auth's `useSession` is a nanostore; `authClient.getSession()` is a one-off fetch that does NOT update it. A soft Next transition therefore lands on a gated route with a stale `null` session and the layout gate bounces the user back to login. `signIn.social({callbackURL})` is immune only because OAuth ends in a full document load. `src/app/HomeClient.tsx` got this right from the start; `/admin/login` and `/authors/accept` did not.
 
+- 2026-09-29 Landing palette changed to a cool "crayon box": `--sl-accent #3451e0` blue (white text 6.2:1), `--sl-coral #e8432f` (display text only, 3.75:1), `--sl-sun #ffc83d`, `--sl-mint #1fa88a` (ink text only), soft tints `--sl-*-soft`, paper `#f7f8fc`, ink `#161a2e`. Supersedes the 2026-08-24 coral-accent note. Brand values messaging: resourceful, fun, equitable.
+- 2026-09-29 What's new articles live in `src/content/whats-new.tsx` (code, not DB). Landing teaser shows `ARTICLES.slice(0,3)`, newest first — prepend new articles. Nav/footer shared via `src/components/SiteChrome.tsx`.
+- 2026-09-29 Tulane Innovation Institute Fall 2026 Open Season (Sept 15, The Josephine): Loratone placed 3rd ($750) of 10 finalists — NOT the winner (OralExam.ai won). Word it as "3rd place".
+
 ## Do-Not-Repeat
+- 2026-09-29 `npm run dev` also starts Docker Postgres (port 5433); if that port is taken it fails. For UI-only checks run `npx next dev -p <port>` directly.
 
 - 2026-08-25 Don't hand-edit `.wolf/buglog.json` with a script that assumes it's a bare array — it's `{"bugs": [...]}`. Writing a top-level list reformatted all 186 entries into a 6484-line diff. Load, append to `d['bugs']`, dump the dict.
 

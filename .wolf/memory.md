@@ -1219,3 +1219,26 @@
 | 12:19 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
 | 12:51 | Tried applying add_artwork_provenance to prod; blocked (no IPv6, no pooler URL, no Supabase MCP) | - | blocked | ~2k |
 | 12:52 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
+
+## Session: 2026-09-29 11:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:06 | Created src/content/whats-new.tsx | — | ~1587 |
+| 12:06 | Created src/components/SiteChrome.tsx | — | ~460 |
+| 12:08 | Created src/app/whats-new/page.tsx | — | ~530 |
+| 12:08 | Created src/app/whats-new/[slug]/page.tsx | — | ~474 |
+| 12:11 | designqc: captured 6 screenshots (336KB, ~15000 tok) | /, /whats-new, /whats-new/community-conversations-q3-2026 | ready for eval | ~0 |
+| 12:12 | Landing revamp: crayon-box palette (blue #3451e0 accent), Tulane 3rd-place award pill, values trio, What's new teaser; new /whats-new index + articles; shared SiteNav/SiteFooter; sitemap entries | StoriaCalmLanding.tsx/.css, SiteChrome.tsx, content/whats-new.tsx, app/whats-new/*, sitemap.ts | tsc+eslint clean, routes 200/404 verified | ~60k |
+| 12:12 | Session end: 4 writes across 3 files (whats-new.tsx, SiteChrome.tsx, page.tsx) | 6 reads | ~11527 tok |
+
+## Session: 2026-10-11 15:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-11 16:04
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 16:05 | Hero eyebrow: 'For ages 4–10' → 'For all kids and reluctant readers' | src/components/StoriaCalmLanding.tsx | done | ~200 |
