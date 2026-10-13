@@ -677,7 +677,7 @@ export default function StoriaCalmLanding() {
 
             <div className="mission-grid">
               <article className="mission-card reveal">
-                <p className="mission-kicker">01 / Founder</p>
+                <p className="mission-kicker">01 / Co-founder + CEO</p>
                 <h3>Shivang Thakor</h3>
                 <p>
                   For as long as Shivang can remember, he has read stories with
@@ -691,7 +691,7 @@ export default function StoriaCalmLanding() {
               </article>
 
               <article className="mission-card reveal">
-                <p className="mission-kicker">02 / Founder + Software Architect</p>
+                <p className="mission-kicker">02 / Co-founder + CTO</p>
                 <h3>Akintunde Pounds</h3>
                 <p>
                   As a parent to a daughter with autism, Akintunde is on a

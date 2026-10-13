@@ -1253,3 +1253,9 @@
 | 10:54 | Edited src/components/StoriaCalmLanding.css | modified media() | ~36 |
 | 10:56 | Cropped girl-on-cloud illustration (ffmpeg bbox → crop, alpha already transparent) and added floating cut-out to landing CTA (#download); stacks above copy <1100px; reduced-motion off | public/landing/girl-on-cloud.png, StoriaCalmLanding.tsx, StoriaCalmLanding.css | verified desktop+mobile screenshots | ~8k |
 | 10:56 | Session end: 3 writes across 2 files (StoriaCalmLanding.tsx, StoriaCalmLanding.css) | 2 reads | ~316 tok |
+
+## Session: 2026-10-13 11:42
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:43 | Founder titles -> Co-founder + CEO/CTO | StoriaCalmLanding.tsx, content.ts, MorphogenesisHero.tsx | done | ~1k |

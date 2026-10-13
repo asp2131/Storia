@@ -429,7 +429,7 @@ export default function MorphogenesisHero({
         <div className="row flex flex-col md:flex-row justify-center gap-8 relative z-10">
           <div className="col flex-1 flex flex-col justify-center">
             <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
-              <div className="font-mono text-xs opacity-40">01 / Founder</div>
+              <div className="font-mono text-xs opacity-40">01 / Co-founder + CEO</div>
               <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
                 Shivang Thakor
               </h2>
@@ -456,7 +456,7 @@ export default function MorphogenesisHero({
         <div className="row flex flex-col md:flex-row-reverse justify-center gap-8 relative z-10">
           <div className="col flex-1 flex flex-col justify-center">
             <div className="card w-full md:w-3/4 mx-auto p-6 md:p-12 bg-[#0a0a0a] rounded-2xl flex flex-col gap-4 text-white">
-              <div className="font-mono text-xs opacity-40">02 / Founder + Software Architect</div>
+              <div className="font-mono text-xs opacity-40">02 / Co-founder + CTO</div>
               <h2 className="text-2xl md:text-4xl font-serif font-black text-amber-100">
                 Akintunde Pounds
               </h2>
