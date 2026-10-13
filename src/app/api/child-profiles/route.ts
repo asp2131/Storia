@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/child-auth";
 import { prisma } from "@/lib/prisma";
 
+// Onboarding answers. Unknown values are dropped rather than rejected so an app
+// build that ships a new option never blocks a parent from creating a profile.
+const PARENT_GOALS = ["improveReading", "reduceScreenTime", "lovesReading"];
+const INTERESTS = [
+  "adventure",
+  "funny",
+  "mystery",
+  "magicFantasy",
+  "spaceScience",
+  "oceanWeather",
+  "sports",
+  "friendshipFeelings",
+  "mangaAnime",
+  "howThingsWork",
+];
+const READING_TIMES = ["beforeSchool", "afterSchool", "bedtime", "weekends"];
+
+const pick = (value: unknown, allowed: string[]) =>
+  typeof value === "string" && allowed.includes(value) ? value : null;
+
 export async function GET() {
   try {
     const result = await getAuthenticatedUser();
@@ -28,7 +48,7 @@ export async function POST(request: NextRequest) {
     if ("error" in result) return result.error;
 
     const body = await request.json();
-    const { displayName, ageBand, readingLevel, isDefault } = body;
+    const { displayName, ageBand, readingLevel, isDefault, parentGoal, interests, readingTime } = body;
 
     if (!displayName || typeof displayName !== "string" || !displayName.trim()) {
       return NextResponse.json(
@@ -40,6 +60,13 @@ export async function POST(request: NextRequest) {
     if (!ageBand || typeof ageBand !== "string" || !ageBand.trim()) {
       return NextResponse.json(
         { error: { code: "invalid_request", message: "ageBand is required", details: { field: "ageBand" } } },
+        { status: 400 }
+      );
+    }
+
+    if (interests != null && !Array.isArray(interests)) {
+      return NextResponse.json(
+        { error: { code: "invalid_request", message: "interests must be an array", details: { field: "interests" } } },
         { status: 400 }
       );
     }
@@ -70,6 +97,9 @@ export async function POST(request: NextRequest) {
         ageBand: ageBand.trim(),
         readingLevel: typeof readingLevel === "string" && readingLevel.trim() ? readingLevel.trim() : null,
         isDefault: shouldBeDefault,
+        parentGoal: pick(parentGoal, PARENT_GOALS),
+        interests: [...new Set(((interests ?? []) as unknown[]).filter((i) => pick(i, INTERESTS)))] as string[],
+        readingTime: pick(readingTime, READING_TIMES),
       },
     });
 

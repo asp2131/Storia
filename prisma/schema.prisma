@@ -393,6 +393,10 @@ model child_profile {
   ageBand      String
   readingLevel String?
   isDefault    Boolean  @default(false)
+  /// Onboarding answers, used to learn what readers want and commission books in those lanes.
+  parentGoal   String?
+  interests    String[] @default([])
+  readingTime  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
