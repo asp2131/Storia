@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { ARTICLES } from "@/content/whats-new";
 import { prisma } from "@/lib/prisma";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -18,6 +19,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: "https://loratone.kids", changeFrequency: "weekly", priority: 1.0 },
     { url: "https://loratone.kids/library", changeFrequency: "daily", priority: 0.9 },
     { url: "https://loratone.kids/privacy-policy", changeFrequency: "monthly", priority: 0.4 },
+    { url: "https://loratone.kids/whats-new", changeFrequency: "weekly", priority: 0.7 },
+    ...ARTICLES.map((article) => ({
+      url: `https://loratone.kids/whats-new/${article.slug}`,
+      lastModified: article.date,
+      priority: 0.6,
+    })),
     ...bookEntries,
   ];
 }

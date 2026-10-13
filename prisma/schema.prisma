@@ -17,6 +17,8 @@ model books {
   total_pages           Int?                   @default(0)
   source_type           String                 @default("public_domain") @db.VarChar(255)
   is_published          Boolean                @default(false)
+  /// unspecified | human_created | ai_assisted_or_generated; constrained by SQL migration.
+  artwork_provenance    String                 @default("unspecified")
   processing_status     String?                @default("pending") @db.VarChar(255)
   processing_cost       Decimal?               @db.Decimal(10, 4)
   processing_error      String?

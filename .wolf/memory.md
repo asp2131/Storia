@@ -1183,3 +1183,62 @@
 | 18:05 | Session end: 3 writes across 1 files (page.tsx) | 10 reads | ~8088 tok |
 | 12:20 | Editor re-themed colour-only: --editor-accent -> var(--studio-coral) + new --editor-on-accent; 12x text-white -> on-accent token where elements sit on the accent (white on coral was 3.27:1) | src/app/globals.css, src/components/editor/{BookMetaPanel,BookStyleDrawer,AudioLibraryPanel,NarrationPanel,PageManagerPanel}.tsx | word-diff confirms colour-only, no layout classes changed; verified in browser | ~9k |
 | 18:11 | Session end: 3 writes across 1 files (page.tsx) | 10 reads | ~8088 tok |
+
+## Session: 2026-08-25 09:10
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:16 | Applied missing add_author_role migration to prod Supabase (fixed P2022 books.submitted_at on admin login) | prisma/migrations/20260824120000_add_author_role/migration.sql | success | ~9k |
+
+## Session: 2026-08-25 11:07
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 11:18 | Fixed admin email-OTP sign-in not redirecting to dashboard (soft nav -> hard nav) | src/app/admin/login/page.tsx, src/app/authors/accept/page.tsx | success | ~14k |
+
+## Session: 2026-09-07 09:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 09:05 | Audited 21 unstaged files (auth hard-nav fix, font catalog +3, overlay undo/redo, panel focus UX); tsc clean, eslint 0 errors, 28 tests pass | src/types/text-overlay.ts, src/stores/overlayEditorStore.ts, src/components/text-overlay/*, src/components/editor/AudioLibraryPanel.tsx, src/lib/image-compositing.ts, specs/mobile-compat-contract.json | 6 findings, no blockers | ~28k |
+| 09:34 | Created src/lib/image-compositing.test.ts | — | ~279 |
+| 09:35 | Created src/components/text-overlay/PropertyPanel.test.tsx | — | ~1259 |
+| 09:36 | Fixed all 6 audit findings: history coalescing + no-op guard, saved-snapshot dirty tracking, intent-driven text focus, node-canvas font registration, font drift guard, tests | src/stores/overlayEditorStore.ts, src/components/text-overlay/{PropertyPanel,DraggableTextOverlayEditor}.tsx, src/components/editor/ElementInspectorPanel.tsx, src/lib/image-compositing.ts, +4 test files | 456 tests pass, tsc + eslint clean | ~55k |
+| 09:38 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |
+| 09:58 | Browser-verified all fixes in the real editor (logged in via OTP read from dev DB); found + fixed rAF-in-hidden-tab focus bug; restored dev book 2 page 1 to its original single overlay element | src/components/text-overlay/PropertyPanel.tsx, src/components/text-overlay/PropertyPanel.test.tsx | undo coalescing, dirty-restore, add + double-click focus all confirmed live; 456 tests pass | ~40k |
+| 09:59 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |
+| 10:01 | Session end: 2 writes across 2 files (image-compositing.test.ts, PropertyPanel.test.tsx) | 0 reads | ~1538 tok |
+
+## Session: 2026-09-28 12:15
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:17 | Edited src/components/StoriaCalmLanding.tsx | 6→6 lines | ~208 |
+| 12:17 | Fixed homepage event captions (Autism Society of GNO Festival, NO Book Festival at Tulane Family Day) | src/components/StoriaCalmLanding.tsx | done | ~300 |
+| 12:17 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
+| 12:19 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
+| 12:51 | Tried applying add_artwork_provenance to prod; blocked (no IPv6, no pooler URL, no Supabase MCP) | - | blocked | ~2k |
+| 12:52 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 3 reads | ~8621 tok |
+
+## Session: 2026-09-29 11:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:06 | Created src/content/whats-new.tsx | — | ~1587 |
+| 12:06 | Created src/components/SiteChrome.tsx | — | ~460 |
+| 12:08 | Created src/app/whats-new/page.tsx | — | ~530 |
+| 12:08 | Created src/app/whats-new/[slug]/page.tsx | — | ~474 |
+| 12:11 | designqc: captured 6 screenshots (336KB, ~15000 tok) | /, /whats-new, /whats-new/community-conversations-q3-2026 | ready for eval | ~0 |
+| 12:12 | Landing revamp: crayon-box palette (blue #3451e0 accent), Tulane 3rd-place award pill, values trio, What's new teaser; new /whats-new index + articles; shared SiteNav/SiteFooter; sitemap entries | StoriaCalmLanding.tsx/.css, SiteChrome.tsx, content/whats-new.tsx, app/whats-new/*, sitemap.ts | tsc+eslint clean, routes 200/404 verified | ~60k |
+| 12:12 | Session end: 4 writes across 3 files (whats-new.tsx, SiteChrome.tsx, page.tsx) | 6 reads | ~11527 tok |
+
+## Session: 2026-10-11 15:58
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+
+## Session: 2026-10-11 16:04
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 16:05 | Hero eyebrow: 'For ages 4–10' → 'For all kids and reluctant readers' | src/components/StoriaCalmLanding.tsx | done | ~200 |

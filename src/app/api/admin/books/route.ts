@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStudio } from "@/lib/admin-auth";
+import { isArtworkProvenance } from "@/lib/artwork-provenance";
 
 export async function GET(request: NextRequest) {
   const authResult = await requireStudio();
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
       id: book.id.toString(),
       title: book.title,
       author: book.author,
+      artworkProvenance: book.artwork_provenance,
       processingStatus: book.processing_status,
       updatedAt: book.updated_at?.toISOString?.() ?? null,
       coverUrl: book.cover_url,
@@ -79,10 +81,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if ("artworkProvenance" in body) {
+      if (user.role !== "admin") {
+        return NextResponse.json(
+          { error: "Only administrators can set artwork provenance." },
+          { status: 403 }
+        );
+      }
+      if (!isArtworkProvenance(body.artworkProvenance)) {
+        return NextResponse.json(
+          { error: "Invalid artworkProvenance." },
+          { status: 400 }
+        );
+      }
+    }
+
     const book = await prisma.books.create({
       data: {
         title: body.title,
         author: body.author,
+        artwork_provenance: body.artworkProvenance,
         cover_url: body.coverUrl || null,
         description: body.description || null,
         // Only an admin can create something already live; an author's book
@@ -109,6 +127,7 @@ export async function POST(request: NextRequest) {
         id: book.id.toString(),
         title: book.title,
         author: book.author,
+        artworkProvenance: book.artwork_provenance,
         processingStatus: book.processing_status,
         updatedAt: book.updated_at?.toISOString?.() ?? null,
         coverUrl: book.cover_url,

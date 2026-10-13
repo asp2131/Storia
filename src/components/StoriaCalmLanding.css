@@ -1,14 +1,25 @@
 .storia-calm {
-  --sl-accent: #ed6151;
-  --sl-accent-deep: #b53e2d;
-  --sl-blue: #3679bf;
-  --sl-paper: #faf6ef;
-  --sl-ink: #1a1512;
-  --sl-ink-70: rgba(26, 21, 18, 0.7);
-  --sl-ink-50: rgba(26, 21, 18, 0.5);
-  --sl-ink-30: rgba(26, 21, 18, 0.3);
-  --sl-ink-10: rgba(26, 21, 18, 0.1);
-  --sl-border: rgba(26, 21, 18, 0.14);
+  /* "Crayon box" palette: one confident blue for actions, bright supporting
+     colours for play. White on --sl-accent is 6.2:1; --sl-coral is 3.75:1 on
+     paper, so keep it to display-size text. White on --sl-mint fails — use ink. */
+  --sl-accent: #3451e0;
+  --sl-accent-deep: #2439b0;
+  --sl-coral: #e8432f;
+  --sl-sun: #ffc83d;
+  --sl-mint: #1fa88a;
+  --sl-mint-deep: #0f7a63;
+  --sl-sky-soft: #dfe7ff;
+  --sl-sun-soft: #fff1c7;
+  --sl-mint-soft: #d4f4ea;
+  --sl-coral-soft: #ffe0d9;
+  --sl-lilac-soft: #ebe3ff;
+  --sl-paper: #f7f8fc;
+  --sl-ink: #161a2e;
+  --sl-ink-70: rgba(22, 26, 46, 0.72);
+  --sl-ink-50: rgba(22, 26, 46, 0.56);
+  --sl-ink-30: rgba(22, 26, 46, 0.3);
+  --sl-ink-10: rgba(22, 26, 46, 0.1);
+  --sl-border: rgba(22, 26, 46, 0.12);
   --sl-display: var(--font-space-grotesk), "Space Grotesk", Georgia, serif;
   --sl-sans: var(--font-nunito), "Nunito", system-ui, sans-serif;
   --sl-container: 1180px;
@@ -47,7 +58,7 @@
 
 .storia-calm .eyebrow {
   margin: 0 0 20px;
-  color: var(--sl-accent);
+  color: var(--sl-accent-deep);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -83,7 +94,7 @@
 
 .storia-calm .btn-primary {
   background: var(--sl-accent);
-  color: var(--sl-paper);
+  color: #fff;
 }
 
 .storia-calm .btn-primary:hover {
@@ -92,12 +103,12 @@
 
 .storia-calm .btn-ghost {
   border: 1px solid var(--sl-border);
-  background: transparent;
+  background: #fff;
   color: var(--sl-ink);
 }
 
 .storia-calm .btn-ghost:hover {
-  background: rgba(26, 21, 18, 0.04);
+  background: var(--sl-sky-soft);
 }
 
 .storia-calm .storia-nav {
@@ -115,7 +126,7 @@
 
 .storia-calm .storia-nav.scrolled {
   padding: 16px 40px;
-  background: rgba(250, 246, 239, 0.85);
+  background: rgba(247, 248, 252, 0.85);
   backdrop-filter: blur(16px);
   box-shadow: 0 1px 0 var(--sl-border);
 }
@@ -188,7 +199,12 @@
   place-items: center;
   overflow: hidden;
   padding: 132px 40px 96px;
-  background: #f7efe2;
+  background:
+    radial-gradient(circle at 12% 18%, var(--sl-sun-soft) 0 14%, transparent 34%),
+    radial-gradient(circle at 88% 22%, var(--sl-lilac-soft) 0 12%, transparent 32%),
+    radial-gradient(circle at 78% 88%, var(--sl-mint-soft) 0 16%, transparent 38%),
+    radial-gradient(circle at 20% 92%, var(--sl-coral-soft) 0 12%, transparent 32%),
+    var(--sl-sky-soft);
   isolation: isolate;
 }
 
@@ -216,7 +232,7 @@
 }
 
 .storia-calm .hero h1 em {
-  color: var(--sl-blue);
+  color: var(--sl-coral);
   font-style: normal;
 }
 
@@ -246,7 +262,7 @@
   overflow: hidden;
   border: 5px solid var(--sl-paper);
   border-radius: 999px 999px 22px 22px;
-  box-shadow: 0 24px 48px rgba(26, 21, 18, 0.2);
+  box-shadow: 0 24px 48px rgba(22, 26, 46, 0.2);
   transform: rotate(-3deg);
 }
 
@@ -270,7 +286,7 @@
   z-index: 0;
   width: clamp(520px, 72vw, 1040px);
   height: auto;
-  filter: drop-shadow(0 18px 22px rgba(26, 21, 18, 0.14));
+  filter: drop-shadow(0 18px 22px rgba(22, 26, 46, 0.14));
   transform: translateX(-50%);
 }
 
@@ -312,7 +328,7 @@
 .storia-calm .mascot-world-fallback img {
   width: min(44vw, 520px);
   height: auto;
-  filter: drop-shadow(0 34px 34px rgba(26, 21, 18, 0.16));
+  filter: drop-shadow(0 34px 34px rgba(22, 26, 46, 0.16));
 }
 
 .storia-calm .hero-media,
@@ -379,7 +395,7 @@
 
 .storia-calm .mission-intro h2 a {
   text-decoration: none;
-  border-bottom: 1px solid rgba(237, 97, 81, 0.35);
+  border-bottom: 1px solid rgba(52, 81, 224, 0.35);
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -397,9 +413,9 @@
 .storia-calm .mission-card {
   border: 1px solid var(--sl-border);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.45);
+  background: #fff;
   padding: 28px;
-  box-shadow: 0 20px 40px -32px rgba(26, 21, 18, 0.22);
+  box-shadow: 0 20px 40px -32px rgba(22, 26, 46, 0.22);
 }
 
 .storia-calm .mission-card-wide {
@@ -615,14 +631,14 @@
   box-shadow: 0 1px 0 var(--sl-border);
 }
 
-.storia-calm .bc-1 { background: #ed6151; color: #fff6eb; }
-.storia-calm .bc-2 { background: #f2e3c6; color: #1a1512; }
-.storia-calm .bc-3 { background: #1a1512; color: #faf6ef; }
-.storia-calm .bc-4 { background: #e7c169; color: #1a1512; }
-.storia-calm .bc-5 { background: #d7e6d0; color: #1a1512; }
-.storia-calm .bc-6 { background: #2b6f5f; color: #faf6ef; }
-.storia-calm .bc-7 { background: #fbd8c8; color: #1a1512; }
-.storia-calm .bc-8 { background: #c9dbe8; color: #1a1512; }
+.storia-calm .bc-1 { background: #3451e0; color: #fff; }
+.storia-calm .bc-2 { background: #ffc83d; color: #161a2e; }
+.storia-calm .bc-3 { background: #161a2e; color: #f7f8fc; }
+.storia-calm .bc-4 { background: #d4f4ea; color: #161a2e; }
+.storia-calm .bc-5 { background: #ffe0d9; color: #161a2e; }
+.storia-calm .bc-6 { background: #0f7a63; color: #fff; }
+.storia-calm .bc-7 { background: #ebe3ff; color: #161a2e; }
+.storia-calm .bc-8 { background: #e8432f; color: #161a2e; }
 
 .storia-calm .bc-meta {
   margin: 0;
@@ -671,7 +687,7 @@
   bottom: 16px;
   left: 16px;
   border-radius: 999px;
-  background: rgba(250, 246, 239, 0.92);
+  background: rgba(247, 248, 252, 0.92);
   padding: 8px 14px;
   color: var(--sl-ink);
   font-size: 12px;
@@ -721,8 +737,8 @@
 
 .storia-calm .press-card:hover,
 .storia-calm .press-card:focus-visible {
-  border-color: rgba(237, 97, 81, 0.42);
-  box-shadow: 0 14px 34px rgba(26, 21, 18, 0.08);
+  border-color: rgba(52, 81, 224, 0.42);
+  box-shadow: 0 14px 34px rgba(22, 26, 46, 0.08);
   transform: translateY(-2px);
   outline: none;
 }
@@ -933,5 +949,322 @@
   .storia-calm .footer-inner {
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+/* ---- Nav: What's new ---- */
+
+.storia-calm .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.storia-calm .nav-news {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--sl-border);
+  border-radius: 999px;
+  background: #fff;
+  padding: 9px 16px;
+  color: var(--sl-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.storia-calm .nav-news:hover {
+  border-color: var(--sl-accent);
+  transform: translateY(-1px);
+}
+
+.storia-calm .nav-news-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sl-coral);
+  box-shadow: 0 0 0 3px var(--sl-coral-soft);
+}
+
+/* ---- Hero award pill ---- */
+
+.storia-calm .hero-award {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  border: 1px solid var(--sl-border);
+  border-radius: 999px;
+  background: #fff;
+  padding: 6px 16px 6px 6px;
+  color: var(--sl-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 10px 24px -14px rgba(22, 26, 46, 0.35);
+  pointer-events: auto;
+  animation: sl-pop 0.7s 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  transition: transform 0.2s;
+}
+
+.storia-calm .hero-award:hover {
+  transform: translateY(-2px);
+}
+
+.storia-calm .hero-award-badge {
+  border-radius: 999px;
+  background: var(--sl-sun);
+  padding: 5px 12px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@keyframes sl-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storia-calm .hero-award {
+    animation: none;
+  }
+}
+
+/* ---- Values ---- */
+
+.storia-calm .values {
+  display: grid;
+  max-width: var(--sl-container);
+  margin: 0 auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding: 0 40px 140px;
+}
+
+.storia-calm .value-card {
+  border-radius: 28px;
+  padding: 36px 30px 40px;
+}
+
+.storia-calm .value-card h2 {
+  margin-bottom: 16px;
+  font-size: clamp(34px, 3.6vw, 52px);
+  font-weight: 600;
+}
+
+.storia-calm .value-card p {
+  margin: 0;
+  font-size: 17px;
+}
+
+.storia-calm .v-blue { background: var(--sl-accent); }
+.storia-calm .v-blue h2,
+.storia-calm .v-blue p { color: #fff; }
+.storia-calm .v-sun { background: var(--sl-sun); transform: rotate(-1.2deg); }
+.storia-calm .v-mint { background: var(--sl-mint-soft); }
+
+/* ---- What's new teaser + index ---- */
+
+.storia-calm .news {
+  max-width: var(--sl-container);
+  margin: 0 auto;
+  padding: 120px 40px 40px;
+}
+
+.storia-calm .news-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.storia-calm .news-head h2,
+.storia-calm .wn-head h1 {
+  font-size: clamp(36px, 4.6vw, 64px);
+}
+
+.storia-calm .news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 28px;
+}
+
+.storia-calm .news-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  background: #fff;
+  padding: 14px 14px 26px;
+  text-decoration: none;
+  box-shadow: 0 1px 0 var(--sl-border), 0 24px 40px -32px rgba(22, 26, 46, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.storia-calm .news-card:hover,
+.storia-calm .news-card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 2px var(--sl-accent), 0 28px 44px -30px rgba(22, 26, 46, 0.4);
+  outline: none;
+}
+
+.storia-calm .news-cover {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border-radius: 16px;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+}
+
+.storia-calm .news-cover img {
+  object-fit: cover;
+}
+
+.storia-calm .news-milestone { background: var(--sl-sun); }
+.storia-calm .news-community { background: var(--sl-mint-soft); }
+.storia-calm .news-product { background: var(--sl-lilac-soft); }
+
+.storia-calm .news-cover-mark {
+  color: var(--sl-ink);
+  font-family: var(--sl-display);
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.storia-calm .news-meta {
+  margin: 0 12px 10px;
+  color: var(--sl-accent-deep);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.storia-calm .news-card h3,
+.storia-calm .news-card .news-title {
+  margin: 0 12px 10px;
+  font-size: clamp(22px, 2.2vw, 28px);
+  line-height: 1.1;
+}
+
+.storia-calm .news-summary {
+  margin: 0 12px;
+  color: var(--sl-ink-70);
+  font-size: 16px;
+}
+
+.storia-calm .wn-page {
+  max-width: var(--sl-container);
+  min-height: 80vh;
+  margin: 0 auto;
+  padding: 150px 40px 120px;
+}
+
+.storia-calm .wn-head {
+  max-width: 720px;
+  margin-bottom: 56px;
+}
+
+.storia-calm .wn-head h1 {
+  margin-bottom: 18px;
+}
+
+/* ---- Article ---- */
+
+.storia-calm .wn-article {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 150px 40px 120px;
+}
+
+.storia-calm .wn-back {
+  display: inline-block;
+  margin-bottom: 32px;
+  color: var(--sl-accent-deep);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.storia-calm .wn-article h1 {
+  margin-bottom: 20px;
+  font-size: clamp(38px, 5vw, 64px);
+  line-height: 1.02;
+}
+
+.storia-calm .wn-article .lede {
+  max-width: none;
+  margin-bottom: 40px;
+}
+
+.storia-calm .wn-body {
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.storia-calm .wn-body p {
+  margin: 0 0 22px;
+}
+
+.storia-calm .wn-body a {
+  color: var(--sl-accent-deep);
+  font-weight: 700;
+}
+
+.storia-calm .wn-body figure {
+  margin: 40px 0;
+}
+
+.storia-calm .wn-body figure img {
+  width: 100%;
+  height: auto;
+  max-height: 640px;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+.storia-calm .wn-body figcaption {
+  margin-top: 12px;
+  color: var(--sl-ink-50);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .storia-calm .values {
+    grid-template-columns: 1fr;
+    padding: 0 20px 100px;
+  }
+
+  .storia-calm .v-sun {
+    transform: none;
+  }
+
+  .storia-calm .news,
+  .storia-calm .wn-page,
+  .storia-calm .wn-article {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .storia-calm .news-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .storia-calm .storia-nav .cta {
+    display: none;
+  }
+
+  .storia-calm .hero-award {
+    font-size: 12px;
   }
 }

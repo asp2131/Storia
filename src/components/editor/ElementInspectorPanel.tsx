@@ -21,6 +21,7 @@ export function ElementInspectorPanel() {
   const elements = useOverlayEditor(pageId, (state) => state.elements);
   const selectedElementId = useOverlayEditor(pageId, (state) => state.selectedElementId);
   const selectedElement = useOverlayEditor(pageId, (state) => state.getSelectedElement());
+  const textEditRequestId = useOverlayEditor(pageId, (state) => state.textEditRequestId);
 
   const handleUpdate = (updatedElement: TextElement) => {
     const settings = selectedElement?.id === updatedElement.id
@@ -48,6 +49,7 @@ export function ElementInspectorPanel() {
         selectedElement={selectedElement}
         onUpdate={handleUpdate}
         onDelete={actions.deleteElement}
+        focusTextToken={textEditRequestId}
         voiceOptions={voiceOptions}
         enableVoiceAssignment
       />

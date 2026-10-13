@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import LibraryClient from "./LibraryClient";
+import { ARTWORK_PROVENANCE_COPY } from "@/lib/artwork-provenance";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -19,6 +20,7 @@ interface BookRow {
   id: bigint;
   title: string;
   author: string;
+  artwork_provenance: string;
   cover_url: string | null;
   description: string | null;
   total_pages: number | null;
@@ -31,6 +33,7 @@ export default async function LibraryPage() {
     id: string;
     title: string;
     author: string;
+    artworkProvenance: string;
     coverUrl: string | null;
     description: string | null;
     totalPages: number | null;
@@ -60,6 +63,7 @@ export default async function LibraryPage() {
       id: book.id.toString(),
       title: book.title,
       author: book.author,
+      artworkProvenance: book.artwork_provenance,
       coverUrl: book.cover_url,
       description: book.description,
       totalPages: book.total_pages,
@@ -84,6 +88,9 @@ export default async function LibraryPage() {
             Browse our collection of illustrated children&apos;s books with AI-generated
             narration and immersive soundscapes.
           </p>
+          <p className="mb-8 text-sm text-gray-600">
+            {ARTWORK_PROVENANCE_COPY.catalogNonEndorsement}
+          </p>
           <ul>
             {initialBooks.map((book) => (
               <li key={book.id} className="mb-4">
@@ -91,6 +98,11 @@ export default async function LibraryPage() {
                   {book.title}
                 </a>{" "}
                 by {book.author}
+                {book.artworkProvenance === "human_created" && (
+                  <p className="text-sm mt-1">
+                    {ARTWORK_PROVENANCE_COPY.badge}. {ARTWORK_PROVENANCE_COPY.explanation}
+                  </p>
+                )}
                 {book.description && (
                   <p className="text-sm text-gray-500 mt-1">{book.description}</p>
                 )}

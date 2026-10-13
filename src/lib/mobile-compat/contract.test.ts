@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AVAILABLE_FONTS } from "@/types/text-overlay";
 import {
   getActiveWordAlgorithmId,
   getBuiltinMobileFonts,
@@ -32,9 +33,22 @@ describe("mobile compatibility contract loader", () => {
     expect(isPublishBlockingSeverity("pass")).toBe(false);
   });
 
+  // Guards drift: anything an author can pick in the editor must be a family
+  // the Flutter reader resolves in `resolveFontStyle`
+  // (mobile/lib/src/features/reader/overlay/text_overlay_utils.dart). A font
+  // listed here but missing there falls back to Inter on device, silently.
+  it("covers every font the web editor offers", () => {
+    const builtins = getBuiltinMobileFonts();
+    for (const font of AVAILABLE_FONTS) {
+      expect(builtins).toContain(font);
+    }
+  });
+
   it("recognizes builtin font support", () => {
     const builtins = getBuiltinMobileFonts();
-    expect(builtins.length).toBeGreaterThan(0);
+    expect(builtins).toEqual(
+      expect.arrayContaining(["Inter", "Nunito", "Hanken Grotesk", "Space Grotesk"])
+    );
     expect(isBuiltinMobileFont("Inter")).toBe(true);
     expect(isBuiltinMobileFont("Some Custom Font")).toBe(false);
   });

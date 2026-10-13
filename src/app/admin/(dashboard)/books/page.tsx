@@ -6,11 +6,17 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { createBookDraft } from "@/app/admin/actions";
 import { useSession } from "@/lib/auth-client";
+import {
+  ARTWORK_PROVENANCE_COPY,
+  ARTWORK_PROVENANCE_OPTIONS,
+  isArtworkProvenance,
+} from "@/lib/artwork-provenance";
 
 type AdminBook = {
   id: string;
   title: string;
   author: string | null;
+  artworkProvenance?: string | null;
   processingStatus: string | null;
   updatedAt: string | null;
   coverUrl?: string | null;
@@ -98,6 +104,7 @@ export default function AdminBooksPage() {
     description: "",
     isPublished: false,
     processingStatus: "pending",
+    artworkProvenance: "unspecified",
   });
 
   const searchQuery = useMemo(() => search.trim(), [search]);
@@ -146,6 +153,9 @@ export default function AdminBooksPage() {
       description: book.description ?? "",
       isPublished: Boolean(book.isPublished),
       processingStatus: book.processingStatus ?? "pending",
+      artworkProvenance: isArtworkProvenance(book.artworkProvenance)
+        ? book.artworkProvenance
+        : "unspecified",
     });
     setEditOpen(true);
   };
@@ -166,6 +176,7 @@ export default function AdminBooksPage() {
         description: formState.description || null,
         isPublished: formState.isPublished,
         processingStatus: formState.processingStatus,
+        ...(isAdmin ? { artworkProvenance: formState.artworkProvenance } : {}),
       }),
     });
 
@@ -495,7 +506,7 @@ export default function AdminBooksPage() {
 
       {editOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-xl rounded-2xl border border-[var(--studio-rule)] bg-[var(--studio-card)] p-6">
+          <div className="w-full max-w-xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-[var(--studio-rule)] bg-[var(--studio-card)] p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-[var(--studio-ink)]">
                 Edit Book
@@ -571,6 +582,32 @@ export default function AdminBooksPage() {
                   className="min-h-[90px] w-full rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] px-3 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
                 />
               </div>
+              {isAdmin && (
+                <div className="space-y-1">
+                  <label htmlFor="artworkProvenance" className="text-sm text-[var(--studio-ink-2)]">
+                    {ARTWORK_PROVENANCE_COPY.fieldLabel}
+                  </label>
+                  <select
+                    id="artworkProvenance"
+                    value={formState.artworkProvenance}
+                    aria-describedby="artworkProvenanceHelp"
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        artworkProvenance: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border border-[var(--studio-rule-strong)] bg-[var(--studio-rule)] px-3 py-2 text-sm text-[var(--studio-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--studio-coral)]"
+                  >
+                    {ARTWORK_PROVENANCE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <p id="artworkProvenanceHelp" className="text-xs leading-relaxed text-[var(--studio-ink-muted)]">
+                    {ARTWORK_PROVENANCE_COPY.adminHelp}
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-sm text-[var(--studio-ink-2)]">Status</label>
@@ -613,6 +650,9 @@ export default function AdminBooksPage() {
                   </label>
                 </div>
               </div>
+              {error && (
+                <p role="alert" className="text-sm text-[var(--studio-changes-ink)]">{error}</p>
+              )}
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -34,6 +34,12 @@ interface PropertyPanelProps {
   voiceOptions?: VoiceOption[];
   enableVoiceAssignment?: boolean;
   embedded?: boolean;
+  /**
+   * Counter bumped when the user asks to type (adds a block, double-clicks one).
+   * Focus follows intent only — focusing on every selection would yank the
+   * caret into this panel at the start of every canvas drag.
+   */
+  focusTextToken?: number;
 }
 
 const fieldLabel = "mb-1.5 block text-[11.5px] font-semibold text-zinc-500";
@@ -47,9 +53,21 @@ export function PropertyPanel({
   voiceOptions = [],
   enableVoiceAssignment = false,
   embedded = false,
+  focusTextToken = 0,
 }: PropertyPanelProps) {
   const [isShadowExpanded, setIsShadowExpanded] = useState(false);
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!focusTextToken) return;
+    // No requestAnimationFrame here: the effect already runs after the commit
+    // that mounts the textarea, and rAF callbacks never fire in a hidden tab.
+    const input = textInputRef.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, [focusTextToken]);
   const shell = embedded
     ? "space-y-4"
     : "editor-scroll w-80 shrink-0 space-y-4 overflow-y-auto border-l border-zinc-200 bg-white p-4";
@@ -126,7 +144,9 @@ export function PropertyPanel({
       <div>
         <label className={fieldLabel} htmlFor={`text-${selectedElement.id}`}>Text content</label>
         <textarea
+          ref={textInputRef}
           id={`text-${selectedElement.id}`}
+          data-overlay-text-input
           value={selectedElement.text}
           onChange={(event) => update({ text: event.target.value })}
           className={`${control} min-h-16 resize-y leading-relaxed`}

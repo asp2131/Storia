@@ -7,6 +7,7 @@ import {
   buildNewTextElement,
   changedRememberedTextSettings,
   DEFAULT_BOOK_TEXT_STYLE,
+  OVERLAY_FONT_CSS_FAMILY,
   type BookTextStyle,
   type RememberedTextSettings,
 } from "@/types/text-overlay";
@@ -43,6 +44,34 @@ interface DraggableTextOverlayEditorProps {
 
 // ─── DraggableTextElement Sub-Component ────────────────────────────────────
 
+/**
+ * Which history action a keydown maps to, or null to leave the event alone.
+ *
+ * Cmd/Ctrl+Z inside the overlay text field is deliberately taken over: the
+ * overlay stack is the single undo history for the editor, so native textarea
+ * undo would otherwise diverge from element position/order history.
+ */
+export function historyShortcutFor(
+  event: Pick<KeyboardEvent, "key" | "metaKey" | "ctrlKey" | "shiftKey"> & {
+    target: EventTarget | null;
+  }
+): "undo" | "redo" | null {
+  if (!event.metaKey && !event.ctrlKey) return null;
+  const key = event.key.toLowerCase();
+  if (key !== "z" && key !== "y") return null;
+
+  const target = event.target as HTMLElement | null;
+  const isTextControl =
+    target?.tagName === "INPUT" ||
+    target?.tagName === "TEXTAREA" ||
+    target?.isContentEditable === true;
+  if (isTextControl && !target?.hasAttribute("data-overlay-text-input")) {
+    return null;
+  }
+
+  return key === "y" || event.shiftKey ? "redo" : "undo";
+}
+
 interface DraggableTextElementProps {
   element: TextElement;
   isSelected: boolean;
@@ -50,6 +79,9 @@ interface DraggableTextElementProps {
   containerHeight: number;
   onSelect: () => void;
   onUpdate: (updates: Partial<TextElement>) => void;
+  onEditText: () => void;
+  onHistoryGroupStart: () => void;
+  onHistoryGroupEnd: () => void;
 }
 
 function DraggableTextElement({
@@ -59,6 +91,9 @@ function DraggableTextElement({
   containerHeight,
   onSelect,
   onUpdate,
+  onEditText,
+  onHistoryGroupStart,
+  onHistoryGroupEnd,
 }: DraggableTextElementProps) {
   const isDraggingRef = useRef(false);
   const isResizingRef = useRef(false);
@@ -95,6 +130,7 @@ function DraggableTextElement({
     onSelect();
 
     isDraggingRef.current = true;
+    onHistoryGroupStart();
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -114,6 +150,7 @@ function DraggableTextElement({
     e.preventDefault();
 
     isResizingRef.current = true;
+    onHistoryGroupStart();
     dragStartRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -185,6 +222,7 @@ function DraggableTextElement({
 
       // Restore text selection
       document.body.style.userSelect = "";
+      onHistoryGroupEnd();
     }
   };
 
@@ -200,7 +238,7 @@ function DraggableTextElement({
         left: `${element.x}%`,
         top: `${element.y}%`,
         width: `${element.width}%`,
-        fontFamily: element.fontFamily,
+        fontFamily: OVERLAY_FONT_CSS_FAMILY[element.fontFamily],
         fontSize: `${fontSizePx}px`,
         fontWeight: element.fontWeight,
         color: element.color,
@@ -215,6 +253,7 @@ function DraggableTextElement({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
+      onDoubleClick={onEditText}
     >
       {element.text}
 
@@ -269,6 +308,8 @@ export function DraggableTextOverlayEditor({
   const elements = useOverlayEditor(pageId, (s) => s.elements);
   const selectedElementId = useOverlayEditor(pageId, (s) => s.selectedElementId);
   const hasChanges = useOverlayEditor(pageId, (s) => s.hasChanges);
+  const canUndo = useOverlayEditor(pageId, (s) => s.past.length > 0);
+  const canRedo = useOverlayEditor(pageId, (s) => s.future.length > 0);
   const autoSaveStatus = useOverlayEditor(pageId, (s) => s.autoSaveStatus);
   const containerWidth = useOverlayEditor(pageId, (s) => s.containerWidth);
   const containerHeight = useOverlayEditor(pageId, (s) => s.containerHeight);
@@ -329,12 +370,27 @@ export function DraggableTextOverlayEditor({
     onSelectedElementChange?.(selectedElement);
   }, [onSelectedElementChange, selectedElement]);
 
+  useEffect(() => {
+    const handleHistoryShortcut = (event: KeyboardEvent) => {
+      const action = historyShortcutFor(event);
+      if (!action) return;
+
+      event.preventDefault();
+      if (action === "redo") actionsRef.current.redo();
+      else actionsRef.current.undo();
+    };
+
+    window.addEventListener("keydown", handleHistoryShortcut);
+    return () => window.removeEventListener("keydown", handleHistoryShortcut);
+  }, [pageId]);
+
   // ─── Handlers ──────────────────────────────────────────────────────────
 
   const handleAddElement = useCallback(() => {
     actions.addElement(
       buildNewTextElement(bookTextStyle ?? DEFAULT_BOOK_TEXT_STYLE)
     );
+    actions.requestTextEdit();
   }, [actions, bookTextStyle]);
 
   const handleComposite = useCallback(async () => {
@@ -398,6 +454,10 @@ export function DraggableTextOverlayEditor({
       <Toolbar
         onAddElement={handleAddElement}
         onComposite={handleComposite}
+        onUndo={actions.undo}
+        onRedo={actions.redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onChangeImage={onChangeImage}
         onRemoveImage={onRemoveImage}
         isSaving={isSaving || isAutoSaving}
@@ -435,6 +495,9 @@ export function DraggableTextOverlayEditor({
                   containerHeight={containerHeight}
                   onSelect={() => handleSelectElement(element.id)}
                   onUpdate={(updates) => handleUpdateElement(element.id, updates)}
+                  onEditText={actions.requestTextEdit}
+                  onHistoryGroupStart={actions.beginHistoryGroup}
+                  onHistoryGroupEnd={actions.endHistoryGroup}
                 />
               ))}
             </div>

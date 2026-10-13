@@ -196,6 +196,7 @@ export async function GET(request: NextRequest) {
         id: bookIdStr,
         title: book.title,
         author: book.author,
+        artworkProvenance: book.artwork_provenance,
         coverUrl: book.cover_url,
         description: book.description,
         totalPages: book.total_pages,

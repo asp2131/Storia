@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireBookAccess } from "@/lib/admin-auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isArtworkProvenance } from "@/lib/artwork-provenance";
 import {
   coerceBookTextStyle,
   validateBookTextStyle,
@@ -34,6 +35,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
         id: book.id.toString(),
         title: book.title,
         author: book.author,
+        artworkProvenance: book.artwork_provenance,
         processingStatus: book.processing_status,
         updatedAt: book.updated_at?.toISOString?.() ?? null,
         coverUrl: book.cover_url,
@@ -67,6 +69,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const bookId = BigInt(id);
 
     const data: Record<string, unknown> = { updated_at: now };
+    if ("artworkProvenance" in body) {
+      if (access.user.role !== "admin") {
+        return NextResponse.json(
+          { error: "Only administrators can set artwork provenance." },
+          { status: 403 }
+        );
+      }
+      if (!isArtworkProvenance(body.artworkProvenance)) {
+        return NextResponse.json(
+          { error: "Invalid artworkProvenance." },
+          { status: 400 }
+        );
+      }
+      data.artwork_provenance = body.artworkProvenance;
+    }
     if ("title" in body) data.title = body.title;
     if ("author" in body) data.author = body.author;
     if ("coverUrl" in body) data.cover_url = body.coverUrl || null;
@@ -119,6 +136,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         id: book.id.toString(),
         title: book.title,
         author: book.author,
+        artworkProvenance: book.artwork_provenance,
         processingStatus: book.processing_status,
         updatedAt: book.updated_at?.toISOString?.() ?? null,
         coverUrl: book.cover_url,

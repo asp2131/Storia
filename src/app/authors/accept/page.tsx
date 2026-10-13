@@ -55,8 +55,10 @@ function AcceptInviteInner() {
     setAccepted(true);
     // The session's role is stale until it's re-read from the database.
     await authClient.getSession({ query: { disableCookieCache: true } });
-    router.replace("/admin");
-  }, [token, router]);
+    // Hard nav: see the note in /admin/login — the useSession store is stale
+    // right after sign-in, so a soft transition bounces off the admin layout.
+    window.location.href = "/admin";
+  }, [token]);
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
