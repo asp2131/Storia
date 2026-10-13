@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-09-29T17:08:24.936Z
-> Files: 752 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-10-13T15:54:48.479Z
+> Files: 757 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -189,6 +189,13 @@
 
 ## Discovered during 2026-07-17 mascot image swap
 
+
+## Discovered during 2026-09-29 landing revamp + What's new
+
+- `src/app/whats-new/[slug]/page.tsx` — Static article page (generateStaticParams, dynamicParams=false) (~450 tok)
+- `src/app/whats-new/page.tsx` — What's new index, card grid over `ARTICLES` (~400 tok)
+- `src/components/SiteChrome.tsx` — Shared `SiteNav` (incl. What's new pill) + `SiteFooter` used by landing and /whats-new (~450 tok)
+- `src/content/whats-new.tsx` — In-code What's new articles (`ARTICLES`, `getArticle`, `formatArticleDate`); JSX bodies with next/image figures (~1500 tok)
 
 ## _build/
 
@@ -1048,7 +1055,8 @@
 - `IntegratedIllustration.tsx` — usePreloadImage (~3803 tok)
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
 - `SiteChrome.tsx` — WEB_APP_URL (~460 tok)
-- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~8476 tok)
+- `StoriaCalmLanding.css` — Styles: 90 rules, 21 vars (~7250 tok)
+- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~9079 tok)
 
 ## src/components/editor/
 
@@ -1153,11 +1161,4 @@
 - `overlayEditorRegistry.ts` — Registry helpers that lazily create, destroy, and remap per-page overlay editor Zustand stores. (~184 tok)
 - `overlayEditorStore.test.ts` — Vitest for the overlay store: init, reorder, undo/redo, typing-burst coalescing, no-op update rejection, saved-state dirty tracking. (~420 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
-
-## Discovered during 2026-09-29 landing revamp + What's new
-
-- `src/content/whats-new.tsx` — In-code What's new articles (`ARTICLES`, `getArticle`, `formatArticleDate`); JSX bodies with next/image figures (~1500 tok)
-- `src/components/SiteChrome.tsx` — Shared `SiteNav` (incl. What's new pill) + `SiteFooter` used by landing and /whats-new (~450 tok)
-- `src/app/whats-new/page.tsx` — What's new index, card grid over `ARTICLES` (~400 tok)
-- `src/app/whats-new/[slug]/page.tsx` — Static article page (generateStaticParams, dynamicParams=false) (~450 tok)
-- `public/whats-new/` — Web-sized (1600px) JPEGs converted from `public/Q3 assets/` (HEIC → JPEG via sips)
+- `public/landing/girl-on-cloud.png` — Hand-drawn girl with moon headphones reading on a cloud; transparent PNG cropped via ffmpeg (800x713), floats in landing CTA section (~0 tok)

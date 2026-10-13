@@ -1242,3 +1242,14 @@
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
 | 16:05 | Hero eyebrow: 'For ages 4–10' → 'For all kids and reluctant readers' | src/components/StoriaCalmLanding.tsx | done | ~200 |
+
+## Session: 2026-10-13 10:42
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 10:49 | Jev-scored new girl-on-cloud illustration for 8-12 vibe + landing placement (vibe 4.1/5, prod-ready 2.5/5, rec: cut-out accent not hero bg) | — | done | ~6k |
+| 10:54 | Edited src/components/StoriaCalmLanding.tsx | CSS: max-width | ~92 |
+| 10:54 | Edited src/components/StoriaCalmLanding.css | modified media() | ~188 |
+| 10:54 | Edited src/components/StoriaCalmLanding.css | modified media() | ~36 |
+| 10:56 | Cropped girl-on-cloud illustration (ffmpeg bbox → crop, alpha already transparent) and added floating cut-out to landing CTA (#download); stacks above copy <1100px; reduced-motion off | public/landing/girl-on-cloud.png, StoriaCalmLanding.tsx, StoriaCalmLanding.css | verified desktop+mobile screenshots | ~8k |
+| 10:56 | Session end: 3 writes across 2 files (StoriaCalmLanding.tsx, StoriaCalmLanding.css) | 2 reads | ~316 tok |

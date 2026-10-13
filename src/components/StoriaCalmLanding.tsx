@@ -893,6 +893,14 @@ export default function StoriaCalmLanding() {
         </section>
 
         <section className="cta-section" id="download">
+          <Image
+            className="cta-girl"
+            src="/landing/girl-on-cloud.png"
+            alt=""
+            width={800}
+            height={713}
+            sizes="(max-width: 1100px) 240px, 22vw"
+          />
           <div className="cta-inner">
             <Image className="cta-mascot reveal" src="/storia-landing/mascot-full.png" alt="Loratone mascot" width={120} height={120} />
             <h2 className="reveal">Start tonight’s story.</h2>
