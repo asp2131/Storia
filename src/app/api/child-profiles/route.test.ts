@@ -85,6 +85,9 @@ describe("/api/child-profiles", () => {
         ageBand: "6-8",
         readingLevel: "Level 1",
         isDefault: true,
+        parentGoal: null,
+        interests: [],
+        readingTime: null,
       },
     });
     expect(body.childProfile.isDefault).toBe(true);
@@ -143,6 +146,9 @@ describe("/api/child-profiles", () => {
         ageBand: "9-12",
         readingLevel: null,
         isDefault: false,
+        parentGoal: null,
+        interests: [],
+        readingTime: null,
       },
     });
     expect(body.childProfile.isDefault).toBe(false);
@@ -169,6 +175,45 @@ describe("/api/child-profiles", () => {
         details: { field: "readingLevel" },
       },
     });
+    expect(mockPrisma.child_profile.create).not.toHaveBeenCalled();
+  });
+
+  it("stores onboarding answers and drops unknown values", async () => {
+    mockPrisma.child_profile.count.mockResolvedValue(1);
+    mockPrisma.child_profile.create.mockResolvedValue({ id: "child-3" });
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/child-profiles", {
+        method: "POST",
+        body: JSON.stringify({
+          displayName: "Mo",
+          ageBand: "7-9",
+          parentGoal: "reduceScreenTime",
+          interests: ["mystery", "mangaAnime", "mystery", "dragons", 4],
+          readingTime: "midnight",
+        }),
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(mockPrisma.child_profile.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        parentGoal: "reduceScreenTime",
+        interests: ["mystery", "mangaAnime"],
+        readingTime: null,
+      }),
+    });
+  });
+
+  it("rejects non-array interests", async () => {
+    const response = await POST(
+      new NextRequest("http://localhost/api/child-profiles", {
+        method: "POST",
+        body: JSON.stringify({ displayName: "Mo", ageBand: "7-9", interests: "mystery" }),
+      })
+    );
+
+    expect(response.status).toBe(400);
     expect(mockPrisma.child_profile.create).not.toHaveBeenCalled();
   });
 });
