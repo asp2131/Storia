@@ -761,9 +761,36 @@
 }
 
 .storia-calm .cta-section {
+  position: relative;
   border-top: 1px solid var(--sl-border);
   padding: 180px 40px 140px;
   text-align: center;
+}
+
+.storia-calm .cta-girl {
+  position: absolute;
+  top: 120px;
+  right: 3vw;
+  width: clamp(240px, 22vw, 340px);
+  height: auto;
+  pointer-events: none;
+  animation: sl-float 6s ease-in-out infinite;
+}
+
+@keyframes sl-float {
+  50% {
+    transform: translateY(-14px) rotate(-2deg);
+  }
+}
+
+/* Below this the centred copy reaches the girl, so stack her above it. */
+@media (max-width: 1100px) {
+  .storia-calm .cta-girl {
+    position: static;
+    display: block;
+    width: 240px;
+    margin: -60px auto 12px;
+  }
 }
 
 .storia-calm .cta-inner {
@@ -1030,7 +1057,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .storia-calm .hero-award {
+  .storia-calm .hero-award,
+  .storia-calm .cta-girl {
     animation: none;
   }
 }
