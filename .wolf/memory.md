@@ -1253,3 +1253,10 @@
 | 10:54 | Edited src/components/StoriaCalmLanding.css | modified media() | ~36 |
 | 10:56 | Cropped girl-on-cloud illustration (ffmpeg bbox → crop, alpha already transparent) and added floating cut-out to landing CTA (#download); stacks above copy <1100px; reduced-motion off | public/landing/girl-on-cloud.png, StoriaCalmLanding.tsx, StoriaCalmLanding.css | verified desktop+mobile screenshots | ~8k |
 | 10:56 | Session end: 3 writes across 2 files (StoriaCalmLanding.tsx, StoriaCalmLanding.css) | 2 reads | ~316 tok |
+
+## Session: 2026-11-03 07:29
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 07:34 | designqc: captured 6 screenshots (280KB, ~15000 tok) | / | ready for eval | ~0 |
+| 07:50 | Landing mobile fix: per-step phone shots replace overflowing pinned phone (<=900px); dropped duplicate step-3 screen; short-window hero art resize; founder kickers -> Co-founder + CEO/CTO; halved velocity skew | StoriaCalmLanding.tsx/.css, content.ts, MorphogenesisHero.tsx | verified in Chrome 500w + 1200x693 | ~40k |

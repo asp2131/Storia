@@ -244,8 +244,9 @@ export default function StoriaCalmLanding() {
           trigger: step,
           start: "top 55%",
           end: "bottom 55%",
-          onEnter: () => setScreen(index),
-          onEnterBack: () => setScreen(index),
+          // ponytail: step 03 (soundscapes) has no screenshot yet, stays on the reading screen
+          onEnter: () => setScreen(Math.min(index, screens.length - 1)),
+          onEnterBack: () => setScreen(Math.min(index, screens.length - 1)),
         });
 
         gsap.fromTo(
@@ -507,8 +508,8 @@ export default function StoriaCalmLanding() {
             scrub: false,
             onUpdate: (self) => {
               const velocity = self.getVelocity();
-              const skew = gsap.utils.clamp(-3.2, 3.2, velocity / 900);
-              const tilt = gsap.utils.clamp(-2.4, 2.4, velocity / -1600);
+              const skew = gsap.utils.clamp(-1.6, 1.6, velocity / 900);
+              const tilt = gsap.utils.clamp(-1.2, 1.2, velocity / -1600);
               skewTo(skew);
               tiltTo(tilt);
               panTo(index === 0 ? tilt * 0.45 : tilt * -0.3);
@@ -677,7 +678,7 @@ export default function StoriaCalmLanding() {
 
             <div className="mission-grid">
               <article className="mission-card reveal">
-                <p className="mission-kicker">01 / Founder</p>
+                <p className="mission-kicker">01 / Co-founder + CEO</p>
                 <h3>Shivang Thakor</h3>
                 <p>
                   For as long as Shivang can remember, he has read stories with
@@ -691,7 +692,7 @@ export default function StoriaCalmLanding() {
               </article>
 
               <article className="mission-card reveal">
-                <p className="mission-kicker">02 / Founder + Software Architect</p>
+                <p className="mission-kicker">02 / Co-founder + CTO</p>
                 <h3>Akintunde Pounds</h3>
                 <p>
                   As a parent to a daughter with autism, Akintunde is on a
@@ -736,18 +737,14 @@ export default function StoriaCalmLanding() {
                   fill
                   sizes="340px"
                 />
-                <Image
-                  className="phone-screen pscreen-2"
-                  src="/storia-landing/app-reading.png"
-                  alt="Reading screen with immersive soundscape"
-                  fill
-                  sizes="340px"
-                />
               </div>
             </div>
             <div className="pin-right">
               <div className="pin-steps">
                 <div className="pin-step">
+                  <div className="phone pin-shot">
+                    <Image src="/storia-landing/app-library.png" alt="Story library screen" fill sizes="240px" />
+                  </div>
                   <p className="eyebrow">01 · Choose</p>
                   <h2>A library laid out like a map.</h2>
                   <p>
@@ -757,6 +754,9 @@ export default function StoriaCalmLanding() {
                   </p>
                 </div>
                 <div className="pin-step">
+                  <div className="phone pin-shot">
+                    <Image src="/storia-landing/app-reading.png" alt="Reading screen with narration" fill sizes="240px" />
+                  </div>
                   <p className="eyebrow">02 · Listen</p>
                   <h2>Warm narration. Page by page.</h2>
                   <p>
