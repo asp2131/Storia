@@ -36,15 +36,17 @@ const MANIFESTO_WORDS = [
   { text: "follow.", highlight: true },
 ];
 
+// ponytail: cover URLs copied from books.cover_url; fetch from DB if the shelf changes often
+const COVER_BASE = "https://gbtohjbmchjgdfwwlhyy.supabase.co/storage/v1/object/public/storia-storage/";
+
 const BOOKS = [
-  { title: "The Wizard of Oz", meta: "Classic tale", cover: "bc-1" },
-  { title: "Danny's Cat", meta: "Family favorite", cover: "bc-2" },
-  { title: "My Day at Granny's", meta: "Quick read", cover: "bc-3" },
-  { title: "The Tortoise and the Hare", meta: "Classic fable", cover: "bc-4" },
-  { title: "Jax & Shini", meta: "Folk tale", cover: "bc-5" },
-  { title: "Bunny Brother", meta: "Playful story", cover: "bc-6" },
-  { title: "Kumu's Sky", meta: "Adventure", cover: "bc-7" },
-  { title: "Sweet Potato Sweet Potato", meta: "By Cherelyn Poe", cover: "bc-8" },
+  { title: "The Wizard of Oz", meta: "Classic tale", cover: `${COVER_BASE}books/51/pages/3_1768876915857_tl0kw3.png` },
+  { title: "Danny's Cat", meta: "Family favorite", cover: `${COVER_BASE}books/52/pages/4_1770427321560_4lk3az.png` },
+  { title: "My Day at Granny's", meta: "Quick read", cover: `${COVER_BASE}books/54/pages/7_1770948115129_i16109.png` },
+  { title: "The Tortoise and the Hare", meta: "Classic fable", cover: `${COVER_BASE}books/temp/1771377409285_lwg1au.png` },
+  { title: "Bunny Brother", meta: "Playful story", cover: `${COVER_BASE}books/62/pages/1_1774402726595_w00ewy.webp` },
+  { title: "Kumu's Sky", meta: "Adventure", cover: `${COVER_BASE}books/63/kumu-cover.png` },
+  { title: "Sweet Potato Sweet Potato", meta: "By Cherelyn Poe", cover: `${COVER_BASE}books/64/pages/1_1773791841691_dnxfay.webp` },
 ];
 
 const VALUES = [
@@ -807,15 +809,16 @@ export default function StoriaCalmLanding() {
               titles added each month.
             </p>
             <p className="stories-note reveal">
-              Preview of the current shelf — 8 titles now, with more on the way.
+              Preview of the current shelf — 7 titles now, with more on the way.
             </p>
           </div>
           <div className="stories-rail">
             {BOOKS.map((book) => (
               <div className="book-card" key={book.title}>
-                <div className={`bc-cover ${book.cover}`}>
-                  <span>{book.title}</span>
+                <div className="bc-cover">
+                  <Image src={book.cover} alt={`${book.title} cover`} fill sizes="240px" />
                 </div>
+                <p className="bc-title">{book.title}</p>
                 <p className="bc-meta">{book.meta}</p>
               </div>
             ))}

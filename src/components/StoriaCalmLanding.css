@@ -640,28 +640,26 @@
 }
 
 .storia-calm .bc-cover {
-  display: flex;
-  align-items: flex-end;
+  position: relative;
+  overflow: hidden;
   margin-bottom: 14px;
   border-radius: 10px;
-  padding: 20px 18px;
-  font-family: var(--sl-display);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
   aspect-ratio: 3 / 4;
+  background: var(--sl-border);
   box-shadow: 0 1px 0 var(--sl-border);
 }
 
-.storia-calm .bc-1 { background: #3451e0; color: #fff; }
-.storia-calm .bc-2 { background: #ffc83d; color: #161a2e; }
-.storia-calm .bc-3 { background: #161a2e; color: #f7f8fc; }
-.storia-calm .bc-4 { background: #d4f4ea; color: #161a2e; }
-.storia-calm .bc-5 { background: #ffe0d9; color: #161a2e; }
-.storia-calm .bc-6 { background: #0f7a63; color: #fff; }
-.storia-calm .bc-7 { background: #ebe3ff; color: #161a2e; }
-.storia-calm .bc-8 { background: #e8432f; color: #161a2e; }
+.storia-calm .bc-cover img {
+  object-fit: cover;
+}
+
+.storia-calm .bc-title {
+  margin: 0 0 4px;
+  font-family: var(--sl-display);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.15;
+}
 
 .storia-calm .bc-meta {
   margin: 0;
