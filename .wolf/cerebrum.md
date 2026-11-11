@@ -221,6 +221,7 @@
 - **2026-08-23** — Do not call `alignRecording()` without `fileName` when the audio is not m4a. Browser recordings are webm; the default `recording.m4a` name made ElevenLabs reject the file and the feature degraded silently to fallback timings. Always pass `page_${pageNumber}.${extensionForContentType(contentType)}`.
 
 ## Decision Log
+- 2026-11-11 Launch KPIs served by `GET /api/kpis` (src/lib/reports/kpis.ts) for the founder dashboard in loratone-workspace; auth is a shared `KPI_API_TOKEN` bearer or admin session. Merch/campaign KPIs intentionally return `no_product` until a feature exists — do not fake tracking for them. `mobile_analytics_events.child_profile_id` is now nullable so funnel + web-reader events can be user-only; migration must be applied to prod explicitly (see Do-Not-Repeat 2026-08-25).
 
 - 2026-08-24 Author onboarding is **invite-only** (admin emails a link) rather than self-serve signup or an application queue. Chosen by the user; keeps a kids' library gated without building a review-application UI. Token is 32 random bytes, only the sha256 hash is stored, bound to one email address, 14-day TTL, single-use via a conditional `updateMany`.
 - 2026-08-24 Authors reuse the existing `/admin` editor scoped by `owner_id` rather than a separate `/studio` surface — roughly half the UI work, one editor to maintain. The nav hides Soundscapes/Reports/Authors and the header reads "Loratone Studio" for authors.

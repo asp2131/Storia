@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { mockValidateChildAccess, mockPrisma } = vi.hoisted(() => ({
+const { mockValidateChildAccess, mockGetAuthenticatedUser, mockPrisma } = vi.hoisted(() => ({
   mockValidateChildAccess: vi.fn(),
+  mockGetAuthenticatedUser: vi.fn(),
   mockPrisma: {
     mobile_analytics_events: {
       create: vi.fn(),
@@ -12,6 +13,7 @@ const { mockValidateChildAccess, mockPrisma } = vi.hoisted(() => ({
 
 vi.mock("@/lib/child-auth", () => ({
   validateChildAccess: mockValidateChildAccess,
+  getAuthenticatedUser: mockGetAuthenticatedUser,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -27,6 +29,47 @@ describe("/api/analytics/events", () => {
       user: { id: "user-1" },
       childProfile: { id: "child-1" },
     });
+    mockGetAuthenticatedUser.mockResolvedValue({ user: { id: "user-1" } });
+  });
+
+  it("persists user-only funnel events without a child profile", async () => {
+    mockPrisma.mobile_analytics_events.create.mockResolvedValue(undefined);
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/events", {
+        method: "POST",
+        body: JSON.stringify({ event: "signup_completed", source: "mobile" }),
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(mockValidateChildAccess).not.toHaveBeenCalled();
+    expect(mockGetAuthenticatedUser).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.mobile_analytics_events.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          user_id: "user-1",
+          child_profile_id: null,
+          event_name: "signup_completed",
+        }),
+      })
+    );
+  });
+
+  it("rejects unauthenticated user-only events", async () => {
+    mockGetAuthenticatedUser.mockResolvedValue({
+      error: new Response(null, { status: 401 }),
+    });
+
+    const response = await POST(
+      new NextRequest("http://localhost/api/analytics/events", {
+        method: "POST",
+        body: JSON.stringify({ event: "app_opened" }),
+      })
+    );
+
+    expect(response.status).toBe(401);
+    expect(mockPrisma.mobile_analytics_events.create).not.toHaveBeenCalled();
   });
 
   it("rejects invalid book ids", async () => {
