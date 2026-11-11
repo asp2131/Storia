@@ -15,6 +15,9 @@
 - User prefers product/spec markdown files to be updated in place to reflect current implementation progress rather than receiving status only in chat.
 
 ## Key Learnings
+- 2026-11-10 jsdom has no `AnimationEvent`, so React binds `onAnimationEnd` to `webkitAnimationEnd` in tests; `fireEvent.animationEnd` does nothing. Dispatch `new Event("webkitAnimationEnd", { bubbles: true })`. `PeopleSlideshow` uses the progress-bar CSS animation as its autoplay timer, so this matters there.
+- 2026-11-10 Homebrew ffmpeg here has no libwebp encoder; convert to WebP via `sharp` (already a dependency).
+- 2026-11-10 Landing spotlight is a single `SPOTLIGHT` record in `StoriaCalmLanding.tsx` (status in-development | coming-soon | available decides the buttons; "Read it now" only when available + readHref). Hat Trickster art comes from `~/Documents/hacktrickster rough 1/` (only p.1 cover and p.3 are coloured).
 - 2026-10-13 Cropping line-art PNGs with ffmpeg: `cropdetect` misses thin outlines (row averages too low). Use `alphaextract,bbox=min_val=8` (or `negate,format=gray,bbox` for opaque white canvas) and crop with the reported box. User's Procreate exports are already transparent RGBA, cloud interiors included.
 - 2026-10-13 Playwright in node_modules has no matching cached browser; launch with `chromium.launch({ channel: "chrome" })` and import via absolute path `node_modules/playwright/index.mjs` when the script lives in scratchpad.
 - 2026-10-13 "Use jev" = TypeSafe AI Jev scoring API. Plugin NOT installed here, but `TYPESAFE_API_KEY` is set: POST https://api.typesafe.ai/v1/systemone with `{model:"jev-latest", state, questions}` (Bearer auth). Questions are typed `score` (criteria array), `choice` (criteria object), `noul` (0-1 probability). Score values are 0-indexed into criteria (3.08 = 4th level). State is text only, so describe images in words first. Script template lives in session scratchpad, not repo.
