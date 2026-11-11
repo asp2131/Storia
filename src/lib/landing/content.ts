@@ -29,14 +29,14 @@ export const MISSION_CONTENT = {
   lede: "Loratone is a small team in New Orleans, making a slow, careful app with authors, librarians, and the kids who test every page.",
   founders: [
     {
-      kicker: "01 / Founder",
+      kicker: "01 / Co-founder + CEO",
       name: "Shivang Thakor",
       body: "For as long as Shivang can remember, he has read stories with sound by his side. In middle school, he would not read Romeo and Juliet unless he was listening to Pachelbel's Canon in D with birds chirping in the background. Now, as the first in his family to graduate from college as a Posse Foundation Scholar, he wants to serve readers like him who may have just needed a little sound to go with their stories.",
       imageSrc: "https://media.licdn.com/dms/image/v2/D4D03AQEo4pnSxy68Sw/profile-displayphoto-crop_800_800/B4DZhR7V6XH4AM-/0/1753721168705?e=1773878400&v=beta&t=nosQgcuiiijpr272bCzuMoCOlL9vI_WL1HCV1uAC-LE",
       imageAlt: "Shivang Thakor",
     },
     {
-      kicker: "02 / Founder + Software Architect",
+      kicker: "02 / Co-founder + CTO",
       name: "Akintunde Pounds",
       body: "As a parent to a daughter with autism, Akintunde is on a mission to bridge literacy gaps for all kids—especially children with disabilities. He and his brother come from a third-generation family of educators, and with 5+ years teaching computer science, he brings both lived empathy and classroom experience to how Loratone is built.",
       imageSrc: "https://avatars.githubusercontent.com/u/42776703?v=4",

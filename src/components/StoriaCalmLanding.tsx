@@ -11,6 +11,7 @@ import { useReducedMotionVariant } from "@/hooks/landing/useReducedMotionVariant
 import { scrambleIn } from "@/lib/landing/scramble";
 import { ARTICLES, formatArticleDate } from "@/content/whats-new";
 import MascotStoryWorld from "./MascotStoryWorld";
+import PeopleSlideshow, { type PeopleSlide } from "./PeopleSlideshow";
 import { SiteFooter, SiteNav } from "./SiteChrome";
 import "./StoriaCalmLanding.css";
 
@@ -36,15 +37,17 @@ const MANIFESTO_WORDS = [
   { text: "follow.", highlight: true },
 ];
 
+// ponytail: cover URLs copied from books.cover_url; fetch from DB if the shelf changes often
+const COVER_BASE = "https://gbtohjbmchjgdfwwlhyy.supabase.co/storage/v1/object/public/storia-storage/";
+
 const BOOKS = [
-  { title: "The Wizard of Oz", meta: "Classic tale", cover: "bc-1" },
-  { title: "Danny's Cat", meta: "Family favorite", cover: "bc-2" },
-  { title: "My Day at Granny's", meta: "Quick read", cover: "bc-3" },
-  { title: "The Tortoise and the Hare", meta: "Classic fable", cover: "bc-4" },
-  { title: "Jax & Shini", meta: "Folk tale", cover: "bc-5" },
-  { title: "Bunny Brother", meta: "Playful story", cover: "bc-6" },
-  { title: "Kumu's Sky", meta: "Adventure", cover: "bc-7" },
-  { title: "Sweet Potato Sweet Potato", meta: "By Cherelyn Poe", cover: "bc-8" },
+  { title: "The Wizard of Oz", meta: "Classic tale", cover: `${COVER_BASE}books/51/pages/3_1768876915857_tl0kw3.png` },
+  { title: "Danny's Cat", meta: "Family favorite", cover: `${COVER_BASE}books/52/pages/4_1770427321560_4lk3az.png` },
+  { title: "My Day at Granny's", meta: "Quick read", cover: `${COVER_BASE}books/54/pages/7_1770948115129_i16109.png` },
+  { title: "The Tortoise and the Hare", meta: "Classic fable", cover: `${COVER_BASE}books/temp/1771377409285_lwg1au.png` },
+  { title: "Bunny Brother", meta: "Playful story", cover: `${COVER_BASE}books/62/pages/1_1774402726595_w00ewy.webp` },
+  { title: "Kumu's Sky", meta: "Adventure", cover: `${COVER_BASE}books/63/kumu-cover.png` },
+  { title: "Sweet Potato Sweet Potato", meta: "By Cherelyn Poe", cover: `${COVER_BASE}books/64/pages/1_1773791841691_dnxfay.webp` },
 ];
 
 const VALUES = [
@@ -65,16 +68,113 @@ const VALUES = [
   },
 ];
 
+// Handoff p.7: coverage only, newest first, up to four. Headlines taken from article URLs; verify wording before launch.
 const PRESS_LINKS = [
   {
-    label: "Equitech Futures",
-    title: "Shivang Thakor is building the conditions for children to love reading",
-    href: "https://www.equitechfutures.com/articles/shivang-thakor-is-building-the-conditions-for-children-to-love-reading",
+    outlet: "Posse Foundation",
+    title: "Notre Dame alum advances entrepreneurship, early literacy",
+    href: "https://www.possefoundation.org/news-and-events/notre-dame-alum-advances-entrepreneurship-early-literacy",
+    domain: "possefoundation.org",
   },
   {
-    label: "ALTA 2026 Podcast",
+    outlet: "Equitech Futures",
+    title: "Shivang Thakor is building the conditions for children to love reading",
+    href: "https://www.equitechfutures.com/articles/shivang-thakor-is-building-the-conditions-for-children-to-love-reading",
+    domain: "equitechfutures.com",
+  },
+  {
+    outlet: "ALTA 2026 Podcast",
     title: "Shivang Thakor of the Loratone Kids App",
     href: "https://www.youtube.com/watch?v=wmx2MVKhntw&t=2s",
+    domain: "youtube.com",
+  },
+];
+
+// ponytail: founders photo pending from Shiv; add it as slide 1 when it lands
+const PEOPLE_SLIDES: PeopleSlide[] = [
+  {
+    src: "/storia-landing/team-reading.jpg",
+    alt: "Reading a Loratone story to a group of young children seated on the floor",
+    title: "NMI Microschool",
+    detail: "Uptown New Orleans · reading with K–2nd graders",
+  },
+  {
+    src: "/storia-landing/team-festival.png",
+    alt: "The Loratone team with former Mayor Mitch Landrieu at their festival table",
+    title: "New Orleans Book Festival",
+    detail: "Tulane University · Family Day",
+  },
+  {
+    src: "/storia-landing/team-author.jpg",
+    alt: "The Loratone team with author Cherelyn Poe at their festival booth",
+    title: "Autism Society of Greater New Orleans Festival",
+    detail: "With author Cherelyn Poe",
+  },
+  {
+    src: "/storia-landing/team-mayor.png",
+    alt: "Showing Loratone on a laptop to visitors at an outdoor event",
+    title: "Meeting readers",
+    detail: "Lafayette Square, New Orleans",
+  },
+];
+
+const WEB_APP_URL = "https://app.loratone.com/#/intro";
+const IOS_URL = "https://apps.apple.com/us/app/storia-kids/id6759848322";
+const CONTACT_EMAIL = "hello@loratone.kids";
+
+type SpotlightStatus = "in-development" | "coming-soon" | "available";
+
+// Handoff p.8: one record per title; status decides the buttons. Never show "Read" before release.
+const SPOTLIGHT: {
+  title: string;
+  status: SpotlightStatus;
+  releaseMonth?: string;
+  intro: string;
+  art: { src: string; alt: string };
+  readHref?: string;
+  band: "sun" | "mint" | "blue";
+} = {
+  title: "Hat Trickster",
+  status: "in-development",
+  // draft intro written from the rough pages; Shiv to approve
+  intro:
+    "Her new bunny hat has eyes, ears that stretch for blocks, and a mind of its own. On her first day at a new school, it starts playing tricks, and she's the one who has to catch up.",
+  art: {
+    src: "/storia-landing/hat-trickster-spread.webp",
+    alt: "Hat Trickster cover and an inside page: a girl in a white bunny-eared hat leaps across a blue sky with the hat's long ears streaming behind her; inside, she dashes past a desk, a classmate stares in surprise, and the stretchy ears snatch a skateboard as she tumbles.",
+  },
+  band: "sun",
+};
+
+const SPOTLIGHT_STATUS_COPY: Record<SpotlightStatus, { label: string; kicker: string }> = {
+  "in-development": { label: "In development", kicker: "A new story coming to Loratone" },
+  "coming-soon": { label: "Coming soon", kicker: "Coming soon to Loratone" },
+  available: { label: "New in Loratone", kicker: "Now in the Loratone library" },
+};
+
+const START_PATHS = [
+  {
+    heading: "Parents and caregivers",
+    body: "Get Loratone on iPad, or start reading in your browser. Free to try with a handful of tales; a family subscription unlocks the full library.",
+    link: { label: "Download on iOS", href: IOS_URL, external: true },
+  },
+  {
+    heading: "Schools and SLPs",
+    body: "Tell us about your readers and how you'd like to use Loratone with them.",
+    link: {
+      label: "Contact us about schools",
+      href: `mailto:${CONTACT_EMAIL}?subject=Loratone%20for%20schools%20and%20SLPs`,
+      external: false,
+    },
+  },
+  {
+    heading: "Authors and partners",
+    body: "Have a story, an event, or a program that fits? We'd like to hear about it.",
+    link: {
+      label: "Contact us about partnering",
+      href: `mailto:${CONTACT_EMAIL}?subject=Partnering%20with%20Loratone`,
+      external: false,
+    },
   },
 ];
 
@@ -217,18 +317,25 @@ export default function StoriaCalmLanding() {
           );
       }
 
-      gsap.to(".manifesto .m-word", {
-        color: (_index: number, el: Element) =>
-          el.classList.contains("hl") ? "var(--sl-accent)" : "var(--sl-ink)",
-        stagger: 1,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".manifesto",
-          start: "top 70%",
-          end: "bottom 70%",
-          scrub: true,
-        },
-      });
+      // Resting colour is full-contrast ink (CSS); only dim-then-reveal when motion is allowed.
+      if (!reduceMotion) {
+        gsap.fromTo(
+          ".manifesto .m-word",
+          { color: "var(--sl-ink-30)" },
+          {
+            color: (_index: number, el: Element) =>
+              el.classList.contains("hl") ? "var(--sl-accent)" : "var(--sl-ink)",
+            stagger: 1,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".manifesto",
+              start: "top 70%",
+              end: "bottom 70%",
+              scrub: true,
+            },
+          }
+        );
+      }
 
       const steps = gsap.utils.toArray<HTMLElement>(".pin-step");
       const screens = gsap.utils.toArray<HTMLElement>(".phone-screen");
@@ -244,9 +351,12 @@ export default function StoriaCalmLanding() {
           trigger: step,
           start: "top 55%",
           end: "bottom 55%",
-          onEnter: () => setScreen(index),
-          onEnterBack: () => setScreen(index),
+          // ponytail: step 03 (soundscapes) has no screenshot yet, stays on the reading screen
+          onEnter: () => setScreen(Math.min(index, screens.length - 1)),
+          onEnterBack: () => setScreen(Math.min(index, screens.length - 1)),
         });
+
+        if (reduceMotion) return;
 
         gsap.fromTo(
           step,
@@ -273,29 +383,6 @@ export default function StoriaCalmLanding() {
             scrub: true,
           },
         });
-      });
-
-      gsap.fromTo(
-        ".bleed-img .bleed-media",
-        { scale: 1.1 },
-        {
-          scale: 1,
-          scrollTrigger: {
-            trigger: ".bleed",
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 1,
-          },
-        }
-      );
-
-      gsap.from(".bleed-caption p, .bleed-caption cite", {
-        y: 30,
-        opacity: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.15,
-        scrollTrigger: { trigger: ".bleed-caption", start: "top 80%" },
       });
 
       gsap.to(".mission-intro.reveal", {
@@ -390,39 +477,15 @@ export default function StoriaCalmLanding() {
         scrollTrigger: { trigger: ".news", start: "top 80%" },
       });
 
-      gsap.to(".community-head .reveal", {
-        opacity: 1,
-        y: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.1,
-        scrollTrigger: { trigger: ".community-head", start: "top 80%" },
-      });
-
-      gsap.to(".c-grid .reveal", {
-        opacity: 1,
-        y: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.12,
-        scrollTrigger: { trigger: ".c-grid", start: "top 80%" },
-      });
-
-      gsap.to(".press-strip.reveal", {
-        opacity: 1,
-        y: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        scrollTrigger: { trigger: ".press-strip", start: "top 85%" },
-      });
-
-      gsap.to(".cta-section .reveal", {
-        opacity: 1,
-        y: 0,
-        duration: 0.9,
-        ease: "power3.out",
-        stagger: 0.1,
-        scrollTrigger: { trigger: ".cta-section", start: "top 75%" },
+      gsap.utils.toArray<HTMLElement>(".reveal-group").forEach((group) => {
+        gsap.to(group.querySelectorAll(".reveal"), {
+          opacity: 1,
+          y: 0,
+          duration: 0.9,
+          ease: "power3.out",
+          stagger: 0.1,
+          scrollTrigger: { trigger: group, start: "top 80%" },
+        });
       });
 
       gsap.to(".cta-mascot", {
@@ -507,8 +570,8 @@ export default function StoriaCalmLanding() {
             scrub: false,
             onUpdate: (self) => {
               const velocity = self.getVelocity();
-              const skew = gsap.utils.clamp(-3.2, 3.2, velocity / 900);
-              const tilt = gsap.utils.clamp(-2.4, 2.4, velocity / -1600);
+              const skew = gsap.utils.clamp(-1.6, 1.6, velocity / 900);
+              const tilt = gsap.utils.clamp(-1.2, 1.2, velocity / -1600);
               skewTo(skew);
               tiltTo(tilt);
               panTo(index === 0 ? tilt * 0.45 : tilt * -0.3);
@@ -575,19 +638,18 @@ export default function StoriaCalmLanding() {
       <main id="top">
         <section className="hero">
           <div className="hero-inner">
-            <Link className="hero-award" href="/whats-new/tulane-open-season-fall-2026">
-              <span className="hero-award-badge">3rd place</span>
-              Tulane Open Season Pitch Competition · Fall 2026 →
-            </Link>
             <p className="eyebrow reveal">For all kids and reluctant readers · Made in New Orleans</p>
             <h1 ref={heroTitleRef} className="hero-title" aria-label="Loratone brings every story to life.">
               Loratone brings <em>every story</em> to life.
             </h1>
+            <p className="hero-sub">
+              Illustrated storybooks with warm narration and soundscapes. On iPad and the web.
+            </p>
             <div className="actions reveal">
               <a
                 ref={primaryCtaRef}
                 className="btn btn-primary"
-                href="https://apps.apple.com/us/app/storia-kids/id6759848322"
+                href={IOS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -596,7 +658,7 @@ export default function StoriaCalmLanding() {
               <a
                 ref={secondaryCtaRef}
                 className="btn btn-ghost"
-                href="https://app.loratone.com/#/intro"
+                href={WEB_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -646,13 +708,88 @@ export default function StoriaCalmLanding() {
           </p>
         </section>
 
-        <section className="values" aria-label="What Loratone stands for">
-          {VALUES.map((value) => (
-            <article className={`value-card ${value.tone} reveal`} key={value.word}>
-              <h2>{value.word}.</h2>
-              <p>{value.body}</p>
-            </article>
-          ))}
+        <section className="pin-section" id="how">
+          <div className="pin-stage">
+            <div className="pin-left">
+              <div className="phone">
+                <Image
+                  className="phone-screen pscreen-0 active"
+                  src="/storia-landing/app-library.png"
+                  alt="Story library screen"
+                  fill
+                  sizes="340px"
+                />
+                <Image
+                  className="phone-screen pscreen-1"
+                  src="/storia-landing/app-reading.png"
+                  alt="Reading screen with narration"
+                  fill
+                  sizes="340px"
+                />
+              </div>
+            </div>
+            <div className="pin-right">
+              <div className="pin-steps">
+                <div className="pin-step">
+                  <div className="phone pin-shot">
+                    <Image src="/storia-landing/app-library.png" alt="Story library screen" fill sizes="240px" />
+                  </div>
+                  <p className="eyebrow">01 · Choose</p>
+                  <h2>A library laid out like a map.</h2>
+                  <p>
+                    Kids wander a hand-drawn story world and pick tales by mood,
+                    length, or hero. A growing library of stories is live now, with
+                    more coming soon.
+                  </p>
+                </div>
+                <div className="pin-step">
+                  <div className="phone pin-shot">
+                    <Image src="/storia-landing/app-reading.png" alt="Reading screen with narration" fill sizes="240px" />
+                  </div>
+                  <p className="eyebrow">02 · Listen</p>
+                  <h2>Warm narration. Page by page.</h2>
+                  <p>
+                    Every story includes warm, expressive narration, with pauses,
+                    rhythm, and care. Kids can read along or simply listen.
+                  </p>
+                </div>
+                <div className="pin-step">
+                  <p className="eyebrow">03 · Feel</p>
+                  <h2>Soundscapes that bring it close.</h2>
+                  <p>
+                    A custom audio bed under each page — rain, footsteps, wind in
+                    the trees — composed to match the moment.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="people reveal-group" id="about" aria-labelledby="people-title">
+          <div className="people-grid">
+            <div className="people-intro">
+              <h2 id="people-title" className="reveal">The people behind the stories.</h2>
+              <p className="lede reveal">
+                Loratone is built in New Orleans by cofounders Shivang Thakor and Akin Pounds,
+                with educators, SLPs, and authors at the table. Here&apos;s where we&apos;ve been
+                reading lately.
+              </p>
+              <blockquote className="people-quote reveal">
+                <p>“My kid loves Loratone. Her fav story so far is Danny&apos;s Cat.”</p>
+                <cite>Shay Claiborne, parent and founder &amp; CEO of MilestoneMate</cite>
+              </blockquote>
+            </div>
+            <PeopleSlideshow slides={PEOPLE_SLIDES} />
+          </div>
+          <div className="values" role="list" aria-label="What Loratone stands for">
+            {VALUES.map((value) => (
+              <article className={`value-card ${value.tone} reveal`} key={value.word} role="listitem">
+                <h3>{value.word}.</h3>
+                <p>{value.body}</p>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="mission-section" id="mission">
@@ -677,7 +814,7 @@ export default function StoriaCalmLanding() {
 
             <div className="mission-grid">
               <article className="mission-card reveal">
-                <p className="mission-kicker">01 / Founder</p>
+                <p className="mission-kicker">01 / Co-founder + CEO</p>
                 <h3>Shivang Thakor</h3>
                 <p>
                   For as long as Shivang can remember, he has read stories with
@@ -691,7 +828,7 @@ export default function StoriaCalmLanding() {
               </article>
 
               <article className="mission-card reveal">
-                <p className="mission-kicker">02 / Founder + Software Architect</p>
+                <p className="mission-kicker">02 / Co-founder + CTO</p>
                 <h3>Akintunde Pounds</h3>
                 <p>
                   As a parent to a daughter with autism, Akintunde is on a
@@ -718,83 +855,47 @@ export default function StoriaCalmLanding() {
           </div>
         </section>
 
-        <section className="pin-section" id="how">
-          <div className="pin-stage">
-            <div className="pin-left">
-              <div className="phone">
-                <Image
-                  className="phone-screen pscreen-0 active"
-                  src="/storia-landing/app-library.png"
-                  alt="Story library screen"
-                  fill
-                  sizes="340px"
-                />
-                <Image
-                  className="phone-screen pscreen-1"
-                  src="/storia-landing/app-reading.png"
-                  alt="Reading screen with narration"
-                  fill
-                  sizes="340px"
-                />
-                <Image
-                  className="phone-screen pscreen-2"
-                  src="/storia-landing/app-reading.png"
-                  alt="Reading screen with immersive soundscape"
-                  fill
-                  sizes="340px"
-                />
+        <section
+          className={`spotlight spotlight-${SPOTLIGHT.band} reveal-group`}
+          id="spotlight"
+          aria-labelledby="spotlight-title"
+        >
+          <div className="spotlight-inner">
+            <div className="spotlight-copy">
+              <p className="spotlight-status reveal">
+                <span aria-hidden="true" />
+                {SPOTLIGHT.status === "coming-soon" && SPOTLIGHT.releaseMonth
+                  ? `Coming in ${SPOTLIGHT.releaseMonth}`
+                  : SPOTLIGHT_STATUS_COPY[SPOTLIGHT.status].label}
+              </p>
+              <p className="spotlight-kicker reveal">{SPOTLIGHT_STATUS_COPY[SPOTLIGHT.status].kicker}</p>
+              <h2 id="spotlight-title" className="reveal">{SPOTLIGHT.title}</h2>
+              <p className="spotlight-intro reveal">{SPOTLIGHT.intro}</p>
+              <div className="spotlight-actions reveal">
+                {SPOTLIGHT.status === "available" && SPOTLIGHT.readHref ? (
+                  <a className="btn btn-dark" href={SPOTLIGHT.readHref}>
+                    Read it now
+                  </a>
+                ) : (
+                  // ponytail: "Follow along" / "Get notified" go to What's new until an email signup exists
+                  <Link className="btn btn-dark" href="/whats-new">
+                    {SPOTLIGHT.status === "coming-soon" ? "Get notified" : "Follow along"}
+                  </Link>
+                )}
+                <a className="btn btn-outline" href={WEB_APP_URL} target="_blank" rel="noopener noreferrer">
+                  Read stories now
+                </a>
               </div>
             </div>
-            <div className="pin-right">
-              <div className="pin-steps">
-                <div className="pin-step">
-                  <p className="eyebrow">01 · Choose</p>
-                  <h2>A library laid out like a map.</h2>
-                  <p>
-                    Kids wander a hand-drawn story world and pick tales by mood,
-                    length, or hero. A growing library of stories is live now, with
-                    more coming soon.
-                  </p>
-                </div>
-                <div className="pin-step">
-                  <p className="eyebrow">02 · Listen</p>
-                  <h2>Warm narration. Page by page.</h2>
-                  <p>
-                    Every story includes warm, expressive narration, with pauses,
-                    rhythm, and care. Kids can read along or simply listen.
-                  </p>
-                </div>
-                <div className="pin-step">
-                  <p className="eyebrow">03 · Feel</p>
-                  <h2>Soundscapes that bring it close.</h2>
-                  <p>
-                    A custom audio bed under each page — rain, footsteps, wind in
-                    the trees — composed to match the moment.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bleed">
-          <div className="bleed-overline">
-            Loratone at NMI Microschool in Uptown New Orleans reading our curated
-            stories to K–2nd graders
-          </div>
-          <div className="bleed-img">
-            <div className="bleed-media">
+            <div className="spotlight-art reveal">
               <Image
-                src="/storia-landing/team-reading.jpg"
-                alt="Reading to children at a community event"
-                fill
-                sizes="100vw"
+                src={SPOTLIGHT.art.src}
+                alt={SPOTLIGHT.art.alt}
+                width={1800}
+                height={1200}
+                sizes="(max-width: 900px) 92vw, 560px"
               />
             </div>
-          </div>
-          <div className="bleed-caption">
-            <p>“My kid loves Loratone. Her fav story so far is Danny&apos;s Cat.”</p>
-            <cite>— Shay Claiborne, parent and founder &amp; CEO of MilestoneMate</cite>
           </div>
         </section>
 
@@ -807,19 +908,39 @@ export default function StoriaCalmLanding() {
               titles added each month.
             </p>
             <p className="stories-note reveal">
-              Preview of the current shelf — 8 titles now, with more on the way.
+              Preview of the current shelf — 7 titles now, with more on the way.
             </p>
           </div>
           <div className="stories-rail">
             {BOOKS.map((book) => (
               <div className="book-card" key={book.title}>
-                <div className={`bc-cover ${book.cover}`}>
-                  <span>{book.title}</span>
+                <div className="bc-cover">
+                  <Image src={book.cover} alt={`${book.title} cover`} fill sizes="240px" />
                 </div>
+                <p className="bc-title">{book.title}</p>
                 <p className="bc-meta">{book.meta}</p>
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="press reveal-group" id="press" aria-labelledby="press-title">
+          <h2 id="press-title" className="reveal">In the news.</h2>
+          <ul className="press-list">
+            {PRESS_LINKS.slice(0, 4).map((item) => (
+              <li key={item.href} className="reveal">
+                <a className="press-row" href={item.href}>
+                  <span className="press-outlet">{item.outlet}</span>
+                  <span className="press-title">{item.title}</span>
+                  <span className="press-link">Read on {item.domain}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <Link className="press-award reveal" href="/whats-new/tulane-open-season-fall-2026">
+            <span className="press-award-badge">3rd place</span>
+            Tulane Open Season Pitch Competition, Fall 2026
+          </Link>
         </section>
 
         <section className="news" id="whats-new">
@@ -852,47 +973,7 @@ export default function StoriaCalmLanding() {
           </div>
         </section>
 
-        <section className="community" id="community">
-          <div className="community-head">
-            <p className="eyebrow reveal">Our story</p>
-            <h2 className="reveal">Built by readers, for readers.</h2>
-            <p className="lede reveal">
-              Loratone is a small team in New Orleans, making a slow, careful app
-              with authors, librarians, and the kids who test every page.
-            </p>
-          </div>
-
-          <div className="c-grid">
-            <figure className="c-tile c-a reveal">
-              <Image src="/storia-landing/team-author.jpg" alt="Loratone team with author Cherelyn Poe at the Autism Society of Greater New Orleans Festival" fill sizes="(max-width: 900px) 100vw, 50vw" />
-              <figcaption>Autism Society of Greater New Orleans Festival with author Cherelyn Poe</figcaption>
-            </figure>
-            <figure className="c-tile c-b reveal">
-              <Image src="/storia-landing/team-festival.png" alt="Loratone team at the New Orleans Book Festival at Tulane University During Family Day" fill sizes="(max-width: 900px) 100vw, 50vw" />
-              <figcaption>New Orleans Book Festival at Tulane University During Family Day with Former Mayor Mitch Landrieu</figcaption>
-            </figure>
-          </div>
-
-          <div className="press-strip reveal" aria-label="Loratone press features">
-            <p className="press-eyebrow">Featured in</p>
-            <div className="press-cards">
-              {PRESS_LINKS.map((item) => (
-                <a
-                  className="press-card"
-                  href={item.href}
-                  key={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span>{item.label}</span>
-                  <strong>{item.title}</strong>
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="cta-section" id="download">
+        <section className="start reveal-group" id="start" aria-labelledby="start-title">
           <Image
             className="cta-girl"
             src="/landing/girl-on-cloud.png"
@@ -901,21 +982,23 @@ export default function StoriaCalmLanding() {
             height={713}
             sizes="(max-width: 1100px) 240px, 22vw"
           />
-          <div className="cta-inner">
-            <Image className="cta-mascot reveal" src="/storia-landing/mascot-full.png" alt="Loratone mascot" width={120} height={120} />
-            <h2 className="reveal">Start tonight’s story.</h2>
-            <p className="lede reveal">
-              Free to try with a handful of tales. A family subscription unlocks
-              the full library.
-            </p>
-            <a
-              className="btn btn-primary reveal"
-              href="https://apps.apple.com/us/app/storia-kids/id6759848322"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Download on the App Store
-            </a>
+          <div className="start-inner">
+            <Image className="cta-mascot reveal" src="/storia-landing/mascot-full.png" alt="" width={120} height={120} />
+            <h2 id="start-title" className="reveal">Where to start.</h2>
+            <div className="start-grid">
+              {START_PATHS.map((path) => (
+                <div className="start-path reveal" key={path.heading}>
+                  <h3>{path.heading}</h3>
+                  <p>{path.body}</p>
+                  <a
+                    href={path.link.href}
+                    {...(path.link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  >
+                    {path.link.label}
+                  </a>
+                </div>
+              ))}
+            </div>
             <p className="fine-print reveal">Android coming soon.</p>
           </div>
         </section>

@@ -3,11 +3,11 @@
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
     "total_tokens_estimated": 3588102,
-    "total_reads": 1632,
+    "total_reads": 1634,
     "total_writes": 1229,
-    "total_sessions": 63,
+    "total_sessions": 65,
     "anatomy_hits": 733,
-    "anatomy_misses": 893,
+    "anatomy_misses": 895,
     "repeated_reads_blocked": 1237,
     "estimated_savings_vs_bare_cli": 6442707
   },
@@ -18913,6 +18913,50 @@
         "output_tokens_estimated": 316,
         "reads_count": 2,
         "writes_count": 3,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-11-03-0729",
+      "started": "2026-11-03T13:29:50.243Z",
+      "ended": "2026-11-03T13:38:17.121Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/public/landing/app-screenshot3.png",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 1,
+        "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-11-03-0729",
+      "started": "2026-11-03T13:29:50.243Z",
+      "ended": "2026-11-03T13:38:23.239Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/public/landing/app-screenshot3.png",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 0,
+        "reads_count": 1,
+        "writes_count": 0,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 0
       }
