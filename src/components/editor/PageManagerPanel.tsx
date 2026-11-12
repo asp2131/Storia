@@ -3,13 +3,52 @@
 import {
   GripVertical,
   Image as ImageIcon,
+  Images,
+  Loader2,
   Mic,
   Music,
   Plus,
   Trash2,
 } from "lucide-react";
+import { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { usePageManagerContext } from "@/contexts/BookEditorContext";
+
+const hasFiles = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
+
+function readEntry(entry: FileSystemEntry): Promise<File[]> {
+  if (entry.isFile) {
+    return new Promise((resolve) =>
+      (entry as FileSystemFileEntry).file((file) => resolve([file]), () => resolve([]))
+    );
+  }
+  if (!entry.isDirectory) return Promise.resolve([]);
+  const reader = (entry as FileSystemDirectoryEntry).createReader();
+  // readEntries returns batches (~100 in Chrome); keep reading until empty.
+  return new Promise((resolve) => {
+    const all: FileSystemEntry[] = [];
+    const readBatch = () =>
+      reader.readEntries(async (batch) => {
+        if (batch.length === 0) {
+          resolve((await Promise.all(all.map(readEntry))).flat());
+          return;
+        }
+        all.push(...batch);
+        readBatch();
+      }, () => resolve([]));
+    readBatch();
+  });
+}
+
+/** Files from a drop, descending into dropped folders. */
+async function collectDroppedFiles(dataTransfer: DataTransfer): Promise<File[]> {
+  // Entries must be grabbed synchronously, before the drop event ends.
+  const entries = Array.from(dataTransfer.items)
+    .map((item) => item.webkitGetAsEntry?.())
+    .filter((entry): entry is FileSystemEntry => Boolean(entry));
+  if (entries.length === 0) return Array.from(dataTransfer.files);
+  return (await Promise.all(entries.map(readEntry))).flat();
+}
 
 export function PageManagerPanel() {
   const {
@@ -25,18 +64,43 @@ export function PageManagerPanel() {
     handlePageDragOver,
     handlePageDragLeave,
     handlePageDrop,
+    uploading,
+    handleImageFiles,
   } = usePageManagerContext();
+  // null = not dragging files; 0 = over the panel but not a page (start at active page).
+  const [fileDropPage, setFileDropPage] = useState<number | null>(null);
+
+  const dropFiles = (e: React.DragEvent, startPage: number) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setFileDropPage(null);
+    if (uploading) return;
+    void collectDroppedFiles(e.dataTransfer).then((files) => handleImageFiles(files, startPage));
+  };
 
   return (
-    <aside className="flex w-[236px] shrink-0 flex-col border-r border-zinc-200/80 bg-[#fbfbfc] max-[1180px]:w-52 max-[900px]:hidden">
+    <aside
+      className={`flex w-[236px] shrink-0 flex-col border-r border-zinc-200/80 bg-[#fbfbfc] max-[1180px]:w-52 max-[900px]:hidden ${fileDropPage === 0 ? "ring-2 ring-inset ring-[var(--editor-accent)]" : ""}`}
+      onDragOver={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        setFileDropPage((prev) => prev ?? 0);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFileDropPage(null);
+      }}
+      onDrop={(e) => dropFiles(e, activePage)}
+    >
       <div className="flex h-[46px] shrink-0 items-center justify-between border-b border-zinc-200/70 px-4">
         <span className="text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">
           Pages
         </span>
         <div className="flex items-center gap-2">
-          {draggedSound && (
+          {(draggedSound || fileDropPage !== null) && (
             <span className="animate-pulse text-[10px] font-semibold text-[var(--editor-accent)]">
-              Drop on page
+              {draggedSound ? "Drop on page" : `Fill from page ${fileDropPage || activePage}`}
             </span>
           )}
           <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-400">
@@ -58,7 +122,8 @@ export function PageManagerPanel() {
                   const isActive = page.number === activePage;
                   const pageHasOverlay = Boolean(page.overlay?.elements.length);
                   const audioStatus = pageAudioMap[page.number];
-                  const isDropTarget = dropTargetPage === page.number;
+                  const isDropTarget =
+                    dropTargetPage === page.number || fileDropPage === page.number;
 
                   return (
                     <Draggable
@@ -85,9 +150,23 @@ export function PageManagerPanel() {
                               setActivePage(page.number);
                             }
                           }}
-                          onDragOver={draggedSound ? (event) => handlePageDragOver(event, page.number) : undefined}
-                          onDragLeave={draggedSound ? handlePageDragLeave : undefined}
-                          onDrop={draggedSound ? (event) => handlePageDrop(event, page.number) : undefined}
+                          onDragOver={(event) => {
+                            if (draggedSound) return handlePageDragOver(event, page.number);
+                            if (!hasFiles(event)) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            event.dataTransfer.dropEffect = "copy";
+                            setFileDropPage(page.number);
+                          }}
+                          onDragLeave={(event) => {
+                            if (draggedSound) return handlePageDragLeave();
+                            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                              setFileDropPage(0);
+                            }
+                          }}
+                          onDrop={(event) =>
+                            draggedSound ? handlePageDrop(event, page.number) : dropFiles(event, page.number)
+                          }
                           className={`group relative flex cursor-pointer items-start gap-2.5 outline-none ${snapshot.isDragging ? "z-50" : ""}`}
                         >
                           <span className={`w-3 shrink-0 pt-1 text-right text-xs ${isActive ? "font-bold text-[var(--editor-accent)]" : "font-semibold text-zinc-400"}`}>
@@ -193,6 +272,25 @@ export function PageManagerPanel() {
           <Plus className="h-4 w-4" />
           Add Page
         </button>
+        <label
+          title={`Images fill pages in filename order, starting at page ${activePage}. You can also drop files or a folder onto a page.`}
+          className={`mt-2 flex h-[38px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-zinc-300 bg-white text-[13px] font-semibold text-zinc-700 transition hover:border-[var(--editor-accent)] hover:bg-[var(--editor-accent-faint)] hover:text-[var(--editor-accent)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--editor-accent)] ${uploading ? "pointer-events-none opacity-60" : ""}`}
+        >
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Images className="h-4 w-4" />}
+          {uploading ? "Uploading…" : "Upload Images"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            multiple
+            disabled={uploading}
+            className="sr-only"
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files?.length) void handleImageFiles(files);
+              e.target.value = "";
+            }}
+          />
+        </label>
       </div>
     </aside>
   );

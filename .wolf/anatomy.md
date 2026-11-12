@@ -1162,3 +1162,4 @@
 - `overlayEditorStore.test.ts` — Vitest for the overlay store: init, reorder, undo/redo, typing-burst coalescing, no-op update rejection, saved-state dirty tracking. (~420 tok)
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
 - `public/landing/girl-on-cloud.png` — Hand-drawn girl with moon headphones reading on a cloud; transparent PNG cropped via ffmpeg (800x713), floats in landing CTA section (~0 tok)
+- `src/contexts/sortFilesByName.test.ts` — natural filename-sort test for batch illustration upload (~150 tok)

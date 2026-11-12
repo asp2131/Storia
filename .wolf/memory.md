@@ -1269,6 +1269,12 @@
 | 08:08 | Removed unpublished Jax & Shini from landing rail, copy 8→7 titles | src/components/StoriaCalmLanding.tsx | done | ~500 |
 | 18:20 | Landing handoff build: nav+mobile dialog menu, hero line, people slideshow, Hat Trickster spotlight, In the news, Where to start; removed bleed/community/cta/award pill | SiteChrome.tsx, StoriaCalmLanding.tsx/.css, PeopleSlideshow.tsx(+test), public/storia-landing/hat-trickster-spread.webp | verify passed | ~60k |
 
+## Session: 2026-11-12 12:20
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:31 | batch illustration upload: Upload Images button fills pages in filename order from active page | BookEditorContext.tsx, PageManagerPanel.tsx, sortFilesByName.test.ts | test+tsc pass | ~6k |
+| 12:39 | batch upload: folder/file drop on page list + 3-way upload pool; browser-verified with stubbed upload/OCR | BookEditorContext.tsx, PageManagerPanel.tsx | pass | ~25k |
 ## Session: 2026-11-11 10:30
 
 | Time | Action | File(s) | Outcome | ~Tokens |

@@ -68,6 +68,12 @@ export type LocalPageData = {
   narrationTimestamps?: WordTimestamp[];
 };
 
+export function sortFilesByName(files: File[]): File[] {
+  return [...files].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
+  );
+}
+
 function toLocalPage(page: PageData): LocalPageData {
   return {
     id: page.id,
@@ -130,6 +136,7 @@ export type PageManagerContext = {
   uploading: boolean;
   setActiveImage: (imageUrl: string) => void;
   handleImageFile: (file: File) => Promise<void>;
+  handleImageFiles: (files: FileList | File[], startPage?: number) => Promise<void>;
 };
 
 export type OverlayTextOcrState = {
@@ -1120,6 +1127,104 @@ export function BookEditorProvider({
     [activePage, bookIdParam, runOcrForPage, setActiveImage]
   );
 
+  // Batch: files sorted by name ("2.png" before "10.png") fill pages from the
+  // active page onward, appending pages when the book runs out.
+  const handleImageFiles = useCallback(
+    async (fileList: FileList | File[], startPage: number = activePage) => {
+      // Folder drops bring .DS_Store and friends along; skip anything that isn't an image.
+      const files = sortFilesByName(
+        Array.from(fileList).filter((file) => file.type.startsWith("image/"))
+      );
+      if (files.length === 0) {
+        setError("No image files found to upload.");
+        return;
+      }
+      const oversized = files.find((file) => file.size > 10 * 1024 * 1024);
+      if (oversized) {
+        setError(`"${oversized.name}" is over 10MB. Nothing was uploaded.`);
+        return;
+      }
+
+      const willOverwrite = localPages.some(
+        (page) =>
+          page.number >= startPage &&
+          page.number < startPage + files.length &&
+          page.imageUrl
+      );
+      if (
+        willOverwrite &&
+        !window.confirm(
+          `This will replace existing illustrations on pages ${startPage}–${startPage + files.length - 1}. Continue?`
+        )
+      ) {
+        return;
+      }
+
+      setUploading(true);
+      setError(null);
+      const uploaded: Array<{ pageNumber: number; url: string }> = [];
+
+      const uploadOne = async (index: number) => {
+        const file = files[index];
+        const pageNumber = startPage + index;
+        const formData = new FormData();
+        formData.append("file", file);
+        if (bookIdParam) {
+          formData.append("bookId", bookIdParam);
+          formData.append("pageNumber", pageNumber.toString());
+        }
+        const response = await fetch("/api/admin/uploads", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(`${file.name}: ${payload?.error || "Failed to upload image."}`);
+        }
+        const data = await response.json();
+        uploaded.push({ pageNumber, url: data.url });
+        // Apply each image as it lands so a mid-batch failure keeps finished pages.
+        setLocalPages((prev) => {
+          const next = [...prev];
+          while (next.length < pageNumber) {
+            next.push({ number: next.length + 1, text: "", imageUrl: "" });
+          }
+          next[pageNumber - 1] = { ...next[pageNumber - 1], imageUrl: data.url };
+          return next;
+        });
+        markDirty();
+      };
+
+      // Small worker pool: 3 uploads in flight, stop handing out work after the first failure.
+      let nextIndex = 0;
+      let failure: unknown = null;
+      const worker = async () => {
+        while (failure === null && nextIndex < files.length) {
+          const index = nextIndex++;
+          try {
+            await uploadOne(index);
+          } catch (err) {
+            failure ??= err;
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(3, files.length) }, worker));
+      setUploading(false);
+      if (failure !== null) {
+        setError(failure instanceof Error ? failure.message : "Failed to upload images.");
+      }
+
+      // OCR one page at a time so the provider isn't flooded.
+      uploaded.sort((a, b) => a.pageNumber - b.pageNumber);
+      void (async () => {
+        for (const { pageNumber, url } of uploaded) {
+          await runOcrForPage(pageNumber, url);
+        }
+      })();
+    },
+    [activePage, bookIdParam, localPages, markDirty, runOcrForPage]
+  );
+
   const activeOverlayTextEntries = useMemo(
     () => activePageData?.overlayTextEntries || [],
     [activePageData?.overlayTextEntries]
@@ -1808,6 +1913,7 @@ export function BookEditorProvider({
         uploading,
         setActiveImage,
         handleImageFile,
+        handleImageFiles,
       },
       narration: {
         activeView,
@@ -1995,6 +2101,7 @@ export function BookEditorProvider({
       uploadAudioMutation.isPending,
       audioUploadDragging,
       uploading,
+      handleImageFiles,
     ]
   );
 

@@ -15,6 +15,7 @@
 - User prefers product/spec markdown files to be updated in place to reflect current implementation progress rather than receiving status only in chat.
 
 ## Key Learnings
+- 2026-11-12 `pages.image_url` is `varchar(255)`: data: URLs overflow it and PATCH /pages fails with "Failed to update pages.". When stubbing `/api/admin/uploads` in a browser test, return `URL.createObjectURL(blob)` instead. Local `.env.local` uses local Postgres but `.env` points uploads at the HOSTED Supabase bucket, so stub uploads/OCR in-page rather than writing test art to real storage. Book editor batch upload: `handleImageFiles(files, startPage?)` in BookEditorContext; panel drop handlers in PageManagerPanel (drop on page card = start there).
 - 2026-11-10 jsdom has no `AnimationEvent`, so React binds `onAnimationEnd` to `webkitAnimationEnd` in tests; `fireEvent.animationEnd` does nothing. Dispatch `new Event("webkitAnimationEnd", { bubbles: true })`. `PeopleSlideshow` uses the progress-bar CSS animation as its autoplay timer, so this matters there.
 - 2026-11-10 Homebrew ffmpeg here has no libwebp encoder; convert to WebP via `sharp` (already a dependency).
 - 2026-11-10 Landing spotlight is a single `SPOTLIGHT` record in `StoriaCalmLanding.tsx` (status in-development | coming-soon | available decides the buttons; "Read it now" only when available + readHref). Hat Trickster art comes from `~/Documents/hacktrickster rough 1/` (only p.1 cover and p.3 are coloured).
