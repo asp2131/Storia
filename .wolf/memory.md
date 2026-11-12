@@ -1274,4 +1274,3 @@
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
 | 10:40 | Added temporary redirect /hat-trickster → /#spotlight (mobile comics banner Learn more was 404 on www.loratone.com); branch fix/hat-trickster-redirect off updated main (PR #44 landing-handoff already merged) | next.config.ts | eslint ok | ~3k |
-| 11:32 | KPI instrumentation: events route accepts user-only events, /api/kpis endpoint + agg, web reader posts server events, migration child_profile_id nullable | events/route.ts, kpis.ts, api/kpis/route.ts, reader/page.tsx, schema.prisma | tsc+eslint+vitest green | ~9000 |
