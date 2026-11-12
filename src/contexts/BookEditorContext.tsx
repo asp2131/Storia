@@ -168,7 +168,7 @@ export type NarrationContext = {
   generatingPhase: "idle" | "generating" | "stitching" | "saving";
   generateNarration: (pageNumber?: number) => Promise<void>;
   generateSelectedTextNarration: () => Promise<void>;
-  saveRecordedNarration: (file: File, durationMs: number) => Promise<void>;
+  saveRecordedNarration: (file: File) => Promise<void>;
   selectedOverlayElement: TextElement | null;
   isNarrationPlaying: boolean;
   setIsNarrationPlaying: (v: boolean) => void;
@@ -1482,13 +1482,12 @@ export function BookEditorProvider({
   // ─── Narration helpers ────────────────────────────────────────────────────
 
   const saveRecordedNarration = useCallback(
-    async (file: File, durationMs: number) => {
+    async (file: File) => {
       setError(null);
       try {
         await handleSave();
         const form = new FormData();
         form.set("file", file);
-        form.set("durationMs", String(durationMs));
 
         const response = await fetch(
           `/api/admin/books/${bookIdParam}/pages/${activePage}/narration-recording`,

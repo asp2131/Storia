@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
-const { mockRequireAdmin, mockPrisma, mockAlignRecording, mockUploadRecording, mockRemoveRecordings } =
+const { mockRequireAdmin, mockPrisma, mockAlignRecording, mockUploadRecording, mockRemoveRecordings, mockTranscode } =
   vi.hoisted(() => ({
     mockRequireAdmin: vi.fn(),
     mockPrisma: {
@@ -13,11 +13,13 @@ const { mockRequireAdmin, mockPrisma, mockAlignRecording, mockUploadRecording, m
     mockAlignRecording: vi.fn(),
     mockUploadRecording: vi.fn(),
     mockRemoveRecordings: vi.fn(),
+    mockTranscode: vi.fn(),
   }));
 
 vi.mock("@/lib/admin-auth", () => ({ requireBookAccess: mockRequireAdmin }));
 vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }));
 vi.mock("@/lib/narration/alignRecording", () => ({ alignRecording: mockAlignRecording }));
+vi.mock("@/lib/narration/transcode", () => ({ transcodeToMp3: mockTranscode }));
 vi.mock("@/lib/narration/storage", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/narration/storage")>()),
   uploadRecording: mockUploadRecording,
@@ -31,7 +33,6 @@ const context = { params: Promise.resolve({ id: "7", pageNumber: "3" }) };
 function request(type = "audio/webm") {
   const form = new FormData();
   form.set("file", new Blob([new Uint8Array([1, 2, 3])], { type }), "page.webm");
-  form.set("durationMs", "4000");
   const value = new NextRequest("http://localhost/api", { method: "POST" });
   vi.spyOn(value, "formData").mockResolvedValue(form);
   return value;
@@ -47,6 +48,7 @@ describe("recorded narration route", () => {
       text_overlay: { elements: [{ text: "Once upon a time" }] },
       text_content: null,
     });
+    mockTranscode.mockResolvedValue({ audio: Buffer.from([9, 9]), durationSeconds: 4 });
     mockAlignRecording.mockResolvedValue({
       status: "aligned",
       timestamps: [
@@ -64,7 +66,7 @@ describe("recorded narration route", () => {
     mockPrisma.$transaction.mockImplementation((operations) => Promise.all(operations));
   });
 
-  it("records a browser WebM, aligns it, and makes it the page narration", async () => {
+  it("converts a browser recording to MP3, aligns it, and makes it the page narration", async () => {
     const response = await POST(request(), context);
     const body = await response.json();
 
@@ -73,9 +75,11 @@ describe("recorded narration route", () => {
       expect.objectContaining({
         tokens: ["Once", "upon", "a", "time"],
         durationSeconds: 4,
-        // ElevenLabs sniffs by extension — a webm blob must not go up as .m4a,
-        // or alignment silently degrades to fallback timings.
-        fileName: "page_3.webm",
+        // Aligned against the transcoded bytes, named to match them
+        // (ElevenLabs sniffs by extension).
+        audio: Buffer.from([9, 9]),
+        contentType: "audio/mpeg",
+        fileName: "page_3.mp3",
       })
     );
     expect(mockPrisma.pages.update).toHaveBeenCalledWith(
@@ -95,7 +99,33 @@ describe("recorded narration route", () => {
     expect(mockPrisma.page_overlay_narrations.deleteMany).toHaveBeenCalledWith({
       where: { page_id: 42n },
     });
+    expect(mockUploadRecording).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentType: "audio/mpeg",
+        path: expect.stringMatching(/^books\/7\/narration\/recorded_page_3_.*\.mp3$/),
+      })
+    );
     expect(body.alignmentStatus).toBe("aligned");
+    expect(body.durationMs).toBe(4000);
+  });
+
+  it("rejects a file that is not decodable audio", async () => {
+    mockTranscode.mockRejectedValue(new Error("Invalid data found when processing input"));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const response = await POST(request("application/pdf"), context);
+
+    expect(response.status).toBe(415);
+    expect(mockUploadRecording).not.toHaveBeenCalled();
+  });
+
+  it("rejects narration longer than five minutes", async () => {
+    mockTranscode.mockResolvedValue({ audio: Buffer.from([9]), durationSeconds: 301 });
+
+    const response = await POST(request(), context);
+
+    expect(response.status).toBe(413);
+    expect(mockAlignRecording).not.toHaveBeenCalled();
   });
 
   it("requires an admin session", async () => {
