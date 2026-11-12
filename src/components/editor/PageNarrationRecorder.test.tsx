@@ -59,10 +59,21 @@ describe("PageNarrationRecorder", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Use recording" }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
-    const [file, durationMs] = onSave.mock.calls[0];
+    const [file] = onSave.mock.calls[0];
     expect(file).toBeInstanceOf(File);
     expect(file.name).toBe("page-2.webm");
-    expect(durationMs).toBeGreaterThan(0);
     expect(track.stop).toHaveBeenCalled();
+  });
+
+  it("previews and saves an uploaded audio file", async () => {
+    render(<PageNarrationRecorder pageNumber={2} onSave={onSave} />);
+    const upload = new File([new Uint8Array([1, 2, 3])], "mom-reads.wav", { type: "audio/wav" });
+
+    fireEvent.change(screen.getByLabelText("Upload narration audio for page 2"), {
+      target: { files: [upload] },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Use recording" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(upload));
   });
 });

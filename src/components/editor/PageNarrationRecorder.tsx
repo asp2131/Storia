@@ -7,8 +7,8 @@ const MAX_RECORDING_MS = 5 * 60 * 1000;
 const MIME_TYPES = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg"];
 
 type RecordingPreview = {
+  /** A mic recording, or an audio file the author picked from disk. */
   blob: Blob;
-  durationMs: number;
   url: string;
 };
 
@@ -32,7 +32,7 @@ export function PageNarrationRecorder({
 }: {
   pageNumber: number;
   disabledReason?: string;
-  onSave: (file: File, durationMs: number) => Promise<void>;
+  onSave: (file: File) => Promise<void>;
 }) {
   const [state, setState] = useState<RecorderState>("idle");
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -43,6 +43,7 @@ export function PageNarrationRecorder({
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef(0);
   const previewUrlRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const disposedRef = useRef(false);
 
   const stopStream = useCallback(() => {
@@ -114,7 +115,7 @@ export function PageNarrationRecorder({
         const url = URL.createObjectURL(blob);
         previewUrlRef.current = url;
         setElapsedMs(durationMs);
-        setPreview({ blob, durationMs, url });
+        setPreview({ blob, url });
         setState("preview");
       };
 
@@ -138,12 +139,13 @@ export function PageNarrationRecorder({
     setError(null);
     setState("saving");
     try {
-      const file = new File(
-        [preview.blob],
-        `page-${pageNumber}.${fileExtension(preview.blob.type)}`,
-        { type: preview.blob.type }
-      );
-      await onSave(file, preview.durationMs);
+      const file =
+        preview.blob instanceof File
+          ? preview.blob
+          : new File([preview.blob], `page-${pageNumber}.${fileExtension(preview.blob.type)}`, {
+              type: preview.blob.type,
+            });
+      await onSave(file);
       discardPreview();
       setState("idle");
     } catch (cause) {
@@ -151,6 +153,21 @@ export function PageNarrationRecorder({
       setState("preview");
     }
   }, [discardPreview, onSave, pageNumber, preview]);
+
+  // An uploaded file lands in the same preview → "Use recording" step as a mic
+  // take; the server converts and word-aligns both identically.
+  const chooseFile = useCallback(
+    (file: File | undefined) => {
+      if (!file) return;
+      discardPreview();
+      setError(null);
+      const url = URL.createObjectURL(file);
+      previewUrlRef.current = url;
+      setPreview({ blob: file, url });
+      setState("preview");
+    },
+    [discardPreview]
+  );
 
   useEffect(() => {
     if (state !== "recording") return;
@@ -178,7 +195,7 @@ export function PageNarrationRecorder({
     <div className="space-y-3 border-t border-zinc-100 pt-3">
       <span className="flex items-center gap-1.5 text-xs font-semibold text-rose-600">
         <Mic className="h-3.5 w-3.5" />
-        Record your voice
+        Record or upload your voice
       </span>
 
       <div className="rounded-[9px] border border-rose-100 bg-rose-50/60 p-3">
@@ -192,6 +209,31 @@ export function PageNarrationRecorder({
             <Mic className="h-4 w-4" />
             Record page {pageNumber}
           </button>
+        )}
+
+        {state === "idle" && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              aria-label={`Upload narration audio for page ${pageNumber}`}
+              onChange={(event) => {
+                chooseFile(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={Boolean(disabledReason)}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-[9px] border border-rose-200 bg-white py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Upload className="h-4 w-4" />
+              Upload audio file
+            </button>
+          </>
         )}
 
         {state === "requesting" && (
@@ -221,11 +263,18 @@ export function PageNarrationRecorder({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => void startRecording()}
+                onClick={() => {
+                  if (preview.blob instanceof File) {
+                    discardPreview();
+                    setState("idle");
+                  } else {
+                    void startRecording();
+                  }
+                }}
                 disabled={state === "saving"}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-[8px] border border-rose-200 bg-white py-2 text-[11px] font-semibold text-rose-700 disabled:opacity-50"
               >
-                <RotateCcw className="h-3.5 w-3.5" /> Retake
+                <RotateCcw className="h-3.5 w-3.5" /> {preview.blob instanceof File ? "Discard" : "Retake"}
               </button>
               <button
                 type="button"
@@ -238,7 +287,7 @@ export function PageNarrationRecorder({
                 ) : (
                   <Upload className="h-3.5 w-3.5" />
                 )}
-                {state === "saving" ? "Saving…" : "Use recording"}
+                {state === "saving" ? "Syncing words…" : "Use recording"}
               </button>
             </div>
           </div>

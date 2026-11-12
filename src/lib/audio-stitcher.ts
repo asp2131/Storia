@@ -22,7 +22,7 @@ const GAP_SECONDS = 0.75;
 
 let _ffmpegPath: string | null = null;
 
-function getFfmpegPath(): string {
+export function getFfmpegPath(): string {
   if (_ffmpegPath) return _ffmpegPath;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

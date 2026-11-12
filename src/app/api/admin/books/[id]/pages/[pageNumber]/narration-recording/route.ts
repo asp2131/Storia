@@ -4,14 +4,11 @@ import { requireBookAccess } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { alignRecording } from "@/lib/narration/alignRecording";
 import { buildPageReferenceWords } from "@/lib/narration/referenceWords";
-import {
-  MAX_RECORDING_BYTES,
-  MAX_RECORDING_SECONDS,
-  extensionForContentType,
-  isSupportedAudioType,
-  removeRecordings,
-  uploadRecording,
-} from "@/lib/narration/storage";
+import { MAX_RECORDING_SECONDS, removeRecordings, uploadRecording } from "@/lib/narration/storage";
+import { transcodeToMp3 } from "@/lib/narration/transcode";
+
+// Uploads may be uncompressed WAV; everything is stored as ~1 MB/min MP3.
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 type RouteContext = {
   params: Promise<{ id: string; pageNumber: string }>;
@@ -54,20 +51,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "A recording is required." }, { status: 400 });
     }
 
-    const contentType = file.type || "audio/webm";
-    if (!isSupportedAudioType(contentType)) {
-      return NextResponse.json({ error: `Unsupported audio type: ${contentType}` }, { status: 415 });
-    }
-    if (file.size > MAX_RECORDING_BYTES) {
-      return NextResponse.json({ error: "Recording is too large for one page." }, { status: 413 });
-    }
-
-    const durationMs = Math.round(Number(form.get("durationMs")));
-    if (!Number.isFinite(durationMs) || durationMs < 1) {
-      return NextResponse.json({ error: "Recording duration is required." }, { status: 400 });
-    }
-    if (durationMs > MAX_RECORDING_SECONDS * 1000) {
-      return NextResponse.json({ error: "Recording is longer than 5 minutes." }, { status: 413 });
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json({ error: "Audio file is too large (50 MB max)." }, { status: 413 });
     }
 
     const page = await prisma.pages.findFirst({
@@ -86,16 +71,31 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const audio = Buffer.from(await file.arrayBuffer());
-    const extension = extensionForContentType(contentType);
+    // Recordings and uploads arrive in whatever the browser or author had
+    // (Opus-in-MP4, WebM, WAV…). Store one format every reader can play, and
+    // align against those exact bytes so timings match what is heard.
+    let audio: Buffer;
+    let durationSeconds: number;
+    try {
+      ({ audio, durationSeconds } = await transcodeToMp3(Buffer.from(await file.arrayBuffer())));
+    } catch (error) {
+      console.warn("[narration-recording] Could not decode audio:", error);
+      return NextResponse.json({ error: "That file could not be read as audio." }, { status: 415 });
+    }
+    if (durationSeconds > MAX_RECORDING_SECONDS) {
+      return NextResponse.json({ error: "Narration is longer than 5 minutes." }, { status: 413 });
+    }
+
+    const contentType = "audio/mpeg";
+    const extension = "mp3";
+    const durationMs = Math.round(durationSeconds * 1000);
     const alignment = await alignRecording({
       audio,
       contentType,
-      // ElevenLabs sniffs the upload by extension; a webm blob named .m4a
-      // fails to align and silently degrades to "fallback" timings.
+      // ElevenLabs sniffs the upload by extension, so the name must match the bytes.
       fileName: `page_${pageNumber}.${extension}`,
       tokens,
-      durationSeconds: durationMs / 1000,
+      durationSeconds,
     });
     const stamp = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const path = `books/${bookId}/narration/recorded_page_${pageNumber}_${stamp}.${extension}`;
