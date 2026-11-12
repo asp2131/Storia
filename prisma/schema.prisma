@@ -505,7 +505,7 @@ model question_attempt {
 model mobile_analytics_events {
   id               String   @id
   user_id          String
-  child_profile_id String
+  child_profile_id String?
   book_id          BigInt?
   session_id       String?
   event_name       String
@@ -515,7 +515,7 @@ model mobile_analytics_events {
   created_at       DateTime @default(now())
 
   user          user          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  child_profile child_profile @relation(fields: [child_profile_id], references: [id], onDelete: Cascade)
+  child_profile child_profile? @relation(fields: [child_profile_id], references: [id], onDelete: Cascade)
 
   @@index([user_id], map: "mobile_analytics_events_user_id_idx")
   @@index([child_profile_id], map: "mobile_analytics_events_child_profile_id_idx")

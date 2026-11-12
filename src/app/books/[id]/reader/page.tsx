@@ -364,6 +364,48 @@ export default function BookReader() {
   const pageEnteredAtRef = useRef<number>(Date.now());
   const hasTrackedOpenRef = useRef(false);
 
+  // Server-side analytics: mirrors the mobile reader events so admin reports
+  // and launch KPIs include web readers. Cookie-authenticated; skipped when
+  // signed out. Umami stays as the lightweight page-level layer.
+  const analyticsSessionIdRef = useRef(
+    `web_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+  );
+  const sessionStartedAtRef = useRef<number>(Date.now());
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  isAuthenticatedRef.current = isAuthenticated;
+  const postEvent = useCallback(
+    (event: string, properties: Record<string, unknown> = {}) => {
+      if (!isAuthenticatedRef.current) return;
+      void fetch("/api/analytics/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        keepalive: true,
+        body: JSON.stringify({
+          event,
+          bookId,
+          sessionId: analyticsSessionIdRef.current,
+          source: "web",
+          occurredAt: new Date().toISOString(),
+          properties: { ...properties, sessionId: analyticsSessionIdRef.current },
+        }),
+      }).catch(() => {});
+    },
+    [bookId]
+  );
+
+  useEffect(() => {
+    const end = () =>
+      postEvent("reading_session_ended", {
+        durationMs: Date.now() - sessionStartedAtRef.current,
+      });
+    window.addEventListener("pagehide", end);
+    return () => {
+      end();
+      window.removeEventListener("pagehide", end);
+    };
+  }, [postEvent]);
+
   // Keep the ref in sync with state (for use inside GSAP callbacks)
   useEffect(() => {
     isNarrationPlayingRef.current = isNarrationPlaying;
@@ -792,7 +834,9 @@ export default function BookReader() {
       bookId,
       title: readerData.book.title,
     });
-  }, [loading, readerData, bookId]);
+    postEvent("reading_session_started", { title: readerData.book.title });
+    postEvent("book_started", { title: readerData.book.title });
+  }, [loading, readerData, bookId, postEvent]);
 
   // Track page turns + reading time per page
   useEffect(() => {
@@ -815,6 +859,7 @@ export default function BookReader() {
       bookId,
       page: pages[activeIndex]?.pageNumber ?? 0,
     });
+    postEvent("page_viewed", { pageNumber: pages[activeIndex]?.pageNumber ?? 0 });
 
     // Track book completion when reaching the last page
     if (activeIndex === pages.length - 1 && pages.length > 1) {
@@ -823,6 +868,7 @@ export default function BookReader() {
         title: readerData.book.title,
         totalPages: pages.length,
       });
+      postEvent("book_completed", { totalPages: pages.length });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex]);
