@@ -1268,3 +1268,9 @@
 | 07:44 | Landing story rail: colored blocks → real book covers (next/image, Supabase cover_url hardcoded), added .bc-title | src/components/StoriaCalmLanding.tsx, StoriaCalmLanding.css | verified on :3000, 8 covers 200 | ~3k |
 | 08:08 | Removed unpublished Jax & Shini from landing rail, copy 8→7 titles | src/components/StoriaCalmLanding.tsx | done | ~500 |
 | 18:20 | Landing handoff build: nav+mobile dialog menu, hero line, people slideshow, Hat Trickster spotlight, In the news, Where to start; removed bleed/community/cta/award pill | SiteChrome.tsx, StoriaCalmLanding.tsx/.css, PeopleSlideshow.tsx(+test), public/storia-landing/hat-trickster-spread.webp | verify passed | ~60k |
+
+## Session: 2026-11-12 12:20
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 12:31 | batch illustration upload: Upload Images button fills pages in filename order from active page | BookEditorContext.tsx, PageManagerPanel.tsx, sortFilesByName.test.ts | test+tsc pass | ~6k |

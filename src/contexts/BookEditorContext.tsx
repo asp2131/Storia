@@ -68,6 +68,12 @@ export type LocalPageData = {
   narrationTimestamps?: WordTimestamp[];
 };
 
+export function sortFilesByName(files: File[]): File[] {
+  return [...files].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
+  );
+}
+
 function toLocalPage(page: PageData): LocalPageData {
   return {
     id: page.id,
@@ -130,6 +136,7 @@ export type PageManagerContext = {
   uploading: boolean;
   setActiveImage: (imageUrl: string) => void;
   handleImageFile: (file: File) => Promise<void>;
+  handleImageFiles: (files: FileList | File[]) => Promise<void>;
 };
 
 export type OverlayTextOcrState = {
@@ -1120,6 +1127,88 @@ export function BookEditorProvider({
     [activePage, bookIdParam, runOcrForPage, setActiveImage]
   );
 
+  // Batch: files sorted by name ("2.png" before "10.png") fill pages from the
+  // active page onward, appending pages when the book runs out.
+  const handleImageFiles = useCallback(
+    async (fileList: FileList | File[]) => {
+      const files = sortFilesByName(Array.from(fileList));
+      const invalid = files.find(
+        (file) => !file.type.startsWith("image/") || file.size > 10 * 1024 * 1024
+      );
+      if (invalid) {
+        setError(`"${invalid.name}" is not an image under 10MB. Nothing was uploaded.`);
+        return;
+      }
+      if (files.length === 0) return;
+
+      const startPage = activePage;
+      const willOverwrite = localPages.some(
+        (page) =>
+          page.number >= startPage &&
+          page.number < startPage + files.length &&
+          page.imageUrl
+      );
+      if (
+        willOverwrite &&
+        !window.confirm(
+          `This will replace existing illustrations on pages ${startPage}–${startPage + files.length - 1}. Continue?`
+        )
+      ) {
+        return;
+      }
+
+      setUploading(true);
+      setError(null);
+      const uploaded: Array<{ pageNumber: number; url: string }> = [];
+      try {
+        // ponytail: sequential uploads keep memory/bandwidth flat; parallelise with a small pool if big batches feel slow.
+        for (const [index, file] of files.entries()) {
+          const pageNumber = startPage + index;
+          const formData = new FormData();
+          formData.append("file", file);
+          if (bookIdParam) {
+            formData.append("bookId", bookIdParam);
+            formData.append("pageNumber", pageNumber.toString());
+          }
+          const response = await fetch("/api/admin/uploads", {
+            method: "POST",
+            body: formData,
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(
+              `${file.name}: ${payload?.error || "Failed to upload image."}`
+            );
+          }
+          const data = await response.json();
+          uploaded.push({ pageNumber, url: data.url });
+          // Apply each image as it lands so a mid-batch failure keeps earlier pages.
+          setLocalPages((prev) => {
+            const next = [...prev];
+            while (next.length < pageNumber) {
+              next.push({ number: next.length + 1, text: "", imageUrl: "" });
+            }
+            next[pageNumber - 1] = { ...next[pageNumber - 1], imageUrl: data.url };
+            return next;
+          });
+          markDirty();
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to upload images.");
+      } finally {
+        setUploading(false);
+      }
+
+      // OCR one page at a time so the provider isn't flooded.
+      void (async () => {
+        for (const { pageNumber, url } of uploaded) {
+          await runOcrForPage(pageNumber, url);
+        }
+      })();
+    },
+    [activePage, bookIdParam, localPages, markDirty, runOcrForPage]
+  );
+
   const activeOverlayTextEntries = useMemo(
     () => activePageData?.overlayTextEntries || [],
     [activePageData?.overlayTextEntries]
@@ -1808,6 +1897,7 @@ export function BookEditorProvider({
         uploading,
         setActiveImage,
         handleImageFile,
+        handleImageFiles,
       },
       narration: {
         activeView,
@@ -1995,6 +2085,7 @@ export function BookEditorProvider({
       uploadAudioMutation.isPending,
       audioUploadDragging,
       uploading,
+      handleImageFiles,
     ]
   );
 

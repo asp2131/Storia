@@ -3,6 +3,8 @@
 import {
   GripVertical,
   Image as ImageIcon,
+  Images,
+  Loader2,
   Mic,
   Music,
   Plus,
@@ -25,6 +27,8 @@ export function PageManagerPanel() {
     handlePageDragOver,
     handlePageDragLeave,
     handlePageDrop,
+    uploading,
+    handleImageFiles,
   } = usePageManagerContext();
 
   return (
@@ -193,6 +197,25 @@ export function PageManagerPanel() {
           <Plus className="h-4 w-4" />
           Add Page
         </button>
+        <label
+          title={`Images fill pages in filename order, starting at page ${activePage}`}
+          className={`mt-2 flex h-[38px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-zinc-300 bg-white text-[13px] font-semibold text-zinc-700 transition hover:border-[var(--editor-accent)] hover:bg-[var(--editor-accent-faint)] hover:text-[var(--editor-accent)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--editor-accent)] ${uploading ? "pointer-events-none opacity-60" : ""}`}
+        >
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Images className="h-4 w-4" />}
+          {uploading ? "Uploading…" : "Upload Images"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            multiple
+            disabled={uploading}
+            className="sr-only"
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files?.length) void handleImageFiles(files);
+              e.target.value = "";
+            }}
+          />
+        </label>
       </div>
     </aside>
   );
