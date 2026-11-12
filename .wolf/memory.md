@@ -1275,3 +1275,8 @@
 |------|--------|---------|---------|--------|
 | 12:31 | batch illustration upload: Upload Images button fills pages in filename order from active page | BookEditorContext.tsx, PageManagerPanel.tsx, sortFilesByName.test.ts | test+tsc pass | ~6k |
 | 12:39 | batch upload: folder/file drop on page list + 3-way upload pool; browser-verified with stubbed upload/OCR | BookEditorContext.tsx, PageManagerPanel.tsx | pass | ~25k |
+## Session: 2026-11-11 10:30
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 10:40 | Added temporary redirect /hat-trickster → /#spotlight (mobile comics banner Learn more was 404 on www.loratone.com); branch fix/hat-trickster-redirect off updated main (PR #44 landing-handoff already merged) | next.config.ts | eslint ok | ~3k |

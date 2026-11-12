@@ -91,7 +91,7 @@
 - `Dockerfile` — Docker container definition (~566 tok)
 - `eslint.config.mjs` — ESLint flat configuration (~124 tok)
 - `next-env.d.ts` — / <reference types="next" /> (~72 tok)
-- `next.config.ts` — Declares nextConfig (~154 tok)
+- `next.config.ts` — Declares nextConfig: standalone output, ffmpeg-static external, remote image patterns, `/hat-trickster` → `/#spotlight` temporary redirect (mobile banner link target) (~190 tok)
 - `package-lock.json` — npm lock file (~111362 tok)
 - `package.json` — Node.js package manifest (~504 tok)
 - `postcss.config.mjs` — Declares config (~26 tok)
