@@ -28,6 +28,26 @@ export type WordTimestamp = {
 
 const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
 
+// Model rollback knob: set ELEVENLABS_MODEL_ID=eleven_turbo_v2_5 to restore
+// the pre-v4 behaviour (speed + style honoured).
+const DEFAULT_MODEL_ID = process.env.ELEVENLABS_MODEL_ID || "eleven_v4";
+
+// eleven_v3 / eleven_v4 (+ turbo) have no speed or style controls; only the
+// v2-era models take them.
+export function buildVoiceSettings(
+  modelId: string,
+  params: { speed?: number; style?: number; useSpeakerBoost?: boolean }
+) {
+  const base = {
+    stability: 0.5,
+    similarity_boost: 0.75,
+    use_speaker_boost: params.useSpeakerBoost ?? true,
+  };
+  return /^eleven_v[34]/.test(modelId)
+    ? base
+    : { ...base, style: params.style ?? 0.76, speed: params.speed ?? 1 };
+}
+
 /**
  * Extract the storage file path from a Supabase public URL.
  * e.g. "https://x.supabase.co/storage/v1/object/public/storia-storage/books/1/foo.mp3"
@@ -144,24 +164,8 @@ export async function synthesizeSpeech(params: {
   modelId?: string;
 }): Promise<{ audioBuffer: Buffer; contentType: string }> {
   const apiKey = ensureApiKey();
-  const modelId = params.modelId ?? "eleven_turbo_v2_5";
-  const isV3 = modelId === "eleven_v3";
-
-  // eleven_v3 ignores speed and uses a simpler stability semantic; keep
-  // turbo/v2 settings unchanged for non-v3 callers.
-  const voiceSettings = isV3
-    ? {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        use_speaker_boost: params.useSpeakerBoost ?? true,
-      }
-    : {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: params.style ?? 0.76,
-        speed: params.speed ?? 1,
-        use_speaker_boost: params.useSpeakerBoost ?? true,
-      };
+  const modelId = params.modelId ?? DEFAULT_MODEL_ID;
+  const voiceSettings = buildVoiceSettings(modelId, params);
 
   const response = await fetch(`${ELEVENLABS_BASE_URL}/text-to-speech/${params.voiceId}`, {
     method: "POST",
@@ -258,22 +262,8 @@ export async function synthesizeSpeechWithTimestamps(params: {
   normalizedAlignment?: CharacterAlignment;
 }> {
   const apiKey = ensureApiKey();
-  const modelId = params.modelId ?? "eleven_turbo_v2_5";
-  const isV3 = modelId === "eleven_v3";
-
-  const voiceSettings = isV3
-    ? {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        use_speaker_boost: params.useSpeakerBoost ?? true,
-      }
-    : {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: params.style ?? 0.76,
-        speed: params.speed ?? 1,
-        use_speaker_boost: params.useSpeakerBoost ?? true,
-      };
+  const modelId = params.modelId ?? DEFAULT_MODEL_ID;
+  const voiceSettings = buildVoiceSettings(modelId, params);
 
   const response = await fetch(
     `${ELEVENLABS_BASE_URL}/text-to-speech/${params.voiceId}/with-timestamps`,

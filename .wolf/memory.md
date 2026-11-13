@@ -1275,6 +1275,13 @@
 |------|--------|---------|---------|--------|
 | 12:31 | batch illustration upload: Upload Images button fills pages in filename order from active page | BookEditorContext.tsx, PageManagerPanel.tsx, sortFilesByName.test.ts | test+tsc pass | ~6k |
 | 12:39 | batch upload: folder/file drop on page list + 3-way upload pool; browser-verified with stubbed upload/OCR | BookEditorContext.tsx, PageManagerPanel.tsx | pass | ~25k |
+
+## Session: 2026-11-12 13:21
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 13:40 | Studio narration: transcode recordings/uploads to MP3 before align; added audio file upload to PageNarrationRecorder; dropped client durationMs | narration-recording/route.ts, lib/narration/transcode.ts, PageNarrationRecorder.tsx, BookEditorContext.tsx | 479-ish tests green, tsc clean, real recording aligned 18/18 | ~9k |
+| 18:37 | Default ElevenLabs TTS model -> eleven_v4 (env ELEVENLABS_MODEL_ID override), buildVoiceSettings helper | src/lib/elevenlabs.ts, .env.example, elevenlabs.forcedAlignment.test.ts | tests+tsc run; live with-timestamps verified on v4 | ~1k |
 ## Session: 2026-11-11 10:30
 
 | Time | Action | File(s) | Outcome | ~Tokens |

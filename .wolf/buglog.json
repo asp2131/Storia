@@ -3411,6 +3411,28 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-11-03T07:50:00Z"
+    },
+    {
+      "id": "bug-197",
+      "timestamp": "2026-11-12T19:40:00Z",
+      "error_message": "Studio-recorded narration does not get word highlighting in the mobile app like ElevenLabs narration",
+      "file": "src/app/api/admin/books/[id]/pages/[pageNumber]/narration-recording/route.ts",
+      "root_cause": "Suspected, not reproduced on a device: timestamps were stored correctly (aligned 18/18 in prod) and the web reader plus the Dart highlight code both highlight from them. The only difference from ElevenLabs narration was the audio file: Chrome MediaRecorder prefers audio/mp4 and writes Opus in fragmented MP4 (stored as .m4a), which older iOS AVPlayer cannot decode, leaving no narration position to highlight from.",
+      "fix": "Route now transcodes every recording/upload to mono 128k CBR MP3 via ffmpeg-static (src/lib/narration/transcode.ts), aligns against those bytes, derives duration server-side, and stores .mp3. Existing recordings must be re-saved.",
+      "tags": [
+        "narration",
+        "mobile",
+        "highlighting",
+        "opus",
+        "mp4",
+        "ffmpeg",
+        "transcode"
+      ],
+      "related_bugs": [
+        "bug-184"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-11-12T19:40:00Z"
     }
   ]
 }

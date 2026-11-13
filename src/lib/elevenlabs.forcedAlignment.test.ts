@@ -39,3 +39,15 @@ describe("forceAlign", () => {
     expect(result.loss).toBe(0.15);
   });
 });
+
+describe("buildVoiceSettings", () => {
+  it("omits speed/style for v3/v4 models and keeps them for v2-era models", async () => {
+    const { buildVoiceSettings } = await import("./elevenlabs");
+    const p = { speed: 0.75, style: 0.5 };
+    for (const id of ["eleven_v4", "eleven_v4_turbo", "eleven_v3"]) {
+      expect(buildVoiceSettings(id, p)).not.toHaveProperty("speed");
+      expect(buildVoiceSettings(id, p)).not.toHaveProperty("style");
+    }
+    expect(buildVoiceSettings("eleven_turbo_v2_5", p)).toMatchObject(p);
+  });
+});

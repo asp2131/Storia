@@ -1168,3 +1168,6 @@
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
 - `public/landing/girl-on-cloud.png` — Hand-drawn girl with moon headphones reading on a cloud; transparent PNG cropped via ffmpeg (800x713), floats in landing CTA section (~0 tok)
 - `src/contexts/sortFilesByName.test.ts` — natural filename-sort test for batch illustration upload (~150 tok)
+
+- `src/lib/narration/transcode.ts` — `transcodeToMp3(buffer)` → `{audio, durationSeconds}`; ffmpeg-static, temp files, mono 128k CBR MP3 with no Xing/ID3 so duration = bytes*8/bitrate. Used by the Studio narration-recording route. (~450 tok)
+- `src/lib/narration/transcode.test.ts` — real-ffmpeg test: Opus-in-fMP4 and WAV in, MP3 out; rejects non-audio. (~300 tok)
