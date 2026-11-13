@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import { validateChildAccess } from "@/lib/child-auth";
+import { getAuthenticatedUser, validateChildAccess } from "@/lib/child-auth";
 import { prisma } from "@/lib/prisma";
 
 function parsePositiveBigInt(value: unknown): bigint | null {
@@ -24,11 +24,22 @@ function invalidRequest(message: string, field: string) {
   );
 }
 
+/**
+ * Ingests one analytics event.
+ *
+ * `childProfileId` is optional: funnel events (app opened, sign-up, onboarding,
+ * profile creation) and web-reader events happen before or without a child
+ * profile. When present it must belong to the caller; when absent the event is
+ * stored against the authenticated user only.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const event = typeof body?.event === "string" ? body.event.trim() : "";
-    const childProfileId = typeof body?.childProfileId === "string" ? body.childProfileId.trim() : "";
+    const childProfileId =
+      typeof body?.childProfileId === "string" && body.childProfileId.trim()
+        ? body.childProfileId.trim()
+        : null;
     const source = typeof body?.source === "string" && body.source.trim() ? body.source.trim() : "mobile";
     const sessionId = typeof body?.sessionId === "string" && body.sessionId.trim() ? body.sessionId.trim() : null;
     const occurredAtRaw = body?.occurredAt;
@@ -37,9 +48,6 @@ export async function POST(request: NextRequest) {
     if (!event) {
       return invalidRequest("event is required", "event");
     }
-    if (!childProfileId) {
-      return invalidRequest("childProfileId is required", "childProfileId");
-    }
     if (body?.bookId != null && parsePositiveBigInt(body.bookId) == null) {
       return invalidRequest("bookId must be a positive integer", "bookId");
     }
@@ -47,7 +55,9 @@ export async function POST(request: NextRequest) {
       return invalidRequest("properties must be a JSON object", "properties");
     }
 
-    const accessResult = await validateChildAccess(childProfileId);
+    const accessResult = childProfileId
+      ? await validateChildAccess(childProfileId)
+      : await getAuthenticatedUser();
     if ("error" in accessResult) return accessResult.error;
 
     const occurredAt =

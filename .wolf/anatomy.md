@@ -91,7 +91,7 @@
 - `Dockerfile` — Docker container definition (~566 tok)
 - `eslint.config.mjs` — ESLint flat configuration (~124 tok)
 - `next-env.d.ts` — / <reference types="next" /> (~72 tok)
-- `next.config.ts` — Declares nextConfig (~154 tok)
+- `next.config.ts` — Declares nextConfig: standalone output, ffmpeg-static external, remote image patterns, `/hat-trickster` → `/#spotlight` temporary redirect (mobile banner link target) (~190 tok)
 - `package-lock.json` — npm lock file (~111362 tok)
 - `package.json` — Node.js package manifest (~504 tok)
 - `postcss.config.mjs` — Declares config (~26 tok)
@@ -137,7 +137,12 @@
 ## Discovered during 2026-04-28 auth audit
 
 - `src/app/api/analytics/events/route.test.ts` — Tests for analytics event route validation/auth (~218 tok)
-- `src/app/api/analytics/events/route.ts` — Child-authorized analytics event ingestion endpoint (~349 tok)
+- `src/app/api/analytics/events/route.ts` — Analytics event ingestion; childProfileId optional (user-only funnel/web events via getAuthenticatedUser) (~420 tok)
+- `src/app/api/kpis/route.ts` — GET launch KPIs; auth = KPI_API_TOKEN bearer (sha256 timing-safe) or admin session (~300 tok)
+- `src/app/api/kpis/route.test.ts` — Token/admin fallback auth tests for /api/kpis (~350 tok)
+- `src/lib/reports/kpis.ts` — Mentor launch KPIs (families, funnel, authors) from existing tables; shapeKpiReport pure + status live/needs_instrumentation/no_product (~1900 tok)
+- `src/lib/reports/kpis.test.ts` — shapeKpiReport/pct tests (~250 tok)
+- `prisma/migrations/20261111120000_analytics_events_optional_child/migration.sql` — DROP NOT NULL on mobile_analytics_events.child_profile_id (~60 tok)
 - `src/app/api/books/[id]/questions/[questionId]/route.ts` — Question answer route with auth and scoring logic (~948 tok)
 - `src/app/api/child-profiles/route.test.ts` — Vitest coverage for child profile GET/POST auth/validation paths (~1300 tok)
 - `src/app/api/comprehension/route.test.ts` — Vitest coverage for comprehension POST auth/access/scoring paths (~1500 tok)
