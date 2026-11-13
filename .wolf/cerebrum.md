@@ -192,6 +192,9 @@
 - 2026-09-29 What's new articles live in `src/content/whats-new.tsx` (code, not DB). Landing teaser shows `ARTICLES.slice(0,3)`, newest first — prepend new articles. Nav/footer shared via `src/components/SiteChrome.tsx`.
 - 2026-09-29 Tulane Innovation Institute Fall 2026 Open Season (Sept 15, The Josephine): Loratone placed 3rd ($750) of 10 finalists — NOT the winner (OralExam.ai won). Word it as "3rd place".
 
+- **2026-11-12 Studio narration audio is always stored as MP3.** `narration-recording` route runs `transcodeToMp3()` before `alignRecording()`; the same route serves mic recordings and file uploads (`PageNarrationRecorder` has an upload button), and duration is derived server-side (no `durationMs` form field). Reason: Chrome `MediaRecorder` picks `audio/mp4` = Opus in fragmented MP4, which is not safely playable in the Flutter app on older iOS; ElevenLabs narration is MP3. Mobile highlight code needs no change — it reads `pages.narration_url` + `narration_timestamps`. Mobile's own `/api/narrations/pages` is NOT transcoded (its recorder already emits AAC m4a).
+- **2026-11-12 Default TTS model is `eleven_v4`** (`DEFAULT_MODEL_ID` in `src/lib/elevenlabs.ts`, override with env `ELEVENLABS_MODEL_ID`). Same `/v1` REST endpoints; `/with-timestamps` verified live on v4 and returns `alignment` + `normalized_alignment`. v3/v4 have NO speed/style controls and no SSML `<break>` — `buildVoiceSettings()` omits them, so the Studio speed/style sliders only take effect on v2-era models. Pronunciation breakdown path still pins `eleven_v3`.
+
 ## Do-Not-Repeat
 - 2026-09-29 `npm run dev` also starts Docker Postgres (port 5433); if that port is taken it fails. For UI-only checks run `npx next dev -p <port>` directly.
 
