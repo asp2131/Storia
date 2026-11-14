@@ -56,6 +56,26 @@ export type TopBooksData = {
   books: TopBookRow[];
 };
 
+export type LovedPageRow = {
+  bookId: string;
+  title: string;
+  pageNumber: number;
+  /** Total heart taps on the page, guests included. Anyone can tap repeatedly. */
+  likes: number;
+  /** Portion of `likes` from readers who have not signed up. Unverified: the
+   *  guest endpoint is public, so treat it as a softer signal. */
+  guestLikes: number;
+  kidsWhoLiked: number;
+  kidsWhoViewed: number;
+  /** Share of kids who saw the page and liked it at least once. */
+  likeRatePercent: number;
+};
+
+export type LovedPagesData = {
+  range: ReportRange;
+  pages: LovedPageRow[];
+};
+
 export type FeedbackItem = {
   id: string;
   rating: number;
@@ -80,6 +100,7 @@ export interface ReportAgg {
   trend(range: ReportRange): Promise<TrendData>;
   topBooks(range: ReportRange, limit: number): Promise<TopBooksData>;
   feedback(range: ReportRange, limit: number): Promise<FeedbackData>;
+  lovedPages(range: ReportRange, limit: number): Promise<LovedPagesData>;
 }
 
 export function isReportRange(value: unknown): value is ReportRange {
@@ -149,6 +170,15 @@ type TopBookRaw = {
 type BookCompletionsRaw = {
   book_id: bigint;
   completions: bigint | number;
+};
+
+type LovedPageRaw = {
+  book_id: bigint;
+  page_number: number;
+  likes: bigint;
+  guest_likes: bigint;
+  kids_liked: bigint;
+  kids_viewed: bigint;
 };
 
 type BookAttemptsRaw = {
@@ -455,6 +485,100 @@ export function createReportAgg(
           averageRating:
             agg._avg.rating == null ? null : Math.round(agg._avg.rating * 10) / 10,
         },
+      };
+    },
+
+    async lovedPages(range, limit) {
+      const { since } = this.parseRange(range);
+      const safeLimit = Math.max(1, Math.min(limit, 50));
+
+      // Signed-in readers: one event per burst of taps with the burst size in
+      // `likes`, capped so a forged or buggy client cannot inflate a page.
+      // Guests: a daily counter with no reader identity (guest_page_likes).
+      // Views are matched as text so a malformed pageNumber on an unrelated
+      // event can never fail a cast.
+      const rows = await prisma.$queryRaw<LovedPageRaw[]>(Prisma.sql`
+        WITH signed_in AS (
+          SELECT
+            book_id,
+            (properties->>'pageNumber')::int AS page_number,
+            SUM(LEAST((properties->>'likes')::int, 200))::bigint AS likes,
+            COUNT(DISTINCT child_profile_id)::bigint AS kids_liked
+          FROM mobile_analytics_events
+          WHERE event_name = 'page_interacted'
+            AND properties->>'interactionType' = 'page_liked'
+            AND occurred_at >= ${since}
+            AND book_id IS NOT NULL
+            AND properties->>'pageNumber' ~ '^[0-9]{1,6}$'
+            AND properties->>'likes' ~ '^[0-9]{1,6}$'
+          GROUP BY 1, 2
+        ),
+        guests AS (
+          SELECT book_id, page_number, SUM(likes)::bigint AS likes
+          FROM guest_page_likes
+          WHERE day >= ${since}::date
+          GROUP BY 1, 2
+        ),
+        liked AS (
+          SELECT
+            COALESCE(s.book_id, g.book_id) AS book_id,
+            COALESCE(s.page_number, g.page_number) AS page_number,
+            (COALESCE(s.likes, 0) + COALESCE(g.likes, 0))::bigint AS likes,
+            COALESCE(g.likes, 0)::bigint AS guest_likes,
+            COALESCE(s.kids_liked, 0)::bigint AS kids_liked
+          FROM signed_in s
+          FULL OUTER JOIN guests g
+            ON g.book_id = s.book_id AND g.page_number = s.page_number
+          ORDER BY likes DESC
+          LIMIT ${safeLimit}
+        )
+        SELECT
+          l.book_id,
+          l.page_number,
+          l.likes,
+          l.guest_likes,
+          l.kids_liked,
+          (
+            SELECT COUNT(DISTINCT v.child_profile_id)
+            FROM mobile_analytics_events v
+            WHERE v.event_name = 'page_viewed'
+              AND v.occurred_at >= ${since}
+              AND v.book_id = l.book_id
+              AND v.properties->>'pageNumber' = l.page_number::text
+          )::bigint AS kids_viewed
+        FROM liked l
+        ORDER BY l.likes DESC, l.book_id, l.page_number
+      `);
+
+      if (rows.length === 0) {
+        return { range, pages: [] };
+      }
+
+      const titles = await prisma.books.findMany({
+        where: { id: { in: [...new Set(rows.map((r) => r.book_id))] } },
+        select: { id: true, title: true },
+      });
+      const titleById = new Map(
+        titles.map((row) => [row.id.toString(), row.title])
+      );
+
+      return {
+        range,
+        pages: rows.map((row) => {
+          const kidsWhoLiked = Number(row.kids_liked);
+          // A like implies a view even if the view event was lost offline.
+          const kidsWhoViewed = Math.max(Number(row.kids_viewed), kidsWhoLiked);
+          return {
+            bookId: row.book_id.toString(),
+            title: titleById.get(row.book_id.toString()) ?? "",
+            pageNumber: row.page_number,
+            likes: Number(row.likes),
+            guestLikes: Number(row.guest_likes),
+            kidsWhoLiked,
+            kidsWhoViewed,
+            likeRatePercent: pct(kidsWhoLiked, kidsWhoViewed),
+          };
+        }),
       };
     },
   };

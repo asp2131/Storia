@@ -9,6 +9,7 @@ const { mockRequireAdmin, mockAgg } = vi.hoisted(() => ({
     trend: vi.fn(),
     topBooks: vi.fn(),
     feedback: vi.fn(),
+    lovedPages: vi.fn(),
   },
 }));
 
@@ -24,6 +25,7 @@ import { GET as getHeadline } from "@/app/api/admin/reports/headline/route";
 import { GET as getTrend } from "@/app/api/admin/reports/trend/route";
 import { GET as getTopBooks } from "@/app/api/admin/reports/top-books/route";
 import { GET as getFeedback } from "@/app/api/admin/reports/feedback/route";
+import { GET as getLovedPages } from "@/app/api/admin/reports/loved-pages/route";
 
 function makeReq(url: string): NextRequest {
   return new NextRequest(new URL(url, "http://localhost"));
@@ -36,6 +38,7 @@ beforeEach(() => {
   mockAgg.trend.mockReset();
   mockAgg.topBooks.mockReset();
   mockAgg.feedback.mockReset();
+  mockAgg.lovedPages.mockReset();
 
   mockAgg.parseRange.mockImplementation((input: string | null | undefined) => ({
     range: (input === "7d" || input === "30d" || input === "90d" ? input : "30d") as "7d" | "30d" | "90d",
@@ -49,6 +52,7 @@ const handlers = [
   { name: "trend", fn: getTrend, path: "/api/admin/reports/trend" },
   { name: "top-books", fn: getTopBooks, path: "/api/admin/reports/top-books" },
   { name: "feedback", fn: getFeedback, path: "/api/admin/reports/feedback" },
+  { name: "loved-pages", fn: getLovedPages, path: "/api/admin/reports/loved-pages" },
 ] as const;
 
 describe("admin reports routes — auth gate", () => {
@@ -116,6 +120,30 @@ describe("admin reports routes — happy paths", () => {
     mockAgg.topBooks.mockResolvedValueOnce({ range: "30d", books: [] });
     await getTopBooks(makeReq("/api/admin/reports/top-books?limit=999"));
     expect(mockAgg.topBooks).toHaveBeenLastCalledWith("30d", 50);
+  });
+
+  it("loved-pages returns pages as JSON and as CSV", async () => {
+    const pages = [
+      {
+        bookId: "77",
+        title: "Hat Trickster",
+        pageNumber: 4,
+        likes: 42,
+        guestLikes: 10,
+        kidsWhoLiked: 3,
+        kidsWhoViewed: 12,
+        likeRatePercent: 25,
+      },
+    ];
+    mockAgg.lovedPages.mockResolvedValue({ range: "30d", pages });
+
+    const json = await getLovedPages(makeReq("/api/admin/reports/loved-pages"));
+    expect(mockAgg.lovedPages).toHaveBeenCalledWith("30d", 10);
+    expect((await json.json()).data.pages).toEqual(pages);
+
+    const csv = await getLovedPages(makeReq("/api/admin/reports/loved-pages?format=csv"));
+    expect(csv.headers.get("Content-Type")).toContain("text/csv");
+    expect(await csv.text()).toContain("77,Hat Trickster,4,42,10,3,12,25");
   });
 
   it("feedback returns items + summary", async () => {

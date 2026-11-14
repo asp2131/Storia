@@ -7,6 +7,7 @@ import type {
   TrendData,
   TopBooksData,
   FeedbackData,
+  LovedPagesData,
 } from "@/lib/reports/agg";
 import type { TimelinePage } from "@/lib/reports/timeline";
 import type { EventCategory } from "@/lib/reports/eventCatalog";
@@ -43,6 +44,15 @@ export function useAdminReportsTopBooks(range: ReportRange, limit = 10) {
     queryKey: ["admin", "reports", "top-books", range, limit],
     queryFn: () =>
       fetchJson(`/api/admin/reports/top-books?range=${range}&limit=${limit}`),
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useAdminReportsLovedPages(range: ReportRange, limit = 10) {
+  return useQuery<LovedPagesData>({
+    queryKey: ["admin", "reports", "loved-pages", range, limit],
+    queryFn: () =>
+      fetchJson(`/api/admin/reports/loved-pages?range=${range}&limit=${limit}`),
     staleTime: STALE_TIME,
   });
 }
