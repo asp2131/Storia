@@ -45,6 +45,7 @@ model books {
   scenes                scenes[]
   book_pronunciations   book_pronunciations[]
   user_narration_tracks user_narration_track[]
+  guest_page_likes      guest_page_likes[]
 
   @@index([author(ops: raw("gin_trgm_ops"))], map: "books_author_gin_idx", type: Gin)
   @@index([is_published], map: "books_is_published_index")
@@ -610,4 +611,19 @@ model author_invite {
   createdAt      DateTime  @default(now())
 
   @@index([email])
+}
+
+/// Likes from readers who have not signed up: a daily counter per page.
+/// No user, device, session or IP columns on purpose (no parent consent).
+model guest_page_likes {
+  book_id     BigInt
+  page_number Int
+  day         DateTime @db.Date
+  likes       Int      @default(0)
+  bursts      Int      @default(0)
+
+  books books @relation(fields: [book_id], references: [id], onDelete: Cascade)
+
+  @@id([book_id, page_number, day])
+  @@index([day], map: "guest_page_likes_day_idx")
 }

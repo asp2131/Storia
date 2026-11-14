@@ -9,6 +9,7 @@ import {
   useAdminReportsTrend,
   useAdminReportsTopBooks,
   useAdminReportsFeedback,
+  useAdminReportsLovedPages,
   useAdminReportsTimeline,
 } from "@/hooks/useAdminReports";
 import type { ReportRange } from "@/lib/reports/agg";
@@ -52,6 +53,7 @@ export default function AdminReportsPage() {
   const headline = useAdminReportsHeadline(range);
   const trend = useAdminReportsTrend(range);
   const topBooks = useAdminReportsTopBooks(range, 10);
+  const lovedPages = useAdminReportsLovedPages(range, 10);
   const feedback = useAdminReportsFeedback(range, 20);
   const timeline = useAdminReportsTimeline(range, {
     limit: 50,
@@ -62,12 +64,14 @@ export default function AdminReportsPage() {
     headline.isLoading ||
     trend.isLoading ||
     topBooks.isLoading ||
+    lovedPages.isLoading ||
     feedback.isLoading ||
     timeline.isLoading;
 
   const headlineExportHref = `/api/admin/reports/headline?range=${range}&format=csv`;
   const trendExportHref = `/api/admin/reports/trend?range=${range}&format=csv`;
   const topBooksExportHref = `/api/admin/reports/top-books?range=${range}&limit=10&format=csv`;
+  const lovedPagesExportHref = `/api/admin/reports/loved-pages?range=${range}&limit=10&format=csv`;
   const feedbackExportHref = `/api/admin/reports/feedback?range=${range}&limit=20&format=csv`;
 
   return (
@@ -281,6 +285,74 @@ export default function AdminReportsPage() {
                   </tbody>
                 </table>
               </div>
+            </Panel>
+          )}
+
+          {/* Most loved pages */}
+          {lovedPages.data && (
+            <Panel
+              title="Most loved pages"
+              action={
+                lovedPages.data.pages.length > 0 ? (
+                  <a
+                    href={lovedPagesExportHref}
+                    download
+                    className="text-xs text-[var(--studio-ink-muted)] hover:text-white transition"
+                  >
+                    Download CSV
+                  </a>
+                ) : null
+              }
+            >
+              {lovedPages.data.pages.length === 0 ? (
+                <p className="text-sm text-[var(--studio-ink-muted)]">
+                  No page likes in this range yet. Likes come from the heart
+                  button in the mobile reader.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead className="text-left text-xs uppercase tracking-wide text-[var(--studio-ink-muted)]">
+                      <tr>
+                        <th className="pb-3 font-semibold">Book</th>
+                        <th className="pb-3 font-semibold">Page</th>
+                        <th className="pb-3 font-semibold">Likes</th>
+                        <th className="pb-3 font-semibold">From guests</th>
+                        <th className="pb-3 font-semibold">Kids who liked</th>
+                        <th className="pb-3 font-semibold">Of kids who saw it</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {lovedPages.data.pages.map((page) => (
+                        <tr
+                          key={`${page.bookId}:${page.pageNumber}`}
+                          className="text-[var(--studio-ink-2)]"
+                        >
+                          <td className="py-3 pr-4 font-medium text-[var(--studio-ink)]">
+                            {page.title || `Book ${page.bookId}`}
+                          </td>
+                          <td className="py-3 pr-4">{page.pageNumber}</td>
+                          <td className="py-3 pr-4">{formatNumber(page.likes)}</td>
+                          <td className="py-3 pr-4">{formatNumber(page.guestLikes)}</td>
+                          <td className="py-3 pr-4">{formatNumber(page.kidsWhoLiked)}</td>
+                          <td className="py-3 pr-4">
+                            {page.likeRatePercent}%
+                            <span className="text-white/40 ml-1">
+                              ({formatNumber(page.kidsWhoLiked)} of{" "}
+                              {formatNumber(page.kidsWhoViewed)})
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="mt-4 text-xs text-[var(--studio-ink-muted)]">
+                    Likes include readers who have not signed up. Guests are
+                    counted anonymously, so the last two columns cover
+                    signed-in kids only.
+                  </p>
+                </div>
+              )}
             </Panel>
           )}
 
