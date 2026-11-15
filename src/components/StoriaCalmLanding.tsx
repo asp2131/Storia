@@ -90,8 +90,37 @@ const PRESS_LINKS = [
   },
 ];
 
-// ponytail: founders photo pending from Shiv; add it as slide 1 when it lands
 const PEOPLE_SLIDES: PeopleSlide[] = [
+  {
+    src: "/storia-landing/team-tulane-open-season.jpg",
+    alt: "Founders Shivang Thakor and Akin Pounds holding a giant Tulane Innovation Institute cheque for third place",
+    title: "Tulane Open Season Pitch Competition",
+    detail: "3rd place · Tulane Innovation Institute",
+  },
+  {
+    src: "/storia-landing/team-louisiana-book-festival.jpg",
+    alt: "The Loratone founders holding their activity poster in front of the State Library of Louisiana",
+    title: "Louisiana Book Festival",
+    detail: "State Library of Louisiana · Baton Rouge",
+  },
+  {
+    src: "/storia-landing/booth-kids-reading.jpg",
+    alt: "Two children at the Loratone table reading a story on a tablet",
+    title: "Readers at the booth",
+    detail: "Louisiana Book Festival · trying a story on the iPad",
+  },
+  {
+    src: "/storia-landing/booth-family.jpg",
+    alt: "Talking with a family at the Loratone tent while their children explore the activity board",
+    title: "Meeting families",
+    detail: "Louisiana Book Festival",
+  },
+  {
+    src: "/storia-landing/team-educators.jpg",
+    alt: "The Loratone founders smiling with an educator in an Educators Assemble shirt at a conference",
+    title: "Meeting educators",
+    detail: "At an early-learning conference",
+  },
   {
     src: "/storia-landing/team-reading.jpg",
     alt: "Reading a Loratone story to a group of young children seated on the floor",

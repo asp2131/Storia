@@ -2,12 +2,12 @@
   "version": 1,
   "created_at": "2026-03-25T00:04:22.294Z",
   "lifetime": {
-    "total_tokens_estimated": 3588102,
-    "total_reads": 1634,
-    "total_writes": 1229,
-    "total_sessions": 66,
+    "total_tokens_estimated": 3588476,
+    "total_reads": 1643,
+    "total_writes": 1230,
+    "total_sessions": 67,
     "anatomy_hits": 733,
-    "anatomy_misses": 895,
+    "anatomy_misses": 900,
     "repeated_reads_blocked": 1237,
     "estimated_savings_vs_bare_cli": 6442707
   },
@@ -18957,6 +18957,82 @@
         "output_tokens_estimated": 0,
         "reads_count": 1,
         "writes_count": 0,
+        "repeated_reads_blocked": 0,
+        "anatomy_lookups": 0
+      }
+    },
+    {
+      "id": "session-2026-11-15-1300",
+      "started": "2026-11-15T19:00:50.946Z",
+      "ended": "2026-11-15T19:03:35.839Z",
+      "reads": [
+        {
+          "file": "/Users/akinpound/Documents/irl/IMG_0718.jpg",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/Illustration 20261012 3.png",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/IMG_20261031_104940339.jpg",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/IMG_20261031_104923238.jpg",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/Comic 20260926 3.png",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/IMG_0625.jpg",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/IMG_20261031_104917614.jpg",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/IMG_20261031_104927927.jpg",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "/Users/akinpound/Documents/irl/IMG_2706.jpg",
+          "tokens_estimated": 0,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "/Users/akinpound/Documents/experiments/loratone/storia/src/components/StoriaCalmLanding.tsx",
+          "tokens_estimated": 374,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 0,
+        "output_tokens_estimated": 374,
+        "reads_count": 9,
+        "writes_count": 1,
         "repeated_reads_blocked": 0,
         "anatomy_lookups": 0
       }
