@@ -272,3 +272,49 @@ describe("feedback", () => {
     expect(out.summary).toEqual({ count: 0, averageRating: null });
   });
 });
+
+describe("lovedPages", () => {
+  it("ranks pages by likes and derives the share of viewers who liked", async () => {
+    const prisma = makePrisma();
+    prisma.$queryRaw.mockResolvedValueOnce([
+      { book_id: 77n, page_number: 4, likes: 42n, guest_likes: 10n, kids_liked: 3n, kids_viewed: 12n },
+      // View events lost offline: likers still count as viewers.
+      { book_id: 77n, page_number: 9, likes: 5n, guest_likes: 0n, kids_liked: 2n, kids_viewed: 0n },
+    ]);
+    prisma.books.findMany.mockResolvedValueOnce([{ id: 77n, title: "Hat Trickster" }]);
+
+    const agg = createReportAgg({ prisma: prisma as never });
+    const out = await agg.lovedPages("30d", 10);
+
+    expect(out.pages).toEqual([
+      {
+        bookId: "77",
+        title: "Hat Trickster",
+        pageNumber: 4,
+        likes: 42,
+        guestLikes: 10,
+        kidsWhoLiked: 3,
+        kidsWhoViewed: 12,
+        likeRatePercent: 25,
+      },
+      {
+        bookId: "77",
+        title: "Hat Trickster",
+        pageNumber: 9,
+        likes: 5,
+        guestLikes: 0,
+        kidsWhoLiked: 2,
+        kidsWhoViewed: 2,
+        likeRatePercent: 100,
+      },
+    ]);
+  });
+
+  it("returns an empty list and skips the title lookup when nothing was liked", async () => {
+    const prisma = makePrisma();
+    prisma.$queryRaw.mockResolvedValueOnce([]);
+    const agg = createReportAgg({ prisma: prisma as never });
+    expect((await agg.lovedPages("7d", 10)).pages).toEqual([]);
+    expect(prisma.books.findMany).not.toHaveBeenCalled();
+  });
+});

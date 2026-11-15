@@ -1,7 +1,7 @@
 # anatomy.md
 
-> Auto-maintained by OpenWolf. Last scanned: 2026-10-13T15:54:48.479Z
-> Files: 757 tracked | Anatomy hits: 0 | Misses: 0
+> Auto-maintained by OpenWolf. Last scanned: 2026-11-15T19:02:53.472Z
+> Files: 766 tracked | Anatomy hits: 0 | Misses: 0
 
 ## ../../../.claude/projects/-Users-akinpound-Documents-experiments-storia/memory/
 
@@ -136,13 +136,9 @@
 
 ## Discovered during 2026-04-28 auth audit
 
+- `prisma/migrations/20261111120000_analytics_events_optional_child/migration.sql` — DROP NOT NULL on mobile_analytics_events.child_profile_id (~60 tok)
 - `src/app/api/analytics/events/route.test.ts` — Tests for analytics event route validation/auth (~218 tok)
 - `src/app/api/analytics/events/route.ts` — Analytics event ingestion; childProfileId optional (user-only funnel/web events via getAuthenticatedUser) (~420 tok)
-- `src/app/api/kpis/route.ts` — GET launch KPIs; auth = KPI_API_TOKEN bearer (sha256 timing-safe) or admin session (~300 tok)
-- `src/app/api/kpis/route.test.ts` — Token/admin fallback auth tests for /api/kpis (~350 tok)
-- `src/lib/reports/kpis.ts` — Mentor launch KPIs (families, funnel, authors) from existing tables; shapeKpiReport pure + status live/needs_instrumentation/no_product (~1900 tok)
-- `src/lib/reports/kpis.test.ts` — shapeKpiReport/pct tests (~250 tok)
-- `prisma/migrations/20261111120000_analytics_events_optional_child/migration.sql` — DROP NOT NULL on mobile_analytics_events.child_profile_id (~60 tok)
 - `src/app/api/books/[id]/questions/[questionId]/route.ts` — Question answer route with auth and scoring logic (~948 tok)
 - `src/app/api/child-profiles/route.test.ts` — Vitest coverage for child profile GET/POST auth/validation paths (~1300 tok)
 - `src/app/api/comprehension/route.test.ts` — Vitest coverage for comprehension POST auth/access/scoring paths (~1500 tok)
@@ -151,6 +147,8 @@
 - `src/app/api/feedback/route.ts` — Feedback submission route using dual-stack authenticated parent user (~188 tok)
 - `src/app/api/feedback/status/route.test.ts` — Vitest coverage for feedback status dual-stack auth and legacy unauthenticated modal shape (~1200 tok)
 - `src/app/api/feedback/status/route.ts` — Feedback status route using dual-stack authenticated parent user (~181 tok)
+- `src/app/api/kpis/route.test.ts` — Token/admin fallback auth tests for /api/kpis (~350 tok)
+- `src/app/api/kpis/route.ts` — GET launch KPIs; auth = KPI_API_TOKEN bearer (sha256 timing-safe) or admin session (~300 tok)
 - `src/app/api/reading-progress/dual-stack-auth.route.test.ts` — Vitest coverage proving parent-user reading-progress GET/POST accepts Supabase bearer and Better Auth cookie auth (~1300 tok)
 - `src/app/api/reading-progress/route.test.ts` — Vitest coverage for reading-progress GET/POST legacy + child-aware auth paths (~1250 tok)
 - `src/app/api/reading-sessions/route.test.ts` — Vitest coverage for reading session POST auth/access/upsert paths (~800 tok)
@@ -159,6 +157,8 @@
 - `src/app/api/reports/analytics/route.ts` — Child-authorized analytics report endpoint (~819 tok)
 - `src/app/api/reports/summary/route.test.ts` — Vitest coverage for reports summary auth/access/query behavior (~1100 tok)
 - `src/lib/admin-auth.ts` — Admin-only Better Auth helper/guard for admin routes (~222 tok)
+- `src/lib/reports/kpis.test.ts` — shapeKpiReport/pct tests (~250 tok)
+- `src/lib/reports/kpis.ts` — Mentor launch KPIs (families, funnel, authors) from existing tables; shapeKpiReport pure + status live/needs_instrumentation/no_product (~1900 tok)
 
 ## Discovered during 2026-04-30 brainstorming visual companion
 
@@ -1061,7 +1061,7 @@
 - `MorphogenesisHero.tsx` — APP_STORE_URL (~7286 tok)
 - `SiteChrome.tsx` — WEB_APP_URL (~460 tok)
 - `StoriaCalmLanding.css` — Styles: 90 rules, 21 vars (~7250 tok)
-- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~9079 tok)
+- `StoriaCalmLanding.tsx` — MANIFESTO_WORDS (~10877 tok)
 
 ## src/components/editor/
 
@@ -1168,6 +1168,9 @@
 - `overlayEditorStore.ts` — Zustand state/actions for overlay elements, selection, undo/redo, dirty flags, autosave status, and container measurements. (~377 tok)
 - `public/landing/girl-on-cloud.png` — Hand-drawn girl with moon headphones reading on a cloud; transparent PNG cropped via ffmpeg (800x713), floats in landing CTA section (~0 tok)
 - `src/contexts/sortFilesByName.test.ts` — natural filename-sort test for batch illustration upload (~150 tok)
-
-- `src/lib/narration/transcode.ts` — `transcodeToMp3(buffer)` → `{audio, durationSeconds}`; ffmpeg-static, temp files, mono 128k CBR MP3 with no Xing/ID3 so duration = bytes*8/bitrate. Used by the Studio narration-recording route. (~450 tok)
 - `src/lib/narration/transcode.test.ts` — real-ffmpeg test: Opus-in-fMP4 and WAV in, MP3 out; rejects non-audio. (~300 tok)
+- `src/lib/narration/transcode.ts` — `transcodeToMp3(buffer)` → `{audio, durationSeconds}`; ffmpeg-static, temp files, mono 128k CBR MP3 with no Xing/ID3 so duration = bytes*8/bitrate. Used by the Studio narration-recording route. (~450 tok)
+
+## Discovered during 2026-11-15 slideshow photos
+
+- `public/storia-landing/team-tulane-open-season.jpg`, `team-louisiana-book-festival.jpg`, `booth-kids-reading.jpg`, `booth-family.jpg`, `team-educators.jpg` — People slideshow photos, 1600px JPEG exports (sips -Z 1600, q80) of originals in `~/Documents/irl/` (~0 tok)

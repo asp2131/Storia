@@ -252,3 +252,4 @@
 
 - 2026-11-03 Landing "How it works" (.pin-section): desktop uses sticky .pin-left phone with swapping .phone-screen images; at <=900px .pin-left is hidden and each .pin-step shows its own .pin-shot phone. Only 2 real app screens exist (app-library, app-reading); no soundscape screenshot yet — add a 3rd .phone-screen + .pin-shot when one exists.
 - 2026-11-03 Do-Not-Repeat: never give a fixed-aspect element (phone mockup) a fixed-height parent on mobile — it overflows into neighbouring sections.
+- 2026-11-15 Landing people slideshow: source photos live in `~/Documents/irl/`; export with `sips -Z 1600 -s format jpeg -s formatOptions 80` into `public/storia-landing/` and add to `PEOPLE_SLIDES` in `StoriaCalmLanding.tsx`. Frame is a 4:5 arch with `object-fit: cover`, so landscape shots get centre-cropped. Founders photo (Tulane cheque) is slide 1.

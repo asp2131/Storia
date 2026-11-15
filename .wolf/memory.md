@@ -1287,3 +1287,13 @@
 | Time | Action | File(s) | Outcome | ~Tokens |
 |------|--------|---------|---------|--------|
 | 10:40 | Added temporary redirect /hat-trickster → /#spotlight (mobile comics banner Learn more was 404 on www.loratone.com); branch fix/hat-trickster-redirect off updated main (PR #44 landing-handoff already merged) | next.config.ts | eslint ok | ~3k |
+- 2026-11-13 admin reports: 'Most loved pages' panel on /admin/reports. reportAgg.lovedPages (src/lib/reports/agg.ts) sums properties.likes from page_interacted/interactionType=page_liked events (200 cap per event), distinct kids who liked, share of page viewers who liked; GET /api/admin/reports/loved-pages (+csv); useAdminReportsLovedPages hook. No migration. Local dev DB (localhost:5433) has no users/books, so the query was only run against empty tables.
+- 2026-11-13 guest likes: prisma model guest_page_likes (daily counter per book/page, no identity columns, RLS on), migration 20261113120000_guest_page_likes, public POST /api/analytics/guest-likes (published pages only, 200 cap, no rate limit), lovedPages report merges guest likes (guestLikes field, 'From guests' column). Verified on local DB in rolled-back tx. NOT applied to prod.
+
+## Session: 2026-11-15 13:00
+
+| Time | Action | File(s) | Outcome | ~Tokens |
+|------|--------|---------|---------|--------|
+| 13:02 | Edited src/components/StoriaCalmLanding.tsx | expanded (+29 lines) | ~374 |
+| 13:04 | Added 5 irl photos to landing PEOPLE_SLIDES (founders cheque now slide 1); skipped glare iPad shot, duplicate booth shot, comic + mascot art | public/storia-landing/*.jpg, src/components/StoriaCalmLanding.tsx | tests + tsc pass, not visually checked | ~400 |
+| 13:03 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 9 reads | ~374 tok |
