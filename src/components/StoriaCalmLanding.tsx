@@ -41,7 +41,7 @@ const MANIFESTO_WORDS = [
 const COVER_BASE = "https://gbtohjbmchjgdfwwlhyy.supabase.co/storage/v1/object/public/storia-storage/";
 
 const BOOKS = [
-  { title: "The Wizard of Oz", meta: "Classic tale", cover: `${COVER_BASE}books/51/pages/3_1768876915857_tl0kw3.png` },
+  { title: "Hat Trickster", meta: "New comic", cover: "/storia-landing/hat-trickster-cover.webp" },
   { title: "Danny's Cat", meta: "Family favorite", cover: `${COVER_BASE}books/52/pages/4_1770427321560_4lk3az.png` },
   { title: "My Day at Granny's", meta: "Quick read", cover: `${COVER_BASE}books/54/pages/7_1770948115129_i16109.png` },
   { title: "The Tortoise and the Hare", meta: "Classic fable", cover: `${COVER_BASE}books/temp/1771377409285_lwg1au.png` },
@@ -164,7 +164,7 @@ const SPOTLIGHT: {
   band: "sun" | "mint" | "blue";
 } = {
   title: "Hat Trickster",
-  status: "in-development",
+  status: "available",
   // draft intro written from the rough pages; Shiv to approve
   intro:
     "Her new bunny hat has eyes, ears that stretch for blocks, and a mind of its own. On her first day at a new school, it starts playing tricks, and she's the one who has to catch up.",
