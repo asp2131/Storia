@@ -189,7 +189,7 @@ export default async function AdminDashboardPage() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {[
-                { v: headline.kidsActive.toLocaleString(), l: "Active kids" },
+                { v: headline.readersActive.toLocaleString(), l: "Active readers" },
                 { v: headline.totalReadingMinutes.toLocaleString(), l: "Reading minutes" },
                 { v: headline.booksCompleted.toLocaleString(), l: "Books completed" },
                 {

@@ -45,8 +45,23 @@ import {
 } from "@/hooks/useReadingProgress";
 import { useSession } from "@/lib/auth-client";
 import { computeActiveWordIndexMobileCompat } from "@/lib/mobile-compat/word-sync";
+import { createActiveReadingTimer } from "@/lib/activeReadingTimer";
 
 gsap.registerPlugin(ScrollTrigger);
+
+/** Random per-browser id so admin reports can tell guest readers apart. */
+function guestAnonId(): string | null {
+  try {
+    let id = localStorage.getItem("storia_anon_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("storia_anon_id", id);
+    }
+    return id;
+  } catch {
+    return null; // storage blocked: the event is dropped for guests
+  }
+}
 
 // ─── Main Reader ─────────────────────────────────────────────────
 
@@ -365,17 +380,18 @@ export default function BookReader() {
   const hasTrackedOpenRef = useRef(false);
 
   // Server-side analytics: mirrors the mobile reader events so admin reports
-  // and launch KPIs include web readers. Cookie-authenticated; skipped when
-  // signed out. Umami stays as the lightweight page-level layer.
+  // and launch KPIs include web readers. Signed-in readers are identified by
+  // their cookie; signed-out readers by a random per-browser id (the server
+  // ignores it when a session exists). Umami stays as the page-level layer.
   const analyticsSessionIdRef = useRef(
     `web_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
   );
-  const sessionStartedAtRef = useRef<number>(Date.now());
-  const isAuthenticatedRef = useRef(isAuthenticated);
-  isAuthenticatedRef.current = isAuthenticated;
+  // ponytail: 5 minutes on one picture-book page counts as idle; raise it if
+  // long-text books arrive.
+  const activeTimerRef = useRef(createActiveReadingTimer(5 * 60_000));
+  const hasTrackedCompleteRef = useRef(false);
   const postEvent = useCallback(
     (event: string, properties: Record<string, unknown> = {}) => {
-      if (!isAuthenticatedRef.current) return;
       void fetch("/api/analytics/events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -384,6 +400,7 @@ export default function BookReader() {
         body: JSON.stringify({
           event,
           bookId,
+          anonId: guestAnonId(),
           sessionId: analyticsSessionIdRef.current,
           source: "web",
           occurredAt: new Date().toISOString(),
@@ -395,14 +412,16 @@ export default function BookReader() {
   );
 
   useEffect(() => {
+    const timer = activeTimerRef.current;
     const end = () =>
-      postEvent("reading_session_ended", {
-        durationMs: Date.now() - sessionStartedAtRef.current,
-      });
+      postEvent("reading_session_ended", { durationMs: timer.totalMs() });
+    const onVisibility = () => (document.hidden ? timer.pause() : timer.resume());
     window.addEventListener("pagehide", end);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       end();
       window.removeEventListener("pagehide", end);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [postEvent]);
 
@@ -854,6 +873,7 @@ export default function BookReader() {
     }
 
     pageEnteredAtRef.current = now;
+    activeTimerRef.current.pageTurned();
 
     window.umami?.track("page-view", {
       bookId,
@@ -868,7 +888,10 @@ export default function BookReader() {
         title: readerData.book.title,
         totalPages: pages.length,
       });
-      postEvent("book_completed", { totalPages: pages.length });
+      if (!hasTrackedCompleteRef.current) {
+        hasTrackedCompleteRef.current = true;
+        postEvent("book_completed", { totalPages: pages.length });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex]);

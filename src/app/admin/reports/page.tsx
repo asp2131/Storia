@@ -85,7 +85,7 @@ export default function AdminReportsPage() {
               <h1 className="m-0 font-serif text-[44px] font-medium leading-none tracking-[-0.025em]">Reports</h1>
             </div>
             <p className="text-[var(--studio-ink-muted)] text-sm">
-              Overview of reading activity, comprehension, narration adoption, and feedback across all users.
+              Overview of reading activity, practice accuracy, narration adoption, and feedback across all readers, guests included.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -135,14 +135,19 @@ export default function AdminReportsPage() {
           {headline.data && (
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <MetricCard
-                label="Active kids"
-                value={formatNumber(headline.data.kidsActive)}
-                helper="Unique child profiles with sessions"
+                label="Active readers"
+                value={formatNumber(headline.data.readersActive)}
+                helper={`${formatNumber(headline.data.kidsActive)} kids, ${formatNumber(headline.data.guestReaders)} guest browsers`}
               />
               <MetricCard
                 label="Active parents"
                 value={formatNumber(headline.data.parentsActive)}
-                helper="Unique parent accounts with sessions"
+                helper="Signed-in accounts with sessions"
+              />
+              <MetricCard
+                label="Guest readers"
+                value={formatNumber(headline.data.guestReaders)}
+                helper="Browsers reading without an account"
               />
               <MetricCard
                 label="Total sessions"
@@ -165,9 +170,9 @@ export default function AdminReportsPage() {
                 helper="Books finished in period"
               />
               <MetricCard
-                label="Comprehension"
+                label="Practice accuracy"
                 value={`${headline.data.averageComprehensionPercent}%`}
-                helper={`${formatNumber(headline.data.comprehensionAttempts)} attempts`}
+                helper={`${formatNumber(headline.data.comprehensionAttempts)} read-aloud attempts with a word matched`}
               />
               <MetricCard
                 label="Narration adoption"
@@ -257,7 +262,7 @@ export default function AdminReportsPage() {
                       <th className="pb-3 font-semibold">Sessions</th>
                       <th className="pb-3 font-semibold">Minutes</th>
                       <th className="pb-3 font-semibold">Completions</th>
-                      <th className="pb-3 font-semibold">Comp %</th>
+                      <th className="pb-3 font-semibold">Practice acc %</th>
                       <th className="pb-3 font-semibold">Narr %</th>
                       <th className="pb-3 font-semibold">Practice %</th>
                     </tr>

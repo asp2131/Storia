@@ -137,7 +137,7 @@ async function buildLookups(
   const childIds = new Set<string>();
   const bookIds = new Set<bigint>();
   for (const r of rows.mobile) {
-    childIds.add(r.child_profile_id);
+    if (r.child_profile_id) childIds.add(r.child_profile_id);
     if (r.book_id != null) bookIds.add(r.book_id);
   }
   for (const r of rows.sessions) {

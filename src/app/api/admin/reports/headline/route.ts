@@ -17,8 +17,10 @@ export async function GET(request: NextRequest) {
         [data],
         [
           { header: "range", get: (d) => d.range },
+          { header: "readersActive", get: (d) => d.readersActive },
           { header: "kidsActive", get: (d) => d.kidsActive },
           { header: "parentsActive", get: (d) => d.parentsActive },
+          { header: "guestReaders", get: (d) => d.guestReaders },
           { header: "totalSessions", get: (d) => d.totalSessions },
           { header: "totalReadingMinutes", get: (d) => d.totalReadingMinutes },
           { header: "averageSessionMinutes", get: (d) => d.averageSessionMinutes },
