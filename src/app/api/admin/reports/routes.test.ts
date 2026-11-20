@@ -76,8 +76,10 @@ describe("admin reports routes — happy paths", () => {
     const payload = {
       range: "30d",
       generatedAt: "2026-05-01T00:00:00Z",
+      readersActive: 12,
       kidsActive: 9,
       parentsActive: 6,
+      guestReaders: 3,
       totalSessions: 42,
       totalReadingMinutes: 514,
       averageSessionMinutes: 12,

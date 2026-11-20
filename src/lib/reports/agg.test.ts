@@ -59,8 +59,10 @@ describe("headline", () => {
   it("derives platform-wide totals from mobile_analytics_events aggregate", async () => {
     prisma.$queryRaw.mockResolvedValueOnce([
       {
+        readers_active: 9n,
         kids_active: 4n,
         parents_active: 4n,
+        guest_readers: 3n,
         total_sessions: 53n,
         total_duration_ms: 2_092_069n,
         books_completed: 7n,
@@ -75,8 +77,10 @@ describe("headline", () => {
     const out = await agg.headline("30d");
 
     expect(out.range).toBe("30d");
+    expect(out.readersActive).toBe(9);
     expect(out.kidsActive).toBe(4);
     expect(out.parentsActive).toBe(4);
+    expect(out.guestReaders).toBe(3);
     expect(out.totalSessions).toBe(53);
     expect(out.totalReadingMinutes).toBe(35); // round(2092069 / 60000)
     expect(out.averageSessionMinutes).toBe(1); // round(35 / 53)

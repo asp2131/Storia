@@ -503,9 +503,12 @@ model question_attempt {
   @@index([questionId])
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model mobile_analytics_events {
   id               String   @id
-  user_id          String
+  /// Null for guest (not signed up) web readers, who carry anon_id instead.
+  user_id          String?
+  anon_id          String?
   child_profile_id String?
   book_id          BigInt?
   session_id       String?
@@ -515,7 +518,7 @@ model mobile_analytics_events {
   occurred_at      DateTime @default(now())
   created_at       DateTime @default(now())
 
-  user          user          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user          user?          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   child_profile child_profile? @relation(fields: [child_profile_id], references: [id], onDelete: Cascade)
 
   @@index([user_id], map: "mobile_analytics_events_user_id_idx")
@@ -525,6 +528,7 @@ model mobile_analytics_events {
   @@index([event_name], map: "mobile_analytics_events_event_name_idx")
   @@index([child_profile_id, occurred_at], map: "mobile_analytics_events_child_profile_id_occurred_at_idx")
   @@index([user_id, occurred_at], map: "mobile_analytics_events_user_id_occurred_at_idx")
+  @@index([anon_id, occurred_at], map: "mobile_analytics_events_anon_id_occurred_at_idx")
 }
 
 enum oban_job_state {
