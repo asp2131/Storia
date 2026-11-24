@@ -206,7 +206,7 @@ describe("BookEditorContext overlay key regressions", () => {
     expect(pageManagerRef.current?.localPages).toHaveLength(1);
   });
 
-  it("persists the last font, size, and voice as defaults for new pages", async () => {
+  it("persists the last voice as the default for new pages (style changes only via Use style)", async () => {
     const pageManagerRef = { current: null as PageManager | null };
     const bookMetaRef = { current: null as BookMeta | null };
     const overlayEditorRef = { current: null as OverlayEditor | null };
@@ -225,8 +225,6 @@ describe("BookEditorContext overlay key regressions", () => {
 
     act(() => {
       overlayEditorRef.current!.rememberOverlayTextSettings({
-        fontFamily: "Lora",
-        fontSize: 7.2,
         voiceId: "voice-2",
         voiceName: "Sprite",
       });
@@ -234,8 +232,6 @@ describe("BookEditorContext overlay key regressions", () => {
 
     await waitFor(() =>
       expect(bookMetaRef.current?.bookTextStyle).toMatchObject({
-        fontFamily: "Lora",
-        fontSize: 7.2,
         voiceId: "voice-2",
         voiceName: "Sprite",
       })
@@ -245,8 +241,6 @@ describe("BookEditorContext overlay key regressions", () => {
     expect(mockMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         defaultTextStyle: expect.objectContaining({
-          fontFamily: "Lora",
-          fontSize: 7.2,
           voiceId: "voice-2",
           voiceName: "Sprite",
         }),

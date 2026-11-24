@@ -3433,6 +3433,24 @@
       ],
       "occurrences": 1,
       "last_seen": "2026-11-12T19:40:00Z"
+    },
+    {
+      "id": "bug-198",
+      "timestamp": "2026-11-24T11:31:04.264021",
+      "error_message": "Redo stopped working and the selected text box deselected after undo; newer edits could be replaced by the last autosaved draft",
+      "file": "src/stores/overlayEditorStore.ts",
+      "root_cause": "applyOverlayResult writes the saved draft into localPages; the editor re-inits from the overlay prop and init() JSON-compared it to newer store elements, so it reset to the older draft and cleared history/selection",
+      "fix": "init() ignores element arrays the store itself emitted via buildConfig() (WeakSet identity check)",
+      "tags": [
+        "overlay-editor",
+        "autosave",
+        "undo",
+        "data-loss",
+        "race"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-24T11:31:04.264021"
     }
   ]
 }

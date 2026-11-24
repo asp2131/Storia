@@ -3,20 +3,15 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createCanvas, loadImage, registerFont } from "canvas";
 import sharp from "sharp";
-import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
+import { OVERLAY_FONT_CSS_FAMILY, type TextOverlayConfig, type TextElement } from "@/types/text-overlay";
 
-// Map font family names to canvas-compatible font strings.
-// The `canvas` package needs fonts registered or uses system fallbacks.
-const FONT_FALLBACK_MAP: Record<string, string> = {
-  Inter: "Inter, sans-serif",
-  Lora: "Lora, serif",
-  "Playfair Display": "'Playfair Display', serif",
-  "JetBrains Mono": "'JetBrains Mono', monospace",
-  Gaegu: "Gaegu, cursive",
-  Nunito: "Nunito, sans-serif",
-  "Hanken Grotesk": "'Hanken Grotesk', sans-serif",
-  "Space Grotesk": "'Space Grotesk', sans-serif",
-};
+// Canvas font strings: the editor's CSS stacks minus the next/font var().
+const FONT_FALLBACK_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(OVERLAY_FONT_CSS_FAMILY).map(([name, css]) => [
+    name,
+    css.replace(/var\([^)]*\),\s*/g, ""),
+  ])
+);
 
 // ─── Font registration ────────────────────────────────────────────────────────
 //
@@ -241,31 +236,32 @@ function drawTextElement(
   ctx.restore();
 }
 
-/** Simple word-wrap: split text into lines that fit within maxWidth. */
-function wrapText(
-  ctx: ReturnType<ReturnType<typeof createCanvas>["getContext"]>,
+/**
+ * Word-wrap text into lines that fit within maxWidth. The author's own line
+ * breaks are kept (the app reader renders them too); blank lines stay blank.
+ */
+export function wrapText(
+  ctx: Pick<ReturnType<ReturnType<typeof createCanvas>["getContext"]>, "measureText">,
   text: string,
   maxWidth: number
 ): string[] {
-  const words = text.split(/\s+/);
   const lines: string[] = [];
-  let currentLine = "";
 
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
+  for (const paragraph of text.split(/\r?\n/)) {
+    let currentLine = "";
+    for (const word of paragraph.split(/[ \t]+/).filter(Boolean)) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
     }
-  }
-  if (currentLine) {
     lines.push(currentLine);
   }
 
-  return lines.length > 0 ? lines : [""];
+  return lines;
 }
 
 /** Draw a rounded rectangle path. */

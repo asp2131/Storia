@@ -5,20 +5,8 @@
 
 export const TEXT_OVERLAY_VERSION = 1;
 
-export const AVAILABLE_FONTS = [
-  "Inter",
-  "Lora",
-  "Playfair Display",
-  "JetBrains Mono",
-  "Gaegu",
-  "Nunito",
-  "Hanken Grotesk",
-  "Space Grotesk",
-] as const;
-
-export type OverlayFont = (typeof AVAILABLE_FONTS)[number];
-
-export const OVERLAY_FONT_CSS_FAMILY: Record<OverlayFont, string> = {
+/** Fonts self-hosted through next/font in src/app/layout.tsx. */
+const CORE_FONT_CSS_FAMILY = {
   Inter: "var(--font-sans), Inter, sans-serif",
   Lora: "var(--font-serif), Lora, serif",
   "Playfair Display": "var(--font-playfair), 'Playfair Display', serif",
@@ -27,7 +15,57 @@ export const OVERLAY_FONT_CSS_FAMILY: Record<OverlayFont, string> = {
   Nunito: "var(--font-nunito), Nunito, sans-serif",
   "Hanken Grotesk": "var(--font-editor), 'Hanken Grotesk', sans-serif",
   "Space Grotesk": "var(--font-space-grotesk), 'Space Grotesk', sans-serif",
-};
+} as const;
+
+/**
+ * Extra author fonts, loaded from the Google Fonts CDN via EXTRA_FONTS_HREF.
+ * Browsers only download a family once text on the page uses it.
+ * `wght` is the Google Fonts CSS2 weight spec. One weight a family doesn't
+ * have makes Google reject the WHOLE stylesheet, so check the family on
+ * fonts.google.com first. Also add new names to
+ * specs/mobile-compat-contract.json `fonts.builtinSupported`.
+ */
+// ponytail: CDN, not self-hosted; move a font to next/font if that matters
+const EXTRA_FONTS = {
+  // Readability
+  Andika: { fallback: "sans-serif", wght: "400;700" },
+  Lexend: { fallback: "sans-serif", wght: "300..700" },
+  "Atkinson Hyperlegible": { fallback: "sans-serif", wght: "400;700" },
+  // Playful
+  Fredoka: { fallback: "sans-serif", wght: "300..700" },
+  "Baloo 2": { fallback: "sans-serif", wght: "400..700" },
+  Grandstander: { fallback: "sans-serif", wght: "300..700" },
+  Sniglet: { fallback: "sans-serif", wght: "400;800" },
+  Chewy: { fallback: "cursive", wght: "400" },
+  "Bubblegum Sans": { fallback: "cursive", wght: "400" },
+  // Handwritten
+  "Patrick Hand": { fallback: "cursive", wght: "400" },
+  Schoolbell: { fallback: "cursive", wght: "400" },
+  Caveat: { fallback: "cursive", wght: "400..700" },
+  "Comic Neue": { fallback: "cursive", wght: "300;400;700" },
+  // Storybook serif
+  Literata: { fallback: "serif", wght: "300..700" },
+  Fraunces: { fallback: "serif", wght: "300..700" },
+  Merriweather: { fallback: "serif", wght: "300..700" },
+} as const;
+
+export type OverlayFont = keyof typeof CORE_FONT_CSS_FAMILY | keyof typeof EXTRA_FONTS;
+
+export const AVAILABLE_FONTS = [
+  ...Object.keys(CORE_FONT_CSS_FAMILY),
+  ...Object.keys(EXTRA_FONTS),
+] as readonly OverlayFont[];
+
+export const OVERLAY_FONT_CSS_FAMILY = {
+  ...CORE_FONT_CSS_FAMILY,
+  ...Object.fromEntries(
+    Object.entries(EXTRA_FONTS).map(([name, { fallback }]) => [name, `'${name}', ${fallback}`])
+  ),
+} as Record<OverlayFont, string>;
+
+export const EXTRA_FONTS_HREF = `https://fonts.googleapis.com/css2?${Object.entries(EXTRA_FONTS)
+  .map(([name, { wght }]) => `family=${name.replace(/ /g, "+")}:wght@${wght}`)
+  .join("&")}&display=swap`;
 
 export const FONT_WEIGHT_OPTIONS = [300, 400, 500, 600, 700] as const;
 export type FontWeight = (typeof FONT_WEIGHT_OPTIONS)[number];
@@ -319,40 +357,34 @@ export function seedTextElement(
   };
 }
 
-export type RememberedTextSettings = Partial<
-  Pick<BookTextStyle, "fontFamily" | "fontSize">
-> & {
+/**
+ * Voice is the only setting remembered automatically from a text block.
+ * Style defaults change only through "Use style for new text boxes"
+ * (Creator Space handoff, 2026-11-23): editing one box must not silently
+ * change what the next box looks like.
+ */
+export type RememberedTextSettings = {
   voiceId?: string | null;
   voiceName?: string | null;
 };
 
-/** Pick remembered defaults that changed between two versions of a text block. */
+/** The voice change between two versions of a text block, or {} when the voice is unchanged. */
 export function changedRememberedTextSettings(
   previous: TextElement,
   next: TextElement
 ): RememberedTextSettings {
-  const changed: RememberedTextSettings = {};
-  if (previous.fontFamily !== next.fontFamily) changed.fontFamily = next.fontFamily;
-  if (previous.fontSize !== next.fontSize) changed.fontSize = next.fontSize;
-  if (previous.voiceId !== next.voiceId || previous.voiceName !== next.voiceName) {
-    changed.voiceId = next.voiceId ?? null;
-    changed.voiceName = next.voiceName ?? null;
+  if (previous.voiceId === next.voiceId && previous.voiceName === next.voiceName) {
+    return {};
   }
-  return changed;
+  return { voiceId: next.voiceId ?? null, voiceName: next.voiceName ?? null };
 }
 
-/** Remember only the settings the user just changed. */
+/** Remember the voice the user just picked so the next block uses it. */
 export function rememberTextSettings(
   style: BookTextStyle,
   settings: RememberedTextSettings
 ): BookTextStyle {
-  const next: BookTextStyle = {
-    ...style,
-    ...(settings.fontFamily !== undefined
-      ? { fontFamily: settings.fontFamily }
-      : {}),
-    ...(settings.fontSize !== undefined ? { fontSize: settings.fontSize } : {}),
-  };
+  const next: BookTextStyle = { ...style };
 
   if ("voiceId" in settings || "voiceName" in settings) {
     delete next.voiceId;
@@ -364,6 +396,41 @@ export function rememberTextSettings(
   }
 
   return next;
+}
+
+// ─── Creator text style ──────────────────────────────────────────
+// Saved per creator (user.default_text_style) by "Use style for new text
+// boxes". Seeds new boxes in every book. Voice stays per book, so it is
+// never part of the creator style.
+
+export type CreatorTextStyle = Omit<BookTextStyle, "voiceId" | "voiceName">;
+
+/** Snapshot the style of a box (or style) — font, size, weight, color, alignment, shadow, fill + padding. */
+export function creatorTextStyleFrom(
+  source: TextElement | BookTextStyle
+): CreatorTextStyle {
+  return {
+    fontFamily: source.fontFamily,
+    fontSize: source.fontSize,
+    fontWeight: source.fontWeight,
+    color: source.color,
+    textAlign: source.textAlign,
+    ...(source.shadow ? { shadow: source.shadow } : {}),
+    ...(source.background ? { background: source.background } : {}),
+  };
+}
+
+/** Style for a new box: the creator's saved style when there is one, keeping the book's narration voice. */
+export function newTextBoxStyle(
+  book: BookTextStyle,
+  creator: CreatorTextStyle | null | undefined
+): BookTextStyle {
+  if (!creator) return book;
+  return {
+    ...creatorTextStyleFrom(creator),
+    ...(book.voiceId ? { voiceId: book.voiceId } : {}),
+    ...(book.voiceName ? { voiceName: book.voiceName } : {}),
+  };
 }
 
 /**

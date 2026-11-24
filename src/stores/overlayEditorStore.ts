@@ -128,6 +128,12 @@ function savedStatePatch(
 // ─── Factory ──────────────────────────────────────────────────────────────────
 
 export function createOverlayEditorStore() {
+  // Element arrays this store handed out via buildConfig() to be saved. When
+  // one comes back as the `overlay` prop (the autosave echo), the editor may
+  // already hold newer edits, so re-initialising from it would silently drop
+  // them along with undo history and the selection.
+  const emitted = new WeakSet<TextElement[]>();
+
   return create<OverlayEditorState>()(
     subscribeWithSelector((set, get) => ({
       elements: [],
@@ -145,6 +151,7 @@ export function createOverlayEditorStore() {
       autoSaveStatus: "idle",
 
       init(elements) {
+        if (emitted.has(elements)) return;
         set((state) => {
           if (
             state.elements === elements ||
@@ -326,7 +333,9 @@ export function createOverlayEditorStore() {
       },
 
       buildConfig(): TextOverlayConfig {
-        return { version: TEXT_OVERLAY_VERSION, elements: get().elements };
+        const { elements } = get();
+        emitted.add(elements);
+        return { version: TEXT_OVERLAY_VERSION, elements };
       },
     }))
   );

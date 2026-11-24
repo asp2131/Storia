@@ -1297,3 +1297,7 @@
 | 13:02 | Edited src/components/StoriaCalmLanding.tsx | expanded (+29 lines) | ~374 |
 | 13:04 | Added 5 irl photos to landing PEOPLE_SLIDES (founders cheque now slide 1); skipped glare iPad shot, duplicate booth shot, comic + mascot art | public/storia-landing/*.jpg, src/components/StoriaCalmLanding.tsx | tests + tsc pass, not visually checked | ~400 |
 | 13:03 | Session end: 1 writes across 1 files (StoriaCalmLanding.tsx) | 9 reads | ~374 tok |
+
+| 11:31 | Landing weekly focus 11-23: 11-title shelf, features list, Hat Trickster available, Featured in, Krish Sounds LLC footer, new favicon | StoriaCalmLanding.tsx/.css, SiteChrome.tsx, src/app icons | committed b9265b7 on feat/landing-weekly-1123; socials pending URLs | ~6k |
+| 11:31 | Creator Space text box handoff: inline typing, creator style default, wrap/overflow, line-break parity, autosave echo fix | text-overlay/*, overlayEditorStore, text-style route, migration | committed 28dc8ec on feat/creator-textbox; verify passed 505 tests; prod migration pending | ~25k |
+| 11:44 | Added 16 Google Fonts for authors: EXTRA_FONTS in text-overlay.ts -> one CDN stylesheet in layout; compositor map derived; pickers preview font; Flutter resolveFontStyle uses GoogleFonts.getFont (mobile + mobile-release); contract builtinSupported extended | text-overlay.ts, image-compositing.ts, layout.tsx, PropertyPanel.tsx, BookStyleDrawer.tsx, mobile-compat-contract.json, text_overlay_utils.dart x2 | tsc/eslint/vitest 65 + flutter overlay tests pass | ~25k |

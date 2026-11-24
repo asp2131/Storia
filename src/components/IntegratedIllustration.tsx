@@ -303,6 +303,8 @@ function OverlayTextElement({
         transformOrigin: "left top",
         textShadow: shadowStyle,
         lineHeight: 1.3,
+        // Keep the author's line breaks, matching the editor and the app reader.
+        whiteSpace: "pre-wrap",
         ...backgroundStyle,
       }}
       role={interactive ? "group" : undefined}

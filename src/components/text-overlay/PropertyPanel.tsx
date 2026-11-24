@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   AlignCenter,
   AlignLeft,
@@ -14,6 +14,7 @@ import {
   TextShadow,
   TextBackground,
   AVAILABLE_FONTS,
+  OVERLAY_FONT_CSS_FAMILY,
   FONT_WEIGHT_OPTIONS,
   TEXT_ALIGN_OPTIONS,
   type TextAlign,
@@ -34,12 +35,8 @@ interface PropertyPanelProps {
   voiceOptions?: VoiceOption[];
   enableVoiceAssignment?: boolean;
   embedded?: boolean;
-  /**
-   * Counter bumped when the user asks to type (adds a block, double-clicks one).
-   * Focus follows intent only — focusing on every selection would yank the
-   * caret into this panel at the start of every canvas drag.
-   */
-  focusTextToken?: number;
+  /** Save this box's style as the creator's default for new text boxes. Hidden when absent. */
+  onUseStyleForNewBoxes?: (element: TextElement) => Promise<unknown>;
 }
 
 const fieldLabel = "mb-1.5 block text-[11.5px] font-semibold text-zinc-500";
@@ -53,21 +50,12 @@ export function PropertyPanel({
   voiceOptions = [],
   enableVoiceAssignment = false,
   embedded = false,
-  focusTextToken = 0,
+  onUseStyleForNewBoxes,
 }: PropertyPanelProps) {
   const [isShadowExpanded, setIsShadowExpanded] = useState(false);
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
-  const textInputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (!focusTextToken) return;
-    // No requestAnimationFrame here: the effect already runs after the commit
-    // that mounts the textarea, and rAF callbacks never fire in a hidden tab.
-    const input = textInputRef.current;
-    if (!input) return;
-    input.focus({ preventScroll: true });
-    input.setSelectionRange(input.value.length, input.value.length);
-  }, [focusTextToken]);
+  // Keyed by element id so the "Saved" note never carries over to another box.
+  const [styleSave, setStyleSave] = useState<{ id: string; status: "saving" | "saved" | "error" } | null>(null);
   const shell = embedded
     ? "space-y-4"
     : "editor-scroll w-80 shrink-0 space-y-4 overflow-y-auto border-l border-zinc-200 bg-white p-4";
@@ -89,6 +77,18 @@ export function PropertyPanel({
   }
 
   const update = (patch: Partial<TextElement>) => onUpdate({ ...selectedElement, ...patch });
+
+  const styleStatus = styleSave?.id === selectedElement.id ? styleSave.status : null;
+  const handleUseStyle = async () => {
+    const id = selectedElement.id;
+    setStyleSave({ id, status: "saving" });
+    try {
+      await onUseStyleForNewBoxes?.(selectedElement);
+      setStyleSave({ id, status: "saved" });
+    } catch {
+      setStyleSave({ id, status: "error" });
+    }
+  };
 
   const handleVoiceChange = (voiceId: string) => {
     if (!voiceId) {
@@ -144,7 +144,6 @@ export function PropertyPanel({
       <div>
         <label className={fieldLabel} htmlFor={`text-${selectedElement.id}`}>Text content</label>
         <textarea
-          ref={textInputRef}
           id={`text-${selectedElement.id}`}
           data-overlay-text-input
           value={selectedElement.text}
@@ -161,6 +160,7 @@ export function PropertyPanel({
             value={selectedElement.fontFamily}
             onChange={(event) => update({ fontFamily: event.target.value as OverlayFont })}
             className={control}
+            style={{ fontFamily: OVERLAY_FONT_CSS_FAMILY[selectedElement.fontFamily] }}
           >
             {AVAILABLE_FONTS.map((font) => <option key={font}>{font}</option>)}
           </select>
@@ -328,6 +328,26 @@ export function PropertyPanel({
           </div>
         )}
       </Disclosure>
+
+      {onUseStyleForNewBoxes && (
+        <div>
+          <button
+            type="button"
+            onClick={handleUseStyle}
+            disabled={styleStatus === "saving"}
+            className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-[var(--editor-accent)] text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          >
+            Use style for new text boxes
+          </button>
+          <p role="status" className="mt-1.5 text-center text-[11px] leading-snug text-zinc-500">
+            {styleStatus === "saved"
+              ? "Saved. Your new text boxes, in any book, start with this style."
+              : styleStatus === "error"
+                ? "Couldn't save the style. Try again."
+                : null}
+          </p>
+        </div>
+      )}
 
       <button
         type="button"
