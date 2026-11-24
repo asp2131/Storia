@@ -3,20 +3,15 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createCanvas, loadImage, registerFont } from "canvas";
 import sharp from "sharp";
-import type { TextOverlayConfig, TextElement } from "@/types/text-overlay";
+import { OVERLAY_FONT_CSS_FAMILY, type TextOverlayConfig, type TextElement } from "@/types/text-overlay";
 
-// Map font family names to canvas-compatible font strings.
-// The `canvas` package needs fonts registered or uses system fallbacks.
-const FONT_FALLBACK_MAP: Record<string, string> = {
-  Inter: "Inter, sans-serif",
-  Lora: "Lora, serif",
-  "Playfair Display": "'Playfair Display', serif",
-  "JetBrains Mono": "'JetBrains Mono', monospace",
-  Gaegu: "Gaegu, cursive",
-  Nunito: "Nunito, sans-serif",
-  "Hanken Grotesk": "'Hanken Grotesk', sans-serif",
-  "Space Grotesk": "'Space Grotesk', sans-serif",
-};
+// Canvas font strings: the editor's CSS stacks minus the next/font var().
+const FONT_FALLBACK_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(OVERLAY_FONT_CSS_FAMILY).map(([name, css]) => [
+    name,
+    css.replace(/var\([^)]*\),\s*/g, ""),
+  ])
+);
 
 // ─── Font registration ────────────────────────────────────────────────────────
 //

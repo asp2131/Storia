@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, JetBrains_Mono, Lora, Inter, Gaegu, Nunito, Space_Grotesk, Hanken_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { EXTRA_FONTS_HREF } from "@/types/text-overlay";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -95,6 +96,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Extra author fonts; files download only when text uses them. */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="stylesheet" href={EXTRA_FONTS_HREF} />
+      </head>
       <body className={`${playfair.variable} ${jetbrains.variable} ${lora.variable} ${inter.variable} ${hankenGrotesk.variable} ${gaegu.variable} ${spaceGrotesk.variable} ${nunito.variable} antialiased`}>
         <script
           type="application/ld+json"

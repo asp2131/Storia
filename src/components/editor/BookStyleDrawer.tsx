@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import {
   AVAILABLE_FONTS,
+  OVERLAY_FONT_CSS_FAMILY,
   FONT_WEIGHT_OPTIONS,
   TEXT_ALIGN_OPTIONS,
   type BookTextStyle,
@@ -177,6 +178,7 @@ export function BookStyleDrawer({ open, onClose }: BookStyleDrawerProps) {
               value={draft.fontFamily}
               onChange={(e) => update({ fontFamily: e.target.value as OverlayFont })}
               className="w-full px-3 py-2 border border-zinc-200 bg-[#fbfbfc] rounded-lg text-sm outline-none focus:border-[var(--editor-accent)]"
+              style={{ fontFamily: OVERLAY_FONT_CSS_FAMILY[draft.fontFamily] }}
             >
               {AVAILABLE_FONTS.map((font) => (
                 <option key={font} value={font}>

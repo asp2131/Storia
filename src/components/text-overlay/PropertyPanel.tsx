@@ -14,6 +14,7 @@ import {
   TextShadow,
   TextBackground,
   AVAILABLE_FONTS,
+  OVERLAY_FONT_CSS_FAMILY,
   FONT_WEIGHT_OPTIONS,
   TEXT_ALIGN_OPTIONS,
   type TextAlign,
@@ -159,6 +160,7 @@ export function PropertyPanel({
             value={selectedElement.fontFamily}
             onChange={(event) => update({ fontFamily: event.target.value as OverlayFont })}
             className={control}
+            style={{ fontFamily: OVERLAY_FONT_CSS_FAMILY[selectedElement.fontFamily] }}
           >
             {AVAILABLE_FONTS.map((font) => <option key={font}>{font}</option>)}
           </select>
