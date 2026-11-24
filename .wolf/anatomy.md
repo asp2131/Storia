@@ -1174,3 +1174,9 @@
 ## Discovered during 2026-11-15 slideshow photos
 
 - `public/storia-landing/team-tulane-open-season.jpg`, `team-louisiana-book-festival.jpg`, `booth-kids-reading.jpg`, `booth-family.jpg`, `team-educators.jpg` — People slideshow photos, 1600px JPEG exports (sips -Z 1600, q80) of originals in `~/Documents/irl/` (~0 tok)
+
+- `src/app/api/admin/text-style/route.ts` — GET/PUT the signed-in creator's default text style (user.default_text_style) for Creator Space "Use style for new text boxes". (~400 tok)
+- `src/hooks/useCreatorTextStyle.ts` — React Query hook: `{ creatorStyle, saveCreatorStyle }` for the creator's new-box style. (~300 tok)
+- `prisma/migrations/20261124120000_user_default_text_style/migration.sql` — adds nullable `user.default_text_style` JSONB. (~60 tok)
+- `src/app/apple-icon.png` — 180px touch icon (Loratone headshot on white). `src/app/favicon.ico` regenerated 16/32/48 from the same headshot.
+- `public/storia-landing/hat-trickster-cover.webp` — Hat Trickster shelf cover (848x1200).
