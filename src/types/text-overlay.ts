@@ -319,40 +319,34 @@ export function seedTextElement(
   };
 }
 
-export type RememberedTextSettings = Partial<
-  Pick<BookTextStyle, "fontFamily" | "fontSize">
-> & {
+/**
+ * Voice is the only setting remembered automatically from a text block.
+ * Style defaults change only through "Use style for new text boxes"
+ * (Creator Space handoff, 2026-11-23): editing one box must not silently
+ * change what the next box looks like.
+ */
+export type RememberedTextSettings = {
   voiceId?: string | null;
   voiceName?: string | null;
 };
 
-/** Pick remembered defaults that changed between two versions of a text block. */
+/** The voice change between two versions of a text block, or {} when the voice is unchanged. */
 export function changedRememberedTextSettings(
   previous: TextElement,
   next: TextElement
 ): RememberedTextSettings {
-  const changed: RememberedTextSettings = {};
-  if (previous.fontFamily !== next.fontFamily) changed.fontFamily = next.fontFamily;
-  if (previous.fontSize !== next.fontSize) changed.fontSize = next.fontSize;
-  if (previous.voiceId !== next.voiceId || previous.voiceName !== next.voiceName) {
-    changed.voiceId = next.voiceId ?? null;
-    changed.voiceName = next.voiceName ?? null;
+  if (previous.voiceId === next.voiceId && previous.voiceName === next.voiceName) {
+    return {};
   }
-  return changed;
+  return { voiceId: next.voiceId ?? null, voiceName: next.voiceName ?? null };
 }
 
-/** Remember only the settings the user just changed. */
+/** Remember the voice the user just picked so the next block uses it. */
 export function rememberTextSettings(
   style: BookTextStyle,
   settings: RememberedTextSettings
 ): BookTextStyle {
-  const next: BookTextStyle = {
-    ...style,
-    ...(settings.fontFamily !== undefined
-      ? { fontFamily: settings.fontFamily }
-      : {}),
-    ...(settings.fontSize !== undefined ? { fontSize: settings.fontSize } : {}),
-  };
+  const next: BookTextStyle = { ...style };
 
   if ("voiceId" in settings || "voiceName" in settings) {
     delete next.voiceId;
@@ -364,6 +358,41 @@ export function rememberTextSettings(
   }
 
   return next;
+}
+
+// ─── Creator text style ──────────────────────────────────────────
+// Saved per creator (user.default_text_style) by "Use style for new text
+// boxes". Seeds new boxes in every book. Voice stays per book, so it is
+// never part of the creator style.
+
+export type CreatorTextStyle = Omit<BookTextStyle, "voiceId" | "voiceName">;
+
+/** Snapshot the style of a box (or style) — font, size, weight, color, alignment, shadow, fill + padding. */
+export function creatorTextStyleFrom(
+  source: TextElement | BookTextStyle
+): CreatorTextStyle {
+  return {
+    fontFamily: source.fontFamily,
+    fontSize: source.fontSize,
+    fontWeight: source.fontWeight,
+    color: source.color,
+    textAlign: source.textAlign,
+    ...(source.shadow ? { shadow: source.shadow } : {}),
+    ...(source.background ? { background: source.background } : {}),
+  };
+}
+
+/** Style for a new box: the creator's saved style when there is one, keeping the book's narration voice. */
+export function newTextBoxStyle(
+  book: BookTextStyle,
+  creator: CreatorTextStyle | null | undefined
+): BookTextStyle {
+  if (!creator) return book;
+  return {
+    ...creatorTextStyleFrom(creator),
+    ...(book.voiceId ? { voiceId: book.voiceId } : {}),
+    ...(book.voiceName ? { voiceName: book.voiceName } : {}),
+  };
 }
 
 /**

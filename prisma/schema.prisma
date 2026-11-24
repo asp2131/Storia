@@ -302,6 +302,8 @@ model user {
   emailVerified         Boolean                   @default(false)
   image                 String?
   role                  String                    @default("user")
+  /// Creator Space "Use style for new text boxes" default (BookTextStyle minus voice). Seeds new text boxes in every book.
+  default_text_style    Json?
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
   sessions              session[]

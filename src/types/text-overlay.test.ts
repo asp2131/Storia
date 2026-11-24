@@ -3,7 +3,9 @@ import {
   applyBookTextStyle,
   buildNewTextElement,
   changedRememberedTextSettings,
+  creatorTextStyleFrom,
   DEFAULT_BOOK_TEXT_STYLE,
+  newTextBoxStyle,
   OVERLAY_FONT_CSS_FAMILY,
   rememberTextSettings,
   seedTextElement,
@@ -79,44 +81,65 @@ describe("validateBookTextStyle", () => {
 });
 
 describe("rememberTextSettings", () => {
-  it("carries font family, size, and voice into future text blocks", () => {
+  it("carries only the voice into future text blocks", () => {
     const remembered = rememberTextSettings(DEFAULT_BOOK_TEXT_STYLE, {
-      fontFamily: "Lora",
-      fontSize: 7.2,
       voiceId: "voice-2",
       voiceName: "Sprite",
     });
 
     expect(buildNewTextElement(remembered)).toMatchObject({
-      fontFamily: "Lora",
-      fontSize: 7.2,
+      fontFamily: DEFAULT_BOOK_TEXT_STYLE.fontFamily,
+      fontSize: DEFAULT_BOOK_TEXT_STYLE.fontSize,
       voiceId: "voice-2",
       voiceName: "Sprite",
     });
-    expect(remembered.color).toBe(DEFAULT_BOOK_TEXT_STYLE.color);
   });
 
-  it("changes settings independently and clears voice explicitly", () => {
-    const fontOnly = rememberTextSettings(lora, { fontFamily: "Gaegu" });
-    expect(fontOnly.voiceId).toBe("voice-1");
-
-    const withoutVoice = rememberTextSettings(fontOnly, {
+  it("clears voice explicitly", () => {
+    const withoutVoice = rememberTextSettings(lora, {
       voiceId: undefined,
       voiceName: undefined,
     });
     expect(withoutVoice).not.toHaveProperty("voiceId");
     expect(withoutVoice).not.toHaveProperty("voiceName");
+    expect(withoutVoice.fontFamily).toBe("Lora");
   });
 
-  it("detects only defaults explicitly changed on a text block", () => {
+  it("ignores style edits: changing one box never changes the default", () => {
     const previous = el("a", { voiceId: "voice-1", voiceName: "Narrator" });
-    const next = { ...previous, text: "Changed", fontSize: 7, voiceId: undefined, voiceName: undefined };
+    expect(changedRememberedTextSettings(previous, { ...previous, fontSize: 7, fontFamily: "Lora" })).toEqual({});
+    expect(
+      changedRememberedTextSettings(previous, { ...previous, fontSize: 7, voiceId: undefined, voiceName: undefined })
+    ).toEqual({ voiceId: null, voiceName: null });
+  });
+});
 
-    expect(changedRememberedTextSettings(previous, next)).toEqual({
-      fontSize: 7,
-      voiceId: null,
-      voiceName: null,
+describe("creator text style", () => {
+  it("snapshots every style field of a box but no geometry, text, or voice", () => {
+    const box = el("a", { ...lora, text: "A little fox appeared." });
+    const style = creatorTextStyleFrom(box);
+    expect(style).toEqual({
+      fontFamily: "Lora",
+      fontSize: 6.5,
+      fontWeight: 600,
+      color: "#123456",
+      textAlign: "center",
+      shadow: lora.shadow,
+      background: lora.background,
     });
+  });
+
+  it("seeds new boxes from the creator style but keeps the book voice", () => {
+    const creator = creatorTextStyleFrom({ ...DEFAULT_BOOK_TEXT_STYLE, fontFamily: "Gaegu", color: "#2244aa" });
+    const seeded = newTextBoxStyle(lora, creator);
+    expect(seeded).toMatchObject({ fontFamily: "Gaegu", color: "#2244aa", voiceId: "voice-1", voiceName: "Narrator" });
+    // The creator style had no fill or shadow, so the book's are not mixed in.
+    expect(seeded).not.toHaveProperty("background");
+    expect(seeded).not.toHaveProperty("shadow");
+  });
+
+  it("falls back to the book style when the creator has none", () => {
+    expect(newTextBoxStyle(lora, null)).toBe(lora);
   });
 });
 

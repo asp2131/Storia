@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTruetypeUrl } from "./image-compositing";
+import { parseTruetypeUrl, wrapText } from "./image-compositing";
 
 // The composited PNG only matches the editor if node-canvas gets a real TTF for
 // the overlay family, so the shape of the Google Fonts response matters.
@@ -20,5 +20,23 @@ describe("parseTruetypeUrl", () => {
   it("returns null for a woff2 response, so the caller falls back", () => {
     const woff2 = CSS2_RESPONSE.replace(".ttf) format('truetype')", ".woff2) format('woff2')");
     expect(parseTruetypeUrl(woff2)).toBeNull();
+  });
+});
+
+describe("wrapText", () => {
+  // One unit of width per character keeps the expected lines readable.
+  const ctx = { measureText: (s: string) => ({ width: s.length }) } as Parameters<typeof wrapText>[0];
+
+  it("keeps the author's line breaks, then wraps each line to the box width", () => {
+    expect(wrapText(ctx, "The forest was quiet.\nThen the music began.", 12)).toEqual([
+      "The forest",
+      "was quiet.",
+      "Then the",
+      "music began.",
+    ]);
+  });
+
+  it("keeps blank lines blank", () => {
+    expect(wrapText(ctx, "One\n\nTwo", 20)).toEqual(["One", "", "Two"]);
   });
 });

@@ -241,31 +241,32 @@ function drawTextElement(
   ctx.restore();
 }
 
-/** Simple word-wrap: split text into lines that fit within maxWidth. */
-function wrapText(
-  ctx: ReturnType<ReturnType<typeof createCanvas>["getContext"]>,
+/**
+ * Word-wrap text into lines that fit within maxWidth. The author's own line
+ * breaks are kept (the app reader renders them too); blank lines stay blank.
+ */
+export function wrapText(
+  ctx: Pick<ReturnType<ReturnType<typeof createCanvas>["getContext"]>, "measureText">,
   text: string,
   maxWidth: number
 ): string[] {
-  const words = text.split(/\s+/);
   const lines: string[] = [];
-  let currentLine = "";
 
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
+  for (const paragraph of text.split(/\r?\n/)) {
+    let currentLine = "";
+    for (const word of paragraph.split(/[ \t]+/).filter(Boolean)) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
     }
-  }
-  if (currentLine) {
     lines.push(currentLine);
   }
 
-  return lines.length > 0 ? lines : [""];
+  return lines;
 }
 
 /** Draw a rounded rectangle path. */

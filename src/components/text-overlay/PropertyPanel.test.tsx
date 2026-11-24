@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PropertyPanel } from "./PropertyPanel";
 import type { TextElement } from "@/types/text-overlay";
@@ -23,12 +23,11 @@ function element(id: string, text: string): TextElement {
   };
 }
 
-function renderPanel(selected: TextElement | null, focusTextToken = 0) {
+function renderPanel(selected: TextElement | null) {
   return render(
     <PropertyPanel
       embedded
       selectedElement={selected}
-      focusTextToken={focusTextToken}
       onUpdate={vi.fn()}
       onDelete={vi.fn()}
     />
@@ -43,7 +42,6 @@ describe("PropertyPanel", () => {
         <PropertyPanel
           embedded
           selectedElement={element("a", "Edit me")}
-          focusTextToken={0}
           onUpdate={vi.fn()}
           onDelete={vi.fn()}
         />
@@ -53,22 +51,29 @@ describe("PropertyPanel", () => {
     expect(document.activeElement).not.toBe(screen.getByLabelText("Text content"));
   });
 
-  it("focuses the text content with the caret at the end when text edit is requested", () => {
-    const { rerender } = renderPanel(element("a", "Edit me"), 0);
-    act(() => {
-      rerender(
-        <PropertyPanel
-          embedded
-          selectedElement={element("a", "Edit me")}
-          focusTextToken={1}
-          onUpdate={vi.fn()}
-          onDelete={vi.fn()}
-        />
-      );
+  it("saves the selected box's style for new boxes and confirms it", async () => {
+    const box = element("a", "A little fox appeared.");
+    const onUseStyleForNewBoxes = vi.fn().mockResolvedValue(undefined);
+    render(
+      <PropertyPanel
+        embedded
+        selectedElement={box}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        onUseStyleForNewBoxes={onUseStyleForNewBoxes}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Use style for new text boxes" }));
     });
 
-    const input = screen.getByLabelText("Text content") as HTMLTextAreaElement;
-    expect(document.activeElement).toBe(input);
-    expect(input.selectionStart).toBe(input.value.length);
+    expect(onUseStyleForNewBoxes).toHaveBeenCalledWith(box);
+    expect(screen.getByRole("status").textContent).toMatch(/new text boxes/i);
+  });
+
+  it("hides the action when the editor cannot save a creator style", () => {
+    renderPanel(element("a", "Edit me"));
+    expect(screen.queryByRole("button", { name: "Use style for new text boxes" })).toBeNull();
   });
 });

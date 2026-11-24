@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useRef, useEffect, useLayoutEffect, useCallback, useMemo, useState } from "react";
 import {
   TextElement,
   TextOverlayConfig,
   buildNewTextElement,
   changedRememberedTextSettings,
+  creatorTextStyleFrom,
   DEFAULT_BOOK_TEXT_STYLE,
+  newTextBoxStyle,
   OVERLAY_FONT_CSS_FAMILY,
   type BookTextStyle,
   type RememberedTextSettings,
@@ -15,6 +17,7 @@ import { Toolbar } from "./Toolbar";
 import { PropertyPanel } from "./PropertyPanel";
 import { LayersPanel } from "./LayersPanel";
 import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
+import { useCreatorTextStyle } from "@/hooks/useCreatorTextStyle";
 
 type VoiceOption = {
   id: string;
@@ -72,6 +75,33 @@ export function historyShortcutFor(
   return key === "y" || event.shiftKey ? "redo" : "undo";
 }
 
+/** Pointer travel (px) before a press on a box counts as a drag instead of a click-to-type. */
+const DRAG_THRESHOLD_PX = 4;
+
+/**
+ * Character offset under a viewport point inside `container`'s single text
+ * node, so a click on a box can drop the caret exactly where it landed.
+ */
+export function caretOffsetAt(container: HTMLElement, x: number, y: number): number | null {
+  const doc = document as Document & {
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+  };
+  let node: Node | null = null;
+  let offset = 0;
+  if (doc.caretPositionFromPoint) {
+    const position = doc.caretPositionFromPoint(x, y);
+    if (position) ({ offsetNode: node, offset } = position);
+  } else if (document.caretRangeFromPoint) {
+    const range = document.caretRangeFromPoint(x, y);
+    if (range) {
+      node = range.startContainer;
+      offset = range.startOffset;
+    }
+  }
+  if (!node || node.nodeType !== Node.TEXT_NODE || !container.contains(node)) return null;
+  return offset;
+}
+
 interface DraggableTextElementProps {
   element: TextElement;
   isSelected: boolean;
@@ -79,11 +109,21 @@ interface DraggableTextElementProps {
   containerHeight: number;
   onSelect: () => void;
   onUpdate: (updates: Partial<TextElement>) => void;
-  onEditText: () => void;
   onHistoryGroupStart: () => void;
   onHistoryGroupEnd: () => void;
 }
 
+/**
+ * One text box on the canvas.
+ *
+ * The box is always typeable: a click (or tap) drops the caret where it
+ * landed, a press that moves past DRAG_THRESHOLD_PX moves the box, and the
+ * round handle resizes width. While typing, a real <textarea> sits exactly
+ * over the rendered text, so select / cut / copy / paste / context menu /
+ * touch selection are all native and pasted text keeps its line breaks and
+ * takes the box's style. The hidden text below keeps sizing the box, so the
+ * width stays put and the height grows as lines wrap.
+ */
 function DraggableTextElement({
   element,
   isSelected,
@@ -91,13 +131,23 @@ function DraggableTextElement({
   containerHeight,
   onSelect,
   onUpdate,
-  onEditText,
   onHistoryGroupStart,
   onHistoryGroupEnd,
 }: DraggableTextElementProps) {
-  const isDraggingRef = useRef(false);
-  const isResizingRef = useRef(false);
-  const dragStartRef = useRef({ x: 0, y: 0, elementX: 0, elementY: 0, elementWidth: 0 });
+  const rootRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const gestureRef = useRef<{
+    mode: "move" | "resize";
+    x: number;
+    y: number;
+    elementX: number;
+    elementY: number;
+    elementWidth: number;
+    moved: boolean;
+  } | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [overflows, setOverflows] = useState(false);
 
   // Build text shadow style
   const textShadow = useMemo(() => {
@@ -110,130 +160,133 @@ function DraggableTextElement({
     return `${offsetXPx}px ${offsetYPx}px ${blurPx}px ${color}`;
   }, [element.shadow, containerHeight, containerWidth]);
 
-  // Build background style
-  const backgroundStyle = useMemo(() => {
-    if (!element.background) return undefined;
-    const { color, padding, borderRadius } = element.background;
-    // Match compositor math: background sizing is relative to image width.
-    const paddingPx = (padding / 100) * containerWidth;
-    const borderRadiusPx = (borderRadius / 100) * containerWidth;
-    return {
-      backgroundColor: color,
-      padding: `${paddingPx}px`,
-      borderRadius: `${borderRadiusPx}px`,
-    };
-  }, [element.background, containerWidth]);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onSelect();
-
-    isDraggingRef.current = true;
-    onHistoryGroupStart();
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      elementX: element.x,
-      elementY: element.y,
-      elementWidth: element.width,
-    };
-
-    (e.target as Element).setPointerCapture(e.pointerId);
-
-    // Prevent text selection during drag
-    document.body.style.userSelect = "none";
-  };
-
-  const handleResizePointerDown = (e: React.PointerEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    isResizingRef.current = true;
-    onHistoryGroupStart();
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      elementX: element.x,
-      elementY: element.y,
-      elementWidth: element.width,
-    };
-
-    (e.target as Element).setPointerCapture(e.pointerId);
-
-    // Prevent text selection during resize
-    document.body.style.userSelect = "none";
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current && !isResizingRef.current) return;
-
-    e.preventDefault();
-
-    // Get the parent container for percentage calculations
-    const parentElement = (e.target as Element).closest('[data-canvas-container]');
-    if (!parentElement) return;
-
-    const rect = parentElement.getBoundingClientRect();
-
-    if (isDraggingRef.current) {
-      const deltaXPixels = e.clientX - dragStartRef.current.x;
-      const deltaYPixels = e.clientY - dragStartRef.current.y;
-
-      // Convert pixel delta to percentage
-      const deltaXPercent = (deltaXPixels / rect.width) * 100;
-      const deltaYPercent = (deltaYPixels / rect.height) * 100;
-
-      let newX = dragStartRef.current.elementX + deltaXPercent;
-      let newY = dragStartRef.current.elementY + deltaYPercent;
-
-      // Clamp values to 0-100
-      newX = Math.max(0, Math.min(100 - element.width, newX));
-      newY = Math.max(0, Math.min(100, newY));
-
-      onUpdate({ x: newX, y: newY });
-    }
-
-    if (isResizingRef.current) {
-      const deltaXPixels = e.clientX - dragStartRef.current.x;
-
-      // Convert pixel delta to percentage
-      const deltaXPercent = (deltaXPixels / rect.width) * 100;
-
-      let newWidth = dragStartRef.current.elementWidth + deltaXPercent;
-
-      // Clamp width to reasonable bounds
-      newWidth = Math.max(5, Math.min(100 - element.x, newWidth));
-
-      onUpdate({ width: newWidth });
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (isDraggingRef.current || isResizingRef.current) {
-      isDraggingRef.current = false;
-      isResizingRef.current = false;
-
-      try {
-        (e.target as Element).releasePointerCapture(e.pointerId);
-      } catch {
-        // Ignore if capture was already released
+  // Match compositor math: background sizing is relative to image width.
+  const paddingPx = element.background ? (element.background.padding / 100) * containerWidth : 0;
+  const backgroundStyle = element.background
+    ? {
+        backgroundColor: element.background.color,
+        padding: `${paddingPx}px`,
+        borderRadius: `${(element.background.borderRadius / 100) * containerWidth}px`,
       }
-
-      // Restore text selection
-      document.body.style.userSelect = "";
-      onHistoryGroupEnd();
-    }
-  };
+    : undefined;
 
   // Calculate font size in pixels based on container height
   const fontSizePx = (element.fontSize / 100) * containerHeight;
 
+  // Warn, never clip or shrink, when the box runs past the bottom of the scene.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || !containerHeight) return;
+    const bottomPx = (element.y / 100) * containerHeight + root.offsetHeight;
+    setOverflows(bottomPx > containerHeight + 1);
+  }, [element.text, element.y, element.width, fontSizePx, element.fontFamily, element.fontWeight, paddingPx, containerHeight, containerWidth]);
+
+  const startTyping = (offset: number | null) => {
+    const input = inputRef.current;
+    if (!input) return;
+    // Focus synchronously inside the pointer handler: iOS only raises the
+    // keyboard for focus that happens during the user's gesture.
+    input.focus({ preventScroll: true });
+    const at = Math.min(offset ?? input.value.length, input.value.length);
+    input.setSelectionRange(at, at);
+  };
+
+  const beginGesture = (e: React.PointerEvent, mode: "move" | "resize") => {
+    e.stopPropagation();
+    e.preventDefault();
+    rootRef.current?.setPointerCapture(e.pointerId);
+    gestureRef.current = {
+      mode,
+      x: e.clientX,
+      y: e.clientY,
+      elementX: element.x,
+      elementY: element.y,
+      elementWidth: element.width,
+      moved: false,
+    };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    // While typing, presses inside the text belong to the textarea: caret,
+    // drag-to-select, long-press selection.
+    if (isEditing && e.target === inputRef.current) {
+      e.stopPropagation();
+      return;
+    }
+    beginGesture(e, "move");
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const gesture = gestureRef.current;
+    if (!gesture) return;
+    e.preventDefault();
+
+    const deltaXPixels = e.clientX - gesture.x;
+    const deltaYPixels = e.clientY - gesture.y;
+    if (!gesture.moved) {
+      if (Math.hypot(deltaXPixels, deltaYPixels) < DRAG_THRESHOLD_PX) return;
+      gesture.moved = true;
+      // Moving ends typing; resizing keeps the caret where it is while lines reflow.
+      if (gesture.mode === "move") inputRef.current?.blur();
+      onSelect();
+      onHistoryGroupStart();
+      document.body.style.userSelect = "none";
+    }
+
+    const rect = rootRef.current?.closest("[data-canvas-container]")?.getBoundingClientRect();
+    if (!rect) return;
+
+    if (gesture.mode === "move") {
+      const newX = gesture.elementX + (deltaXPixels / rect.width) * 100;
+      const newY = gesture.elementY + (deltaYPixels / rect.height) * 100;
+      onUpdate({
+        x: Math.max(0, Math.min(100 - element.width, newX)),
+        y: Math.max(0, Math.min(100, newY)),
+      });
+    } else {
+      // Width only: the text reflows and the height follows it.
+      const newWidth = gesture.elementWidth + (deltaXPixels / rect.width) * 100;
+      onUpdate({ width: Math.max(5, Math.min(100 - element.x, newWidth)) });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const gesture = gestureRef.current;
+    if (!gesture) return;
+    gestureRef.current = null;
+    try {
+      rootRef.current?.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore if capture was already released
+    }
+
+    if (gesture.moved) {
+      document.body.style.userSelect = "";
+      onHistoryGroupEnd();
+      return;
+    }
+    // A press that never moved is a click: type right where it landed.
+    if (gesture.mode === "move" && e.type === "pointerup") {
+      onSelect();
+      startTyping(textRef.current ? caretOffsetAt(textRef.current, e.clientX, e.clientY) : null);
+    }
+  };
+
+  const isEmpty = element.text.trim().length === 0;
+  const outline = overflows
+    ? "outline-2 outline-offset-4 outline-red-500"
+    : isSelected
+      ? "outline-2 outline-offset-4 outline-[var(--editor-accent)]"
+      : isEmpty
+        ? "outline-1 outline-dashed outline-offset-4 outline-zinc-400"
+        : "";
+
   return (
     <div
-      className={`absolute cursor-move select-none pointer-events-auto rounded-sm ${
-        isSelected ? "outline-2 outline-offset-4 outline-[var(--editor-accent)]" : ""
-      }`}
+      ref={rootRef}
+      data-overlay-element-id={element.id}
+      className={`absolute pointer-events-auto rounded-sm ${isEditing ? "" : "cursor-text select-none"} ${outline}`}
       style={{
         left: `${element.x}%`,
         top: `${element.y}%`,
@@ -247,28 +300,76 @@ function DraggableTextElement({
         transformOrigin: "left top",
         textShadow,
         lineHeight: 1.3,
+        // Drags must not scroll the page on touch; typing keeps native touch selection.
+        touchAction: isEditing ? "auto" : "none",
         ...backgroundStyle,
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      onDoubleClick={onEditText}
     >
-      {element.text}
+      {/* Sizes the box. The trailing zero-width space keeps a trailing line break (or an empty box) one line tall. */}
+      <span
+        ref={textRef}
+        aria-hidden={isEditing}
+        className="block whitespace-pre-wrap break-words"
+        style={{ visibility: isEditing ? "hidden" : "visible" }}
+      >
+        {element.text + "​"}
+      </span>
+
+      <textarea
+        ref={inputRef}
+        data-overlay-text-input
+        aria-label="Text box"
+        tabIndex={-1}
+        value={element.text}
+        placeholder="Type here"
+        spellCheck
+        onChange={(e) => onUpdate({ text: e.target.value })}
+        onFocus={() => setIsEditing(true)}
+        onBlur={() => setIsEditing(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") e.currentTarget.blur();
+        }}
+        className="absolute m-0 resize-none overflow-hidden whitespace-pre-wrap break-words border-0 bg-transparent p-0 outline-none placeholder:text-current placeholder:opacity-40"
+        style={{
+          inset: `${paddingPx}px`,
+          font: "inherit",
+          lineHeight: "inherit",
+          letterSpacing: "inherit",
+          textAlign: "inherit",
+          color: "inherit",
+          textShadow: "inherit",
+          // Focusable while invisible, so a click can move the caret in before it shows.
+          opacity: isEditing ? 1 : 0,
+          pointerEvents: isEditing ? "auto" : "none",
+        }}
+      />
+
+      {overflows && (
+        <span
+          role="status"
+          className="pointer-events-none absolute bottom-full left-0 mb-2 whitespace-nowrap rounded-md border border-red-200 bg-red-50 px-2 py-0.5 font-sans text-[11px] font-semibold not-italic leading-normal text-red-600"
+          style={{ textShadow: "none", textAlign: "left" }}
+        >
+          Text does not fit this scene
+        </span>
+      )}
 
       {/* Resize handle - only visible when selected */}
       {isSelected && (
         <div
-          className="absolute -bottom-2 -right-2 h-4 w-4 cursor-se-resize rounded-full border-2 border-[var(--editor-accent)] bg-white shadow-sm"
+          className="absolute -bottom-2 -right-2 h-4 w-4 cursor-ew-resize touch-none rounded-full border-2 border-[var(--editor-accent)] bg-white shadow-sm"
           style={{
             transform: `rotate(${-element.rotation}deg)`,
             transformOrigin: "center center",
           }}
-          onPointerDown={handleResizePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            beginGesture(e, "resize");
+          }}
         />
       )}
     </div>
@@ -315,6 +416,8 @@ export function DraggableTextOverlayEditor({
   const containerHeight = useOverlayEditor(pageId, (s) => s.containerHeight);
 
   const isAutoSaving = autoSaveStatus === "saving";
+  const textEditRequestId = useOverlayEditor(pageId, (s) => s.textEditRequestId);
+  const { creatorStyle, saveCreatorStyle } = useCreatorTextStyle();
 
   // Derived selected element
   const selectedElement = useOverlayEditor(pageId, (s) => s.getSelectedElement());
@@ -386,12 +489,35 @@ export function DraggableTextOverlayEditor({
 
   // ─── Handlers ──────────────────────────────────────────────────────────
 
+  // "Add text" (and any other edit request) puts the caret in the selected box
+  // on the canvas, so the creator can type without a second click.
+  useEffect(() => {
+    if (!textEditRequestId) return;
+    const id = actionsRef.current.getSelectedElement()?.id;
+    if (!id) return;
+    const input = imageContainerRef.current?.querySelector<HTMLTextAreaElement>(
+      `[data-overlay-element-id="${CSS.escape(id)}"] textarea`
+    );
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, [textEditRequestId]);
+
   const handleAddElement = useCallback(() => {
     actions.addElement(
-      buildNewTextElement(bookTextStyle ?? DEFAULT_BOOK_TEXT_STYLE)
+      buildNewTextElement(
+        newTextBoxStyle(bookTextStyle ?? DEFAULT_BOOK_TEXT_STYLE, creatorStyle),
+        // ponytail: simple cascade so a new box never lands exactly on the last one; wraps after 8.
+        { text: "", y: 10 + (elements.length % 8) * 8 }
+      )
     );
     actions.requestTextEdit();
-  }, [actions, bookTextStyle]);
+  }, [actions, bookTextStyle, creatorStyle, elements.length]);
+
+  const handleUseStyleForNewBoxes = useCallback(
+    (element: TextElement) => saveCreatorStyle(creatorTextStyleFrom(element)),
+    [saveCreatorStyle]
+  );
 
   const handleComposite = useCallback(async () => {
     await onComposite();
@@ -495,7 +621,6 @@ export function DraggableTextOverlayEditor({
                   containerHeight={containerHeight}
                   onSelect={() => handleSelectElement(element.id)}
                   onUpdate={(updates) => handleUpdateElement(element.id, updates)}
-                  onEditText={actions.requestTextEdit}
                   onHistoryGroupStart={actions.beginHistoryGroup}
                   onHistoryGroupEnd={actions.endHistoryGroup}
                 />
@@ -519,6 +644,7 @@ export function DraggableTextOverlayEditor({
               onDelete={handleDeleteElement}
               voiceOptions={voiceOptions}
               enableVoiceAssignment={enableVoiceAssignment}
+              onUseStyleForNewBoxes={handleUseStyleForNewBoxes}
             />
           </>
         )}

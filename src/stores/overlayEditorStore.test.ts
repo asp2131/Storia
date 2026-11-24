@@ -35,6 +35,25 @@ describe("overlayEditorStore.init", () => {
   });
 });
 
+describe("overlayEditorStore save echo", () => {
+  it("keeps edits made while an autosave was in flight", () => {
+    const store = createOverlayEditorStore();
+    store.getState().init([el("a", "The little fox")]);
+    store.getState().selectElement("a");
+
+    store.getState().updateElement("a", { text: "The little fox followed" });
+    const draft = store.getState().buildConfig(); // autosave takes this draft
+    store.getState().updateElement("a", { text: "The little fox followed the sound" });
+
+    // The save finishes and the parent passes the (now older) draft back down.
+    store.getState().init(draft.elements);
+
+    expect(store.getState().elements[0].text).toBe("The little fox followed the sound");
+    expect(store.getState().selectedElementId).toBe("a");
+    expect(store.getState().past.length).toBeGreaterThan(0);
+  });
+});
+
 describe("overlayEditorStore history", () => {
   it("undoes and redoes element edits", () => {
     const store = createOverlayEditorStore();

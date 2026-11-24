@@ -9,7 +9,8 @@ import {
 import { LayersPanel } from "@/components/text-overlay/LayersPanel";
 import { PropertyPanel } from "@/components/text-overlay/PropertyPanel";
 import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
-import { changedRememberedTextSettings } from "@/types/text-overlay";
+import { useCreatorTextStyle } from "@/hooks/useCreatorTextStyle";
+import { changedRememberedTextSettings, creatorTextStyleFrom } from "@/types/text-overlay";
 import type { TextElement } from "@/types/text-overlay";
 
 export function ElementInspectorPanel() {
@@ -21,7 +22,7 @@ export function ElementInspectorPanel() {
   const elements = useOverlayEditor(pageId, (state) => state.elements);
   const selectedElementId = useOverlayEditor(pageId, (state) => state.selectedElementId);
   const selectedElement = useOverlayEditor(pageId, (state) => state.getSelectedElement());
-  const textEditRequestId = useOverlayEditor(pageId, (state) => state.textEditRequestId);
+  const { saveCreatorStyle } = useCreatorTextStyle();
 
   const handleUpdate = (updatedElement: TextElement) => {
     const settings = selectedElement?.id === updatedElement.id
@@ -49,7 +50,7 @@ export function ElementInspectorPanel() {
         selectedElement={selectedElement}
         onUpdate={handleUpdate}
         onDelete={actions.deleteElement}
-        focusTextToken={textEditRequestId}
+        onUseStyleForNewBoxes={(element) => saveCreatorStyle(creatorTextStyleFrom(element))}
         voiceOptions={voiceOptions}
         enableVoiceAssignment
       />
