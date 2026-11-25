@@ -13,8 +13,12 @@ export type ParsedRange = {
 export type HeadlineData = {
   range: ReportRange;
   generatedAt: string;
+  /** Distinct readers: child profiles, signed-in web accounts, guest browsers. */
+  readersActive: number;
   kidsActive: number;
   parentsActive: number;
+  /** Distinct browsers reading without an account. */
+  guestReaders: number;
   totalSessions: number;
   totalReadingMinutes: number;
   averageSessionMinutes: number;
@@ -110,6 +114,14 @@ export function isReportRange(value: unknown): value is ReportRange {
   );
 }
 
+/**
+ * Who a reading event belongs to: the child profile (mobile), else the signed-in
+ * account (web), else the guest browser id. ponytail: a family reading on both
+ * mobile and web counts as two readers; link web sessions to a child profile
+ * if that overlap starts to matter.
+ */
+const READER_KEY = Prisma.sql`COALESCE(child_profile_id, user_id, anon_id)`;
+
 function isoDateUtc(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -136,8 +148,10 @@ function pct(numerator: number, denominator: number): number {
 }
 
 type HeadlineRaw = {
+  readers_active: bigint | number;
   kids_active: bigint | number;
   parents_active: bigint | number;
+  guest_readers: bigint | number;
   total_sessions: bigint | number;
   total_duration_ms: bigint | number;
   books_completed: bigint | number;
@@ -207,15 +221,18 @@ export function createReportAgg(
 
       const rows = await prisma.$queryRaw<HeadlineRaw[]>(Prisma.sql`
         WITH starts AS (
-          SELECT session_id, child_profile_id, user_id, book_id
+          SELECT session_id, child_profile_id, user_id, anon_id, book_id,
+            ${READER_KEY} AS reader
           FROM mobile_analytics_events
           WHERE event_name = 'reading_session_started'
             AND occurred_at >= ${since}
         ), durations AS (
+          -- Only sessions started in range, so minutes match the trend chart.
           SELECT session_id, MAX((properties->>'durationMs')::bigint) AS ms
           FROM mobile_analytics_events
           WHERE event_name IN ('reading_session_ended', 'reading_session_drop_off')
             AND occurred_at >= ${since}
+            AND session_id IN (SELECT session_id FROM starts)
           GROUP BY session_id
         ), narration AS (
           SELECT DISTINCT session_id FROM mobile_analytics_events
@@ -224,7 +241,7 @@ export function createReportAgg(
           SELECT DISTINCT session_id FROM mobile_analytics_events
           WHERE event_name = 'speech_attempt_started' AND occurred_at >= ${since}
         ), completed AS (
-          SELECT DISTINCT child_profile_id, book_id
+          SELECT DISTINCT ${READER_KEY} AS reader, book_id
           FROM mobile_analytics_events
           WHERE event_name = 'book_completed' AND occurred_at >= ${since}
         ), attempts AS (
@@ -235,8 +252,10 @@ export function createReportAgg(
           WHERE event_name = 'speech_attempt_completed' AND occurred_at >= ${since}
         )
         SELECT
+          (SELECT COUNT(DISTINCT reader) FROM starts)::bigint AS readers_active,
           (SELECT COUNT(DISTINCT child_profile_id) FROM starts)::bigint AS kids_active,
           (SELECT COUNT(DISTINCT user_id) FROM starts)::bigint AS parents_active,
+          (SELECT COUNT(DISTINCT anon_id) FROM starts WHERE user_id IS NULL)::bigint AS guest_readers,
           (SELECT COUNT(DISTINCT session_id) FROM starts)::bigint AS total_sessions,
           COALESCE((SELECT SUM(ms) FROM durations), 0)::bigint AS total_duration_ms,
           (SELECT COUNT(*) FROM completed)::bigint AS books_completed,
@@ -263,8 +282,10 @@ export function createReportAgg(
       return {
         range,
         generatedAt: new Date().toISOString(),
+        readersActive: Number(row.readers_active ?? 0),
         kidsActive: Number(row.kids_active ?? 0),
         parentsActive: Number(row.parents_active ?? 0),
+        guestReaders: Number(row.guest_readers ?? 0),
         totalSessions,
         totalReadingMinutes,
         averageSessionMinutes,
@@ -342,7 +363,7 @@ export function createReportAgg(
 
       const bookRows = await prisma.$queryRaw<TopBookRaw[]>(Prisma.sql`
         WITH starts AS (
-          SELECT session_id, child_profile_id, book_id
+          SELECT session_id, book_id, ${READER_KEY} AS reader
           FROM mobile_analytics_events
           WHERE event_name = 'reading_session_started'
             AND occurred_at >= ${since}
@@ -364,7 +385,7 @@ export function createReportAgg(
           s.book_id AS book_id,
           COUNT(DISTINCT s.session_id)::bigint AS sessions,
           (COALESCE(SUM(d.ms), 0) / 1000)::bigint AS duration_seconds,
-          COUNT(DISTINCT s.child_profile_id)::bigint AS unique_readers,
+          COUNT(DISTINCT s.reader)::bigint AS unique_readers,
           (COUNT(DISTINCT s.session_id) FILTER (WHERE n.session_id IS NOT NULL))::bigint AS narration_sessions,
           (COUNT(DISTINCT s.session_id) FILTER (WHERE p.session_id IS NOT NULL))::bigint AS practice_sessions
         FROM starts s
@@ -387,7 +408,7 @@ export function createReportAgg(
           select: { id: true, title: true },
         }),
         prisma.$queryRaw<BookCompletionsRaw[]>(Prisma.sql`
-          SELECT book_id, COUNT(DISTINCT child_profile_id)::bigint AS completions
+          SELECT book_id, COUNT(DISTINCT ${READER_KEY})::bigint AS completions
           FROM mobile_analytics_events
           WHERE event_name = 'book_completed'
             AND occurred_at >= ${since}

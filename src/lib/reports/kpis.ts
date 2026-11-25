@@ -84,6 +84,7 @@ export function createKpiAgg(deps: { prisma?: typeof defaultPrisma } = {}): KpiA
             SELECT user_id, book_id, occurred_at
             FROM mobile_analytics_events
             WHERE event_name = 'reading_session_started'
+              AND user_id IS NOT NULL -- guests are not families
           ), active AS (
             SELECT user_id, COUNT(DISTINCT book_id) AS books
             FROM starts

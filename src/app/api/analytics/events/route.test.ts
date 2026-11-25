@@ -8,6 +8,9 @@ const { mockValidateChildAccess, mockGetAuthenticatedUser, mockPrisma } = vi.hoi
     mobile_analytics_events: {
       create: vi.fn(),
     },
+    books: {
+      findFirst: vi.fn(),
+    },
   },
 }));
 
@@ -141,5 +144,71 @@ describe("/api/analytics/events", () => {
         }),
       })
     );
+  });
+
+  describe("guest readers", () => {
+    const anonId = "0b5c7f0e-3a1d-4c55-9a43-2f1e8d6b7a90";
+    const post = (body: Record<string, unknown>) =>
+      POST(
+        new NextRequest("http://localhost/api/analytics/events", {
+          method: "POST",
+          body: JSON.stringify(body),
+        })
+      );
+
+    beforeEach(() => {
+      mockGetAuthenticatedUser.mockResolvedValue({
+        error: new Response(null, { status: 401 }),
+      });
+      mockPrisma.books.findFirst.mockResolvedValue({ id: 7n });
+      mockPrisma.mobile_analytics_events.create.mockResolvedValue(undefined);
+    });
+
+    it("stores signed-out reader events against the anonymous id only", async () => {
+      const response = await post({
+        event: "reading_session_ended",
+        anonId,
+        bookId: "7",
+        sessionId: "web_abc",
+        occurredAt: "2001-01-01T00:00:00Z",
+        properties: { durationMs: 99 * 3600000, pageNumber: 3, title: "x", email: "a@b.c" },
+      });
+
+      expect(response.status).toBe(201);
+      const data = mockPrisma.mobile_analytics_events.create.mock.calls[0][0].data;
+      expect(data).toMatchObject({
+        user_id: null,
+        anon_id: anonId,
+        child_profile_id: null,
+        book_id: 7n,
+        source: "web",
+        properties: { durationMs: 4 * 3600000, pageNumber: 3 },
+      });
+      expect(Object.keys(data.properties)).toEqual(["pageNumber", "durationMs"]);
+      expect(data.occurred_at.getFullYear()).toBeGreaterThan(2001);
+    });
+
+    it("rejects events a reader would not send, and unpublished books", async () => {
+      expect((await post({ event: "signup_completed", anonId, bookId: "7" })).status).toBe(400);
+      expect((await post({ event: "page_viewed", anonId })).status).toBe(400);
+      mockPrisma.books.findFirst.mockResolvedValue(null);
+      expect((await post({ event: "page_viewed", anonId, bookId: "7" })).status).toBe(404);
+      expect(mockPrisma.mobile_analytics_events.create).not.toHaveBeenCalled();
+    });
+
+    it("still requires an account when a child profile is named or the id is malformed", async () => {
+      mockValidateChildAccess.mockResolvedValue({ error: new Response(null, { status: 401 }) });
+      expect((await post({ event: "page_viewed", anonId, bookId: "7", childProfileId: "c" })).status).toBe(401);
+      expect((await post({ event: "page_viewed", anonId: "not-a-uuid", bookId: "7" })).status).toBe(401);
+      expect(mockPrisma.mobile_analytics_events.create).not.toHaveBeenCalled();
+    });
+
+    it("ignores the anonymous id when the reader is signed in", async () => {
+      mockGetAuthenticatedUser.mockResolvedValue({ user: { id: "user-1" } });
+      await post({ event: "page_viewed", anonId, bookId: "7" });
+      const data = mockPrisma.mobile_analytics_events.create.mock.calls[0][0].data;
+      expect(data.user_id).toBe("user-1");
+      expect(data).not.toHaveProperty("anon_id");
+    });
   });
 });

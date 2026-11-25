@@ -52,8 +52,9 @@ export type EventLookups = {
 
 export type MobileAnalyticsRow = {
   id: string;
-  user_id: string;
-  child_profile_id: string;
+  user_id: string | null;
+  anon_id?: string | null;
+  child_profile_id: string | null;
   book_id: bigint | null;
   session_id: string | null;
   event_name: string;
@@ -258,7 +259,16 @@ function mapMobileEvent(input: {
   lookups: EventLookups;
 }): TranslatedEvent {
   const { row, lookups } = input;
-  const actor = actorFromChild(row.child_profile_id, row.user_id, lookups);
+  const actor = row.child_profile_id
+    ? actorFromChild(row.child_profile_id, row.user_id ?? "", lookups)
+    : {
+        userId: row.user_id ?? UNKNOWN_USER_ID,
+        childProfileId: "",
+        // Web events carry no child profile: name the account or guest browser.
+        childName: row.user_id
+          ? "a signed-in web reader"
+          : `guest reader ${(row.anon_id ?? "").slice(0, 6) || "?"}`,
+      };
   const bookName = bookTitle(row.book_id, lookups);
   const known = MOBILE_REGISTRY[row.event_name];
   const partial: ReturnType<MobileMapper> = known
