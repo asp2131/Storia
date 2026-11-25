@@ -64,17 +64,6 @@ export function saveProgressToLocalStorage(
   }
 }
 
-export function clearProgressFromLocalStorage(bookId: string): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    const key = getLocalStorageKey(bookId);
-    localStorage.removeItem(key);
-  } catch {
-    // Silently fail
-  }
-}
-
 // ============ QUERY HOOKS ============
 
 /**
