@@ -1,60 +1,27 @@
 "use client";
 
-import { Type } from "lucide-react";
-import {
-  useBookEditor,
-  useOverlayEditorContext,
-  usePageManagerContext,
-} from "@/contexts/BookEditorContext";
+import { Layers } from "lucide-react";
+import { usePageManagerContext } from "@/contexts/BookEditorContext";
 import { LayersPanel } from "@/components/text-overlay/LayersPanel";
-import { PropertyPanel } from "@/components/text-overlay/PropertyPanel";
 import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
-import { useCreatorTextStyle } from "@/hooks/useCreatorTextStyle";
-import { changedRememberedTextSettings, creatorTextStyleFrom } from "@/types/text-overlay";
-import type { TextElement } from "@/types/text-overlay";
 
+/**
+ * Text boxes on the page, in reading order. Styling lives in the floating
+ * toolbar on the canvas; this is for picking, reordering and deleting boxes.
+ */
 export function ElementInspectorPanel() {
   const { activeView } = usePageManagerContext();
-  const { rememberOverlayTextSettings } = useOverlayEditorContext();
-  const { voiceOptions } = useBookEditor().narration;
   const pageId = activeView.overlayPageId;
   const actions = useOverlayEditorActions(pageId);
   const elements = useOverlayEditor(pageId, (state) => state.elements);
   const selectedElementId = useOverlayEditor(pageId, (state) => state.selectedElementId);
-  const selectedElement = useOverlayEditor(pageId, (state) => state.getSelectedElement());
-  const { saveCreatorStyle } = useCreatorTextStyle();
-
-  const handleUpdate = (updatedElement: TextElement) => {
-    const settings = selectedElement?.id === updatedElement.id
-      ? changedRememberedTextSettings(selectedElement, updatedElement)
-      : {};
-
-    actions.updateElement(updatedElement.id, updatedElement);
-    if (Object.keys(settings).length > 0) rememberOverlayTextSettings(settings);
-  };
 
   return (
     <div className="editor-pop pb-4">
-      <div className="mb-3 flex items-center justify-between px-0.5 pt-1">
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">
-          <Type className="h-3.5 w-3.5" />
-          Text
-        </span>
-        <span className="rounded-full bg-[var(--editor-accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--editor-accent)]">
-          {selectedElement ? "1 selected" : `${elements.length} layer${elements.length === 1 ? "" : "s"}`}
-        </span>
-      </div>
-
-      <PropertyPanel
-        embedded
-        selectedElement={selectedElement}
-        onUpdate={handleUpdate}
-        onDelete={actions.deleteElement}
-        onUseStyleForNewBoxes={(element) => saveCreatorStyle(creatorTextStyleFrom(element))}
-        voiceOptions={voiceOptions}
-        enableVoiceAssignment
-      />
-
+      <p className="mb-3 flex items-center gap-1.5 px-0.5 pt-1 text-[11.5px] leading-snug text-zinc-500">
+        <Layers className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+        Boxes are read aloud top to bottom. Select one to style it on the page.
+      </p>
       <LayersPanel
         embedded
         elements={elements}

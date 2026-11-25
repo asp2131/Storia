@@ -234,17 +234,3 @@ export function createStoredPronunciationEntry(
     ...(metadata?.generatedAt ? { generatedAt: metadata.generatedAt } : {}),
   };
 }
-
-/**
- * True if the entry has at least one usable audio URL.
- * Covers legacy string entries and object entries.
- */
-export function entryHasAudio(entry: WordPronunciationEntry | undefined): boolean {
-  if (entry === undefined) return false;
-  if (typeof entry === "string") return entry.trim().length > 0;
-  const hasFull =
-    typeof entry.fullWord === "string" && entry.fullWord.trim().length > 0;
-  const hasBreak =
-    typeof entry.breakdown === "string" && entry.breakdown.trim().length > 0;
-  return hasFull || hasBreak;
-}

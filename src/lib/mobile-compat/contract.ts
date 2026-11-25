@@ -22,10 +22,6 @@ type MobileCompatContract = typeof rawContract;
 
 const contract = rawContract as MobileCompatContract;
 
-export function getMobileCompatContract(): MobileCompatContract {
-  return contract;
-}
-
 export function getMobileCompatContractVersion(): string {
   return contract.version;
 }
@@ -38,10 +34,6 @@ export function isPublishBlockingSeverity(
 
 export function getHighlightToken(role: HighlightRole): string {
   return contract.highlight.tokens[role];
-}
-
-export function getHighlightPrecedence(): readonly string[] {
-  return contract.highlight.precedence;
 }
 
 export function getBuiltinMobileFonts(): readonly string[] {

@@ -45,6 +45,7 @@ import {
   remapOverlayEditorStores,
 } from "@/stores/overlayEditorRegistry";
 import { useOverlayEditor } from "@/hooks/useOverlayEditor";
+import { isTypingTarget } from "@/components/text-overlay/DraggableTextOverlayEditor";
 import type { DropResult } from "@hello-pangea/dnd";
 import { computeActiveWordIndexMobileCompat } from "@/lib/mobile-compat/word-sync";
 import { normalizeOverlayForMobile } from "@/lib/mobile-compat/normalize";
@@ -724,11 +725,13 @@ export function BookEditorProvider({
     generateNarrationMutation.isPending || generatingOverlayNarration;
 
   const setActivePageInternal = useCallback(
-    (
-      next: number,
-      options?: { destroyKeyOverride?: string; preserveCurrentStore?: boolean }
-    ) => {
-      if (next !== activePage && !options?.preserveCurrentStore) {
+    (next: number, options?: { preserveCurrentStore?: boolean }) => {
+      // Re-selecting the open page (its thumbnail, or "next" on the last page)
+      // must not tear down its overlay store: the canvas would go blank and the
+      // next autosave would drop every text box on the page.
+      if (next === activePage) return;
+
+      if (!options?.preserveCurrentStore) {
         queueActiveOverlayIfDirty();
       }
 
@@ -741,9 +744,7 @@ export function BookEditorProvider({
       if (!options?.preserveCurrentStore) {
         // Destroy overlay store for the page we're leaving
         const currentOverlayPageId =
-          options?.destroyKeyOverride ??
-          localPages.find((p) => p.number === activePage)?.id ??
-          `page-${activePage}`;
+          localPages.find((p) => p.number === activePage)?.id ?? `page-${activePage}`;
         destroyOverlayEditorStore(currentOverlayPageId);
       }
 
@@ -853,11 +854,7 @@ export function BookEditorProvider({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const isInput =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+      const isInput = isTypingTarget(e.target);
 
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
@@ -865,12 +862,19 @@ export function BookEditorProvider({
         return;
       }
 
-      if (isInput) return;
+      if (isInput || e.defaultPrevented) return;
 
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      // Arrows belong to the selected text box (nudge); PgUp/PgDn always turn pages.
+      const boxSelected = Boolean(
+        getExistingOverlayEditorStore(overlayPageId)?.getState().selectedElementId
+      );
+      const isArrow = e.key.startsWith("Arrow");
+      if (isArrow && (boxSelected || e.metaKey || e.ctrlKey || e.altKey)) return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
         e.preventDefault();
         setActivePageInternal(Math.max(1, activePage - 1));
-      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") {
         e.preventDefault();
         setActivePageInternal(Math.min(localPages.length, activePage + 1));
       }
@@ -878,7 +882,7 @@ export function BookEditorProvider({
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activePage, handleSave, localPages.length, setActivePageInternal]);
+  }, [activePage, handleSave, localPages.length, overlayPageId, setActivePageInternal]);
 
   // ─── Auto-save ────────────────────────────────────────────────────────────
   // SaveCoordinator schedules the shared editor debounce when markDirty() or an
@@ -945,13 +949,22 @@ export function BookEditorProvider({
 
   // ─── Page actions ─────────────────────────────────────────────────────────
 
+  /** Insert a blank page right after the current one and open it. */
   const handleAddPage = useCallback(() => {
-    setLocalPages((prev) => [
-      ...prev,
-      { number: prev.length + 1, text: "", imageUrl: "" },
-    ]);
+    const insertAt = Math.min(activePage, localPages.length);
+    const items = [...localPages];
+    items.splice(insertAt, 0, { number: 0, text: "", imageUrl: "" });
+    // Unsaved pages are keyed by number, so shift their stores with the renumber.
+    const shifted = items.filter((_, index) => index !== insertAt);
+    const updated = items.map((page, index) => ({ ...page, number: index + 1 }));
+    remapOverlayEditorStores(
+      shifted.map((page) => page.id ?? `page-${page.number}`),
+      updated.filter((_, index) => index !== insertAt).map((page) => page.id ?? `page-${page.number}`)
+    );
+    setLocalPages(updated);
     markDirty();
-  }, [markDirty]);
+    setActivePageInternal(insertAt + 1);
+  }, [activePage, localPages, markDirty, setActivePageInternal]);
 
   const handleDeletePage = useCallback(
     (pageNumber: number) => {

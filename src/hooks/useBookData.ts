@@ -181,6 +181,10 @@ export type BookData = {
   defaultTextStyle?: BookTextStyle | null;
   hasPronunciations?: boolean;
   pronunciationManifestUrl?: string | null;
+  isPublished?: boolean;
+  /** draft | submitted | approved | rejected */
+  reviewStatus?: string | null;
+  reviewNote?: string | null;
 };
 
 // ============ EDITOR HOOKS ============

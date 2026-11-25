@@ -5,12 +5,13 @@ import {
   ArrowLeft,
   ArrowRight,
   ImagePlus,
+  Keyboard,
   Loader2,
-  Settings,
   X,
 } from "lucide-react";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
-import { BookStyleDrawer } from "./BookStyleDrawer";
+import { PopoverButton } from "./PopoverButton";
+import { creatorTextStyleFrom, type TextElement } from "@/types/text-overlay";
 import {
   useBookEditor,
   useOverlayEditorContext,
@@ -37,9 +38,18 @@ export function OverlayEditorPanel() {
     handleImageFile,
   } = usePageManagerContext();
   const { audioInputRef, handleAudioUpload } = useAudioLibraryContext();
-  const { hasLocalChanges, bookTextStyle } = useBookMetaContext();
+  const { bookTextStyle, updateBookTextStyle, applyBookTextStyleToAllPages } = useBookMetaContext();
   const { voiceOptions } = useBookEditor().narration;
-  const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false);
+
+  // The book style is the source for "apply to every page"; it keeps the
+  // book's remembered voice, and applying never touches a box's own voice.
+  const applyStyleToAllPages = async (element: TextElement) => {
+    await updateBookTextStyle({
+      ...creatorTextStyleFrom(element),
+      ...(bookTextStyle.voiceId ? { voiceId: bookTextStyle.voiceId, voiceName: bookTextStyle.voiceName } : {}),
+    });
+    await applyBookTextStyleToAllPages();
+  };
 
   const activePageData = activeView.data;
   const hasImage = Boolean(activePageData?.imageUrl || activePageData?.compositedImageUrl);
@@ -103,14 +113,11 @@ export function OverlayEditorPanel() {
             overlay={activePageData!.overlay || null}
             onSave={handleOverlaySave}
             onComposite={handleOverlayComposite}
-            isSaveCoordinated
-            isSaving={false}
             isCompositing={overlayEditorCompositing}
-            voiceOptions={voiceOptions}
-            enableVoiceAssignment
             bookTextStyle={bookTextStyle}
+            voiceOptions={voiceOptions}
             onTextSettingsChange={rememberOverlayTextSettings}
-            showInspector={false}
+            onApplyStyleToAllPages={applyStyleToAllPages}
             onChangeImage={triggerImagePicker}
             onRemoveImage={() => setActiveImage("")}
           />
@@ -135,12 +142,7 @@ export function OverlayEditorPanel() {
       </div>
 
       <footer className="flex h-[52px] shrink-0 items-center justify-between border-t border-zinc-200/80 bg-zinc-100 px-5">
-        <div className="flex w-1/3 items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 shadow-sm">
-            <span className={`h-2 w-2 rounded-full ${hasLocalChanges ? "bg-amber-500" : "bg-emerald-500"}`} />
-            Editing · {hasLocalChanges ? "unsaved" : "saved"}
-          </span>
-        </div>
+        <div className="flex w-1/3 items-center gap-1" />
 
         <div className="flex w-1/3 items-center justify-center gap-2">
           <button
@@ -149,11 +151,12 @@ export function OverlayEditorPanel() {
             disabled={activePage <= 1}
             className="grid h-8 w-8 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 disabled:opacity-30"
             aria-label="Previous page"
+            title="Previous page (PgUp)"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <span className="min-w-8 text-center font-serif text-sm font-semibold tabular-nums text-zinc-700">
-            {activePage}
+          <span className="min-w-14 text-center text-xs font-semibold tabular-nums text-zinc-600" aria-live="polite">
+            {activePage} <span className="text-zinc-400">/ {localPages.length}</span>
           </span>
           <button
             type="button"
@@ -161,24 +164,60 @@ export function OverlayEditorPanel() {
             disabled={activePage >= localPages.length}
             className="grid h-8 w-8 place-items-center rounded-full bg-zinc-900 text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-30"
             aria-label="Next page"
+            title="Next page (PgDn)"
           >
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
 
         <div className="flex w-1/3 justify-end">
-          <button
-            type="button"
-            onClick={() => setStyleDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
-          >
-            <Settings className="h-4 w-4" />
-            Book style
-          </button>
+          <ShortcutsButton />
         </div>
       </footer>
 
-      <BookStyleDrawer open={styleDrawerOpen} onClose={() => setStyleDrawerOpen(false)} />
     </main>
+  );
+}
+
+const SHORTCUTS: [string, string][] = [
+  ["Add text box", "T"],
+  ["Edit text", "Enter or click"],
+  ["Stop editing / deselect", "Esc"],
+  ["Nudge box", "Arrow keys (Shift = bigger)"],
+  ["Duplicate box", "⌘/Ctrl + D"],
+  ["Copy / paste box (any page)", "⌘/Ctrl + C / V"],
+  ["Delete box", "Delete"],
+  ["Undo / redo", "⌘/Ctrl + Z / Shift + Z"],
+  ["Previous / next page", "PgUp / PgDn"],
+];
+
+function ShortcutsButton() {
+  return (
+    <PopoverButton
+      title="Keyboard shortcuts"
+      align="end"
+      buttonClassName="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
+      panelClassName="w-80 p-4"
+      label={
+        <>
+          <Keyboard className="h-4 w-4" />
+          <span className="hidden min-[1100px]:inline">Shortcuts</span>
+        </>
+      }
+    >
+      {() => (
+        <>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">Keyboard shortcuts</h3>
+          <dl className="space-y-1.5 text-[13px]">
+            {SHORTCUTS.map(([label, keys]) => (
+              <div key={label} className="flex items-center justify-between gap-3">
+                <dt className="text-zinc-600">{label}</dt>
+                <dd className="shrink-0 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[11.5px] font-semibold text-zinc-700">{keys}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      )}
+    </PopoverButton>
   );
 }

@@ -3451,6 +3451,43 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-11-24T11:31:04.264021"
+    },
+    {
+      "id": "bug-199",
+      "timestamp": "2026-11-24T21:51:24.866227",
+      "error_message": "Web app after email-code sign-in: GET storia.kids/api/child-profiles 401 (plus a 403 from Supabase /auth/v1/verify)",
+      "file": "src/lib/child-auth.ts",
+      "root_cause": "Prod DB was missing the latest Prisma migrations; resolveUser's Prisma query threw, and child-auth turns any resolve error into a 401 'user resolve failed', so it looked like an auth failure. The 403 was harmless: verifyEmailCode tries OtpType.signup first, and an existing user's Magic Link code fails that before the email-type retry succeeds.",
+      "fix": "User applied the pending migrations to prod (prisma migrate deploy).",
+      "tags": [
+        "auth",
+        "migrations",
+        "prod",
+        "401",
+        "child-auth",
+        "supabase-otp"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-24T21:51:24.866227"
+    },
+    {
+      "id": "bug-200",
+      "timestamp": "2026-11-25T07:51:11",
+      "error_message": "Book editor canvas goes blank (0 layers) after ArrowRight on last page or clicking the active page thumbnail; next edit autosaves page without its text boxes",
+      "file": "src/contexts/BookEditorContext.tsx",
+      "root_cause": "setActivePageInternal destroyed the current page's overlay store even when next === activePage; setActivePageState was a no-op so the editor never re-ran init and kept reading a fresh empty store",
+      "fix": "Early return when next === activePage; removed unused destroyKeyOverride option; regression test 'keeps the open page's text boxes when its own page is selected again'",
+      "tags": [
+        "book-editor",
+        "overlay",
+        "data-loss",
+        "page-navigation",
+        "zustand-registry"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-11-25T07:51:11"
     }
   ]
 }

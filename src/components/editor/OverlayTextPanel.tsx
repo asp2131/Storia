@@ -18,15 +18,15 @@ export function OverlayTextPanel() {
   const statusCopy =
     ocrState.message ||
     (activeEntries.length > 0
-      ? `${activeEntries.length} overlay text item${activeEntries.length === 1 ? "" : "s"}`
-      : "Upload an illustration to detect text baked into the image.");
+      ? `${activeEntries.length} piece${activeEntries.length === 1 ? "" : "s"} of text found in the art`
+      : "Words painted into the art show up here, so narration can read them too.");
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">
           <Type className="h-3.5 w-3.5 text-[var(--editor-accent)]" />
-          Overlay text
+          Text in the illustration
         </h4>
         <button
           type="button"
@@ -39,7 +39,7 @@ export function OverlayTextPanel() {
           ) : (
             <RefreshCw className="h-3 w-3" />
           )}
-          Retry OCR
+          Detect again
         </button>
       </div>
 
@@ -50,7 +50,7 @@ export function OverlayTextPanel() {
 
         {activeEntries.length === 0 ? (
           <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-3 text-[11px] text-zinc-500">
-            No overlay text entries yet. OCR failures do not block page saving; use Retry OCR after upload.
+            No text found in this illustration. If the art has words in it, click Detect again.
           </div>
         ) : (
           <div className="space-y-2">
@@ -63,20 +63,20 @@ export function OverlayTextPanel() {
                     onBlur={() => void persistActiveEntries()}
                     rows={2}
                     className="min-h-12 flex-1 resize-y rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs text-zinc-700 outline-none focus:border-[var(--editor-accent)] focus:ring-2 focus:ring-[var(--editor-accent-faint)]"
-                    aria-label={`Overlay text ${index + 1}`}
+                    aria-label={`Illustration text ${index + 1}`}
                   />
                   <button
                     type="button"
                     onClick={() => void removeEntry(entry.id)}
-                    className="rounded-md p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                    aria-label="Remove overlay text"
+                    className="rounded-md p-1 text-zinc-400 hover:bg-red-50 hover:text-red-500"
+                    aria-label="Remove illustration text"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 text-[10px] text-slate-500">
-                  <label className="flex items-center gap-1.5 font-medium text-slate-600">
+                <div className="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
+                  <label className="flex items-center gap-1.5 font-medium text-zinc-600">
                     <input
                       type="checkbox"
                       checked={entry.includeInNarration}
@@ -98,8 +98,8 @@ export function OverlayTextPanel() {
                       type="button"
                       onClick={() => void moveEntry(entry.id, "up")}
                       disabled={index === 0 || saving}
-                      className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30"
-                      aria-label="Move overlay text up"
+                      className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-30"
+                      aria-label="Move illustration text up"
                     >
                       <ChevronUp className="h-3.5 w-3.5" />
                     </button>
@@ -107,8 +107,8 @@ export function OverlayTextPanel() {
                       type="button"
                       onClick={() => void moveEntry(entry.id, "down")}
                       disabled={index === activeEntries.length - 1 || saving}
-                      className="rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30"
-                      aria-label="Move overlay text down"
+                      className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-30"
+                      aria-label="Move illustration text down"
                     >
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
@@ -121,7 +121,7 @@ export function OverlayTextPanel() {
 
         {saving && (
           <div className="flex items-center gap-1.5 text-[10px] text-[var(--editor-accent)]">
-            <Loader2 className="h-3 w-3 animate-spin" /> Saving overlay text…
+            <Loader2 className="h-3 w-3 animate-spin" /> Saving…
           </div>
         )}
       </div>

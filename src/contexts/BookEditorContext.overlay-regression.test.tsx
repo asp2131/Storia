@@ -151,10 +151,8 @@ describe("BookEditorContext overlay key regressions", () => {
 
     await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
 
-    act(() => {
-      pageManagerRef.current!.handleAddPage();
-      pageManagerRef.current!.handleAddPage();
-    });
+    act(() => pageManagerRef.current!.handleAddPage());
+    act(() => pageManagerRef.current!.handleAddPage());
 
     await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(3));
 
@@ -180,6 +178,50 @@ describe("BookEditorContext overlay key regressions", () => {
 
     const movedStoreElements = getOverlayEditorStore("page-3").getState().elements;
     expect(movedStoreElements.map((el) => el.id)).toEqual(["moved-page"]);
+  });
+
+  it("keeps the open page's text boxes when its own page is selected again", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager onUpdate={(ctx) => { pageManagerRef.current = ctx; }} />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
+    act(() => {
+      getOverlayEditorStore("saved-1").getState().init([makeElement("keep-me")]);
+    });
+
+    // Clicking the active thumbnail, or "next" on the last page.
+    act(() => pageManagerRef.current!.setActivePage(1));
+
+    expect(getOverlayEditorStore("saved-1").getState().elements.map((el) => el.id)).toEqual(["keep-me"]);
+  });
+
+  it("inserts a new page right after the open page and opens it", async () => {
+    const pageManagerRef = { current: null as PageManager | null };
+
+    render(
+      <BookEditorProvider bookId="book-1">
+        <CapturePageManager onUpdate={(ctx) => { pageManagerRef.current = ctx; }} />
+      </BookEditorProvider>
+    );
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
+    act(() => pageManagerRef.current!.handleAddPage()); // [saved-1, new]
+    act(() => pageManagerRef.current!.setActivePage(1));
+    act(() => pageManagerRef.current!.handleAddPage()); // [saved-1, new, old-new]
+
+    await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(3));
+    expect(pageManagerRef.current!.activePage).toBe(2);
+    expect(pageManagerRef.current!.localPages.map((page) => page.id ?? null)).toEqual([
+      "saved-1",
+      null,
+      null,
+    ]);
+    expect(pageManagerRef.current!.localPages.map((page) => page.number)).toEqual([1, 2, 3]);
   });
 
   it("does not rehydrate stale server data after a successful local save", async () => {
@@ -264,6 +306,8 @@ describe("BookEditorContext overlay key regressions", () => {
     await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
     act(() => pageManagerRef.current!.handleAddPage());
     await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(2));
+    // Adding a page opens it; go back to page 1 to edit there.
+    act(() => pageManagerRef.current!.setActivePage(1));
     await act(async () => bookMetaRef.current!.handleSave());
     await waitFor(() => expect(bookMetaRef.current?.hasLocalChanges).toBe(false));
 
@@ -295,10 +339,8 @@ describe("BookEditorContext overlay key regressions", () => {
 
     await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(1));
 
-    act(() => {
-      pageManagerRef.current!.handleAddPage();
-      pageManagerRef.current!.handleAddPage();
-    });
+    act(() => pageManagerRef.current!.handleAddPage());
+    act(() => pageManagerRef.current!.handleAddPage());
 
     await waitFor(() => expect(pageManagerRef.current?.localPages.length).toBe(3));
 
