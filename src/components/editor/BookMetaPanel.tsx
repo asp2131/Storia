@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useBookMetaContext } from "@/contexts/BookEditorContext";
 import { useBookDetails } from "@/hooks/useBookData";
+import { PopoverButton } from "@/components/editor/PopoverButton";
 import { useSession } from "@/lib/auth-client";
 
 const REVIEW_CHIPS: Record<string, { label: string; className: string }> = {
@@ -65,9 +66,6 @@ export function BookMetaPanel() {
         ? REVIEW_CHIPS.live
         : (REVIEW_CHIPS[reviewKey] ?? REVIEW_CHIPS.draft);
 
-  const publishMenuId = useId();
-  const publishMenuRef = useRef<HTMLDivElement>(null);
-  const publishButtonRef = useRef<HTMLButtonElement>(null);
   const [submitState, setSubmitState] = useState<
     { status: "idle" | "busy" | "done" } | { status: "error"; message: string; problems: string[] }
   >({ status: "idle" });
@@ -195,32 +193,23 @@ export function BookMetaPanel() {
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           <span className="hidden 2xl:inline">Save draft</span>
         </button>
-        <button
-          ref={publishButtonRef}
-          type="button"
-          popoverTarget={publishMenuId}
+        <PopoverButton
+          title={isAdmin ? "Publish" : "Submit for review"}
+          align="end"
           disabled={saving}
-          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--editor-accent)] px-4 text-[13px] font-semibold text-[var(--editor-on-accent)] shadow-sm transition hover:brightness-105 disabled:opacity-50"
-        >
-          {isAdmin ? <UploadCloud className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-          <span className="hidden sm:inline">{isAdmin ? "Publish" : "Submit"}</span>
-        </button>
-        <div
-          ref={publishMenuRef}
-          id={publishMenuId}
-          popover="auto"
-          onToggle={(event) => {
-            if ((event as unknown as ToggleEvent).newState !== "open") return;
+          onOpen={() => {
             if (submitState.status !== "busy") setSubmitState({ status: "idle" });
-            const anchor = publishButtonRef.current?.getBoundingClientRect();
-            const menu = publishMenuRef.current;
-            if (!anchor || !menu) return;
-            menu.style.top = `${anchor.bottom + 8}px`;
-            menu.style.left = `${Math.max(8, anchor.right - menu.offsetWidth)}px`;
           }}
-          className="m-0 w-80 rounded-xl border border-zinc-200 bg-white p-4 text-zinc-800 shadow-[0_12px_32px_rgba(24,24,27,0.16)]"
+          buttonClassName="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--editor-accent)] px-4 text-[13px] font-semibold text-[var(--editor-on-accent)] shadow-sm transition hover:brightness-105 disabled:opacity-50"
+          panelClassName="w-80 p-4"
+          label={
+            <>
+              {isAdmin ? <UploadCloud className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+              <span className="hidden sm:inline">{isAdmin ? "Publish" : "Submit"}</span>
+            </>
+          }
         >
-          {isAdmin ? (
+          {(close) => isAdmin ? (
             <>
               <h3 className="text-sm font-semibold">Publish to the library?</h3>
               <p className="mt-1 text-[13px] leading-snug text-zinc-500">
@@ -229,7 +218,7 @@ export function BookMetaPanel() {
               <button
                 type="button"
                 onClick={() => {
-                  publishMenuRef.current?.hidePopover();
+                  close();
                   void handlePublish();
                 }}
                 className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--editor-accent)] text-[13px] font-semibold text-[var(--editor-on-accent)] hover:brightness-105"
@@ -275,7 +264,7 @@ export function BookMetaPanel() {
               </button>
             </>
           )}
-        </div>
+        </PopoverButton>
       </div>
     </>
   );

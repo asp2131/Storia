@@ -455,9 +455,10 @@ export function buildNewTextElement(
 
 /**
  * Return a new config with every element's style fields replaced by the
- * book style. Content, geometry, and ids are preserved. Optional style
- * fields (shadow/background/voice) are REMOVED from elements when the
- * style omits them — the style is the source of truth for style fields.
+ * book style. Content, geometry, ids and each box's narration voice are
+ * preserved (a voice is who reads the box, not how it looks). Shadow and
+ * background are REMOVED when the style omits them — the style is the source
+ * of truth for look.
  */
 export function applyBookTextStyle(
   config: TextOverlayConfig,
@@ -481,8 +482,8 @@ export function applyBookTextStyle(
       };
       if (style.shadow) next.shadow = style.shadow;
       if (style.background) next.background = style.background;
-      if (style.voiceId) next.voiceId = style.voiceId;
-      if (style.voiceName) next.voiceName = style.voiceName;
+      if (el.voiceId) next.voiceId = el.voiceId;
+      if (el.voiceName) next.voiceName = el.voiceName;
       return next;
     }),
   };

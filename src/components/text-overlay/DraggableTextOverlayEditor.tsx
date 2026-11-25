@@ -5,12 +5,16 @@ import {
   TextElement,
   TextOverlayConfig,
   buildNewTextElement,
+  changedRememberedTextSettings,
+  creatorTextStyleFrom,
   DEFAULT_BOOK_TEXT_STYLE,
   newTextBoxStyle,
   OVERLAY_FONT_CSS_FAMILY,
   type BookTextStyle,
+  type RememberedTextSettings,
 } from "@/types/text-overlay";
 import { Toolbar } from "./Toolbar";
+import { TextToolbar, type VoiceOption } from "./TextToolbar";
 import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
 import { getOverlayEditorStore } from "@/stores/overlayEditorRegistry";
 import { useCreatorTextStyle } from "@/hooks/useCreatorTextStyle";
@@ -27,6 +31,11 @@ interface DraggableTextOverlayEditorProps {
   bookTextStyle?: BookTextStyle;
   onChangeImage?: () => void;
   onRemoveImage?: () => void;
+  voiceOptions?: VoiceOption[];
+  /** A box's voice changed: remember it for the next new box. */
+  onTextSettingsChange?: (settings: RememberedTextSettings) => void;
+  /** Restyle every box in the book to this box's look. */
+  onApplyStyleToAllPages?: (element: TextElement) => Promise<unknown>;
 }
 
 // ─── DraggableTextElement Sub-Component ────────────────────────────────────
@@ -94,6 +103,16 @@ export function snapToCenter(
  * stays free for copying words.
  */
 let copiedElement: TextElement | null = null;
+
+/** A copy of a box with a new id, nudged down-right so both stay visible. */
+function offsetCopy(element: TextElement): TextElement {
+  return {
+    ...element,
+    id: crypto.randomUUID(),
+    x: Math.min(100 - element.width, element.x + 3),
+    y: Math.min(95, element.y + 3),
+  };
+}
 
 /** True when a key event belongs to a text field, so canvas shortcuts must leave it alone. */
 export function isTypingTarget(target: EventTarget | null): boolean {
@@ -428,6 +447,9 @@ export function DraggableTextOverlayEditor({
   bookTextStyle,
   onChangeImage,
   onRemoveImage,
+  voiceOptions = [],
+  onTextSettingsChange,
+  onApplyStyleToAllPages,
 }: DraggableTextOverlayEditorProps) {
   const actions = useOverlayEditorActions(pageId);
 
@@ -447,8 +469,9 @@ export function DraggableTextOverlayEditor({
   const containerWidth = useOverlayEditor(pageId, (s) => s.containerWidth);
   const containerHeight = useOverlayEditor(pageId, (s) => s.containerHeight);
   const textEditRequestId = useOverlayEditor(pageId, (s) => s.textEditRequestId);
-  const { creatorStyle } = useCreatorTextStyle();
+  const { creatorStyle, saveCreatorStyle } = useCreatorTextStyle();
   const [guides, setGuides] = useState<SnapGuides | null>(null);
+  const selectedElement = elements.find((element) => element.id === selectedElementId) ?? null;
 
   // Init store when overlay prop or pageId changes
   // Use actionsRef (not actions) to avoid re-triggering: getState() returns a
@@ -549,12 +572,7 @@ export function DraggableTextOverlayEditor({
         const source = copiedElement;
         // Same page: offset so the copy is visible. Another page: same spot.
         const taken = getOverlayEditorStore(pageId).getState().elements.some((el) => el.x === source.x && el.y === source.y);
-        store.addElement({
-          ...source,
-          id: crypto.randomUUID(),
-          x: taken ? Math.min(100 - source.width, source.x + 3) : source.x,
-          y: taken ? Math.min(95, source.y + 3) : source.y,
-        });
+        store.addElement(taken ? offsetCopy(source) : { ...source, id: crypto.randomUUID() });
         return;
       }
       if (!selected) return;
@@ -566,12 +584,7 @@ export function DraggableTextOverlayEditor({
 
       if (mod && event.key.toLowerCase() === "d") {
         event.preventDefault();
-        store.addElement({
-          ...selected,
-          id: crypto.randomUUID(),
-          x: Math.min(100 - selected.width, selected.x + 3),
-          y: Math.min(95, selected.y + 3),
-        });
+        store.addElement(offsetCopy(selected));
         return;
       }
       if (mod) return;
@@ -609,6 +622,54 @@ export function DraggableTextOverlayEditor({
     return () => window.removeEventListener("keydown", handleCanvasKey);
   }, [pageId]);
 
+  // ─── Floating text toolbar ─────────────────────────────────────────────
+  // Lives in the scroll area (not the clipped text layer) and is placed in its
+  // scroll coordinates: above the box, below it when there's no room, or
+  // pinned to the top of the art when neither fits. Hidden while dragging.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [toolbarPos, setToolbarPos] = useState<{ left: number; top: number } | null>(null);
+  const dragging = guides !== null;
+
+  useLayoutEffect(() => {
+    const toolbar = toolbarRef.current;
+    const scroll = scrollRef.current;
+    const art = imageContainerRef.current;
+    const box =
+      selectedElement &&
+      art?.querySelector<HTMLElement>(`[data-overlay-element-id="${CSS.escape(selectedElement.id)}"]`);
+    if (!toolbar || !scroll || !art || !box) return;
+
+    const view = scroll.getBoundingClientRect();
+    const b = box.getBoundingClientRect();
+    const gap = 14;
+    const height = toolbar.offsetHeight;
+    const width = toolbar.offsetWidth;
+    const toY = (y: number) => y - view.top + scroll.scrollTop;
+
+    let top = toY(b.top) - height - gap;
+    if (b.top - height - gap < view.top) {
+      top = b.bottom + gap + height <= view.bottom ? toY(b.bottom) + gap : toY(art.getBoundingClientRect().top) + 8;
+    }
+    const center = b.left + b.width / 2 - view.left + scroll.scrollLeft;
+    const left = Math.min(
+      Math.max(center - width / 2, scroll.scrollLeft + 8),
+      scroll.scrollLeft + scroll.clientWidth - width - 8
+    );
+    setToolbarPos((prev) => (prev && prev.left === left && prev.top === top ? prev : { left, top }));
+  }, [selectedElement, containerWidth, containerHeight, dragging]);
+
+  const handleToolbarChange = useCallback(
+    (next: TextElement) => {
+      const previous = actionsRef.current.getSelectedElement();
+      actions.updateElement(next.id, next);
+      if (!previous) return;
+      const settings = changedRememberedTextSettings(previous, next);
+      if (Object.keys(settings).length > 0) onTextSettingsChange?.(settings);
+    },
+    [actions, onTextSettingsChange]
+  );
+
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
       // Any click that isn't on a text box (gray backdrop or the art itself) deselects.
@@ -639,9 +700,25 @@ export function DraggableTextOverlayEditor({
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <div
+          ref={scrollRef}
           className="editor-scroll relative flex flex-1 items-center justify-center overflow-auto bg-zinc-100 px-6 pb-8 pt-2"
           onClick={handleCanvasClick}
         >
+          {selectedElement && !dragging && (
+            <TextToolbar
+              key={selectedElement.id}
+              ref={toolbarRef}
+              element={selectedElement}
+              style={toolbarPos ?? { left: 0, top: 0, visibility: "hidden" }}
+              onChange={handleToolbarChange}
+              onDuplicate={() => actions.addElement(offsetCopy(selectedElement))}
+              onDelete={() => actions.deleteElement(selectedElement.id)}
+              pageColors={elements.map((element) => element.color)}
+              voiceOptions={voiceOptions}
+              onUseStyleForNewBoxes={(element) => saveCreatorStyle(creatorTextStyleFrom(element))}
+              onApplyStyleToAllPages={onApplyStyleToAllPages}
+            />
+          )}
           <div
             ref={imageContainerRef}
             className="relative inline-block max-w-full editor-pop"

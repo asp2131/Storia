@@ -1,6 +1,5 @@
 "use client";
 
-import { useId, useRef } from "react";
 import {
   Image as ImageIcon,
   Images,
@@ -11,6 +10,7 @@ import {
   Type,
   Undo2,
 } from "lucide-react";
+import { PopoverButton } from "@/components/editor/PopoverButton";
 
 export interface ToolbarProps {
   onAddElement: () => void;
@@ -48,16 +48,9 @@ export function Toolbar({
   hasOverlay,
   hasBaseImage,
 }: ToolbarProps) {
-  const menuId = useId();
-  const menuRef = useRef<HTMLDivElement>(null);
-  const moreRef = useRef<HTMLButtonElement>(null);
   const canComposite = hasOverlay && hasBaseImage && !isCompositing;
   const mod = typeof navigator !== "undefined" && /Mac|iP/.test(navigator.platform) ? "⌘" : "Ctrl+";
 
-  const runAndClose = (action: () => void) => {
-    menuRef.current?.hidePopover();
-    action();
-  };
 
   return (
     <div className="relative flex h-14 shrink-0 items-center justify-center px-5">
@@ -109,60 +102,50 @@ export function Toolbar({
 
         <span className="mx-0.5 h-[22px] w-px bg-zinc-200" />
 
-        <button
-          ref={moreRef}
-          type="button"
-          popoverTarget={menuId}
-          className={iconButton}
+        <PopoverButton
           title="More page actions"
-          aria-label="More page actions"
+          align="end"
+          buttonClassName={iconButton}
+          panelClassName="w-64"
+          label={isCompositing ? <Loader2 className="h-[17px] w-[17px] animate-spin" /> : <MoreHorizontal className="h-[17px] w-[17px]" />}
         >
-          {isCompositing ? <Loader2 className="h-[17px] w-[17px] animate-spin" /> : <MoreHorizontal className="h-[17px] w-[17px]" />}
-        </button>
-      </div>
-
-      <div
-        ref={menuRef}
-        id={menuId}
-        popover="auto"
-        role="menu"
-        onToggle={(event) => {
-          // Popovers open centred in the viewport; pin this one under its button.
-          if ((event as unknown as ToggleEvent).newState !== "open") return;
-          const anchor = moreRef.current?.getBoundingClientRect();
-          const menu = menuRef.current;
-          if (!anchor || !menu) return;
-          menu.style.top = `${anchor.bottom + 6}px`;
-          menu.style.left = `${Math.max(8, anchor.right - menu.offsetWidth)}px`;
-        }}
-        className="m-0 w-64 rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-800 shadow-[0_12px_32px_rgba(24,24,27,0.16)]"
-      >
-        <button
-          type="button"
-          role="menuitem"
-          disabled={!canComposite}
-          onClick={() => runAndClose(onComposite)}
-          className={menuItem}
-        >
-          <Images className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
-          <span>
-            <span className="block font-semibold">Flatten text into image</span>
-            <span className="block text-[11.5px] leading-snug text-zinc-500">
-              {hasOverlay ? "Makes a single image for the web reader. Editing text later clears it." : "Add text first."}
-            </span>
-          </span>
-        </button>
-        {onRemoveImage && (
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => runAndClose(onRemoveImage)}
-            className={`${menuItem} text-rose-600 hover:bg-rose-50`}
-          >
-            <Trash2 className="mt-0.5 h-4 w-4 shrink-0" />
-            <span className="font-semibold">Remove illustration</span>
-          </button>
-        )}
+          {(close) => (
+            <div role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!canComposite}
+                onClick={() => {
+                  close();
+                  onComposite();
+                }}
+                className={menuItem}
+              >
+                <Images className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
+                <span>
+                  <span className="block font-semibold">Flatten text into image</span>
+                  <span className="block text-[11.5px] leading-snug text-zinc-500">
+                    {hasOverlay ? "Makes a single image for the web reader. Editing text later clears it." : "Add text first."}
+                  </span>
+                </span>
+              </button>
+              {onRemoveImage && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    close();
+                    onRemoveImage();
+                  }}
+                  className={`${menuItem} text-rose-600 hover:bg-rose-50`}
+                >
+                  <Trash2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span className="font-semibold">Remove illustration</span>
+                </button>
+              )}
+            </div>
+          )}
+        </PopoverButton>
       </div>
     </div>
   );

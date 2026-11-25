@@ -14,7 +14,7 @@ import {
   Music,
   Pause,
   Play,
-  Type,
+  Layers,
   Upload,
 } from "lucide-react";
 import {
@@ -25,7 +25,6 @@ import {
 import { ElementInspectorPanel } from "@/components/editor/ElementInspectorPanel";
 import { PronunciationPanel } from "@/components/editor/PronunciationPanel";
 import { NarrationPanel } from "@/components/editor/NarrationPanel";
-import { useOverlayEditor } from "@/hooks/useOverlayEditor";
 
 export function AudioLibraryPanel() {
   const params = useParams();
@@ -94,19 +93,9 @@ export function AudioLibraryPanel() {
         }
       : undefined,
   };
-  const [visibleTab, setVisibleTab] = useState<"element" | "audio" | "words">("element");
-  const selectedElementId = useOverlayEditor(
-    activeView.overlayPageId,
-    (state) => state.selectedElementId
-  );
-  // Selecting a box opens the Element tab, but switching tabs keeps the
-  // selection, so Audio can narrate just the selected box.
-  const [seenSelection, setSeenSelection] = useState(selectedElementId);
-  if (selectedElementId !== seenSelection) {
-    setSeenSelection(selectedElementId);
-    if (selectedElementId) setVisibleTab("element");
-  }
-  const selectTab = setVisibleTab;
+  // Text styling happens on the canvas, so selecting a box never changes tabs:
+  // Audio can narrate just the selected box.
+  const [visibleTab, selectTab] = useState<"element" | "audio" | "words">("element");
 
   return (
     <>
@@ -115,7 +104,7 @@ export function AudioLibraryPanel() {
         <div className="shrink-0 px-3.5 pb-3 pt-3.5">
           <div className="flex w-full gap-1 rounded-[10px] bg-zinc-100 p-1">
             {[
-              { id: "element" as const, label: "Element", icon: Type },
+              { id: "element" as const, label: "Layers", icon: Layers },
               { id: "audio" as const, label: "Audio", icon: Headphones },
               { id: "words" as const, label: "Words", icon: BookOpen },
             ].map((tab) => (

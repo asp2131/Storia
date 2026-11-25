@@ -211,13 +211,13 @@ describe("applyBookTextStyle", () => {
         textAlign: "center",
         shadow: lora.shadow,
         background: lora.background,
-        voiceId: "voice-1",
-        voiceName: "Narrator",
       });
+      // The style's voice seeds new boxes only; existing boxes keep theirs.
+      expect(updated.voiceId).toBe(original.voiceId);
     }
   });
 
-  it("removes shadow/background/voice when the style omits them", () => {
+  it("removes shadow/background when the style omits them, keeps voices", () => {
     const config: TextOverlayConfig = {
       version: TEXT_OVERLAY_VERSION,
       elements: [
@@ -239,8 +239,9 @@ describe("applyBookTextStyle", () => {
     const [updated] = applyBookTextStyle(config, bare).elements;
     expect(updated).not.toHaveProperty("shadow");
     expect(updated).not.toHaveProperty("background");
-    expect(updated).not.toHaveProperty("voiceId");
-    expect(updated).not.toHaveProperty("voiceName");
+    // Voices are who reads a box, not its look: applying a style keeps them.
+    expect(updated.voiceId).toBe("old-voice");
+    expect(updated.voiceName).toBe("Old");
     expect(updated.fontFamily).toBe("Gaegu");
   });
 

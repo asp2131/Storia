@@ -139,9 +139,9 @@ describe("apply-text-style route", () => {
       fontWeight: 600,
       color: "#123456",
       textAlign: "center",
-      voiceId: "voice-1",
-      voiceName: "Narrator",
     });
+    // A box keeps its own narration voice; the style's voice only seeds new boxes.
+    expect(overlay.elements[0]).not.toHaveProperty("voiceId");
     // Style omits shadow → element shadow removed.
     expect(overlay.elements[0]).not.toHaveProperty("shadow");
     // text_content is untouched by the bulk apply.

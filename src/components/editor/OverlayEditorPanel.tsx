@@ -7,11 +7,11 @@ import {
   ImagePlus,
   Keyboard,
   Loader2,
-  Palette,
   X,
 } from "lucide-react";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
-import { BookStyleDrawer } from "./BookStyleDrawer";
+import { PopoverButton } from "./PopoverButton";
+import { creatorTextStyleFrom, type TextElement } from "@/types/text-overlay";
 import {
   useBookEditor,
   useOverlayEditorContext,
@@ -26,6 +26,7 @@ export function OverlayEditorPanel() {
     overlayEditorCompositing,
     handleOverlaySave,
     handleOverlayComposite,
+    rememberOverlayTextSettings,
   } = useOverlayEditorContext();
   const {
     localPages,
@@ -37,8 +38,18 @@ export function OverlayEditorPanel() {
     handleImageFile,
   } = usePageManagerContext();
   const { audioInputRef, handleAudioUpload } = useAudioLibraryContext();
-  const { bookTextStyle } = useBookMetaContext();
-  const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false);
+  const { bookTextStyle, updateBookTextStyle, applyBookTextStyleToAllPages } = useBookMetaContext();
+  const { voiceOptions } = useBookEditor().narration;
+
+  // The book style is the source for "apply to every page"; it keeps the
+  // book's remembered voice, and applying never touches a box's own voice.
+  const applyStyleToAllPages = async (element: TextElement) => {
+    await updateBookTextStyle({
+      ...creatorTextStyleFrom(element),
+      ...(bookTextStyle.voiceId ? { voiceId: bookTextStyle.voiceId, voiceName: bookTextStyle.voiceName } : {}),
+    });
+    await applyBookTextStyleToAllPages();
+  };
 
   const activePageData = activeView.data;
   const hasImage = Boolean(activePageData?.imageUrl || activePageData?.compositedImageUrl);
@@ -104,6 +115,9 @@ export function OverlayEditorPanel() {
             onComposite={handleOverlayComposite}
             isCompositing={overlayEditorCompositing}
             bookTextStyle={bookTextStyle}
+            voiceOptions={voiceOptions}
+            onTextSettingsChange={rememberOverlayTextSettings}
+            onApplyStyleToAllPages={applyStyleToAllPages}
             onChangeImage={triggerImagePicker}
             onRemoveImage={() => setActiveImage("")}
           />
@@ -128,16 +142,7 @@ export function OverlayEditorPanel() {
       </div>
 
       <footer className="flex h-[52px] shrink-0 items-center justify-between border-t border-zinc-200/80 bg-zinc-100 px-5">
-        <div className="flex w-1/3 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setStyleDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
-          >
-            <Palette className="h-4 w-4" />
-            Book style
-          </button>
-        </div>
+        <div className="flex w-1/3 items-center gap-1" />
 
         <div className="flex w-1/3 items-center justify-center gap-2">
           <button
@@ -170,7 +175,6 @@ export function OverlayEditorPanel() {
         </div>
       </footer>
 
-      <BookStyleDrawer open={styleDrawerOpen} onClose={() => setStyleDrawerOpen(false)} />
     </main>
   );
 }
@@ -188,33 +192,32 @@ const SHORTCUTS: [string, string][] = [
 ];
 
 function ShortcutsButton() {
-  const id = React.useId();
   return (
-    <>
-      <button
-        type="button"
-        popoverTarget={id}
-        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
-        title="Keyboard shortcuts"
-      >
-        <Keyboard className="h-4 w-4" />
-        <span className="hidden min-[1100px]:inline">Shortcuts</span>
-      </button>
-      <div
-        id={id}
-        popover="auto"
-        className="m-0 mb-16 ml-auto mr-[22rem] mt-auto w-80 rounded-xl border border-zinc-200 bg-white p-4 text-zinc-800 shadow-[0_12px_32px_rgba(24,24,27,0.16)] max-[1180px]:mr-80"
-      >
-        <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">Keyboard shortcuts</h3>
-        <dl className="space-y-1.5 text-[13px]">
-          {SHORTCUTS.map(([label, keys]) => (
-            <div key={label} className="flex items-center justify-between gap-3">
-              <dt className="text-zinc-600">{label}</dt>
-              <dd className="shrink-0 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[11.5px] font-semibold text-zinc-700">{keys}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    </>
+    <PopoverButton
+      title="Keyboard shortcuts"
+      align="end"
+      buttonClassName="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
+      panelClassName="w-80 p-4"
+      label={
+        <>
+          <Keyboard className="h-4 w-4" />
+          <span className="hidden min-[1100px]:inline">Shortcuts</span>
+        </>
+      }
+    >
+      {() => (
+        <>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">Keyboard shortcuts</h3>
+          <dl className="space-y-1.5 text-[13px]">
+            {SHORTCUTS.map(([label, keys]) => (
+              <div key={label} className="flex items-center justify-between gap-3">
+                <dt className="text-zinc-600">{label}</dt>
+                <dd className="shrink-0 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[11.5px] font-semibold text-zinc-700">{keys}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      )}
+    </PopoverButton>
   );
 }
