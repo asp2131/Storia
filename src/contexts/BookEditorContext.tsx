@@ -45,6 +45,7 @@ import {
   remapOverlayEditorStores,
 } from "@/stores/overlayEditorRegistry";
 import { useOverlayEditor } from "@/hooks/useOverlayEditor";
+import { isTypingTarget } from "@/components/text-overlay/DraggableTextOverlayEditor";
 import type { DropResult } from "@hello-pangea/dnd";
 import { computeActiveWordIndexMobileCompat } from "@/lib/mobile-compat/word-sync";
 import { normalizeOverlayForMobile } from "@/lib/mobile-compat/normalize";
@@ -853,11 +854,7 @@ export function BookEditorProvider({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const isInput =
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable;
+      const isInput = isTypingTarget(e.target);
 
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
