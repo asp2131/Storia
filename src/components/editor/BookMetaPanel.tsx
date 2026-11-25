@@ -7,18 +7,13 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   Loader2,
   Pencil,
   Save,
   UploadCloud,
 } from "lucide-react";
-import {
-  useBookMetaContext,
-  usePageManagerContext,
-} from "@/contexts/BookEditorContext";
+import { useBookMetaContext } from "@/contexts/BookEditorContext";
 
 export function BookMetaPanel() {
   const params = useParams();
@@ -35,10 +30,7 @@ export function BookMetaPanel() {
     saveError,
     handleSave,
     handlePublish,
-    activePage,
-    localPagesLength,
   } = useBookMetaContext();
-  const { setActivePage } = usePageManagerContext();
 
   const status = saveError
     ? { icon: AlertCircle, label: "Save failed — retry", className: "text-rose-600" }
@@ -108,32 +100,6 @@ export function BookMetaPanel() {
             aria-label="Book author"
           />
         </div>
-      </div>
-
-      <div className="mx-3 flex shrink-0 items-center gap-0.5 rounded-lg bg-zinc-100 p-0.5 sm:p-1">
-        <button
-          type="button"
-          title="Previous page"
-          aria-label="Previous page"
-          onClick={() => setActivePage(Math.max(1, activePage - 1))}
-          disabled={activePage <= 1}
-          className="grid h-7 w-7 place-items-center rounded-md text-zinc-600 transition hover:bg-white disabled:opacity-30"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <span className="min-w-16 px-1 text-center text-xs font-semibold tabular-nums text-zinc-700">
-          Page {activePage} / {localPagesLength}
-        </span>
-        <button
-          type="button"
-          title="Next page"
-          aria-label="Next page"
-          onClick={() => setActivePage(Math.min(localPagesLength, activePage + 1))}
-          disabled={activePage >= localPagesLength}
-          className="grid h-7 w-7 place-items-center rounded-md text-zinc-600 transition hover:bg-white disabled:opacity-30"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

@@ -5,42 +5,25 @@ import {
   TextElement,
   TextOverlayConfig,
   buildNewTextElement,
-  changedRememberedTextSettings,
-  creatorTextStyleFrom,
   DEFAULT_BOOK_TEXT_STYLE,
   newTextBoxStyle,
   OVERLAY_FONT_CSS_FAMILY,
   type BookTextStyle,
-  type RememberedTextSettings,
 } from "@/types/text-overlay";
 import { Toolbar } from "./Toolbar";
-import { PropertyPanel } from "./PropertyPanel";
-import { LayersPanel } from "./LayersPanel";
 import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
 import { useCreatorTextStyle } from "@/hooks/useCreatorTextStyle";
-
-type VoiceOption = {
-  id: string;
-  name: string;
-  category?: string | null;
-};
 
 interface DraggableTextOverlayEditorProps {
   pageId: string;
   imageUrl: string;
   overlay: TextOverlayConfig | null;
+  /** Reports the latest draft to the book's SaveCoordinator, which owns debounce and status. */
   onSave: (overlay: TextOverlayConfig) => Promise<void>;
   onComposite: () => Promise<void>;
-  isSaveCoordinated?: boolean;
-  isSaving?: boolean;
   isCompositing?: boolean;
-  voiceOptions?: VoiceOption[];
-  enableVoiceAssignment?: boolean;
-  onSelectedElementChange?: (element: TextElement | null) => void;
-  onTextSettingsChange?: (settings: RememberedTextSettings) => void;
   /** Per-book default style — seeds newly added text blocks. */
   bookTextStyle?: BookTextStyle;
-  showInspector?: boolean;
   onChangeImage?: () => void;
   onRemoveImage?: () => void;
 }
@@ -78,6 +61,43 @@ export function historyShortcutFor(
 /** Pointer travel (px) before a press on a box counts as a drag instead of a click-to-type. */
 const DRAG_THRESHOLD_PX = 4;
 
+/** Screen distance (px) inside which a dragged box's centre snaps to the page centre. */
+const SNAP_PX = 6;
+
+export type SnapGuides = { x: boolean; y: boolean };
+
+/**
+ * Snap a box (position + size in % of the page) so its centre lands on the
+ * page's centre line when it is within `thresholdPct` of it.
+ */
+export function snapToCenter(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thresholdX: number,
+  thresholdY: number
+): { x: number; y: number; guides: SnapGuides } {
+  const snapX = Math.abs(x + width / 2 - 50) <= thresholdX;
+  const snapY = Math.abs(y + height / 2 - 50) <= thresholdY;
+  return {
+    x: snapX ? 50 - width / 2 : x,
+    y: snapY ? 50 - height / 2 : y,
+    guides: { x: snapX, y: snapY },
+  };
+}
+
+/** True when a key event belongs to a text field, so canvas shortcuts must leave it alone. */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  return (
+    el?.tagName === "INPUT" ||
+    el?.tagName === "TEXTAREA" ||
+    el?.tagName === "SELECT" ||
+    el?.isContentEditable === true
+  );
+}
+
 /**
  * Character offset under a viewport point inside `container`'s single text
  * node, so a click on a box can drop the caret exactly where it landed.
@@ -111,6 +131,7 @@ interface DraggableTextElementProps {
   onUpdate: (updates: Partial<TextElement>) => void;
   onHistoryGroupStart: () => void;
   onHistoryGroupEnd: () => void;
+  onGuidesChange: (guides: SnapGuides | null) => void;
 }
 
 /**
@@ -133,6 +154,7 @@ function DraggableTextElement({
   onUpdate,
   onHistoryGroupStart,
   onHistoryGroupEnd,
+  onGuidesChange,
 }: DraggableTextElementProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
@@ -238,11 +260,20 @@ function DraggableTextElement({
     if (!rect) return;
 
     if (gesture.mode === "move") {
-      const newX = gesture.elementX + (deltaXPixels / rect.width) * 100;
-      const newY = gesture.elementY + (deltaYPixels / rect.height) * 100;
+      const heightPct = ((rootRef.current?.offsetHeight ?? 0) / rect.height) * 100;
+      // Shift-drag skips snapping, like most design tools.
+      const snapped = snapToCenter(
+        gesture.elementX + (deltaXPixels / rect.width) * 100,
+        gesture.elementY + (deltaYPixels / rect.height) * 100,
+        element.width,
+        heightPct,
+        e.shiftKey ? -1 : (SNAP_PX / rect.width) * 100,
+        e.shiftKey ? -1 : (SNAP_PX / rect.height) * 100
+      );
+      onGuidesChange(snapped.guides);
       onUpdate({
-        x: Math.max(0, Math.min(100 - element.width, newX)),
-        y: Math.max(0, Math.min(100, newY)),
+        x: Math.max(0, Math.min(100 - element.width, snapped.x)),
+        y: Math.max(0, Math.min(100, snapped.y)),
       });
     } else {
       // Width only: the text reflows and the height follows it.
@@ -263,6 +294,7 @@ function DraggableTextElement({
 
     if (gesture.moved) {
       document.body.style.userSelect = "";
+      onGuidesChange(null);
       onHistoryGroupEnd();
       return;
     }
@@ -280,7 +312,7 @@ function DraggableTextElement({
       ? "outline-2 outline-offset-4 outline-[var(--editor-accent)]"
       : isEmpty
         ? "outline-1 outline-dashed outline-offset-4 outline-zinc-400"
-        : "";
+        : "hover:outline-1 hover:outline-offset-4 hover:outline-[var(--editor-accent)]";
 
   return (
     <div
@@ -384,15 +416,8 @@ export function DraggableTextOverlayEditor({
   overlay,
   onSave,
   onComposite,
-  isSaveCoordinated = false,
-  isSaving = false,
   isCompositing = false,
-  voiceOptions = [],
-  enableVoiceAssignment = false,
-  onSelectedElementChange,
-  onTextSettingsChange,
   bookTextStyle,
-  showInspector = true,
   onChangeImage,
   onRemoveImage,
 }: DraggableTextOverlayEditorProps) {
@@ -408,19 +433,14 @@ export function DraggableTextOverlayEditor({
   // State slices from store
   const elements = useOverlayEditor(pageId, (s) => s.elements);
   const selectedElementId = useOverlayEditor(pageId, (s) => s.selectedElementId);
-  const hasChanges = useOverlayEditor(pageId, (s) => s.hasChanges);
   const canUndo = useOverlayEditor(pageId, (s) => s.past.length > 0);
   const canRedo = useOverlayEditor(pageId, (s) => s.future.length > 0);
   const autoSaveStatus = useOverlayEditor(pageId, (s) => s.autoSaveStatus);
   const containerWidth = useOverlayEditor(pageId, (s) => s.containerWidth);
   const containerHeight = useOverlayEditor(pageId, (s) => s.containerHeight);
-
-  const isAutoSaving = autoSaveStatus === "saving";
   const textEditRequestId = useOverlayEditor(pageId, (s) => s.textEditRequestId);
-  const { creatorStyle, saveCreatorStyle } = useCreatorTextStyle();
-
-  // Derived selected element
-  const selectedElement = useOverlayEditor(pageId, (s) => s.getSelectedElement());
+  const { creatorStyle } = useCreatorTextStyle();
+  const [guides, setGuides] = useState<SnapGuides | null>(null);
 
   // Init store when overlay prop or pageId changes
   // Use actionsRef (not actions) to avoid re-triggering: getState() returns a
@@ -448,30 +468,13 @@ export function DraggableTextOverlayEditor({
     };
   }, [pageId]);
 
-  // Autosave request effect. Coordinated callers report the latest draft to a
-  // parent SaveCoordinator, which owns debounce/status. Non-coordinated callers
-  // still get direct save lifecycle status for compatibility.
+  // Report each new draft to the parent SaveCoordinator, which owns debounce/status.
   useEffect(() => {
     if (autoSaveStatus !== "pending") return;
-
-    const savePromise = onSave(actionsRef.current.buildConfig());
-    if (isSaveCoordinated) {
-      void savePromise.catch(() => {
-        actionsRef.current.markSaveError();
-      });
-      return;
-    }
-
-    actionsRef.current.markSaving();
-    void savePromise
-      .then(() => actionsRef.current.markSaved())
-      .catch(() => actionsRef.current.markSaveError());
-  }, [autoSaveStatus, elements, isSaveCoordinated, onSave]);
-
-  // Notify parent when selected element changes
-  useEffect(() => {
-    onSelectedElementChange?.(selectedElement);
-  }, [onSelectedElementChange, selectedElement]);
+    void onSave(actionsRef.current.buildConfig()).catch(() => {
+      actionsRef.current.markSaveError();
+    });
+  }, [autoSaveStatus, elements, onSave]);
 
   useEffect(() => {
     const handleHistoryShortcut = (event: KeyboardEvent) => {
@@ -486,6 +489,7 @@ export function DraggableTextOverlayEditor({
     window.addEventListener("keydown", handleHistoryShortcut);
     return () => window.removeEventListener("keydown", handleHistoryShortcut);
   }, [pageId]);
+
 
   // ─── Handlers ──────────────────────────────────────────────────────────
 
@@ -513,60 +517,76 @@ export function DraggableTextOverlayEditor({
     );
     actions.requestTextEdit();
   }, [actions, bookTextStyle, creatorStyle, elements.length]);
+  const addElementRef = useRef(handleAddElement);
+  useEffect(() => {
+    addElementRef.current = handleAddElement;
+  }, [handleAddElement]);
 
-  const handleUseStyleForNewBoxes = useCallback(
-    (element: TextElement) => saveCreatorStyle(creatorTextStyleFrom(element)),
-    [saveCreatorStyle]
-  );
+  // Canvas shortcuts for the selected box. Ignored while typing anywhere, so
+  // Backspace in a text box or the inspector never deletes the box itself.
+  useEffect(() => {
+    const handleCanvasKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isTypingTarget(event.target) || event.altKey) return;
+      const store = actionsRef.current;
+      const selected = store.getSelectedElement();
+      const mod = event.metaKey || event.ctrlKey;
 
-  const handleComposite = useCallback(async () => {
-    await onComposite();
-  }, [onComposite]);
+      if (!mod && (event.key === "t" || event.key === "T")) {
+        event.preventDefault();
+        addElementRef.current();
+        return;
+      }
+      if (!selected) return;
 
-  const handleUpdateElement = useCallback(
-    (elementId: string, updates: Partial<TextElement>) => {
-      actions.updateElement(elementId, updates);
-    },
-    [actions]
-  );
+      if (mod && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        store.addElement({
+          ...selected,
+          id: crypto.randomUUID(),
+          x: Math.min(100 - selected.width, selected.x + 3),
+          y: Math.min(95, selected.y + 3),
+        });
+        return;
+      }
+      if (mod) return;
 
-  const handlePropertyUpdate = useCallback(
-    (updatedElement: TextElement) => {
-      const settings = selectedElement?.id === updatedElement.id
-        ? changedRememberedTextSettings(selectedElement, updatedElement)
-        : {};
+      const step = event.shiftKey ? 2.5 : 0.5;
+      const nudge: Record<string, [number, number]> = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      };
+      if (nudge[event.key]) {
+        event.preventDefault();
+        const [dx, dy] = nudge[event.key];
+        store.updateElement(selected.id, {
+          x: Math.max(0, Math.min(100 - selected.width, selected.x + dx)),
+          y: Math.max(0, Math.min(100, selected.y + dy)),
+        });
+      } else if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        store.deleteElement(selected.id);
+      } else if (event.key === "Escape") {
+        store.selectElement(null);
+      } else if (
+        event.key === "Enter" &&
+        // A focused button or link keeps its own Enter.
+        !(event.target as Element | null)?.closest?.("button, a, [role='button'], [role='menuitem']")
+      ) {
+        event.preventDefault();
+        store.requestTextEdit();
+      }
+    };
 
-      actions.updateElement(updatedElement.id, updatedElement);
-      if (Object.keys(settings).length > 0) onTextSettingsChange?.(settings);
-    },
-    [actions, onTextSettingsChange, selectedElement]
-  );
-
-  const handleDeleteElement = useCallback(
-    (elementId: string) => {
-      actions.deleteElement(elementId);
-    },
-    [actions]
-  );
-
-  const handleSelectElement = useCallback(
-    (elementId: string | null) => {
-      actions.selectElement(elementId);
-    },
-    [actions]
-  );
-
-  const handleMoveElement = useCallback(
-    (elementId: string, dir: "up" | "down") => {
-      actions.moveElement(elementId, dir);
-    },
-    [actions]
-  );
+    window.addEventListener("keydown", handleCanvasKey);
+    return () => window.removeEventListener("keydown", handleCanvasKey);
+  }, [pageId]);
 
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent) => {
-      // Deselect when clicking on the canvas background (not on an element)
-      if (e.target === e.currentTarget) {
+      // Any click that isn't on a text box (gray backdrop or the art itself) deselects.
+      if (!(e.target as Element).closest("[data-overlay-element-id]")) {
         actions.selectElement(null);
       }
     },
@@ -579,17 +599,14 @@ export function DraggableTextOverlayEditor({
     <div className="flex h-full min-h-0 flex-col bg-zinc-100">
       <Toolbar
         onAddElement={handleAddElement}
-        onComposite={handleComposite}
+        onComposite={onComposite}
         onUndo={actions.undo}
         onRedo={actions.redo}
         canUndo={canUndo}
         canRedo={canRedo}
         onChangeImage={onChangeImage}
         onRemoveImage={onRemoveImage}
-        isSaving={isSaving || isAutoSaving}
         isCompositing={isCompositing}
-        hasChanges={hasChanges}
-        isAutoSaving={isAutoSaving}
         hasOverlay={elements.length > 0}
         hasBaseImage={!!imageUrl}
       />
@@ -619,35 +636,22 @@ export function DraggableTextOverlayEditor({
                   isSelected={element.id === selectedElementId}
                   containerWidth={containerWidth}
                   containerHeight={containerHeight}
-                  onSelect={() => handleSelectElement(element.id)}
-                  onUpdate={(updates) => handleUpdateElement(element.id, updates)}
+                  onSelect={() => actions.selectElement(element.id)}
+                  onUpdate={(updates) => actions.updateElement(element.id, updates)}
                   onHistoryGroupStart={actions.beginHistoryGroup}
                   onHistoryGroupEnd={actions.endHistoryGroup}
+                  onGuidesChange={setGuides}
                 />
               ))}
+              {guides?.x && (
+                <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-fuchsia-500" />
+              )}
+              {guides?.y && (
+                <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-fuchsia-500" />
+              )}
             </div>
           </div>
         </div>
-
-        {showInspector && (
-          <>
-            <LayersPanel
-              elements={elements}
-              selectedElementId={selectedElementId}
-              onSelect={handleSelectElement}
-              onDelete={handleDeleteElement}
-              onMove={handleMoveElement}
-            />
-            <PropertyPanel
-              selectedElement={selectedElement}
-              onUpdate={handlePropertyUpdate}
-              onDelete={handleDeleteElement}
-              voiceOptions={voiceOptions}
-              enableVoiceAssignment={enableVoiceAssignment}
-              onUseStyleForNewBoxes={handleUseStyleForNewBoxes}
-            />
-          </>
-        )}
       </div>
     </div>
   );

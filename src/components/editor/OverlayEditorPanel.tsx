@@ -5,8 +5,9 @@ import {
   ArrowLeft,
   ArrowRight,
   ImagePlus,
+  Keyboard,
   Loader2,
-  Settings,
+  Palette,
   X,
 } from "lucide-react";
 import { DraggableTextOverlayEditor } from "@/components/text-overlay/DraggableTextOverlayEditor";
@@ -25,7 +26,6 @@ export function OverlayEditorPanel() {
     overlayEditorCompositing,
     handleOverlaySave,
     handleOverlayComposite,
-    rememberOverlayTextSettings,
   } = useOverlayEditorContext();
   const {
     localPages,
@@ -37,8 +37,7 @@ export function OverlayEditorPanel() {
     handleImageFile,
   } = usePageManagerContext();
   const { audioInputRef, handleAudioUpload } = useAudioLibraryContext();
-  const { hasLocalChanges, bookTextStyle } = useBookMetaContext();
-  const { voiceOptions } = useBookEditor().narration;
+  const { bookTextStyle } = useBookMetaContext();
   const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false);
 
   const activePageData = activeView.data;
@@ -103,14 +102,8 @@ export function OverlayEditorPanel() {
             overlay={activePageData!.overlay || null}
             onSave={handleOverlaySave}
             onComposite={handleOverlayComposite}
-            isSaveCoordinated
-            isSaving={false}
             isCompositing={overlayEditorCompositing}
-            voiceOptions={voiceOptions}
-            enableVoiceAssignment
             bookTextStyle={bookTextStyle}
-            onTextSettingsChange={rememberOverlayTextSettings}
-            showInspector={false}
             onChangeImage={triggerImagePicker}
             onRemoveImage={() => setActiveImage("")}
           />
@@ -135,11 +128,15 @@ export function OverlayEditorPanel() {
       </div>
 
       <footer className="flex h-[52px] shrink-0 items-center justify-between border-t border-zinc-200/80 bg-zinc-100 px-5">
-        <div className="flex w-1/3 items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 shadow-sm">
-            <span className={`h-2 w-2 rounded-full ${hasLocalChanges ? "bg-amber-500" : "bg-emerald-500"}`} />
-            Editing · {hasLocalChanges ? "unsaved" : "saved"}
-          </span>
+        <div className="flex w-1/3 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setStyleDrawerOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
+          >
+            <Palette className="h-4 w-4" />
+            Book style
+          </button>
         </div>
 
         <div className="flex w-1/3 items-center justify-center gap-2">
@@ -149,11 +146,12 @@ export function OverlayEditorPanel() {
             disabled={activePage <= 1}
             className="grid h-8 w-8 place-items-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 disabled:opacity-30"
             aria-label="Previous page"
+            title="Previous page (PgUp)"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <span className="min-w-8 text-center font-serif text-sm font-semibold tabular-nums text-zinc-700">
-            {activePage}
+          <span className="min-w-14 text-center text-xs font-semibold tabular-nums text-zinc-600" aria-live="polite">
+            {activePage} <span className="text-zinc-400">/ {localPages.length}</span>
           </span>
           <button
             type="button"
@@ -161,24 +159,61 @@ export function OverlayEditorPanel() {
             disabled={activePage >= localPages.length}
             className="grid h-8 w-8 place-items-center rounded-full bg-zinc-900 text-white shadow-sm transition hover:bg-zinc-800 disabled:opacity-30"
             aria-label="Next page"
+            title="Next page (PgDn)"
           >
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
 
         <div className="flex w-1/3 justify-end">
-          <button
-            type="button"
-            onClick={() => setStyleDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
-          >
-            <Settings className="h-4 w-4" />
-            Book style
-          </button>
+          <ShortcutsButton />
         </div>
       </footer>
 
       <BookStyleDrawer open={styleDrawerOpen} onClose={() => setStyleDrawerOpen(false)} />
     </main>
+  );
+}
+
+const SHORTCUTS: [string, string][] = [
+  ["Add text box", "T"],
+  ["Edit text", "Enter or click"],
+  ["Stop editing / deselect", "Esc"],
+  ["Nudge box", "Arrow keys (Shift = bigger)"],
+  ["Duplicate box", "⌘/Ctrl + D"],
+  ["Delete box", "Delete"],
+  ["Undo / redo", "⌘/Ctrl + Z / Shift + Z"],
+  ["Previous / next page", "PgUp / PgDn"],
+];
+
+function ShortcutsButton() {
+  const id = React.useId();
+  return (
+    <>
+      <button
+        type="button"
+        popoverTarget={id}
+        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-zinc-500 transition hover:bg-white hover:text-zinc-800"
+        title="Keyboard shortcuts"
+      >
+        <Keyboard className="h-4 w-4" />
+        <span className="hidden min-[1100px]:inline">Shortcuts</span>
+      </button>
+      <div
+        id={id}
+        popover="auto"
+        className="m-0 mb-16 ml-auto mr-[22rem] mt-auto w-80 rounded-xl border border-zinc-200 bg-white p-4 text-zinc-800 shadow-[0_12px_32px_rgba(24,24,27,0.16)] max-[1180px]:mr-80"
+      >
+        <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.07em] text-zinc-400">Keyboard shortcuts</h3>
+        <dl className="space-y-1.5 text-[13px]">
+          {SHORTCUTS.map(([label, keys]) => (
+            <div key={label} className="flex items-center justify-between gap-3">
+              <dt className="text-zinc-600">{label}</dt>
+              <dd className="shrink-0 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[11.5px] font-semibold text-zinc-700">{keys}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </>
   );
 }

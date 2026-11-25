@@ -8,9 +8,7 @@ describe("Toolbar history controls", () => {
   const props = {
     onAddElement: vi.fn(),
     onComposite: vi.fn(),
-    isSaving: false,
     isCompositing: false,
-    hasChanges: false,
     hasOverlay: true,
     hasBaseImage: true,
   };

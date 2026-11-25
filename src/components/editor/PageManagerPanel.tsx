@@ -9,8 +9,9 @@ import {
   Music,
   Plus,
   Trash2,
+  Type,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { usePageManagerContext } from "@/contexts/BookEditorContext";
 
@@ -69,6 +70,13 @@ export function PageManagerPanel() {
   } = usePageManagerContext();
   // null = not dragging files; 0 = over the panel but not a page (start at active page).
   const [fileDropPage, setFileDropPage] = useState<number | null>(null);
+  // Page whose delete button is armed: a page with content needs a second click.
+  const [armedDelete, setArmedDelete] = useState<number | null>(null);
+  useEffect(() => {
+    if (armedDelete === null) return;
+    const timer = setTimeout(() => setArmedDelete(null), 3000);
+    return () => clearTimeout(timer);
+  }, [armedDelete]);
 
   const dropFiles = (e: React.DragEvent, startPage: number) => {
     if (!hasFiles(e)) return;
@@ -174,7 +182,7 @@ export function PageManagerPanel() {
                           </span>
 
                           <div
-                            className={`relative aspect-[4/5] min-w-0 flex-1 overflow-hidden rounded-[10px] bg-white transition-all ${
+                            className={`relative min-w-0 flex-1 overflow-hidden rounded-[10px] bg-white transition-all ${
                               isDropTarget
                                 ? "scale-[1.02] border-2 border-[var(--editor-accent)] ring-4 ring-[var(--editor-accent-soft)]"
                                 : isActive
@@ -183,13 +191,17 @@ export function PageManagerPanel() {
                             }`}
                           >
                             {page.compositedImageUrl || page.imageUrl ? (
+                              // Natural aspect, so landscape and square art aren't cropped.
                               <img
                                 src={page.compositedImageUrl || page.imageUrl}
                                 alt={`Page ${page.number}`}
-                                className="h-full w-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                                draggable={false}
+                                className="block max-h-64 w-full bg-zinc-50 object-contain"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#fdf6ef] via-[#f3f0fb] to-[#eaf0f7] text-[#c9b79f]">
+                              <div className="flex aspect-[4/5] w-full items-center justify-center bg-linear-to-br from-[#fdf6ef] via-[#f3f0fb] to-[#eaf0f7] text-[#c9b79f]">
                                 <ImageIcon className="h-8 w-8" strokeWidth={1.4} />
                               </div>
                             )}
@@ -202,26 +214,19 @@ export function PageManagerPanel() {
                               </div>
                             )}
 
-                            <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
-                              {page.compositedImageUrl ? (
-                                <span className="rounded-md bg-[var(--editor-accent-soft)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--editor-accent)]">
-                                  OVERLAY
-                                </span>
-                              ) : pageHasOverlay ? (
-                                <span className="rounded-md bg-[var(--editor-accent-soft)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--editor-accent)]">
-                                  TEXT
-                                </span>
-                              ) : null}
-                            </div>
-
-                            {(audioStatus?.hasNarration || audioStatus?.hasSoundscape) && (
+                            {(pageHasOverlay || audioStatus?.hasNarration || audioStatus?.hasSoundscape) && (
                               <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1">
-                                {audioStatus.hasNarration && (
+                                {pageHasOverlay && (
+                                  <span className="grid h-5 w-5 place-items-center rounded-full bg-white/95 text-zinc-700 shadow-sm" title="Has text">
+                                    <Type className="h-3 w-3" />
+                                  </span>
+                                )}
+                                {audioStatus?.hasNarration && (
                                   <span className="grid h-5 w-5 place-items-center rounded-full bg-orange-500 text-white shadow-sm" title="Has narration">
                                     <Mic className="h-3 w-3" />
                                   </span>
                                 )}
-                                {audioStatus.hasSoundscape && (
+                                {audioStatus?.hasSoundscape && (
                                   <span className="grid h-5 w-5 place-items-center rounded-full bg-amber-500 text-white shadow-sm" title="Has ambient sound">
                                     <Music className="h-3 w-3" />
                                   </span>
@@ -242,12 +247,26 @@ export function PageManagerPanel() {
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
+                                  const hasContent = Boolean(
+                                    page.imageUrl || page.text?.trim() || pageHasOverlay || audioStatus?.hasNarration
+                                  );
+                                  if (hasContent && armedDelete !== page.number) {
+                                    setArmedDelete(page.number);
+                                    return;
+                                  }
+                                  setArmedDelete(null);
                                   handleDeletePage(page.number);
                                 }}
-                                className="absolute left-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-md bg-white/90 text-zinc-400 opacity-0 shadow-sm transition group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500"
-                                aria-label={`Delete page ${page.number}`}
+                                className={`absolute right-1.5 top-1.5 flex h-6 items-center gap-1 rounded-md shadow-sm transition ${
+                                  armedDelete === page.number
+                                    ? "bg-rose-600 px-2 text-[11px] font-semibold text-white opacity-100"
+                                    : "w-6 justify-center bg-white/90 text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500 focus-visible:opacity-100"
+                                }`}
+                                aria-label={armedDelete === page.number ? `Confirm delete page ${page.number}` : `Delete page ${page.number}`}
+                                title={armedDelete === page.number ? "Click again to delete this page" : "Delete page"}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
+                                {armedDelete === page.number && "Delete?"}
                               </button>
                             )}
                           </div>
@@ -270,14 +289,14 @@ export function PageManagerPanel() {
           className="flex h-[38px] w-full items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-zinc-300 bg-white text-[13px] font-semibold text-zinc-700 transition hover:border-[var(--editor-accent)] hover:bg-[var(--editor-accent-faint)] hover:text-[var(--editor-accent)]"
         >
           <Plus className="h-4 w-4" />
-          Add Page
+          Add page
         </button>
         <label
           title={`Images fill pages in filename order, starting at page ${activePage}. You can also drop files or a folder onto a page.`}
           className={`mt-2 flex h-[38px] w-full cursor-pointer items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-zinc-300 bg-white text-[13px] font-semibold text-zinc-700 transition hover:border-[var(--editor-accent)] hover:bg-[var(--editor-accent-faint)] hover:text-[var(--editor-accent)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--editor-accent)] ${uploading ? "pointer-events-none opacity-60" : ""}`}
         >
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Images className="h-4 w-4" />}
-          {uploading ? "Uploading…" : "Upload Images"}
+          {uploading ? "Uploading…" : "Upload images"}
           <input
             type="file"
             accept="image/jpeg,image/png,image/gif,image/webp"

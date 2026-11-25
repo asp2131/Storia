@@ -1,11 +1,11 @@
 "use client";
 
+import { useId, useRef } from "react";
 import {
-  AlertTriangle,
-  CheckCircle2,
   Image as ImageIcon,
   Images,
   Loader2,
+  MoreHorizontal,
   Redo2,
   Trash2,
   Type,
@@ -21,31 +21,20 @@ export interface ToolbarProps {
   canRedo: boolean;
   onChangeImage?: () => void;
   onRemoveImage?: () => void;
-  isSaving: boolean;
   isCompositing: boolean;
-  hasChanges: boolean;
-  isAutoSaving?: boolean;
-  isStale?: boolean;
   hasOverlay: boolean;
   hasBaseImage: boolean;
-  compositedAt?: string | null;
 }
 
-function formatRelativeTime(isoString: string | null): string {
-  if (!isoString) return "";
-  const date = new Date(isoString);
-  const diffMs = Date.now() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+const iconButton =
+  "grid h-[34px] w-[34px] place-items-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-30";
+const menuItem =
+  "flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40";
 
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
+/**
+ * Canvas toolbar. Save status lives in the editor header only; rarely used or
+ * destructive page actions sit behind "More" so a stray click can't remove art.
+ */
 export function Toolbar({
   onAddElement,
   onComposite,
@@ -55,38 +44,29 @@ export function Toolbar({
   canRedo,
   onChangeImage,
   onRemoveImage,
-  isSaving,
   isCompositing,
-  hasChanges,
-  isAutoSaving = false,
-  isStale = false,
   hasOverlay,
   hasBaseImage,
-  compositedAt = null,
 }: ToolbarProps) {
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
   const canComposite = hasOverlay && hasBaseImage && !isCompositing;
-  const status = isAutoSaving || isSaving
-    ? { label: "Saving…", icon: Loader2, tone: "text-zinc-500", spin: true }
-    : isStale
-      ? { label: "Update preview", icon: AlertTriangle, tone: "text-amber-600", spin: false }
-      : hasChanges
-        ? { label: "Unsaved overlay", icon: AlertTriangle, tone: "text-amber-600", spin: false }
-        : {
-            label: compositedAt ? `Updated ${formatRelativeTime(compositedAt)}` : "Overlay saved",
-            icon: CheckCircle2,
-            tone: "text-zinc-500",
-            spin: false,
-          };
-  const StatusIcon = status.icon;
+  const mod = typeof navigator !== "undefined" && /Mac|iP/.test(navigator.platform) ? "⌘" : "Ctrl+";
+
+  const runAndClose = (action: () => void) => {
+    menuRef.current?.hidePopover();
+    action();
+  };
 
   return (
     <div className="relative flex h-14 shrink-0 items-center justify-center px-5">
       <div className="flex items-center gap-1 rounded-xl border border-zinc-200/80 bg-white p-1 shadow-[0_2px_10px_rgba(24,24,27,0.06)]">
         <button
           onClick={onAddElement}
-          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--editor-accent)] px-3 text-xs font-semibold text-white transition hover:brightness-105"
+          className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--editor-accent)] px-3 text-xs font-semibold text-[var(--editor-on-accent)] transition hover:brightness-105"
           type="button"
-          title="Add text"
+          title="Add text (T)"
         >
           <Type className="h-4 w-4" />
           Add text
@@ -95,12 +75,12 @@ export function Toolbar({
         {onChangeImage && (
           <button
             onClick={onChangeImage}
-            className="grid h-[34px] w-[34px] place-items-center rounded-lg text-zinc-600 transition hover:bg-zinc-100"
+            className="inline-flex h-[34px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100"
             type="button"
-            title="Change image"
-            aria-label="Change image"
+            title="Replace illustration"
           >
-            <ImageIcon className="h-[17px] w-[17px]" />
+            <ImageIcon className="h-4 w-4" />
+            <span className="hidden min-[1000px]:inline">Replace image</span>
           </button>
         )}
 
@@ -109,9 +89,9 @@ export function Toolbar({
         <button
           onClick={onUndo}
           disabled={!canUndo}
-          className="grid h-[34px] w-[34px] place-items-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-30"
+          className={iconButton}
           type="button"
-          title="Undo (Cmd/Ctrl+Z)"
+          title={`Undo (${mod}Z)`}
           aria-label="Undo"
         >
           <Undo2 className="h-[17px] w-[17px]" />
@@ -119,9 +99,9 @@ export function Toolbar({
         <button
           onClick={onRedo}
           disabled={!canRedo}
-          className="grid h-[34px] w-[34px] place-items-center rounded-lg text-zinc-600 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-30"
+          className={iconButton}
           type="button"
-          title="Redo (Cmd/Ctrl+Shift+Z)"
+          title={`Redo (${mod}Shift+Z)`}
           aria-label="Redo"
         >
           <Redo2 className="h-[17px] w-[17px]" />
@@ -130,38 +110,60 @@ export function Toolbar({
         <span className="mx-0.5 h-[22px] w-px bg-zinc-200" />
 
         <button
-          onClick={onComposite}
-          disabled={!canComposite}
-          aria-label="Composite page"
-          className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-            isStale
-              ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-              : "text-zinc-700 hover:bg-zinc-100"
-          }`}
+          ref={moreRef}
           type="button"
-          title="Create a composited preview"
+          popoverTarget={menuId}
+          className={iconButton}
+          title="More page actions"
+          aria-label="More page actions"
         >
-          {isCompositing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Images className="h-4 w-4" />}
-          <span className="hidden min-[900px]:inline">Composite</span>
+          {isCompositing ? <Loader2 className="h-[17px] w-[17px] animate-spin" /> : <MoreHorizontal className="h-[17px] w-[17px]" />}
         </button>
+      </div>
 
+      <div
+        ref={menuRef}
+        id={menuId}
+        popover="auto"
+        role="menu"
+        onToggle={(event) => {
+          // Popovers open centred in the viewport; pin this one under its button.
+          if ((event as unknown as ToggleEvent).newState !== "open") return;
+          const anchor = moreRef.current?.getBoundingClientRect();
+          const menu = menuRef.current;
+          if (!anchor || !menu) return;
+          menu.style.top = `${anchor.bottom + 6}px`;
+          menu.style.left = `${Math.max(8, anchor.right - menu.offsetWidth)}px`;
+        }}
+        className="m-0 w-64 rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-800 shadow-[0_12px_32px_rgba(24,24,27,0.16)]"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          disabled={!canComposite}
+          onClick={() => runAndClose(onComposite)}
+          className={menuItem}
+        >
+          <Images className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
+          <span>
+            <span className="block font-semibold">Flatten text into image</span>
+            <span className="block text-[11.5px] leading-snug text-zinc-500">
+              {hasOverlay ? "Makes a single image for the web reader. Editing text later clears it." : "Add text first."}
+            </span>
+          </span>
+        </button>
         {onRemoveImage && (
           <button
-            onClick={onRemoveImage}
-            className="grid h-[34px] w-[34px] place-items-center rounded-lg text-rose-500 transition hover:bg-rose-50"
             type="button"
-            title="Remove image"
-            aria-label="Remove image"
+            role="menuitem"
+            onClick={() => runAndClose(onRemoveImage)}
+            className={`${menuItem} text-rose-600 hover:bg-rose-50`}
           >
-            <Trash2 className="h-[17px] w-[17px]" />
+            <Trash2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <span className="font-semibold">Remove illustration</span>
           </button>
         )}
       </div>
-
-      <span className={`absolute right-5 hidden items-center gap-1.5 text-[11px] font-semibold 2xl:inline-flex ${status.tone}`}>
-        <StatusIcon className={`h-3.5 w-3.5 ${status.spin ? "animate-spin" : ""}`} />
-        {status.label}
-      </span>
     </div>
   );
 }
