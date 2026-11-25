@@ -857,6 +857,7 @@
 - `backfill-pronunciation-metadata.ts` — Backfill `syllables`, `phonetic_display`, and `breakdown_segments` for any (~1477 tok)
 - `backfill-pronunciations.ts` — Pronunciation backfill script (Phase 2 — Ticket 2.4). (~1862 tok)
 - `ensure-local-db.sh` — Starts local Postgres container, waits for readiness, recreates `storia_dev` if missing (~220 tok)
+- `newsletter-sync.mjs` — Copies verified `user` emails into the Resend "Newsletter" segment (dry run unless `--apply`). Takes the env file as argv[2] (overrides shell), needs `NEWSLETTER_RESEND_API_KEY` (full access). Never sets `unsubscribed`. Newsletters are sent as Resend Broadcasts from the dashboard. (~900 tok)
 - `storage-gc.mjs` — Storage GC for the `storia-storage` bucket: lists every object, rebuilds the referenced-path set from pages/books/page_audio_assignments/page_overlay_narrations/book_pronunciations/soundscapes, buckets the difference into tiers A–D, and deletes only with `--delete --tier`. Never touches `audio/**` or `pdfs/**`. (~1794 tok)
 
 ## specs/
