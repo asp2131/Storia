@@ -7,6 +7,8 @@ import {
   AlignRight,
   ChevronDown,
   Mic,
+  Minus,
+  Plus,
   Trash2,
 } from "lucide-react";
 import {
@@ -37,6 +39,29 @@ interface PropertyPanelProps {
   embedded?: boolean;
   /** Save this box's style as the creator's default for new text boxes. Hidden when absent. */
   onUseStyleForNewBoxes?: (element: TextElement) => Promise<unknown>;
+  /** Text colours already used on this page, offered as one-click swatches. */
+  pageColors?: string[];
+}
+
+/** Split any `#rgb`, `#rrggbb` or `rgb()/rgba()` colour into a 6-digit hex and an alpha. */
+export function parseCssColor(value: string): { hex: string; alpha: number } {
+  const v = value.trim().toLowerCase();
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(v);
+  if (short) return { hex: `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`, alpha: 1 };
+  if (/^#[0-9a-f]{6}$/.test(v)) return { hex: v, alpha: 1 };
+  const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/.exec(v);
+  if (rgb) {
+    const hex = `#${rgb.slice(1, 4).map((n) => Math.min(255, Number(n)).toString(16).padStart(2, "0")).join("")}`;
+    return { hex, alpha: rgb[4] === undefined ? 1 : Math.max(0, Math.min(1, Number(rgb[4]))) };
+  }
+  return { hex: "#000000", alpha: 1 };
+}
+
+/** Opaque colours stay plain hex (what every reader parses); see-through ones use rgba(). */
+export function formatCssColor(hex: string, alpha: number): string {
+  if (alpha >= 0.995) return hex;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgba(${r}, ${g}, ${b}, ${Math.round(alpha * 100) / 100})`;
 }
 
 const fieldLabel = "mb-1.5 block text-[11.5px] font-semibold text-zinc-500";
@@ -51,6 +76,7 @@ export function PropertyPanel({
   enableVoiceAssignment = false,
   embedded = false,
   onUseStyleForNewBoxes,
+  pageColors = [],
 }: PropertyPanelProps) {
   const [isShadowExpanded, setIsShadowExpanded] = useState(false);
   const [isBackgroundExpanded, setIsBackgroundExpanded] = useState(false);
@@ -180,9 +206,27 @@ export function PropertyPanel({
       <div>
         <div className="mb-2 flex items-center justify-between">
           <label className="text-[11.5px] font-semibold text-zinc-500">Size</label>
-          <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-zinc-700">
-            {selectedElement.fontSize.toFixed(1)}%
-          </span>
+          <div className="flex items-center rounded-md bg-zinc-100">
+            <button
+              type="button"
+              onClick={() => update({ fontSize: Math.max(0.5, Math.round((selectedElement.fontSize - 0.5) * 10) / 10) })}
+              className="grid h-6 w-6 place-items-center rounded-md text-zinc-500 hover:bg-white hover:text-zinc-800"
+              aria-label="Smaller text"
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            <span className="min-w-11 text-center text-xs font-semibold tabular-nums text-zinc-700">
+              {selectedElement.fontSize.toFixed(1)}%
+            </span>
+            <button
+              type="button"
+              onClick={() => update({ fontSize: Math.min(50, Math.round((selectedElement.fontSize + 0.5) * 10) / 10) })}
+              className="grid h-6 w-6 place-items-center rounded-md text-zinc-500 hover:bg-white hover:text-zinc-800"
+              aria-label="Bigger text"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
         </div>
         <input
           type="range"
@@ -192,27 +236,14 @@ export function PropertyPanel({
           value={selectedElement.fontSize}
           onChange={(event) => update({ fontSize: Number(event.target.value) })}
           className="editor-range w-full"
+          aria-label="Text size"
         />
       </div>
 
       <div className="grid grid-cols-[1fr_1.3fr] gap-2">
         <div>
           <label className={fieldLabel}>Color</label>
-          <div className="flex h-[38px] items-center gap-2 rounded-[9px] border border-zinc-200 bg-[#fbfbfc] px-2.5">
-            <input
-              type="color"
-              value={selectedElement.color}
-              onChange={(event) => update({ color: event.target.value })}
-              className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
-              aria-label="Text color"
-            />
-            <input
-              value={selectedElement.color}
-              onChange={(event) => update({ color: event.target.value })}
-              className="min-w-0 flex-1 bg-transparent text-xs uppercase tabular-nums text-zinc-600 outline-none"
-              aria-label="Text color value"
-            />
-          </div>
+          <ColorField value={selectedElement.color} onChange={(color) => update({ color })} label="Text color" />
         </div>
         <div>
           <label className={fieldLabel}>Align</label>
@@ -236,6 +267,25 @@ export function PropertyPanel({
           </div>
         </div>
       </div>
+
+      {(() => {
+        const swatches = Array.from(new Set(["#000000", "#ffffff", ...pageColors.map((c) => c.toLowerCase())])).slice(0, 10);
+        return (
+          <div className="-mt-1 flex flex-wrap gap-1.5" aria-label="Colors on this page">
+            {swatches.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => update({ color })}
+                className={`h-6 w-6 rounded-full border shadow-sm transition hover:scale-110 ${selectedElement.color.toLowerCase() === color ? "border-[var(--editor-accent)] ring-2 ring-[var(--editor-accent-soft)]" : "border-black/10"}`}
+                style={{ backgroundColor: color }}
+                aria-label={`Use color ${color}`}
+                title={color}
+              />
+            ))}
+          </div>
+        );
+      })()}
 
       <div>
         <div className="mb-2 flex items-center justify-between">
@@ -286,8 +336,9 @@ export function PropertyPanel({
       >
         {selectedElement.shadow && (
           <div className="space-y-3 border-t border-zinc-100 p-3">
-            <TextValue
-              label="Color"
+            <ColorField
+              label="Shadow color"
+              withAlpha
               value={selectedElement.shadow.color}
               onChange={(color) => update({ shadow: { ...selectedElement.shadow!, color } })}
             />
@@ -312,8 +363,9 @@ export function PropertyPanel({
       >
         {selectedElement.background && (
           <div className="space-y-3 border-t border-zinc-100 p-3">
-            <TextValue
-              label="Color"
+            <ColorField
+              label="Background color"
+              withAlpha
               value={selectedElement.background.color}
               onChange={(color) => update({ background: { ...selectedElement.background!, color } })}
             />
@@ -335,9 +387,9 @@ export function PropertyPanel({
             type="button"
             onClick={handleUseStyle}
             disabled={styleStatus === "saving"}
-            className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-[var(--editor-accent)] text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-zinc-200 bg-white text-xs font-semibold text-zinc-700 transition hover:border-[var(--editor-accent)] hover:text-[var(--editor-accent)] disabled:opacity-60"
           >
-            Use style for new text boxes
+            {styleStatus === "saving" ? "Saving…" : "Use style for new text boxes"}
           </button>
           <p role="status" className="mt-1.5 text-center text-[11px] leading-snug text-zinc-500">
             {styleStatus === "saved"
@@ -412,11 +464,54 @@ function RangeValue({ label, value, onChange }: { label: string; value: number; 
   );
 }
 
-function TextValue({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function ColorField({
+  label,
+  value,
+  onChange,
+  withAlpha = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  withAlpha?: boolean;
+}) {
+  const { hex, alpha } = parseCssColor(value);
   return (
-    <label className="block text-[11px] text-zinc-500">
-      <span className="mb-1 block">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className={control} />
-    </label>
+    <div className="space-y-2">
+      <div className="flex h-[38px] items-center gap-2 rounded-[9px] border border-zinc-200 bg-[#fbfbfc] px-2.5">
+        <input
+          type="color"
+          value={hex}
+          onChange={(event) => onChange(formatCssColor(event.target.value, alpha))}
+          className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+          aria-label={label}
+        />
+        <input
+          key={hex}
+          defaultValue={hex.toUpperCase()}
+          onBlur={(event) => {
+            const next = parseCssColor(event.target.value.startsWith("#") ? event.target.value : `#${event.target.value}`);
+            onChange(formatCssColor(next.hex, alpha));
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+          }}
+          className="min-w-0 flex-1 bg-transparent text-xs uppercase tabular-nums text-zinc-600 outline-none"
+          aria-label={`${label} hex value`}
+        />
+        {withAlpha && <span className="text-[11px] tabular-nums text-zinc-400">{Math.round(alpha * 100)}%</span>}
+      </div>
+      {withAlpha && (
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(alpha * 100)}
+          onChange={(event) => onChange(formatCssColor(hex, Number(event.target.value) / 100))}
+          className="editor-range w-full"
+          aria-label={`${label} opacity`}
+        />
+      )}
+    </div>
   );
 }

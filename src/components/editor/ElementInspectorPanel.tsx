@@ -53,6 +53,7 @@ export function ElementInspectorPanel() {
         onUseStyleForNewBoxes={(element) => saveCreatorStyle(creatorTextStyleFrom(element))}
         voiceOptions={voiceOptions}
         enableVoiceAssignment
+        pageColors={elements.map((element) => element.color)}
       />
 
       <LayersPanel

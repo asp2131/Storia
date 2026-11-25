@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PropertyPanel } from "./PropertyPanel";
+import { PropertyPanel, parseCssColor, formatCssColor } from "./PropertyPanel";
 import type { TextElement } from "@/types/text-overlay";
 
 // This project has no global testing-library cleanup, so unmount between cases
@@ -75,5 +75,21 @@ describe("PropertyPanel", () => {
   it("hides the action when the editor cannot save a creator style", () => {
     renderPanel(element("a", "Edit me"));
     expect(screen.queryByRole("button", { name: "Use style for new text boxes" })).toBeNull();
+  });
+});
+
+describe("colour helpers", () => {
+  it("reads hex and rgb()/rgba() into hex + alpha", () => {
+    expect(parseCssColor("#ABC")).toEqual({ hex: "#aabbcc", alpha: 1 });
+    expect(parseCssColor("#1a2b3c")).toEqual({ hex: "#1a2b3c", alpha: 1 });
+    expect(parseCssColor("rgba(0, 0, 0, 0.5)")).toEqual({ hex: "#000000", alpha: 0.5 });
+    expect(parseCssColor("rgb(255,128,0)")).toEqual({ hex: "#ff8000", alpha: 1 });
+    expect(parseCssColor("tomato")).toEqual({ hex: "#000000", alpha: 1 });
+  });
+
+  it("writes plain hex when opaque and rgba() when see-through", () => {
+    expect(formatCssColor("#ff8000", 1)).toBe("#ff8000");
+    expect(formatCssColor("#ff8000", 0.456)).toBe("rgba(255, 128, 0, 0.46)");
+    expect(parseCssColor(formatCssColor("#102030", 0.3))).toEqual({ hex: "#102030", alpha: 0.3 });
   });
 });
