@@ -12,6 +12,7 @@ import {
 } from "@/types/text-overlay";
 import { Toolbar } from "./Toolbar";
 import { useOverlayEditor, useOverlayEditorActions } from "@/hooks/useOverlayEditor";
+import { getOverlayEditorStore } from "@/stores/overlayEditorRegistry";
 import { useCreatorTextStyle } from "@/hooks/useCreatorTextStyle";
 
 interface DraggableTextOverlayEditorProps {
@@ -86,6 +87,13 @@ export function snapToCenter(
     guides: { x: snapX, y: snapY },
   };
 }
+
+/**
+ * Last text box copied with Cmd/Ctrl+C. Module scope so it survives page
+ * switches (each page has its own store); not the system clipboard, which
+ * stays free for copying words.
+ */
+let copiedElement: TextElement | null = null;
 
 /** True when a key event belongs to a text field, so canvas shortcuts must leave it alone. */
 export function isTypingTarget(target: EventTarget | null): boolean {
@@ -536,7 +544,25 @@ export function DraggableTextOverlayEditor({
         addElementRef.current();
         return;
       }
+      if (mod && event.key.toLowerCase() === "v" && copiedElement) {
+        event.preventDefault();
+        const source = copiedElement;
+        // Same page: offset so the copy is visible. Another page: same spot.
+        const taken = getOverlayEditorStore(pageId).getState().elements.some((el) => el.x === source.x && el.y === source.y);
+        store.addElement({
+          ...source,
+          id: crypto.randomUUID(),
+          x: taken ? Math.min(100 - source.width, source.x + 3) : source.x,
+          y: taken ? Math.min(95, source.y + 3) : source.y,
+        });
+        return;
+      }
       if (!selected) return;
+
+      if (mod && event.key.toLowerCase() === "c" && !window.getSelection()?.toString()) {
+        copiedElement = { ...selected };
+        return;
+      }
 
       if (mod && event.key.toLowerCase() === "d") {
         event.preventDefault();

@@ -14,6 +14,45 @@ import {
 import { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { usePageManagerContext } from "@/contexts/BookEditorContext";
+import { OVERLAY_FONT_CSS_FAMILY, type TextElement } from "@/types/text-overlay";
+
+/**
+ * Static, scaled copy of a page's text boxes for its thumbnail. The layer is a
+ * size container over the art, so cqh/cqw match the editor's % of image
+ * height/width maths.
+ */
+function ThumbnailText({ elements }: { elements: TextElement[] }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden [container-type:size]" aria-hidden>
+      {elements.map((element) => (
+        <span
+          key={element.id}
+          className="absolute block whitespace-pre-wrap break-words"
+          style={{
+            left: `${element.x}%`,
+            top: `${element.y}%`,
+            width: `${element.width}%`,
+            fontFamily: OVERLAY_FONT_CSS_FAMILY[element.fontFamily],
+            fontSize: `${element.fontSize}cqh`,
+            fontWeight: element.fontWeight,
+            color: element.color,
+            textAlign: element.textAlign,
+            lineHeight: 1.3,
+            transform: `rotate(${element.rotation}deg)`,
+            transformOrigin: "left top",
+            ...(element.background && {
+              backgroundColor: element.background.color,
+              padding: `${element.background.padding}cqw`,
+              borderRadius: `${element.background.borderRadius}cqw`,
+            }),
+          }}
+        >
+          {element.text}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 const hasFiles = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
 
@@ -191,15 +230,21 @@ export function PageManagerPanel() {
                             }`}
                           >
                             {page.compositedImageUrl || page.imageUrl ? (
-                              // Natural aspect, so landscape and square art aren't cropped.
-                              <img
-                                src={page.compositedImageUrl || page.imageUrl}
-                                alt={`Page ${page.number}`}
-                                loading="lazy"
-                                decoding="async"
-                                draggable={false}
-                                className="block max-h-64 w-full bg-zinc-50 object-contain"
-                              />
+                              <>
+                                {/* Natural aspect, so landscape and square art aren't cropped. */}
+                                <img
+                                  src={page.compositedImageUrl || page.imageUrl}
+                                  alt={`Page ${page.number}`}
+                                  loading="lazy"
+                                  decoding="async"
+                                  draggable={false}
+                                  className="block h-auto w-full bg-zinc-50"
+                                />
+                                {/* A flattened image already has its text baked in. */}
+                                {!page.compositedImageUrl && pageHasOverlay && (
+                                  <ThumbnailText elements={page.overlay!.elements} />
+                                )}
+                              </>
                             ) : (
                               <div className="flex aspect-[4/5] w-full items-center justify-center bg-linear-to-br from-[#fdf6ef] via-[#f3f0fb] to-[#eaf0f7] text-[#c9b79f]">
                                 <ImageIcon className="h-8 w-8" strokeWidth={1.4} />

@@ -181,6 +181,7 @@ const SHORTCUTS: [string, string][] = [
   ["Stop editing / deselect", "Esc"],
   ["Nudge box", "Arrow keys (Shift = bigger)"],
   ["Duplicate box", "⌘/Ctrl + D"],
+  ["Copy / paste box (any page)", "⌘/Ctrl + C / V"],
   ["Delete box", "Delete"],
   ["Undo / redo", "⌘/Ctrl + Z / Shift + Z"],
   ["Previous / next page", "PgUp / PgDn"],
