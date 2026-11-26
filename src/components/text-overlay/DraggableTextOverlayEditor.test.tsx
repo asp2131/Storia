@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { historyShortcutFor, isTypingTarget, snapToCenter } from "./DraggableTextOverlayEditor";
+import { hasWordWiderThanBox, historyShortcutFor, isTypingTarget, snapToCenter } from "./DraggableTextOverlayEditor";
 
 describe("historyShortcutFor", () => {
   const key = (over: Partial<KeyboardEvent> & { target?: EventTarget | null } = {}) => ({
@@ -53,5 +53,29 @@ describe("isTypingTarget", () => {
     expect(isTypingTarget(document.createElement("select"))).toBe(true);
     expect(isTypingTarget(document.createElement("button"))).toBe(false);
     expect(isTypingTarget(null)).toBe(false);
+  });
+});
+
+describe("hasWordWiderThanBox", () => {
+  // jsdom has no layout: fake a 100px box whose longest word is `wordPx` wide
+  // and only overflows while word breaking is off.
+  const box = (wordPx: number) => {
+    const el = document.createElement("span");
+    Object.defineProperty(el, "clientWidth", { value: 100 });
+    Object.defineProperty(el, "scrollWidth", {
+      get: () => (el.style.overflowWrap === "normal" ? Math.max(100, wordPx) : 100),
+    });
+    return el;
+  };
+
+  it("flags a word wider than the box and restores word breaking", () => {
+    const el = box(140);
+    expect(hasWordWiderThanBox(el)).toBe(true);
+    expect(el.style.overflowWrap).toBe("");
+  });
+
+  it("passes words that fit, allowing a sub-pixel rounding slack", () => {
+    expect(hasWordWiderThanBox(box(80))).toBe(false);
+    expect(hasWordWiderThanBox(box(101))).toBe(false);
   });
 });

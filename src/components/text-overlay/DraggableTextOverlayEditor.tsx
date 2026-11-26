@@ -149,6 +149,17 @@ export function caretOffsetAt(container: HTMLElement, x: number, y: number): num
   return offset;
 }
 
+/**
+ * True when one word is wider than the box. The editor's `break-words` hides
+ * that by splitting the word, so measure once with breaking turned off.
+ */
+export function hasWordWiderThanBox(text: HTMLElement): boolean {
+  text.style.overflowWrap = "normal";
+  const tooWide = text.scrollWidth > text.clientWidth + 1;
+  text.style.overflowWrap = "";
+  return tooWide;
+}
+
 interface DraggableTextElementProps {
   element: TextElement;
   isSelected: boolean;
@@ -196,7 +207,7 @@ function DraggableTextElement({
     moved: boolean;
   } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [overflows, setOverflows] = useState(false);
+  const [fitWarning, setFitWarning] = useState<string | null>(null);
 
   // Build text shadow style
   const textShadow = useMemo(() => {
@@ -222,12 +233,30 @@ function DraggableTextElement({
   // Calculate font size in pixels based on container height
   const fontSizePx = (element.fontSize / 100) * containerHeight;
 
-  // Warn, never clip or shrink, when the box runs past the bottom of the scene.
+  // Warn, never clip or shrink: text past the bottom of the scene, or a word
+  // wider than its box (readers break it mid-word or let it spill out). Sizes
+  // are % of the image, so what fits here fits on every screen size.
   useLayoutEffect(() => {
     const root = rootRef.current;
-    if (!root || !containerHeight) return;
-    const bottomPx = (element.y / 100) * containerHeight + root.offsetHeight;
-    setOverflows(bottomPx > containerHeight + 1);
+    const text = textRef.current;
+    if (!root || !text || !containerHeight) return;
+    const check = () => {
+      const bottomPx = (element.y / 100) * containerHeight + root.offsetHeight;
+      setFitWarning(
+        bottomPx > containerHeight + 1
+          ? "Text does not fit this scene"
+          : hasWordWiderThanBox(text)
+            ? "A word is too wide. Widen the box."
+            : null
+      );
+    };
+    check();
+    // Web fonts can finish loading after this runs and change the widths.
+    let live = true;
+    document.fonts?.ready.then(() => live && check());
+    return () => {
+      live = false;
+    };
   }, [element.text, element.y, element.width, fontSizePx, element.fontFamily, element.fontWeight, paddingPx, containerHeight, containerWidth]);
 
   const startTyping = (offset: number | null) => {
@@ -333,7 +362,7 @@ function DraggableTextElement({
   };
 
   const isEmpty = element.text.trim().length === 0;
-  const outline = overflows
+  const outline = fitWarning
     ? "outline-2 outline-offset-4 outline-red-500"
     : isSelected
       ? "outline-2 outline-offset-4 outline-[var(--editor-accent)]"
@@ -407,13 +436,13 @@ function DraggableTextElement({
         }}
       />
 
-      {overflows && (
+      {fitWarning && (
         <span
           role="status"
           className="pointer-events-none absolute bottom-full left-0 mb-2 whitespace-nowrap rounded-md border border-red-200 bg-red-50 px-2 py-0.5 font-sans text-[11px] font-semibold not-italic leading-normal text-red-600"
           style={{ textShadow: "none", textAlign: "left" }}
         >
-          Text does not fit this scene
+          {fitWarning}
         </span>
       )}
 
